@@ -22,7 +22,7 @@ touches files disjoint from its siblings and may be handed to a concurrent agent
 `Depends on:` line wait for what they name.
 
 ```mermaid
-graph TD
+flowchart TD
   W1["Wave 1 — Foundations<br/>toolchain, hooks, docs, ADRs, CI, fixtures"]
   W2["Wave 2 — Core libraries<br/>shim, manifests, build, tokens, selectors, storage"]
   W3["Wave 3 — UI and capture<br/>components, overlay, picker, panels, export"]
@@ -32,7 +32,169 @@ graph TD
   W1 --> W2 --> W3 --> W4 --> W5
 ```
 
-Dependency detail inside each wave lives in that wave's file.
+### Full item chart
+
+Every item across all five waves. Solid arrows are hard dependencies. Anything with no inbound arrow
+inside its wave can start the moment that wave opens.
+
+```mermaid
+flowchart TD
+  subgraph WAVE1["Wave 1 — Foundations"]
+    W11["W1.1 AGENTS.md"]
+    W12["W1.2 mise + deno.json"]
+    W13["W1.3 lefthook"]
+    W14["W1.4 docs bootstrap"]
+    W15["W1.5 commit design bundle"]
+    W16["W1.6 ADRs 0001-0011"]
+    W17["W1.7 CI workflow"]
+    W18["W1.8 fixture app"]
+    W19["W1.9 fixture screenshots"]
+    W110["W1.10 GitHub labels"]
+    W111["W1.11 wave 1 PR"]
+    W12 --> W13
+    W14 --> W16
+    W15 --> W16
+    W12 --> W17
+    W12 --> W18 --> W19
+    W11 --> W111
+    W13 --> W111
+    W16 --> W111
+    W17 --> W111
+    W19 --> W111
+    W110 --> W111
+  end
+
+  subgraph WAVE2["Wave 2 — Core libraries"]
+    W21["W2.1 browser shim"]
+    W22["W2.2 manifest generation"]
+    W23["W2.3 esbuild pipeline"]
+    W24["W2.4 generated tokens"]
+    W25["W2.5 vendored fonts + icons"]
+    W26["W2.6 selector engine"]
+    W27["W2.7 style digest"]
+    W28["W2.8 schema + IndexedDB"]
+    W29["W2.9 extension-load smoke"]
+    W210["W2.10 CI expansion"]
+    W211["W2.11 wave 2 PR"]
+    W21 --> W23
+    W22 --> W23
+    W24 --> W23
+    W25 --> W23
+    W23 --> W29
+    W21 --> W29
+    W29 --> W210 --> W211
+    W26 --> W211
+    W27 --> W211
+    W28 --> W211
+  end
+
+  subgraph WAVE3["Wave 3 — UI and capture"]
+    W31["W3.1 component library"]
+    W32["W3.2 shadow host + theming"]
+    W33["W3.3 toolbar overlay"]
+    W34["W3.4 picker + drag box"]
+    W35["W3.5 screenshot capture"]
+    W36["W3.6 notes panel"]
+    W37["W3.7 plan view + export"]
+    W38["W3.8 popup"]
+    W39["W3.9 options page"]
+    W310["W3.10 activation + shortcuts"]
+    W311["W3.11 framework hints"]
+    W31 --> W33
+    W32 --> W33
+    W310 --> W33
+    W33 --> W34 --> W35 --> W36 --> W37
+    W31 --> W36
+    W31 --> W37
+    W31 --> W38
+    W31 --> W39
+    W311 --> W37
+  end
+
+  subgraph WAVE4["Wave 4 — Verification and release"]
+    W41["W4.1 full-flow E2E"]
+    W42["W4.2 visual regression"]
+    W43["W4.3 firefox smoke"]
+    W44["W4.4 accessibility"]
+    W45["W4.5 README + tutorials"]
+    W46["W4.6 CI completion"]
+    W47["W4.7 release packaging"]
+    W48["W4.8 wave 4 PR"]
+    W41 --> W46
+    W42 --> W46
+    W43 --> W46
+    W44 --> W46
+    W46 --> W48
+    W45 --> W48
+    W47 --> W48
+  end
+
+  subgraph WAVE5["Wave 5 — Marketing site"]
+    W51["W5.1 astro project"]
+    W52["W5.2 port marketing kit"]
+    W53["W5.3 share tokens"]
+    W54["W5.4 self-hosted fonts"]
+    W55["W5.5 install links"]
+    W56["W5.6 deploy + lighthouse"]
+    W51 --> W52 --> W56
+    W53 --> W52
+    W54 --> W52
+    W55 --> W56
+  end
+
+  W111 --> W21
+  W111 --> W22
+  W111 --> W24
+  W111 --> W25
+  W111 --> W26
+  W111 --> W27
+  W111 --> W28
+  W211 --> W31
+  W211 --> W32
+  W211 --> W310
+  W211 --> W311
+  W37 --> W41
+  W48 --> W51
+  W24 --> W53
+  W25 --> W54
+```
+
+### Assignment table
+
+Items safe to start in parallel the moment their wave opens, with nothing to wait on:
+
+| Wave | Immediately startable | Serial chain inside the wave |
+|---|---|---|
+| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.2 → W1.3; W1.2 → W1.8 → W1.9; W1.4+W1.5 → W1.6 |
+| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | W2.3 → W2.9 → W2.10 |
+| 3 | W3.1, W3.2, W3.10, W3.11 | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 |
+| 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | W4.6 last, then W4.8 |
+| 5 | W5.1, W5.3, W5.4, W5.5 | W5.1 → W5.2 → W5.6 |
+
+Wave 3's serial chain is the critical path of the whole project — five items that genuinely cannot be
+parallelised, because each consumes the previous one's output. Start W3.3 as early as the wave allows
+and run W3.1, W3.2, W3.8, W3.9, W3.10, and W3.11 alongside it.
+
+### Branching for parallel agents
+
+One branch per item, cut from the wave's integration branch rather than from `main`, so an agent gets
+its wave's prerequisites:
+
+```
+main
+└── feat/inital-impl          (this branch — plan + wave 1 integration)
+    ├── feat/w1-2-toolchain
+    ├── feat/w1-4-docs
+    └── feat/w1-5-design-bundle
+```
+
+Name branches `feat/w<wave>-<item>-<slug>` so the item is greppable from the branch list. Each item's
+PR targets its wave's integration branch; the integration branch PRs into `main` once the wave's exit
+criteria are met.
+
+Hand an agent exactly two things: this file and its wave file. Then: *"work on W2.6."*
+
+Dependency detail inside each wave also lives in that wave's file.
 
 ---
 
