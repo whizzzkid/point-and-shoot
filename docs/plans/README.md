@@ -166,16 +166,17 @@ flowchart TD
 
 ### Assignment table
 
-Every item appears in exactly one column, so there is always an answer to "can this be handed out
-now?" The last column is each wave's landing step.
+Every item is assigned exactly one **role** here, so there is always an answer to "can this be handed
+out now?" The last column is each wave's landing step. Item ids in parentheses are named as
+*prerequisites*, not listed as work — an id can be assigned in one column and referenced in another.
 
 | Wave | Immediately startable | Unblocks after one item lands | Serial chain | Lands the wave |
 |---|---|---|---|---|
-| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.3, W1.7, W1.8 (all after W1.2) | W1.8 → W1.9; W1.4+W1.5 → W1.6 | W1.11 |
+| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.3, W1.7, W1.8 (all after W1.2) | W1.6 (after W1.4+W1.5); W1.9 (after W1.8) | W1.11 |
 | 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | — | W2.3 → W2.9 → W2.10 | W2.11 |
 | 3 | W3.1, W3.2, W3.10, W3.11 | W3.8, W3.9 (both after W3.1) | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 | W3.12 |
 | 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | — | W4.6 (after W4.1–W4.4) | W4.8 |
-| 5 | W5.1, W5.3, W5.4, W5.5 | — | W5.2 → W5.6 | W5.6 |
+| 5 | W5.1, W5.3, W5.4, W5.5 | — | W5.2 (after W5.1+W5.3+W5.4) | W5.6 |
 
 Wave 3's serial chain is the critical path of the whole project — five items that genuinely cannot be
 parallelised, because each consumes the previous one's output. Start W3.3 as early as the wave allows
