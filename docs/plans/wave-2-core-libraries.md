@@ -16,7 +16,7 @@ to debug than a tested mechanism with no demo.
 ## Dependency graph
 
 ```mermaid
-graph TD
+flowchart TD
   W21["W2.1 browser shim"]
   W22["W2.2 manifest generation"]
   W23["W2.3 esbuild build pipeline"]

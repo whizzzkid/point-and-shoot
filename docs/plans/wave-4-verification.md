@@ -16,6 +16,8 @@ W4.6 (CI) depends on the jobs it wires up; W4.8 (PR) depends on everything.
 
 - [ ] `tests/e2e/` — SHA: _pending_
 
+**parallel-safe.**
+
 Expand beyond wave 2's smoke and wave 3's per-item checks into the flows a user actually performs:
 
 - Multi-note, multi-page session: capture on `index.html`, navigate to `dark.html`, capture again,

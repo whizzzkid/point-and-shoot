@@ -29,7 +29,7 @@ decorative.
 ## Dependency graph
 
 ```mermaid
-graph TD
+flowchart TD
   W31["W3.1 Preact component library"]
   W32["W3.2 shadow host + theming"]
   W33["W3.3 toolbar overlay"]
@@ -41,6 +41,7 @@ graph TD
   W39["W3.9 options page"]
   W310["W3.10 activation + shortcuts"]
   W311["W3.11 framework component hints"]
+  W312["W3.12 pull request"]
 
   W31 --> W33
   W31 --> W36
@@ -54,16 +55,22 @@ graph TD
   W36 --> W37
   W311 --> W37
   W310 --> W33
+  W37 --> W312
+  W38 --> W312
+  W39 --> W312
 ```
 
 W3.1, W3.2, W3.10, and W3.11 are **parallel-safe** starting points. W3.8 and W3.9 are parallel-safe
-once W3.1 lands.
+once W3.1 lands. W3.12 is the wave's landing step and waits on everything.
 
 ---
 
 ## W3.1 — Preact component library
 
 - [ ] `src/ui/components/` + gallery page — SHA: _pending_
+
+**parallel-safe.** Nothing inside wave 3 blocks this, but five other items block on it — W3.3, W3.6,
+W3.7, W3.8, and W3.9 all consume the component library, so start this first.
 
 **Why:** five surfaces share these components. Porting them once, with a gallery to review them
 against the design cards, is what keeps the surfaces consistent.
@@ -269,7 +276,7 @@ both forced themes.
 
 - [ ] `src/sidepanel/plan/`, `src/shared/serialize/` — SHA: _pending_
 
-**Depends on:** W3.6, W3.11.
+**Depends on:** W3.1 (the plan view UI is built from the component library), W3.6, W3.11.
 
 Read `.claude-design/point-and-shoot/ui_kits/plan-view/index.html` first. This is the payoff surface:
 collected notes compiled into an agent-ready prompt.
@@ -384,9 +391,30 @@ no framework produces no hint and no console noise.
 
 ---
 
+## W3.12 — Pull request
+
+- [ ] PR opened — record the number here
+
+**Depends on:** W3.1–W3.11, CI green.
+
+Wave 3 is the wave that produces something a person can actually use, so this PR body carries the
+most weight of any in the project.
+
+Body must include: what the wave delivers, surface by surface; a checklist with commit SHAs; **a
+screenshot of every surface in both forced themes**, embedded with `?raw=1` blob URLs per the W1.9
+convention; the bounding-box evidence that the toolbar never overlaps the active selection; a
+Verification section mapping each claim to a command actually run; and a Limitations section stating
+plainly what does not work yet — closed shadow roots, cross-origin iframes, viewport-clamped regions,
+and which framework versions the W3.11 hints were verified against.
+
+Do not claim the export is agent-ready without having fed a real exported bundle to a local agent and
+saying what happened.
+
+---
+
 ## Wave 3 exit criteria
 
-- W3.1–W3.11 checked with real commit SHAs.
+- W3.1–W3.12 checked with real commit SHAs (W3.12 records a PR number rather than a SHA).
 - Full flow works in Chromium end to end: activate → pick → note → review → export, with the exported
   zip containing valid JSON, Markdown, and screenshots.
 - The toolbar provably never overlaps the active selection, asserted by bounding-box comparison.

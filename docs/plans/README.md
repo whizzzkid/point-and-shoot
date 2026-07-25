@@ -34,8 +34,9 @@ flowchart TD
 
 ### Full item chart
 
-Every item across all five waves. Solid arrows are hard dependencies. Anything with no inbound arrow
-inside its wave can start the moment that wave opens.
+All 48 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
+transitive reduction — an item also waits on everything upstream of what it points at, not just its
+immediate parent. Anything with no inbound arrow inside its wave can start the moment that wave opens.
 
 ```mermaid
 flowchart TD
@@ -100,6 +101,7 @@ flowchart TD
     W39["W3.9 options page"]
     W310["W3.10 activation + shortcuts"]
     W311["W3.11 framework hints"]
+    W312["W3.12 wave 3 PR"]
     W31 --> W33
     W32 --> W33
     W310 --> W33
@@ -109,6 +111,9 @@ flowchart TD
     W31 --> W38
     W31 --> W39
     W311 --> W37
+    W37 --> W312
+    W38 --> W312
+    W39 --> W312
   end
 
   subgraph WAVE4["Wave 4 — Verification and release"]
@@ -153,7 +158,7 @@ flowchart TD
   W211 --> W32
   W211 --> W310
   W211 --> W311
-  W37 --> W41
+  W312 --> W41
   W48 --> W51
   W24 --> W53
   W25 --> W54
@@ -161,19 +166,23 @@ flowchart TD
 
 ### Assignment table
 
-Items safe to start in parallel the moment their wave opens, with nothing to wait on:
+Every item appears in exactly one column, so there is always an answer to "can this be handed out
+now?" The last column is each wave's landing step.
 
-| Wave | Immediately startable | Serial chain inside the wave |
-|---|---|---|
-| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.2 → W1.3; W1.2 → W1.8 → W1.9; W1.4+W1.5 → W1.6 |
-| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | W2.3 → W2.9 → W2.10 |
-| 3 | W3.1, W3.2, W3.10, W3.11 | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 |
-| 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | W4.6 last, then W4.8 |
-| 5 | W5.1, W5.3, W5.4, W5.5 | W5.1 → W5.2 → W5.6 |
+| Wave | Immediately startable | Unblocks after one item lands | Serial chain | Lands the wave |
+|---|---|---|---|---|
+| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.3, W1.7, W1.8 (all after W1.2) | W1.8 → W1.9; W1.4+W1.5 → W1.6 | W1.11 |
+| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | — | W2.3 → W2.9 → W2.10 | W2.11 |
+| 3 | W3.1, W3.2, W3.10, W3.11 | W3.8, W3.9 (both after W3.1) | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 | W3.12 |
+| 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | — | W4.6 (after W4.1–W4.4) | W4.8 |
+| 5 | W5.1, W5.3, W5.4, W5.5 | — | W5.2 → W5.6 | W5.6 |
 
 Wave 3's serial chain is the critical path of the whole project — five items that genuinely cannot be
 parallelised, because each consumes the previous one's output. Start W3.3 as early as the wave allows
 and run W3.1, W3.2, W3.8, W3.9, W3.10, and W3.11 alongside it.
+
+Wave 5 is the exception to the barrier rule in one respect: W5.3 and W5.4 consume wave-2 output
+(W2.4 and W2.5) rather than anything in wave 5, so they can be prepared before wave 5 formally opens.
 
 ### Branching for parallel agents
 
@@ -311,7 +320,9 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 2. Confirm your branch before the first edit: `git rev-parse --abbrev-ref HEAD`.
 3. Run the item's **Verify** block and get it passing *before* committing.
 4. After the commit lands, edit the wave file: `[ ]` → `[x]`, replace `_pending_` with the real SHA,
-   and update the wave's **Status**. Never end a session with the plan file stale.
+   and update the wave's **Status**. Never end a session with the plan file stale. A few items produce
+   no commit and so carry no `_pending_` slot — the PR items (W1.11, W2.11, W3.12, W4.8) record a PR
+   number, and W1.10 records nothing but the verification command. Tick those without inventing a SHA.
 5. Deferred or abandoned → mark `[~]` with one line saying why.
 6. Every claim in a PR body must correspond to a command actually run. If something couldn't be
    verified, say so and why.
