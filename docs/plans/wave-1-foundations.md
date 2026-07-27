@@ -3,9 +3,10 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.2 landed, which also closed W1.5's `deno.json` exclusion and
-  unblocked W1.3, W1.7 and W1.8. W1.5's export-identity record is the one sub-item still open. W1.1,
-  W1.4's per-folder indexes, and W1.6 onward are unstarted.
+- **Status:** in progress — W1.1 through W1.5, W1.7 and W1.8 have landed. W1.6 (the eleven ADRs) is
+  the one remaining item with substantial writing in it; W1.9 through W1.12 are the GitHub-facing
+  tail, and W1.7's workflow is still unverified because nothing has been pushed yet — its first real
+  run happens on wave 1's PR (W1.12).
 - **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
   `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
   design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
@@ -28,7 +29,7 @@ app.
 
 ## W1.1 — Agent instructions
 
-- [ ] `AGENTS.md` + `CLAUDE.md` — SHA: _pending_
+- [x] `AGENTS.md` + `CLAUDE.md` — SHA: `61118ab`
 
 **parallel-safe.**
 
@@ -141,7 +142,7 @@ mise exec -- deno fmt --check   # must not touch .claude-design/
 
 ## W1.3 — Lefthook git hooks
 
-- [ ] `lefthook.yml` + hooks installed and proven — SHA: _pending_
+- [x] `lefthook.yml` + hooks installed and proven — SHA: `afcad51`
 
 **Depends on:** W1.2.
 
@@ -188,7 +189,7 @@ stray `badfmt.ts`; `deno task ci` passes so real pushes aren't blocked.
 ## W1.4 — Docs bootstrap
 
 - [x] [`docs/README.md`](../README.md) written — SHA: `419cfa8`
-- [ ] per-folder index files — SHA: _pending_
+- [x] per-folder index files — SHA: `f1e91cf`
 
 **parallel-safe** with W1.1 and W1.2.
 
@@ -219,7 +220,7 @@ item must show additions to `docs/README.md`, not a replacement of it.
 - [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
 - [x] [`docs/design.md`](../design.md) written — SHA: `419cfa8`
 - [x] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: `3731e2b`
-- [ ] export identity recorded in [`docs/design.md`](../design.md) — SHA: _pending_
+- [x] export identity recorded in [`docs/design.md`](../design.md) — SHA: `3d7be3f`
 
 **The two open sub-items have different blockers.** The `deno.json` exclusion waits on W1.2, which
 creates that file — do not hand it out as immediately startable: a second agent holding `deno.json`
@@ -347,7 +348,7 @@ pattern string would otherwise match itself.
 
 ## W1.7 — CI workflow
 
-- [ ] `.github/workflows/ci.yml` — SHA: _pending_
+- [x] `.github/workflows/ci.yml` — SHA: `df85366`
 
 **Depends on:** W1.2.
 
@@ -372,7 +373,7 @@ local and remote cannot diverge.
 **Verify:**
 
 ```bash
-git push -u origin feat/inital-impl
+git push -u origin feat/wave-1-plan
 gh run watch --exit-status
 ```
 
@@ -386,7 +387,7 @@ actually driving the CI toolchain.
 
 ## W1.8 — Browser fixture app
 
-- [ ] `tests/fixtures/app/` + `deno task fixture` — SHA: _pending_
+- [x] `tests/fixtures/app/` + `deno task fixture` — SHA: `d391207`
 
 **Depends on:** W1.2.
 
@@ -396,9 +397,25 @@ adversarial cases now, while it's cheap, instead of discovering them in wave 3.
 
 **Files** under `tests/fixtures/app/`:
 
-- `server.ts` — a small static server on `Deno.serve`, bound to a **fixed** port (pick one, document
-  it in `AGENTS.md`; tests hardcode it). Directory listing off, correct MIME types, no-cache headers
-  so reruns aren't stale.
+- `server.ts` — a small static server on `Deno.serve`. Directory listing off, correct MIME types,
+  no-cache headers so reruns aren't stale.
+
+  **Ports are OS-assigned, not fixed.** This plan originally called for a fixed port that tests
+  hardcode; the first run proved why that is wrong — an unrelated local process already held the
+  chosen port and the server died on `AddrInUse` before serving a single page. `port: 0` on both
+  listeners, with `startFixtureServer()` returning the two resolved base URLs, makes the collision
+  impossible instead of merely recoverable. Nothing is documented in `AGENTS.md`, because there is
+  no number to document.
+
+  Two listeners, not one: `iframe.html` needs a genuinely cross-origin frame, and the fixtures must
+  run offline, so the second origin is the same directory on a second port — same host, different
+  port, different origin, no network egress. Since that port is only known after binding,
+  `iframe.html` carries a `__CROSS_ORIGIN__` placeholder that the server substitutes on the way out.
+  The origin is written down once and cannot drift.
+
+  `/favicon.ico` answers `204`, not `404`. Browsers request it unprompted on every navigation, and a
+  `404` logs a console error on every fixture page — which buries the errors the fixtures exist to
+  surface, and makes the zero-console-errors check below unpassable for the wrong reason.
 - `index.html` — ordinary nested layout with: elements carrying `data-testid`, elements with no id
   or test id, several elements sharing an identical class list (so class-based selectors are
   ambiguous), a deeply nested button, and a list where sibling index is the only distinguishing
@@ -424,6 +441,17 @@ Every page: valid HTML5, **no external network requests** (tests must run offlin
 **Verify:** `deno task fixture` serves; load every page and confirm **zero console errors**. Check
 the console — don't assume. A fixture with a broken script produces mysterious test failures three
 waves later.
+
+Verified in Chrome via Playwright, and the assertions each page exists to support were checked
+rather than eyeballed: the same-origin frame's `contentDocument` is reachable while the cross-origin
+one is blocked, the open shadow root exposes its button while the closed one returns `null`, the
+canvas holds real drawn pixels, and `tall.html`'s over-tall region measures larger than the
+viewport. `server_test.ts` covers the path resolver's sad paths — plain traversal, percent-encoded
+traversal, directory requests — because a fixture server that can be walked out of its own directory
+is a local file-disclosure hole that stays silent until someone looks.
+
+With `tests/` now holding real files, `--permit-no-files` comes off the `lint` and `test` tasks, as
+W1.2's comment said it should: a mis-scoped `include` now fails loudly instead of passing silently.
 
 **Commit:** `test: add browser fixture app covering selector and capture edge cases`
 
@@ -452,7 +480,7 @@ it in `AGENTS.md` as one-time setup (W1.1 already lists this).
 
 **PR embedding note:** GitHub does **not** render relative image paths in PR descriptions. Use the
 raw blob form:
-`https://github.com/whizzzkid/point-and-shoot/blob/feat/inital-impl/docs/assets/wave-1/index.png?raw=1`
+`https://github.com/whizzzkid/point-and-shoot/blob/feat/wave-1-plan/docs/assets/wave-1/index.png?raw=1`
 
 **Verify:** `deno task shots` regenerates every PNG; each opens and shows the expected page with its
 `<h1>` legible.
@@ -560,7 +588,7 @@ get subtly wrong.
 
 - W1.1–W1.11 all checked with real commit SHAs (W1.10 is the sole exception — it is `gh`
   verification only; W1.11 carries the commit that records its issue number).
-- CI green on `feat/inital-impl`, run log showing Deno `2.9.4`.
+- CI green on `feat/wave-1-plan`, run log showing Deno `2.9.4`.
 - Lefthook proven to fire by W1.3's deliberate-failure test.
 - `deno task ci` passes from a clean checkout after `mise install`.
 - `deno task fixture` serves all seven fixture pages with zero console errors.
