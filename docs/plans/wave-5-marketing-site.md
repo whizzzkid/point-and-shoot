@@ -3,19 +3,20 @@
 **Read [`README.md`](README.md) in this folder first.**
 
 - **Status:** deferred, post-v1
-- **Goal:** the landing site from `.claude-design/point-and-shoot/ui_kits/marketing/index.html`, **and**
-  the published documentation site rendered from the markdown in [`docs/`](../).
+- **Goal:** the landing site from `.claude-design/point-and-shoot/ui_kits/marketing/index.html`,
+  **and** the published documentation site rendered from the markdown in [`docs/`](../).
 
-Both live in this wave deliberately: they are the project's only two public web surfaces, they want the
-same toolchain, and the docs must be themed with the *product's* design tokens rather than a generic
-docs theme — which only works if the token pipeline (W5.3) is built once and consumed by both.
+Both live in this wave deliberately: they are the project's only two public web surfaces, they want
+the same toolchain, and the docs must be themed with the _product's_ design tokens rather than a
+generic docs theme — which only works if the token pipeline (W5.3) is built once and consumed by
+both.
 
 ## Why this is deferred and separate
 
-A landing page ships nothing until there is something to install, and its content depends on a product
-that doesn't exist yet. It is also the one surface where the design intentionally departs from the rest
-— the bundle notes the marketing site is "the one place spacing opens up," in contrast to the
-information-dense tool.
+A landing page ships nothing until there is something to install, and its content depends on a
+product that doesn't exist yet. It is also the one surface where the design intentionally departs
+from the rest — the bundle notes the marketing site is "the one place spacing opens up," in contrast
+to the information-dense tool.
 
 Nothing in waves 1–4 depends on this, and this depends on nothing but the design bundle. It can be
 picked up at any time after v1 works.
@@ -56,13 +57,13 @@ flowchart TD
   W58 --> W56
 ```
 
-W5.1, W5.3, W5.4, and W5.5 are **parallel-safe** starting points. W5.3 and W5.4 consume wave-2 output
-(W2.4 and W2.5 respectively) rather than anything inside this wave, so they can be prepared before
-W5.1 exists.
+W5.1, W5.3, W5.4, and W5.5 are **parallel-safe** starting points. W5.3 and W5.4 consume wave-2
+output (W2.4 and W2.5 respectively) rather than anything inside this wave, so they can be prepared
+before W5.1 exists.
 
-W5.7 and W5.2 are independent of each other — one renders `docs/`, the other renders the landing page —
-so they can run in parallel once the scaffold and token items land. W5.6 deploys both, which is why it
-waits on W5.8 as well.
+W5.7 and W5.2 are independent of each other — one renders `docs/`, the other renders the landing
+page — so they can run in parallel once the scaffold and token items land. W5.6 deploys both, which
+is why it waits on W5.8 as well.
 
 ---
 
@@ -73,8 +74,8 @@ waits on W5.8 as well.
 **parallel-safe.**
 
 Astro project in `site/`, with exact pinned versions (resolve each with `npm view <pkg> version` at
-the time — do not guess), its own lint and build tasks, and a CI job separate from the extension's so
-a site change never gates an extension change and vice versa.
+the time — do not guess), its own lint and build tasks, and a CI job separate from the extension's
+so a site change never gates an extension change and vice versa.
 
 **Verify:** `npm run build` in `site/` emits static output; the extension's `deno task ci` still
 passes untouched; no Astro or Vite config references anything under `src/`.
@@ -125,11 +126,12 @@ build pick it up, with no second copy of the palette anywhere under `site/`.
 **parallel-safe.** Consumes W2.5.
 
 Reuse the W2.5 subset WOFF2 files, self-hosted. The CDN prohibition was an MV3 constraint and does
-not technically apply to a website, but self-hosting is still the right default — for performance, and
-for not sending visitors' IP addresses to a third party.
+not technically apply to a website, but self-hosting is still the right default — for performance,
+and for not sending visitors' IP addresses to a third party.
 
-**Verify:** no request to `fonts.googleapis.com`, `fonts.gstatic.com`, or any other third-party origin
-in the built output — grep the build for `http`-scheme URLs and confirm every hit is intentional.
+**Verify:** no request to `fonts.googleapis.com`, `fonts.gstatic.com`, or any other third-party
+origin in the built output — grep the build for `http`-scheme URLs and confirm every hit is
+intentional.
 
 **Commit:** `feat(site): self-host the subset woff2 fonts`
 
@@ -158,18 +160,18 @@ placeholder or `#` href remains.
 
 **Depends on:** W5.2, W5.5, W5.8.
 
-Deploy via GitHub Pages on a tag or on merge to `main` — the landing page at the root and the docs under
-`/docs/`, from one build. Add a Lighthouse check in CI and a real accessibility pass using the same axe
-standard as W4.4, covering **both** surfaces — a tool that markets itself on UI quality cannot ship an
-inaccessible landing page or an inaccessible docs page.
+Deploy via GitHub Pages on a tag or on merge to `main` — the landing page at the root and the docs
+under `/docs/`, from one build. Add a Lighthouse check in CI and a real accessibility pass using the
+same axe standard as W4.4, covering **both** surfaces — a tool that markets itself on UI quality
+cannot ship an inaccessible landing page or an inaccessible docs page.
 
-The docs build is a **blocking** job, not a nice-to-have: a broken link or an unrenderable diagram in
-published docs is a shipped defect. Fail the job on either.
+The docs build is a **blocking** job, not a nice-to-have: a broken link or an unrenderable diagram
+in published docs is a shipped defect. Fail the job on either.
 
-**Verify:** `gh run watch --exit-status` green with the deploy, Lighthouse, and link-check jobs present;
-the deployed URL serves the built site; `/docs/` serves the rendered documentation; axe reports no
-serious or critical violations on either surface. Deliberately introduce one contrast violation and
-confirm the a11y job fails, then revert it — an unproven gate is not a gate.
+**Verify:** `gh run watch --exit-status` green with the deploy, Lighthouse, and link-check jobs
+present; the deployed URL serves the built site; `/docs/` serves the rendered documentation; axe
+reports no serious or critical violations on either surface. Deliberately introduce one contrast
+violation and confirm the a11y job fails, then revert it — an unproven gate is not a gate.
 
 **Commit:** `ci(site): deploy site and docs to github pages with lighthouse and axe gates`
 
@@ -182,21 +184,23 @@ confirm the a11y job fails, then revert it — an unproven gate is not a gate.
 **Depends on:** W5.1, W5.3, W5.4.
 
 Publish the markdown in [`docs/`](../) as HTML themed with the product's own design tokens. Not a
-generic docs theme: the published docs should look like the tool, using the same palette, type scale,
-and mono treatment for technical strings that the extension uses.
+generic docs theme: the published docs should look like the tool, using the same palette, type
+scale, and mono treatment for technical strings that the extension uses.
 
-- Source the markdown **in place** from `docs/` — an Astro content collection pointing at the existing
-  directory, or a build step that syncs it. Do **not** fork or copy the markdown into `site/`; two
-  copies of a doc drift within one release, and the repo-local copy is the one contributors edit.
+- Source the markdown **in place** from `docs/` — an Astro content collection pointing at the
+  existing directory, or a build step that syncs it. Do **not** fork or copy the markdown into
+  `site/`; two copies of a doc drift within one release, and the repo-local copy is the one
+  contributors edit.
 - Publish `docs/README.md`, `docs/design.md`, `docs/specs/`, `docs/adr/`, and `docs/tutorials/`.
   Publish `docs/plans/` too — the plan is public and the tracking issue links into it.
-- **Frame the plans for an outside reader.** The plan files are written *to an executing agent*: they
-  carry `SHA: _pending_` slots, branch names, and instructions to break assertions deliberately.
-  Rendered without context they read as an internal artifact leaked to the web — someone evaluating
-  the extension hits a wave page, sees a column of unchecked boxes, and concludes the project is abandoned.
-  Publish them under a section that says up front what they are (living delivery plans written for
-  implementing agents; an unchecked box means not yet built) and surfaces each wave's **Status**
-  prominently. The transparency is worth more than the polish, but the framing has to be explicit.
+- **Frame the plans for an outside reader.** The plan files are written _to an executing agent_:
+  they carry `SHA: _pending_` slots, branch names, and instructions to break assertions
+  deliberately. Rendered without context they read as an internal artifact leaked to the web —
+  someone evaluating the extension hits a wave page, sees a column of unchecked boxes, and concludes
+  the project is abandoned. Publish them under a section that says up front what they are (living
+  delivery plans written for implementing agents; an unchecked box means not yet built) and surfaces
+  each wave's **Status** prominently. The transparency is worth more than the polish, but the
+  framing has to be explicit.
 - Style prose from the tokens: body copy in `--font-body`, headings in `--font-display`, and every
   code span, URL, XPath, and element name in `--font-mono`. Long technical strings truncate with an
   ellipsis and expose the full value, exactly as in-product.
@@ -204,12 +208,12 @@ and mono treatment for technical strings that the extension uses.
 - Support both themes, honouring `prefers-color-scheme`, since the docs are read on other people's
   screens (the extension's dual-theme requirement, ADR 0010, applies here for the same reason).
 
-**Verify:** every file under `docs/` appears in the built output — enumerate with `find docs -name '*.md'`
-and assert one page each, so a new doc cannot be silently unpublished. Grep the build for hardcoded
-colours and font stacks: there must be none — and confirm the three font tokens actually resolve to the
-vendored families rather than falling through to a browser default, which is what a `tokens.css`
-missing its font definitions would look like. Every published plan page carries the framing note. No
-third-party origin in the output.
+**Verify:** every file under `docs/` appears in the built output — enumerate with
+`find docs -name '*.md'` and assert one page each, so a new doc cannot be silently unpublished. Grep
+the build for hardcoded colours and font stacks: there must be none — and confirm the three font
+tokens actually resolve to the vendored families rather than falling through to a browser default,
+which is what a `tokens.css` missing its font definitions would look like. Every published plan page
+carries the framing note. No third-party origin in the output.
 
 **Commit:** `feat(site): render the docs markdown as themed html`
 
@@ -223,21 +227,22 @@ third-party origin in the output.
 
 Make the rendered docs navigable and prove they are not broken.
 
-- Sidebar navigation generated from the directory structure, not hand-maintained — a hand-written nav is
-  the thing that goes stale the first time someone adds an ADR.
-- Rewrite relative markdown links (`design.md`, `plans/README.md`) to their published URLs, so the same
-  link works in the repo, on GitHub, and on the site. This is the single highest-risk part of the
-  pipeline: the docs are written with repo-relative links on purpose.
-- Render Mermaid blocks. `docs/plans/README.md` carries a graph with one node per plan item, so render at **build time** to
-  static SVG rather than shipping a client-side Mermaid runtime — it keeps Astro's zero-JS default and
-  means a malformed diagram fails the build instead of showing an error box to a reader.
+- Sidebar navigation generated from the directory structure, not hand-maintained — a hand-written
+  nav is the thing that goes stale the first time someone adds an ADR.
+- Rewrite relative markdown links (`design.md`, `plans/README.md`) to their published URLs, so the
+  same link works in the repo, on GitHub, and on the site. This is the single highest-risk part of
+  the pipeline: the docs are written with repo-relative links on purpose.
+- Render Mermaid blocks. `docs/plans/README.md` carries a graph with one node per plan item, so
+  render at **build time** to static SVG rather than shipping a client-side Mermaid runtime — it
+  keeps Astro's zero-JS default and means a malformed diagram fails the build instead of showing an
+  error box to a reader.
 - Anchor links for every heading, so a PR can cite a specific rule.
-- A link checker over the built output covering internal links, anchors, and external URLs, wired as a
-  task and run in CI (W5.6).
+- A link checker over the built output covering internal links, anchors, and external URLs, wired as
+  a task and run in CI (W5.6).
 - A **plan-count check** in the same task: derive the item count from the wave files' item headings
   (`grep -hcE '^## W[1-5]\.[0-9]+ ' docs/plans/wave-*.md`, summed — count headings, not checkboxes;
-  W1.5 alone carries three boxes for one item) and fail if it disagrees with the index. The
-  plan already drifted twice here — it grew from 48 to 50 to 53 items and prose references were left
+  W1.5 alone carries three boxes for one item) and fail if it disagrees with the index. The plan
+  already drifted twice here — it grew from 48 to 50 to 53 items and prose references were left
   stale — and [rule 7](README.md#rules-for-working-any-wave) substep 5 requires the graph, the
   assignment table, and the count to agree. That invariant is currently enforced by an agent
   remembering. W2.4 generates tokens rather than trusting a human to copy them; the same argument
@@ -246,8 +251,8 @@ Make the rendered docs navigable and prove they are not broken.
 **Verify:** the link checker passes with zero broken internal links and zero broken anchors, and the
 plan-count check agrees with the index. Every Mermaid block in `docs/` renders as SVG with no error
 box — check each one in a browser, not just the exit code. Deliberately break one relative link and
-confirm the checker fails; add an item to a wave file without updating the index and confirm the count
-check fails.
+confirm the checker fails; add an item to a wave file without updating the index and confirm the
+count check fails.
 
 **Commit:** `feat(site): add docs nav, build-time mermaid, and link checking`
 
@@ -256,8 +261,10 @@ check fails.
 ## Wave 5 exit criteria
 
 - W5.1–W5.8 checked with real commit SHAs.
-- Site builds and deploys; the deployed URL serves it, and `/docs/` serves the rendered documentation.
-- Every markdown file under `docs/` has a published page — verified by enumeration, not by spot check.
+- Site builds and deploys; the deployed URL serves it, and `/docs/` serves the rendered
+  documentation.
+- Every markdown file under `docs/` has a published page — verified by enumeration, not by spot
+  check.
 - Tokens and fonts are **shared** with the extension rather than copied — verified by changing one
   token at source and seeing both builds move. The docs are themed from those same tokens, with no
   stock docs theme and no second palette.
@@ -270,5 +277,6 @@ check fails.
   observed failing once.
 - Every install link resolves.
 - The extension's `deno task ci` is unaffected by anything in `site/`.
-- The tracking issue synced per [rule 7](README.md#rules-for-working-any-wave) — wave 5 marked complete
-  and the deployed site and docs URLs recorded there. With every wave done, the issue closes.
+- The tracking issue synced per [rule 7](README.md#rules-for-working-any-wave) — wave 5 marked
+  complete and the deployed site and docs URLs recorded there. With every wave done, the issue
+  closes.

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: shadow roots</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      color: #18181b;
+      background: #fff;
+    }
+    section {
+      border: 1px solid #d4d4d8;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: shadow roots</h1>
+    <p>
+      One open shadow host and one closed one. The closed host is the case the selector engine
+      cannot traverse — this page exists so that limitation is tested and documented rather than
+      discovered in wave 3.
+    </p>
+
+    <section>
+      <h2>Open shadow host</h2>
+      <!-- Reachable: host.shadowRoot is non-null, so a selector can descend into it. -->
+      <div id="open-host" data-testid="open-shadow-host"></div>
+    </section>
+
+    <section>
+      <h2>Closed shadow host</h2>
+      <!-- Not reachable: host.shadowRoot is null from outside, by design. Any capture of this
+           host records the host element only; its interior is screenshot-only. -->
+      <div id="closed-host" data-testid="closed-shadow-host"></div>
+    </section>
+
+    <script>
+    // Inline, because the fixtures must run with no external requests.
+    const openRoot = document.getElementById("open-host").attachShadow({ mode: "open" });
+    openRoot.innerHTML = `
+      <style>
+        .inner { border: 1px dashed #6b7280; padding: 12px; }
+      </style>
+      <div class="inner">
+        <p>Inside an <strong>open</strong> shadow root.</p>
+        <button type="button" data-testid="open-shadow-button">Reachable button</button>
+      </div>
+    `;
+
+    const closedRoot = document.getElementById("closed-host").attachShadow({ mode: "closed" });
+    closedRoot.innerHTML = `
+      <style>
+        .inner { border: 1px dashed #6b7280; padding: 12px; }
+      </style>
+      <div class="inner">
+        <p>Inside a <strong>closed</strong> shadow root.</p>
+        <button type="button" data-testid="closed-shadow-button">Unreachable button</button>
+      </div>
+    `;
+    </script>
+  </body>
+</html>

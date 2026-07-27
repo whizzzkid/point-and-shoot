@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: ordinary page</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      color: #1a1a1a;
+      background: #fff;
+    }
+    section {
+      border: 1px solid #d4d4d8;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      font: inherit;
+      padding: 6px 12px;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: ordinary page</h1>
+    <p>
+      Every element here exists to make one selector strategy fail, so the selector bundle has to
+      carry more than one.
+    </p>
+
+    <section id="with-test-ids">
+      <h2>Elements with test ids</h2>
+      <div class="row">
+        <button data-testid="save-note">Save note</button>
+        <button data-testid="discard-note">Discard note</button>
+        <span data-testid="note-count">3 notes</span>
+      </div>
+    </section>
+
+    <section id="without-identity">
+      <h2>Elements with no id and no test id</h2>
+      <!-- Nothing here is addressable by id or test id: tag, class, text and position are all
+           the selector engine has. -->
+      <div class="row">
+        <span>Untagged label</span>
+        <em>Emphasised run of text</em>
+        <a href="#with-test-ids">In-page link</a>
+      </div>
+    </section>
+
+    <section id="ambiguous-classes">
+      <h2>Identical class lists</h2>
+      <!-- Four elements, one class list. A class-based selector matches all four, so a capture
+           that relies on it records the wrong element three times out of four. -->
+      <div class="row">
+        <div class="card tile compact">First card</div>
+        <div class="card tile compact">Second card</div>
+        <div class="card tile compact">Third card</div>
+        <div class="card tile compact">Fourth card</div>
+      </div>
+    </section>
+
+    <section id="sibling-index-only">
+      <h2>List where sibling index is the only difference</h2>
+      <!-- Same tag, same class, same text. Only the position in the parent distinguishes them,
+           which is exactly the case XPath handles and a CSS class path does not. -->
+      <ul>
+        <li class="item">Row</li>
+        <li class="item">Row</li>
+        <li class="item">Row</li>
+        <li class="item">Row</li>
+        <li class="item">Row</li>
+      </ul>
+    </section>
+
+    <section id="deep-nesting">
+      <h2>Deeply nested button</h2>
+      <div class="depth-1">
+        <div class="depth-2">
+          <div class="depth-3">
+            <div class="depth-4">
+              <div class="depth-5">
+                <div class="depth-6">
+                  <div class="depth-7">
+                    <div class="depth-8">
+                      <button type="button" aria-label="Deeply nested action">
+                        Nested nine levels down
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="aria-identity">
+      <h2>Identity by role and accessible name</h2>
+      <!-- No id, no test id, ambiguous classes — but a unique role plus accessible name, which is
+           the fallback the selector bundle leans on when the DOM offers nothing else. -->
+      <div class="row">
+        <div role="switch" aria-checked="false" aria-label="Force dark theme" tabindex="0">
+          Force dark theme
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

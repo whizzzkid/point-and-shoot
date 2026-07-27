@@ -1,0 +1,39 @@
+name: CI
+
+# CI is the authoritative gate. It runs `deno task ci` — the exact command the lefthook
+# pre-push hook runs — so a green local push and a green CI run cannot mean different things.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: this workflow only needs to read the tree.
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same ref rather than burning runners on stale commits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    # Pinned image, not `ubuntu-latest`: exact versions everywhere is a repository rule, and a
+    # floating runner label silently changes the OS under a green build.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      # mise installs exactly what mise.toml pins, so CI and every local machine resolve
+      # identical versions from one file. A denoland/setup-deno step would be a second
+      # place to bump Deno, and the two would drift.
+      - uses: jdx/mise-action@v4
+
+      - name: Print resolved toolchain
+        run: |
+          deno --version
+          lefthook version
+
+      - name: deno task ci
+        run: deno task ci

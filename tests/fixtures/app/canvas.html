@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: canvas and svg</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      color: #18181b;
+      background: #fff;
+    }
+    section {
+      border: 1px solid #d4d4d8;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    canvas,
+    svg {
+      border: 1px solid #a1a1aa;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: canvas and svg</h1>
+    <p>
+      Targets with no meaningful DOM interior. A selector bundle for either of these describes a
+      single opaque element, so the screenshot is the only signal about what the user actually
+      pointed at.
+    </p>
+
+    <section>
+      <h2>Canvas with drawn content</h2>
+      <!-- One element, no children, no text. Nothing for a text snippet or a child path to hold. -->
+      <canvas id="chart" width="320" height="160" data-testid="drawn-canvas"
+        aria-label="Bar chart drawn on a canvas"></canvas>
+    </section>
+
+    <section>
+      <h2>Inline SVG</h2>
+      <!-- The opposite failure: plenty of interior nodes, but they are SVG elements whose tag and
+           class names say nothing a fix-agent can act on. -->
+      <svg width="320" height="160" viewBox="0 0 320 160" role="img"
+        aria-label="Three bars and a label" data-testid="inline-svg">
+        <rect x="16" y="96" width="48" height="48" fill="#4f7cff"></rect>
+        <rect x="80" y="64" width="48" height="80" fill="#4f7cff"></rect>
+        <rect x="144" y="32" width="48" height="112" fill="#4f7cff"></rect>
+        <text x="16" y="24" font-family="system-ui, sans-serif" font-size="14" fill="#18181b">
+          Inline SVG label
+        </text>
+      </svg>
+    </section>
+
+    <script>
+    // Inline and dependency-free: the fixtures must run offline.
+    const canvas = document.getElementById("chart");
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#f4f4f5";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#4f7cff";
+    const heights = [48, 80, 112];
+    heights.forEach((height, index) => {
+      context.fillRect(16 + index * 64, canvas.height - 16 - height, 48, height);
+    });
+    context.fillStyle = "#18181b";
+    context.font = "14px system-ui, sans-serif";
+    context.fillText("Drawn on canvas", 16, 24);
+    </script>
+  </body>
+</html>

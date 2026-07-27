@@ -1,0 +1,17 @@
+# Toolchain for point-and-shoot.
+#
+# mise manages *tools*; `deno task` manages *commands*. Deliberately no [tasks]
+# section here — deno.json is the single task registry, so the two cannot diverge.
+#
+# Versions are pinned exactly, per the resolved-versions table in
+# docs/plans/README.md. No `latest`, no ranges, no floating tags.
+
+[tools]
+deno = "2.9.4"
+node = "26.5.0"
+lefthook = "2.1.10"
+
+[env]
+# Project environment variables belong here, not in a shell profile: a value in
+# ~/.zshrc is invisible to CI and to the next contributor's clone. Anything a
+# task needs goes in this section so `mise exec` and CI see the same environment.
