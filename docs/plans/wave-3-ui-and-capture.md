@@ -102,7 +102,8 @@ these signatures.
 **Build a gallery** at `src/ui/gallery/` — an extension page rendering every component in every state
 (default, hover, focus, active, disabled, error, loading, empty) in both themes. This is the surface
 wave 4's visual regression tests shoot, and the fastest way to review a port against
-`.claude-design/point-and-shoot/components/*.card.html` and `guidelines/*.card.html`. Add
+`.claude-design/point-and-shoot/components/*/*.card.html` and `guidelines/*.card.html` — 19 cards
+in total; the component cards sit one level down, inside the category directories. Add
 `deno task gallery` to serve it.
 
 **Tests:** unit-test behaviour, not markup — Switch toggles and fires once, Dialog traps focus and
