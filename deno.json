@@ -33,6 +33,7 @@
   // web-ext@10.5.0, and preact (version resolved in wave 2).
   "imports": {
     "@std/assert": "jsr:@std/assert@1.0.14",
+    "@std/path": "jsr:@std/path@1.1.6",
     "playwright": "npm:playwright@1.62.0"
   },
   // `ci` is the one command both GitHub Actions and the lefthook pre-push gate

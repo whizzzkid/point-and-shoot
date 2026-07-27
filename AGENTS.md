@@ -181,6 +181,7 @@ Actions pin to the official action's semver major, which is this project's one d
 | node               | `26.5.0` | `mise.toml` (Playwright browser install, font subset) |
 | lefthook           | `2.1.10` | `mise.toml`                                           |
 | playwright         | `1.62.0` | `deno.json` imports                                   |
+| `@std/path`        | `1.1.6`  | `deno.json` imports                                   |
 | esbuild            | `0.28.1` | `deno.json` imports                                   |
 | web-ext            | `10.5.0` | `deno.json` imports                                   |
 | `actions/checkout` | `v7`     | CI workflows                                          |

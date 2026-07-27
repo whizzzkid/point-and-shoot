@@ -18,11 +18,19 @@
  * @module
  */
 
+import { fromFileUrl, join } from "@std/path";
+
 /** Placeholder in HTML fixtures standing in for the cross-origin base URL. */
 export const CROSS_ORIGIN_PLACEHOLDER = "__CROSS_ORIGIN__";
 
-/** Directory served by both origins — this file's own directory. */
-const ROOT = new URL(".", import.meta.url).pathname;
+/**
+ * Directory served by both origins — this file's own directory, with a trailing separator.
+ *
+ * `fromFileUrl`, not `.pathname`: a URL pathname percent-encodes every character a URL may not
+ * carry literally, so a checkout under a directory whose name contains a space resolves to
+ * `…/point%20and%20shoot/…` and every file read misses. Filesystem paths are not URLs.
+ */
+const ROOT = fromFileUrl(new URL(".", import.meta.url));
 
 /**
  * MIME types for the extensions the fixtures actually use.
@@ -52,6 +60,7 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
  * ```ts
  * resolvePath("/index.html");      // -> "<root>/index.html"
  * resolvePath("/");                // -> "<root>/index.html"
+ * resolvePath("/a%20file.html");   // -> "<root>/a file.html"
  * resolvePath("/../../etc/hosts"); // -> null
  * ```
  */
@@ -63,10 +72,13 @@ export function resolvePath(pathname: string): string | null {
   // subdirectory is a miss, not a listing.
   if (relative === "" || relative.endsWith("/")) return null;
 
-  const resolved = new URL(relative, `file://${ROOT}`).pathname;
+  // `join` normalises, so `..` is resolved away before the containment check below rather than
+  // being matched textually — a textual check misses `a/../../b`.
+  const resolved = join(ROOT, relative);
 
-  // Containment check. `new URL` already normalises `..`, so this rejects any traversal that
-  // resolved outside the fixture directory — including one smuggled in percent-encoded.
+  // Containment check: reject anything that normalised to outside the fixture directory,
+  // including a traversal smuggled in percent-encoded (`%2e%2e%2f`, which the URL parser leaves
+  // intact because `%2f` is not a separator to it).
   if (!resolved.startsWith(ROOT)) return null;
 
   return resolved;
@@ -109,7 +121,10 @@ export function createHandler(crossOrigin: () => string): (request: Request) => 
       return new Response("Not found\n", { status: 404, headers });
     }
 
-    const extension = filePath.slice(filePath.lastIndexOf("."));
+    // Only a dot in the final segment is an extension. `lastIndexOf` alone would read the "E" of
+    // `/app/README` and the `.d/name` of `/app/v1.d/name` as one.
+    const dot = filePath.lastIndexOf(".");
+    const extension = dot > filePath.lastIndexOf("/") ? filePath.slice(dot) : "";
     headers.set("content-type", MIME_TYPES[extension] ?? "application/octet-stream");
 
     try {
