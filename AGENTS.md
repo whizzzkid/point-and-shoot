@@ -186,6 +186,17 @@ Actions pin to the official action's semver major, which is this project's one d
 | `actions/checkout` | `v7`     | CI workflows                                          |
 | `jdx/mise-action`  | `v4`     | CI workflows                                          |
 
+One pin is only advisory in practice: the git hook `lefthook install` generates prefers a bare
+`lefthook` on `PATH` and only falls back to the mise install path, and `mise exec --` appends its
+tool directories rather than prepending them. A system-wide lefthook — Homebrew's, typically —
+therefore shadows the pinned one. It runs the same `lefthook.yml`, and the authoritative gate is
+`deno task ci`, which is version-independent, so the drift is not a correctness risk. Force the
+pinned binary when you need to:
+
+```bash
+LEFTHOOK_BIN="$(mise which lefthook)" mise exec -- git commit
+```
+
 Browser minimums (`minimum_chrome_version`, `strict_min_version`) and the esbuild `target` are **not
 resolved yet** — W2.2 resolves them from each vendor's own MV3 support baseline and writes them into
 the table in [`docs/plans/README.md`](docs/plans/README.md). Until then, no item may substitute a
