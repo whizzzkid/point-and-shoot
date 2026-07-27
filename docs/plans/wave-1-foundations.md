@@ -3,10 +3,9 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.1 through W1.8 have landed. What remains is the GitHub-facing tail:
-  W1.9's fixture screenshots, W1.10's labels, W1.11's branch protection and tracking issue, and
-  W1.12's PR. W1.7's workflow is still unverified because nothing has been pushed yet — its first
-  real run happens on that PR.
+- **Status:** in progress — W1.1 through W1.9 have landed. What remains is the GitHub-facing tail:
+  W1.10's labels, W1.11's branch protection and tracking issue, and W1.12's PR. W1.7's workflow is
+  still unverified because nothing has been pushed yet — its first real run happens on that PR.
 - **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
   `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
   design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
@@ -459,7 +458,7 @@ W1.2's comment said it should: a mis-scoped `include` now fails loudly instead o
 
 ## W1.9 — Fixture screenshots for the PR
 
-- [ ] `deno task shots` + committed screenshots — SHA: _pending_
+- [x] `deno task shots` + committed screenshots — SHA: `762d092`
 
 **Depends on:** W1.8, W1.2.
 
@@ -469,11 +468,17 @@ artifact is the fixture app, so shoot that. It also proves the Playwright plumbi
 
 **Files:**
 
-- `tests/shots.ts` — using `npm:playwright@1.62.0`: start the fixture server, launch Chromium, visit
-  each fixture page, write a full-page PNG to `docs/assets/wave-1/<page>.png` at a fixed 1280×800
-  viewport so images are comparable and deterministic.
-- `deno.json` task `shots` → `deno run -A tests/shots.ts`.
-- Commit the PNGs under `docs/assets/wave-1/`. Downscale any file over ~300KB.
+- `tests/shots.ts` — start the fixture server, launch Chromium, visit each fixture page, write a
+  full-page PNG to `docs/assets/wave-1/<page>.png` at a fixed 1280×800 viewport so images are
+  comparable and deterministic. It also collects console errors and page errors and throws if any
+  fired, because a fixture with a broken script still screenshots fine and only surfaces as a test
+  failure three waves later.
+- `deno.json` — task `shots` → `deno run -A tests/shots.ts`, plus the `playwright` import mapped to
+  `npm:playwright@1.62.0`. **Landed differently than specified:** the pin went into `imports` rather
+  than an inline `npm:` specifier in `tests/shots.ts`, so the version lives in one place — which is
+  what `AGENTS.md`'s version-pinning table already claimed.
+- Commit the PNGs under `docs/assets/wave-1/`. Downscale any file over ~300KB. None needed it; the
+  largest, `tall.png`, is 130KB.
 
 First run needs the browser binary: `deno run -A npm:playwright@1.62.0 install chromium`. Document
 it in `AGENTS.md` as one-time setup (W1.1 already lists this).
