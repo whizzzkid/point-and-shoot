@@ -3,9 +3,12 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.1 through W1.11 have landed. Only W1.12's PR remains. W1.7's workflow
-  is no longer unverified: W1.11's throwaway branch-protection probe was its first real run, and
-  everything but the deliberately failing probe step passed.
+- **Status:** complete — W1.1 through W1.12 have all landed. PR #4 merged as `4758b19` on
+  2026-07-27, and every SHA recorded below resolves from `main`. W1.7's workflow is no longer
+  unverified: W1.11's throwaway branch-protection probe was its first real run, and everything but
+  the deliberately failing probe step passed. **The status board from here is
+  [issue #3](https://github.com/whizzzkid/point-and-shoot/issues/3), not this file** — from wave 2
+  onward [rule 7](README.md#rules-for-working-any-wave) targets the issue.
 - **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
   `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
   design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
@@ -581,6 +584,21 @@ branch-protection half touches no files at all.
    that carries it — content determines the hash — so one commit records the issue number and a
    second resolves `_pending_`. The plan's own rule that "a SHA that does not resolve is worse than
    `_pending_`" makes a self-reference the wrong way out.
+4. **Protection lives in a repository ruleset, and its merge-method list matters to this plan.** The
+   ruleset initially allowed `squash` only. Squashing a wave collapses its commits into one new
+   object, so every per-item SHA this plan records would point at something unreachable from `main`
+   — the plan's whole traceability scheme, broken by a merge button. `merge` is now in
+   `allowed_merge_methods` and **every wave PR merges as a merge commit**; rebase is equally
+   unusable for the same reason. Note that classic-protection queries do not show any of this:
+
+   ```bash
+   gh api repos/whizzzkid/point-and-shoot/rulesets              # find the ruleset id
+   gh api repos/whizzzkid/point-and-shoot/rulesets/<id> \
+     --jq '.rules[] | select(.type=="pull_request").parameters.allowed_merge_methods'
+   ```
+
+   `gh repo view --json mergeCommitAllowed` reported `true` throughout while the merge was refused —
+   repo-level settings are the outer bound, and the ruleset narrows it.
 
 The probe also gave **W1.7's CI workflow its first real execution**, which had been unverified
 because nothing was pushed. `actions/checkout@v7`, `jdx/mise-action@v4`, and `deno task ci` all
@@ -591,7 +609,7 @@ passed on a clean runner, which resolved deno `2.9.4` and lefthook `2.1.10` — 
 
 ## W1.12 — Pull request
 
-- [ ] PR opened with screenshots — no commit; record the PR number here
+- [x] PR opened with screenshots — no commit; **PR #4**, merged as `4758b19`
 
 **Depends on:** W1.1–W1.11 complete, CI green.
 
