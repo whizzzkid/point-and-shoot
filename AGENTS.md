@@ -41,23 +41,24 @@ Deno-first. Deno owns source, lint, formatting, type-checking, and unit tests.
 Tasks land with the item that implements them. A stub task that silently passes is worse than a
 missing one, because it turns an unimplemented gate into a green check.
 
-| Task                  | What it does                                         | Landed in |
-| --------------------- | ---------------------------------------------------- | --------- |
-| `deno task fmt`       | Formats the tree                                     | W1.2      |
-| `deno task fmt:check` | Fails on any unformatted file                        | W1.2      |
-| `deno task lint`      | `recommended` rules plus `no-slow-types`             | W1.2      |
-| `deno task check`     | Type-checks the project                              | W1.2      |
-| `deno task test`      | Deno unit tests                                      | W1.2      |
-| `deno task ci`        | `fmt:check` → `lint` → `check` → `test`, in sequence | W1.2      |
-| `deno task fixture`   | Serves the browser fixture app on a fixed port       | W1.8      |
-| `deno task shots`     | Captures fixture screenshots into `docs/assets/`     | W1.9      |
+| Task                  | What it does                                          | Landed in |
+| --------------------- | ----------------------------------------------------- | --------- |
+| `deno task fmt`       | Formats the tree                                      | W1.2      |
+| `deno task fmt:check` | Fails on any unformatted file                         | W1.2      |
+| `deno task lint`      | `recommended` rules plus `no-slow-types`              | W1.2      |
+| `deno task check`     | Type-checks the project                               | W1.2      |
+| `deno task test`      | Deno unit tests                                       | W1.2      |
+| `deno task ci`        | `fmt:check` → `lint` → `check` → `test`, in sequence  | W1.2      |
+| `deno task fixture`   | Serves the browser fixture app, printing both origins | W1.8      |
+| `deno task shots`     | Captures fixture screenshots into `docs/assets/`      | W1.9      |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
 
-`lint` and `test` currently pass `--permit-no-files` because the tree holds no extension code yet.
-Drop both flags once `src/` and `tests/` hold real files, so a mis-scoped include fails loudly
-instead of passing silently.
+The fixture app binds **OS-assigned ports**, not fixed ones, and prints both. Tests read the two
+base URLs from `startFixtureServer()`'s return value — never a hardcoded number. It serves two
+origins because a genuinely cross-origin iframe needs a second one, and it makes no external
+requests: same host, different port, fully offline.
 
 ### One-time setup
 

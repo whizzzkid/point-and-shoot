@@ -24,10 +24,12 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true
   },
-  // Wave 2+ adds the pinned npm specifiers here: esbuild@0.28.1,
-  // playwright@1.62.0, web-ext@10.5.0, and preact (version resolved in wave 2).
+  // Every dependency is pinned here and nowhere else, so a version lives in one
+  // place and source files import a bare name. Wave 2+ adds esbuild@0.28.1,
+  // web-ext@10.5.0, and preact (version resolved in wave 2).
   "imports": {
-    "@std/assert": "jsr:@std/assert@1.0.14"
+    "@std/assert": "jsr:@std/assert@1.0.14",
+    "playwright": "npm:playwright@1.62.0"
   },
   // `ci` is the one command both GitHub Actions and the lefthook pre-push gate
   // call, so local and remote cannot diverge. Tasks for build, e2e,
@@ -40,6 +42,7 @@
     "check": "deno check",
     "test": "deno test -A",
     "fixture": "deno run -A tests/fixtures/app/server.ts",
+    "shots": "deno run -A tests/shots.ts",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }
 }
