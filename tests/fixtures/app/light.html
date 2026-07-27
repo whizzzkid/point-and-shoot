@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: light page</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #ffffff;
+      color: #18181b;
+    }
+    .panel {
+      background: #f4f4f5;
+      border: 1px solid #d4d4d8;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .dark-patch {
+      /* The mirror of dark.html's bright patch: a dark region on an otherwise light page, so
+         both pages exercise the same sampler bug from opposite directions. */
+      background: #0a0b0d;
+      color: #fafafa;
+      padding: 16px;
+    }
+    button {
+      font: inherit;
+      padding: 6px 12px;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: light page</h1>
+    <p>
+      The bright pole of the backdrop-luminance theming path, so the sampler has both extremes to
+      test against rather than one and an assumption.
+    </p>
+
+    <div class="panel">
+      <h2>Light surface</h2>
+      <p>Body text at the page's default contrast.</p>
+      <button type="button" data-testid="light-action">Action on light</button>
+    </div>
+
+    <div class="dark-patch">
+      <h2>Dark patch on a light page</h2>
+      <p>A toolbar over this region should sample dark while the rest of the page reads light.</p>
+    </div>
+  </body>
+</html>

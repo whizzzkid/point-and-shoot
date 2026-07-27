@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture: frame content</title>
+    <style>
+    body {
+      font: 15px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: #eef2ff;
+      color: #1e1b4b;
+    }
+    </style>
+  </head>
+  <body>
+    <!-- Loaded by iframe.html from both origins. Which origin served it is the only difference
+         between the same-origin and cross-origin cases, so the content is deliberately identical. -->
+    <h1>Frame content</h1>
+    <p>A paragraph inside a frame.</p>
+    <button type="button" data-testid="frame-button">Button inside a frame</button>
+  </body>
+</html>
