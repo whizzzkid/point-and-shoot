@@ -48,6 +48,9 @@
     "test": "deno test -A",
     "fixture": "deno run -A tests/fixtures/app/server.ts",
     "shots": "deno run -A tests/shots.ts",
+    "tokens": "deno run -A build/tokens.ts",
+    "tokens:check": "deno run -A build/tokens.ts --check",
+    "lint:design": "deno run -A npm:oxlint@1.76.0 --config .claude-design/point-and-shoot/_adherence.oxlintrc.json src/",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }
 }
