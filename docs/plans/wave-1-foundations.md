@@ -3,10 +3,10 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.1 through W1.5, W1.7 and W1.8 have landed. W1.6 (the eleven ADRs) is
-  the one remaining item with substantial writing in it; W1.9 through W1.12 are the GitHub-facing
-  tail, and W1.7's workflow is still unverified because nothing has been pushed yet — its first real
-  run happens on wave 1's PR (W1.12).
+- **Status:** in progress — W1.1 through W1.8 have landed. What remains is the GitHub-facing tail:
+  W1.9's fixture screenshots, W1.10's labels, W1.11's branch protection and tracking issue, and
+  W1.12's PR. W1.7's workflow is still unverified because nothing has been pushed yet — its first
+  real run happens on that PR.
 - **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
   `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
   design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
@@ -273,7 +273,7 @@ and `deno fmt --check` reports no files under `.claude-design/`.
 
 ## W1.6 — Architecture decision records
 
-- [ ] Eleven ADRs written and indexed — SHA: _pending_
+- [x] Eleven ADRs written and indexed — SHA: `3314673`
 
 **Depends on:** W1.4 (template and index), W1.5 (ADRs 0008–0011 reference the design bundle).
 
