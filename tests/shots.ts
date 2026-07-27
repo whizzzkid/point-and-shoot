@@ -48,8 +48,11 @@ const OUTPUT_DIR = "docs/assets/wave-1";
 async function main(): Promise<void> {
   await Deno.mkdir(OUTPUT_DIR, { recursive: true });
 
-  const fixture = startFixtureServer();
+  // Browser first, server second. `chromium.launch()` is the step that fails on a fresh checkout
+  // (`playwright install chromium` not run yet), and it throws before any `finally` exists — so
+  // starting the server first leaves a listener bound on the one path that cannot close it.
   const browser = await chromium.launch();
+  const fixture = startFixtureServer();
 
   try {
     const page = await browser.newPage({ viewport: VIEWPORT });
