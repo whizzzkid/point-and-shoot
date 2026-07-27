@@ -4,13 +4,13 @@
 assumes.** An agent prompted with _"work on W3.4"_ must read this file first, then
 `wave-3-ui-and-capture.md`, and needs nothing else.
 
-| Wave                         | File                                                   | Status                                           |
-| ---------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
-| 1 — Foundations              | [`wave-1-foundations.md`](wave-1-foundations.md)       | in progress — W1.1–W1.11 landed, W1.12's PR open |
-| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | blocked on wave 1                                |
-| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2                                |
-| 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                                |
-| 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                                |
+| Wave                         | File                                                   | Status                               |
+| ---------------------------- | ------------------------------------------------------ | ------------------------------------ |
+| 1 — Foundations              | [`wave-1-foundations.md`](wave-1-foundations.md)       | complete — PR #4 merged as `4758b19` |
+| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | open — wave 1's barrier is lifted    |
+| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2                    |
+| 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                    |
+| 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                    |
 
 [`arch-review-point-and-shoot.md`](arch-review-point-and-shoot.md) is the architecture review of
 this plan. Its findings are already folded into the wave files and this index — read it for the
