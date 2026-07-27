@@ -186,6 +186,7 @@ Actions pin to the official action's semver major, which is this project's one d
 | web-ext            | `10.5.0` | `deno.json` imports                                   |
 | `actions/checkout` | `v7`     | CI workflows                                          |
 | `jdx/mise-action`  | `v4`     | CI workflows                                          |
+| runner image       | `24.04`  | CI workflows (`runs-on: ubuntu-24.04`)                |
 
 One pin is only advisory in practice: the git hook `lefthook install` generates prefers a bare
 `lefthook` on `PATH` and only falls back to the mise install path, and `mise exec --` appends its

@@ -19,7 +19,9 @@ concurrency:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    # Pinned image, not `ubuntu-latest`: exact versions everywhere is a repository rule, and a
+    # floating runner label silently changes the OS under a green build.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
