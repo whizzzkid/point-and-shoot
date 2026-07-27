@@ -1,0 +1,55 @@
+<!-- @dsCard group="Toolbar Overlay" viewport="1000x600" name="Toolbar overlay (print)" subtitle="Print-ready copy" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./doc-page.js"></script>
+<style>
+doc-page:not(:defined){visibility:hidden}
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+* { animation-delay: -99s !important; animation-duration: .001s !important; animation-iteration-count: 1 !important; animation-fill-mode: both !important; animation-play-state: running !important; transition-duration: 0s !important; }
+</style>
+<doc-page size="letter" content-width="1000px" content-height="600px">
+<div id="root" style="width:1000px;height:600px;overflow:hidden;position:relative"></div>
+</doc-page>
+<script type="text/babel">
+const {Button,IconButton,Icon,Badge}=window.PointShootDesignSystem_5498d1;
+
+function FakePage(){
+return (<div style={{position:'absolute',inset:0,background:'#f4f4f2',fontFamily:'Arial,sans-serif',userSelect:'none'}}>
+<div style={{height:56,background:'#fff',borderBottom:'1px solid #e2e2e0',display:'flex',alignItems:'center',padding:'0 24px',justifyContent:'space-between'}}>
+<div style={{fontWeight:700,color:'#222'}}>Acme Cloud</div>
+<div style={{display:'flex',gap:20,color:'#555',fontSize:13}}><span>Product</span><span>Pricing</span><span>Docs</span></div>
+</div>
+<div style={{padding:'40px 60px'}}>
+<div style={{fontSize:30,fontWeight:700,color:'#1a1a1a',marginBottom:10}}>Ship faster with Acme</div>
+<div style={{color:'#666',fontSize:14,marginBottom:20,maxWidth:420}}>The platform teams use to deploy, monitor, and scale their apps without the busywork.</div>
+<button style={{background:'#111',color:'#fff',border:'none',padding:'10px 18px',borderRadius:6,fontSize:13,marginBottom:36}} className="hero-cta">Get started</button>
+<div style={{display:'flex',gap:16}}>
+{[1,2,3].map(i=><div key={i} style={{width:180,height:110,background:'#fff',border:'1px solid #e2e2e0',borderRadius:8}}></div>)}
+</div>
+</div>
+</div>);
+}
+
+function Demo(){
+const box={x:520,y:200,w:220,h:56};
+const notes=[{id:1,text:'CTA color has too little contrast',box}];
+return (<div style={{position:'relative',width:1000,height:600,overflow:'hidden'}}>
+<FakePage/>
+{notes.map(n=><div key={n.id} style={{position:'absolute',left:n.box.x,top:n.box.y,width:n.box.w,height:n.box.h,border:'2px solid var(--accent)',borderRadius:4,pointerEvents:'none',background:'var(--accent-subtle)'}}></div>)}
+
+<div style={{position:'absolute',bottom:24,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,background:'var(--bg-overlay)',backdropFilter:'blur(var(--blur-panel))',border:'1px solid var(--border-default)',borderRadius:'var(--radius-lg)',padding:'8px',boxShadow:'var(--shadow-lg)'}}>
+<IconButton icon={<Icon name="crosshair"/>} label="Select" active/>
+<IconButton icon={<Icon name="camera"/>} label="Screenshot"/>
+<IconButton icon={<Icon name="message-square-plus"/>} label="Note"/>
+<div style={{width:1,height:20,background:'var(--border-default)',margin:'0 4px'}}></div>
+<Badge tone="accent">{`${notes.length} note${notes.length===1?'':'s'}`}</Badge>
+<Button size="sm">Send to agent</Button>
+</div>
+</div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

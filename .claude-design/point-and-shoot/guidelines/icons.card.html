@@ -1,0 +1,10 @@
+<!-- @dsCard group="Brand" viewport="700x150" name="Iconography — Lucide" subtitle="1.5–2px stroke, currentColor, 16/20/24px" -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="stylesheet" href="../styles.css">
+<div id="icon-grid" style="height:150px;background:var(--bg-canvas);display:flex;align-items:center;gap:20px;padding:0 20px;color:var(--text-primary)"></div>
+<script>
+const names=['crosshair','camera','square-dashed-mouse-pointer','message-square-plus','send','settings','list-checks','link-2'];
+const grid=document.getElementById('icon-grid');
+names.forEach(n=>{const i=document.createElement('i');i.setAttribute('data-lucide',n);i.style.width='24px';i.style.height='24px';grid.appendChild(i);});
+lucide.createIcons();
+</script>

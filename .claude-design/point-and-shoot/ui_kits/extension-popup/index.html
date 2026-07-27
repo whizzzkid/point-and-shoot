@@ -1,0 +1,64 @@
+<!-- @dsCard group="Extension Popup" viewport="380x560" name="Extension popup" subtitle="Opened from the browser toolbar icon" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../components/capture/CaptureMinimap.global.js"></script>
+<style>body{margin:0}</style>
+<div id="root"></div>
+<script type="text/babel">
+
+const DS = window.PointShootDesignSystem_5498d1;
+const { Button, IconButton, Icon, Badge, Tabs, Switch, Checkbox } = DS;
+const CaptureMinimap = DS.CaptureMinimap || window.PSCaptureMinimap;
+
+const NOTES = [
+{ id: 1, el: 'button.hero-cta', url: 'acme.cloud/pricing', region: { x: .08, y: .42, w: .2, h: .09 }, text: 'CTA color has too little contrast against background.', status: 'pending' },
+{ id: 2, el: 'nav.main-nav', url: 'acme.cloud/pricing', region: { x: .06, y: .07, w: .86, h: .1 }, text: 'Nav collapses too early on tablet width.', status: 'sent' },
+{ id: 3, el: '.pricing-card:nth-child(2)', url: 'acme.cloud/pricing', region: { x: .38, y: .55, w: .26, h: .28 }, text: '"Most popular" badge overlaps the price.', status: 'pending' }];
+
+
+function Demo() {
+  const [tab, setTab] = React.useState('Notes');
+  const [captureOn, setCaptureOn] = React.useState(true);
+  const [theme, setTheme] = React.useState('dark');
+  const [sel, setSel] = React.useState([1, 3]);
+  const toggle = (id) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  const allSelected = sel.length === NOTES.length;
+  return <div data-theme={theme} style={{ width: 380, height: 560, background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+<img src="../../assets/icon.svg" alt="" style={{ width: 18, height: 18, filter: 'drop-shadow(var(--glow-accent))' }} data-comment-anchor="92e06325cc-div-16-1" />
+<div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Point & Shoot</div>
+<div style={{ marginLeft: 'auto' }}><IconButton icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} />} label="Toggle theme" onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')} /></div>
+<Switch checked={captureOn} onChange={setCaptureOn} />
+</div>
+<div style={{ padding: '0 16px' }}><Tabs tabs={['Notes', 'Plan', 'Settings']} active={tab} onChange={setTab} /></div>
+{tab === 'Notes' && <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }} data-comment-anchor="f9b24dff08-div-22-17">
+<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+<div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>acme.cloud/pricing</div>
+<button onClick={() => setSel(allSelected ? [] : NOTES.map((n) => n.id))} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-body)', color: 'var(--accent-text)' }}>{allSelected ? 'Clear all' : 'Select all'}</button>
+</div>
+{NOTES.map((n) => <div key={n.id} style={{ display: 'flex', gap: 10, padding: 10, background: 'var(--bg-surface)', border: '1px solid ' + (sel.includes(n.id) ? 'var(--accent)' : 'var(--border-subtle)'), borderRadius: 'var(--radius-md)' }}>
+<CaptureMinimap width={44} height={34} region={n.region} label={`Captured region — ${n.el}`} />
+<div style={{ flex: 1, minWidth: 0 }}>
+<div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.el}</div>
+<div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2 }}>{n.text}</div>
+<div style={{ marginTop: 6 }}><Badge tone={n.status === 'sent' ? 'accent' : 'neutral'}>{n.status}</Badge></div>
+</div>
+<div style={{ alignSelf: 'flex-start' }}><Checkbox checked={sel.includes(n.id)} onChange={() => toggle(n.id)} /></div>
+</div>)}
+</div>}
+{tab === 'Plan' && <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-tertiary)', fontSize: 13, padding: 20, textAlign: 'center' }}>
+<Icon name="list-checks" size={28} />Compile your notes into an agent-ready plan.
+</div>}
+{tab === 'Settings' && <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-tertiary)', fontSize: 13 }}>Options open in a full tab →</div>}
+<div style={{ padding: 14, borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: 8 }}>
+<Button variant="secondary" size="sm" style={{ flex: 1 }}>New note</Button>
+<Button size="sm" style={{ flex: 1 }} disabled={!sel.length}>{sel.length ? `Compile ${sel.length}` : 'Compile plan'}</Button>
+</div>
+</div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
