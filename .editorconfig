@@ -1,0 +1,27 @@
+# Editor settings that agree with `deno fmt` (see deno.json: indentWidth 2,
+# lineWidth 100, double quotes). Keep the two in sync — an editor that disagrees
+# with the formatter turns every save into a diff.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 100
+
+[*.md]
+# Markdown uses trailing whitespace for hard line breaks.
+trim_trailing_whitespace = false
+
+# Upstream design-system artifact — never reformatted locally, so editors must
+# not touch it either. Mirrors the fmt/lint excludes in deno.json.
+[.claude-design/**]
+indent_style = unset
+indent_size = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+max_line_length = unset

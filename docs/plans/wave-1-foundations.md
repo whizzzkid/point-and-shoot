@@ -16,10 +16,10 @@ Wave 1 ships **no extension code**. There is no `dist/`, no manifest, and nothin
 browser until wave 2. So wave 1 commits are gated on `deno fmt --check`, `deno lint`, `deno check`,
 `deno test`, and CI green.
 
-Wave 1 *is* browser-verifiable in exactly one respect: W1.8's fixture app renders in a real browser
+Wave 1 _is_ browser-verifiable in exactly one respect: W1.8's fixture app renders in a real browser
 and W1.9 captures Playwright screenshots of it for the PR. The first **extension** load in
-Playwright is a wave 2 exit criterion. Do not describe wave 1 as browser-verified beyond the
-fixture app.
+Playwright is a wave 2 exit criterion. Do not describe wave 1 as browser-verified beyond the fixture
+app.
 
 ---
 
@@ -33,35 +33,36 @@ fixture app.
 right before anyone writes code.
 
 **Write `AGENTS.md`,** in this order:
-1. *What the project is* — a paragraph condensed from the README's "What this project is".
-2. *Toolchain* — Deno-first, `mise` manages tools, `deno task` is the single entry point. List every
+
+1. _What the project is_ — a paragraph condensed from the README's "What this project is".
+2. _Toolchain_ — Deno-first, `mise` manages tools, `deno task` is the single entry point. List every
    task and what it does. Node tooling arrives via `npm:` specifiers; no `package.json`. Note the
    wave-5 Astro exception and that it never ships inside the extension.
-3. *Cross-browser invariants* — the README's browser-support bullets restated as rules. Call out
+3. _Cross-browser invariants_ — the README's browser-support bullets restated as rules. Call out
    `chrome.offscreen` as forbidden and say why. State the `activeTab`-only stance as a privacy
    guarantee.
-4. *UI conventions* — Preact + JSX; closed shadow root for injected UI; design tokens are generated
+4. _UI conventions_ — Preact + JSX; closed shadow root for injected UI; design tokens are generated
    from `.claude-design/`, never hand-copied; no remote assets ever.
-5. *Brand rules* — the binding list from the README's design-system section (sentence case, no
+5. _Brand rules_ — the binding list from the README's design-system section (sentence case, no
    emoji, mono for technical values, one accent element per screen, hover lightens never darkens, no
    springy press states, functional-only animation). These are review-blocking, not suggestions.
-6. *TypeScript conventions* — strict mode; TSDoc on every exported symbol with `@param`, `@returns`,
-   and a usage example where non-obvious; no `any` without a justifying comment; discriminated unions
-   over optional-field soup.
-7. *Testing* — the three tiers and what each is responsible for, including the honest statement that
+6. _TypeScript conventions_ — strict mode; TSDoc on every exported symbol with `@param`, `@returns`,
+   and a usage example where non-obvious; no `any` without a justifying comment; discriminated
+   unions over optional-field soup.
+7. _Testing_ — the three tiers and what each is responsible for, including the honest statement that
    Playwright cannot load Firefox extensions.
-8. *Commit and PR discipline* — one logical change per commit, tests green per commit, docs land with
-   the code they describe, PRs carry screenshots of visible work.
-9. *Version pinning* — exact everywhere, with the README's resolved-versions table inlined.
-10. *One-time setup* — `mise install`, then `deno run -A npm:playwright@1.62.0 install chromium`.
-11. *Docs layout* — the five `docs/` folders (`specs/`, `plans/`, `adr/`, `tutorials/`, `assets/`) and
-    what belongs in each, per [`docs/README.md`](../README.md).
+8. _Commit and PR discipline_ — one logical change per commit, tests green per commit, docs land
+   with the code they describe, PRs carry screenshots of visible work.
+9. _Version pinning_ — exact everywhere, with the README's resolved-versions table inlined.
+10. _One-time setup_ — `mise install`, then `deno run -A npm:playwright@1.62.0 install chromium`.
+11. _Docs layout_ — the five `docs/` folders (`specs/`, `plans/`, `adr/`, `tutorials/`, `assets/`)
+    and what belongs in each, per [`docs/README.md`](../README.md).
 
-**Write `CLAUDE.md`** as a pointer only: a few lines telling the reader to read `AGENTS.md`, which is
-authoritative. Do not duplicate content between the two — duplication guarantees drift.
+**Write `CLAUDE.md`** as a pointer only: a few lines telling the reader to read `AGENTS.md`, which
+is authoritative. Do not duplicate content between the two — duplication guarantees drift.
 
-**Verify:** both exist; `CLAUDE.md` names `AGENTS.md`; no `TBD` or placeholder text; every version in
-it matches the resolved-versions table.
+**Verify:** both exist; `CLAUDE.md` names `AGENTS.md`; no `TBD` or placeholder text; every version
+in it matches the resolved-versions table.
 
 **Commit:** `docs: add AGENTS.md conventions and CLAUDE.md pointer`
 
@@ -77,11 +78,12 @@ it matches the resolved-versions table.
 toolchain reproducible for a fresh clone and for CI from one file.
 
 **`mise.toml`:** `[tools]` with `deno = "2.9.4"`, `node = "26.5.0"`, `lefthook = "2.1.10"` — exact
-strings. Add an `[env]` section with a comment that env vars belong here, not in shell profiles.
-Do **not** define tasks here; `deno.json` owns tasks so there is exactly one task registry. mise
-manages *tools*, `deno task` manages *commands*.
+strings. Add an `[env]` section with a comment that env vars belong here, not in shell profiles. Do
+**not** define tasks here; `deno.json` owns tasks so there is exactly one task registry. mise
+manages _tools_, `deno task` manages _commands_.
 
 **`deno.json`:**
+
 - `lint` — `recommended` plus `no-slow-types`; include `src/`, `tests/`, `build/`.
 - `fmt` — 2-space indent, 100-column width; pick single or double quotes once, record the choice in
   `AGENTS.md`, and make `.editorconfig` agree.
@@ -96,28 +98,30 @@ manages *tools*, `deno task` manages *commands*.
   and `shots` **out** — each lands with the item that implements it. Never stub a task that would
   silently pass.
 
-**`.gitignore` — this file already exists; ADD to it, never overwrite it.** It landed with the design
-bundle in `9fc9c2a` and carries the Deno entries (`.deno/`, `coverage/`, `*.lcov`) and an agent-scratch
-section (`.playwright-mcp/`, `.remember/`, `.review-playground/`). Those are load-bearing: without the
-scratch entries, an agent's working directories are untracked-but-unignored and the next `git add`
-sweeps them into a commit. Add the build-output entries this item owns and leave everything else intact:
-`dist/`, `node_modules/`, `.playwright/`, `playwright-report/`, `web-ext-artifacts/`, `*.zip`,
-`.DS_Store`.
+**`.gitignore` — this file already exists; ADD to it, never overwrite it.** It landed with the
+design bundle in `9fc9c2a` and carries the Deno entries (`.deno/`, `coverage/`, `*.lcov`) and an
+agent-scratch section (`.playwright-mcp/`, `.remember/`, `.review-playground/`). Those are
+load-bearing: without the scratch entries, an agent's working directories are
+untracked-but-unignored and the next `git add` sweeps them into a commit. Add the build-output
+entries this item owns and leave everything else intact: `dist/`, `node_modules/`, `.playwright/`,
+`playwright-report/`, `web-ext-artifacts/`, `*.zip`, `.DS_Store`.
 
 **`deno.json` — exclude `.claude-design/` from `fmt` and `lint`** while you are in this file. The
-bundle is an upstream artifact (see [`../design.md`](../design.md)); formatting it manufactures a diff
-in something we don't own. This is the remaining open sub-item of W1.5, which cannot land until this
-file exists.
+bundle is an upstream artifact (see [`../design.md`](../design.md)); formatting it manufactures a
+diff in something we don't own. This is the remaining open sub-item of W1.5, which cannot land until
+this file exists.
 
 **`.editorconfig`:** matching `deno fmt`'s indent and width so editors don't fight the formatter.
 
 **Verify:**
+
 ```bash
 mise install
 mise exec -- deno --version       # must print 2.9.4
 mise exec -- lefthook version     # must print 2.1.10
 mise exec -- deno task ci
 ```
+
 `deno task ci` passes trivially over a near-empty tree — expected. What you're verifying is that the
 tasks resolve and that `mise install` produced the pinned versions.
 
@@ -142,27 +146,32 @@ mise exec -- deno fmt --check   # must not touch .claude-design/
 authoritative gate — CI stays authoritative.
 
 **`lefthook.yml`:**
+
 - `pre-commit` — fast checks only: `deno fmt --check` and `deno lint` over **staged files** via
-  lefthook's `{staged_files}` templating, filtered `glob: "*.{ts,tsx,js,json,jsonc,md}"`. Include the
-  fix command (`deno task fmt`) in the failure output so the message is actionable.
+  lefthook's `{staged_files}` templating, filtered `glob: "*.{ts,tsx,js,json,jsonc,md}"`. Include
+  the fix command (`deno task fmt`) in the failure output so the message is actionable.
 - `pre-push` — the whole-tree gate: `deno task ci`. Same command CI runs, so green pre-push strongly
   predicts green CI.
 - No `commit-msg` hook. Commit-message linting is not part of this project.
 
 **Install:** `mise exec -- lefthook install`.
 
-**Worktree caveat — verify empirically, never assume.** This repo is a git *worktree*, so the hooks
+**Worktree caveat — verify empirically, never assume.** This repo is a git _worktree_, so the hooks
 directory is not `.git/hooks`:
+
 ```bash
 git rev-parse --git-path hooks
 ls -la "$(git rev-parse --git-path hooks)"
 ```
+
 Then prove the hook fires, rather than trusting the install message:
+
 ```bash
 printf 'const   x=1\n' > badfmt.ts
 git add badfmt.ts && git commit -m "test: should be blocked"   # MUST fail on fmt
 git reset HEAD badfmt.ts && rm -f badfmt.ts
 ```
+
 If that commit succeeds the hook is not wired — fix it before checking this item off. A hook that
 silently doesn't run is worse than no hook, because it manufactures false confidence.
 
@@ -182,11 +191,12 @@ stray `badfmt.ts`; `deno task ci` passes so real pushes aren't blocked.
 
 **Done — [`docs/README.md`](../README.md) already exists** and is more than a map: it is the
 publishing contract, carrying the four numbered documentation obligations every item in the project
-inherits and naming what wave 5 renders. **Do not rewrite it from this item's description.** An agent
-handed "write a map of the docs tree" would produce a plausible file that silently drops those
+inherits and naming what wave 5 renders. **Do not rewrite it from this item's description.** An
+agent handed "write a map of the docs tree" would produce a plausible file that silently drops those
 obligations — the content still reads fine, so nothing in review would catch it.
 
 **Remaining files:**
+
 - `docs/adr/README.md` — the ADR index table (number, title, status) plus the project's ADR
   template: Context / Decision / Consequences / Alternatives considered. W1.6 fills the table.
 - `docs/specs/README.md`, `docs/tutorials/README.md` — a short paragraph of purpose each.
@@ -214,27 +224,28 @@ while W1.2 is creating it conflicts on a file that didn't exist when it started.
 record edits [`../design.md`](../design.md), which already exists, so that half is parallel-safe and
 can land at any time.
 
-**Why:** `.claude-design/` was untracked. Every wave-3 item builds against it, and wave 2 *generates*
-token files from it. It had to be in version control before anything depended on it, or the generated
-output has no reproducible input.
+**Why:** `.claude-design/` was untracked. Every wave-3 item builds against it, and wave 2
+_generates_ token files from it. It had to be in version control before anything depended on it, or
+the generated output has no reproducible input.
 
 **Done — the bundle is committed** exactly as exported, 88 files: the six `tokens/` files, 13
 `guidelines/` specimen cards, 15 components in 14 files under `components/` (each with `.d.ts` and
-`.prompt.md`), the six `ui_kits/`, `assets/icon.svg`, `_adherence.oxlintrc.json`, and `_ds_manifest.json`.
-Nothing was edited, reformatted, or "fixed" — it is an upstream artifact, and local edits are silently
-lost on the next export. If something in it must change, change it upstream and re-export the whole
-bundle in one commit.
+`.prompt.md`), the six `ui_kits/`, `assets/icon.svg`, `_adherence.oxlintrc.json`, and
+`_ds_manifest.json`. Nothing was edited, reformatted, or "fixed" — it is an upstream artifact, and
+local edits are silently lost on the next export. If something in it must change, change it upstream
+and re-export the whole bundle in one commit.
 
-**Done — [`docs/design.md`](../design.md)** documents the bundle map, the never-hand-edit rule, the three
-substitutions MV3 forces (Google Fonts `@import` → vendored subset WOFF2; Lucide from unpkg → build-time
-SVG sprite of only the icons used; React + `@babel/standalone` from unpkg → precompiled Preact, no
-in-browser transform), the binding brand rules, the non-blocking `deno task lint:design` (oxlint, added
-in wave 2, because the project itself lints with `deno lint`), and the rule that tokens are **generated**
-into `src/shared/design/` and never hand-copied.
+**Done — [`docs/design.md`](../design.md)** documents the bundle map, the never-hand-edit rule, the
+three substitutions MV3 forces (Google Fonts `@import` → vendored subset WOFF2; Lucide from unpkg →
+build-time SVG sprite of only the icons used; React + `@babel/standalone` from unpkg → precompiled
+Preact, no in-browser transform), the binding brand rules, the non-blocking `deno task lint:design`
+(oxlint, added in wave 2, because the project itself lints with `deno lint`), and the rule that
+tokens are **generated** into `src/shared/design/` and never hand-copied.
 
-**Remaining:** add the `deno fmt` / `deno lint` exclusion for `.claude-design/` in `deno.json`, so the
-formatter cannot rewrite an upstream artifact. This waits on W1.2, which creates `deno.json` — the one
-part of this item that is not parallel-safe. Do it in the same commit as W1.2 or immediately after.
+**Remaining:** add the `deno fmt` / `deno lint` exclusion for `.claude-design/` in `deno.json`, so
+the formatter cannot rewrite an upstream artifact. This waits on W1.2, which creates `deno.json` —
+the one part of this item that is not parallel-safe. Do it in the same commit as W1.2 or immediately
+after.
 
 **Also record which export this is** — this is the second open box, and it is not optional.
 `_ds_manifest.json` carries no version field; its identity is the `namespace` key (currently
@@ -242,16 +253,15 @@ part of this item that is not parallel-safe. Do it in the same commit as W1.2 or
 (`git -C "$(git rev-parse --show-toplevel)" ls-files -s .claude-design | git hash-object --stdin` —
 anchor it to the repo root, because from any subdirectory `git ls-files` matches nothing and the
 pipeline silently returns the empty-blob hash, which looks like a real answer) in
-[`../design.md`](../design.md), together with the rule that a re-export is its own commit. Without it,
-W2.4's `tokens-drift`
-check cannot distinguish a hand edit (what it exists to catch) from a legitimate re-export with stale
-generated files — and the agent that hits the red check on an unrelated PR has no way to tell which it
-is. A re-export is its own commit that regenerates tokens and refreshes the W4.2 visual baselines
-together, because all of them move at the same instant.
+[`../design.md`](../design.md), together with the rule that a re-export is its own commit. Without
+it, W2.4's `tokens-drift` check cannot distinguish a hand edit (what it exists to catch) from a
+legitimate re-export with stale generated files — and the agent that hits the red check on an
+unrelated PR has no way to tell which it is. A re-export is its own commit that regenerates tokens
+and refreshes the W4.2 visual baselines together, because all of them move at the same instant.
 
-**Verify:** `git status` shows `.claude-design/` tracked (done); every path named in `docs/design.md`
-exists; once `deno.json` exists, `deno task ci` passes with the bundle in the tree and
-`deno fmt --check` reports no files under `.claude-design/`.
+**Verify:** `git status` shows `.claude-design/` tracked (done); every path named in
+`docs/design.md` exists; once `deno.json` exists, `deno task ci` passes with the bundle in the tree
+and `deno fmt --check` reports no files under `.claude-design/`.
 
 **Commit:** `docs: commit design system bundle and document its authority`
 
@@ -282,14 +292,14 @@ Write each in `docs/adr/` from the W1.4 template, status `Accepted`, dated `2026
    web-ext, and the font subsetter arrive via `npm:`. Alternative considered: a minimal
    `package.json` for the E2E stack. Consequence: occasional npm-compat friction accepted for one
    runtime and one task registry. Record the wave-5 Astro carve-out explicitly.
-5. `0005-safari-deferred.md` — Safari needs `xcrun safari-web-extension-converter`, an Xcode project,
-   a signed app wrapper, and a paid developer account. Out of scope for v1, but the code stays
-   compatible: promise-based `browser.*`, no Chrome-only APIs, no `offscreen` dependency. Record the
-   conversion path so picking it up later is mechanical.
-6. `0006-closed-shadow-dom-for-injected-ui.md` — toolbar, picker overlay, and any in-page UI mount in
-   a closed shadow root so arbitrary host CSS can't break them and extension styles can't leak onto
-   the page under inspection (which would corrupt the very thing being screenshotted). Consequence:
-   design tokens must be injected across the boundary deliberately.
+5. `0005-safari-deferred.md` — Safari needs `xcrun safari-web-extension-converter`, an Xcode
+   project, a signed app wrapper, and a paid developer account. Out of scope for v1, but the code
+   stays compatible: promise-based `browser.*`, no Chrome-only APIs, no `offscreen` dependency.
+   Record the conversion path so picking it up later is mechanical.
+6. `0006-closed-shadow-dom-for-injected-ui.md` — toolbar, picker overlay, and any in-page UI mount
+   in a closed shadow root so arbitrary host CSS can't break them and extension styles can't leak
+   onto the page under inspection (which would corrupt the very thing being screenshotted).
+   Consequence: design tokens must be injected across the boundary deliberately.
 7. `0007-playwright-chromium-plus-web-ext-coverage-split.md` — Playwright loads extensions only in
    Chromium via `launchPersistentContext` + `--load-extension`; no Firefox or WebKit equivalent
    exists. Chromium E2E is the per-commit gate, Firefox gets a `web-ext` smoke check, and API
@@ -300,7 +310,7 @@ Write each in `docs/adr/` from the W1.4 template, status `Accepted`, dated `2026
    templates). Astro was evaluated and rejected for the extension: it's Vite/Node-based, its
    `security.csp` support emits a `<meta>` tag with hashes and doesn't work in dev, MV3 governs
    extension pages through `content_security_policy.extension_pages`, and decisively **a content
-   script is not a page**, so Astro cannot build the overlay at all. Astro *is* adopted for the
+   script is not a page**, so Astro cannot build the overlay at all. Astro _is_ adopted for the
    wave-5 marketing site, where its Node toolchain stays isolated in `site/`.
 9. `0009-no-remote-assets-vendored-fonts-and-icons.md` — the bundle loads Google Fonts and Lucide
    from CDNs. MV3 forbids remote code, and a remote font fetch from an injected overlay discloses to
@@ -322,9 +332,9 @@ Write each in `docs/adr/` from the W1.4 template, status `Accepted`, dated `2026
 **Verify:** all eleven exist; each is linked from `docs/adr/README.md` with a resolving link;
 `grep -srniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
 prints nothing. Judge it on **output, not exit status**: `-s` silences the warning when one of those
-directories does not exist yet (W1.4 creates them), but BSD grep still exits `2` there while GNU grep
-exits `1`, so a status check passes or fails depending on the machine. `docs/plans/` is out of scope
-deliberately — the plan files carry `SHA: _pending_` slots, the architecture review carries
+directories does not exist yet (W1.4 creates them), but BSD grep still exits `2` there while GNU
+grep exits `1`, so a status check passes or fails depending on the machine. `docs/plans/` is out of
+scope deliberately — the plan files carry `SHA: _pending_` slots, the architecture review carries
 `Effort: TBD` on every finding — both are the record working as intended — and this recipe's own
 pattern string would otherwise match itself.
 
@@ -338,10 +348,11 @@ pattern string would otherwise match itself.
 
 **Depends on:** W1.2.
 
-**Why:** CI is the authoritative gate, and it must run the *same* command as the pre-push hook so
+**Why:** CI is the authoritative gate, and it must run the _same_ command as the pre-push hook so
 local and remote cannot diverge.
 
 **`.github/workflows/ci.yml`:**
+
 - Triggers: `push` to `main`, and `pull_request`.
 - One job `checks` on `ubuntu-latest`. Steps: `actions/checkout@v7` → `jdx/mise-action@v4` →
   `deno task ci`.
@@ -356,10 +367,12 @@ local and remote cannot diverge.
   missing job.
 
 **Verify:**
+
 ```bash
 git push -u origin feat/inital-impl
 gh run watch --exit-status
 ```
+
 **A workflow that has never executed is not verified.** Fix and re-push on failure; never check this
 off against a red or absent run. Confirm the log shows Deno `2.9.4`, which proves `mise.toml` is
 actually driving the CI toolchain.
@@ -379,12 +392,14 @@ selector engine and capture pipeline get wrong if nobody built a page to catch t
 adversarial cases now, while it's cheap, instead of discovering them in wave 3.
 
 **Files** under `tests/fixtures/app/`:
+
 - `server.ts` — a small static server on `Deno.serve`, bound to a **fixed** port (pick one, document
   it in `AGENTS.md`; tests hardcode it). Directory listing off, correct MIME types, no-cache headers
   so reruns aren't stale.
-- `index.html` — ordinary nested layout with: elements carrying `data-testid`, elements with no id or
-  test id, several elements sharing an identical class list (so class-based selectors are ambiguous),
-  a deeply nested button, and a list where sibling index is the only distinguishing feature.
+- `index.html` — ordinary nested layout with: elements carrying `data-testid`, elements with no id
+  or test id, several elements sharing an identical class list (so class-based selectors are
+  ambiguous), a deeply nested button, and a list where sibling index is the only distinguishing
+  feature.
 - `dark.html` — light content on a near-black background. Exercises both picker-highlight contrast
   and the W1.6/ADR-0010 backdrop-luminance theming path.
 - `light.html` — the bright-page counterpart, so the theme sampler has both poles to test against.
@@ -418,10 +433,11 @@ waves later.
 **Depends on:** W1.8, W1.2.
 
 **Why:** the project convention is that PRs carry screenshots of visible work. Wave 1's only visible
-artifact is the fixture app, so shoot that. It also proves the Playwright plumbing works before
-wave 2 and wave 4 depend on it.
+artifact is the fixture app, so shoot that. It also proves the Playwright plumbing works before wave
+2 and wave 4 depend on it.
 
 **Files:**
+
 - `tests/shots.ts` — using `npm:playwright@1.62.0`: start the fixture server, launch Chromium, visit
   each fixture page, write a full-page PNG to `docs/assets/wave-1/<page>.png` at a fixed 1280×800
   viewport so images are comparable and deterministic.
@@ -465,7 +481,8 @@ reruns idempotent):
 
 ## W1.11 — Branch protection and the tracking issue
 
-- [ ] Protection configured, tracking issue opened — SHA: _pending_ (record the issue number here too)
+- [ ] Protection configured, tracking issue opened — SHA: _pending_ (record the issue number here
+      too)
 
 **parallel-safe** with W1.10. W1.10 is `gh`-only; this item is `gh` plus one small docs commit (the
 issue number), and it touches no file any other wave-1 item touches.
@@ -480,7 +497,7 @@ before merging, and require signed commits (the project signs already, so this c
 rather than adding friction). Waves 2 and 4 extend the required-check list as they add jobs.
 
 **The tracking issue.** [Rule 7](README.md#rules-for-working-any-wave) needs a status board that
-survives every wave. PR #1 cannot be it: PR #1 *is* wave 1's PR against `main` (W1.12), so it closes
+survives every wave. PR #1 cannot be it: PR #1 _is_ wave 1's PR against `main` (W1.12), so it closes
 on merge and its head branch is typically deleted — after which four waves of post-merge syncs would
 be writing to a closed PR that no one has reason to open. Open a long-lived issue titled for v1,
 carrying the item checklist and the wave status, labelled `wave:1`…`wave:5`. Every wave PR links to
@@ -492,9 +509,10 @@ it; rule 7 targets it; it closes only when v1 ships.
 gh api repos/whizzzkid/point-and-shoot/branches/main/protection   # required checks + signed commits
 ```
 
-Then open a throwaway PR containing a deliberate lint error and confirm the merge button is blocked —
-an unproven gate is not a gate, and this is the gate over all the other gates. Close the throwaway.
-Confirm the tracking issue is open and referenced **by number** from [`README.md`](README.md).
+Then open a throwaway PR containing a deliberate lint error and confirm the merge button is blocked
+— an unproven gate is not a gate, and this is the gate over all the other gates. Close the
+throwaway. Confirm the tracking issue is open and referenced **by number** from
+[`README.md`](README.md).
 
 Recording that number is the one file change this item makes: edit the index's repo-facts bullet to
 name the issue, and write the number into this item's checkbox line. That is a single docs commit —
@@ -510,6 +528,7 @@ branch-protection half touches no files at all.
 **Depends on:** W1.1–W1.11 complete, CI green.
 
 One PR for all of wave 1 against `main`. The body must contain:
+
 - What wave 1 establishes, and the explicit statement that **no extension code ships in it**.
 - A checklist mirroring W1.1–W1.11 with each commit SHA.
 - A link to the W1.11 tracking issue, named as the status board that succeeds this PR.
@@ -521,11 +540,11 @@ One PR for all of wave 1 against `main`. The body must contain:
   closed-shadow-root traversal limitation recorded in the fixture app.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave).
-Wave 1's integration branch *is* PR #1's branch, so this is the one wave whose sync happens on the PR
-that is closing. Confirm every W1.x SHA in this file resolves post-merge, flip this wave's **Status**
-to complete, and **hand the board over**: update the W1.11 tracking issue to show wave 1 done and wave
-2 open, and leave a final line in PR #1's body pointing at that issue as its successor. From wave 2
-onward, rule 7 targets the issue, not this PR.
+Wave 1's integration branch _is_ PR #1's branch, so this is the one wave whose sync happens on the
+PR that is closing. Confirm every W1.x SHA in this file resolves post-merge, flip this wave's
+**Status** to complete, and **hand the board over**: update the W1.11 tracking issue to show wave 1
+done and wave 2 open, and leave a final line in PR #1's body pointing at that issue as its
+successor. From wave 2 onward, rule 7 targets the issue, not this PR.
 
 **Verify:** `gh pr view --json number,title,body` renders as intended and `gh pr checks` is green.
 Open the PR in a browser and confirm the screenshots actually display — raw-URL embedding is easy to
@@ -535,8 +554,8 @@ get subtly wrong.
 
 ## Wave 1 exit criteria
 
-- W1.1–W1.11 all checked with real commit SHAs (W1.10 is the sole exception — it is `gh` verification
-  only; W1.11 carries the commit that records its issue number).
+- W1.1–W1.11 all checked with real commit SHAs (W1.10 is the sole exception — it is `gh`
+  verification only; W1.11 carries the commit that records its issue number).
 - CI green on `feat/inital-impl`, run log showing Deno `2.9.4`.
 - Lefthook proven to fire by W1.3's deliberate-failure test.
 - `deno task ci` passes from a clean checkout after `mise install`.
