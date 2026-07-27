@@ -3,10 +3,13 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.5 partly landed (design bundle committed, `docs/design.md` written).
-  **Two of its sub-items are still open**: the `deno.json` exclusion and the export-identity record.
-  Everything else is unstarted.
-- **Branch:** `feat/inital-impl` (all of wave 1 lands here as one PR)
+- **Status:** in progress — W1.2 landed, which also closed W1.5's `deno.json` exclusion and
+  unblocked W1.3, W1.7 and W1.8. W1.5's export-identity record is the one sub-item still open. W1.1,
+  W1.4's per-folder indexes, and W1.6 onward are unstarted.
+- **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
+  `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
+  design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
+  PR is therefore **not** PR #1 — see W1.11 and W1.12, which name the consequences.
 - **Goal:** everything later waves stand on — agent instructions, pinned toolchain, git hooks, docs,
   ADRs, CI, the committed design bundle, and the browser fixture app.
 
@@ -70,7 +73,7 @@ in it matches the resolved-versions table.
 
 ## W1.2 — Toolchain via mise, and Deno project config
 
-- [ ] `mise.toml`, `deno.json`, `.gitignore`, `.editorconfig` — SHA: _pending_
+- [x] `mise.toml`, `deno.json`, `.gitignore`, `.editorconfig` — SHA: `3731e2b`
 
 **parallel-safe** with W1.1.
 
@@ -215,7 +218,7 @@ item must show additions to `docs/README.md`, not a replacement of it.
 
 - [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
 - [x] [`docs/design.md`](../design.md) written — SHA: `419cfa8`
-- [ ] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: _pending_
+- [x] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: `3731e2b`
 - [ ] export identity recorded in [`docs/design.md`](../design.md) — SHA: _pending_
 
 **The two open sub-items have different blockers.** The `deno.json` exclusion waits on W1.2, which
@@ -497,11 +500,12 @@ before merging, and require signed commits (the project signs already, so this c
 rather than adding friction). Waves 2 and 4 extend the required-check list as they add jobs.
 
 **The tracking issue.** [Rule 7](README.md#rules-for-working-any-wave) needs a status board that
-survives every wave. PR #1 cannot be it: PR #1 _is_ wave 1's PR against `main` (W1.12), so it closes
-on merge and its head branch is typically deleted — after which four waves of post-merge syncs would
-be writing to a closed PR that no one has reason to open. Open a long-lived issue titled for v1,
-carrying the item checklist and the wave status, labelled `wave:1`…`wave:5`. Every wave PR links to
-it; rule 7 targets it; it closes only when v1 ships.
+survives every wave. No wave PR can be it — wave 1's PR (W1.12) closes on merge and its head branch
+is typically deleted, after which four waves of post-merge syncs would be writing to a closed PR
+that no one has reason to open. PR #1 is doubly unfit: it already merged, carrying only the plan and
+the design bundle. Open a long-lived issue titled for v1, carrying the item checklist and the wave
+status, labelled `wave:1`…`wave:5`. Every wave PR links to it; rule 7 targets it; it closes only
+when v1 ships.
 
 **Verify:**
 
@@ -540,10 +544,10 @@ One PR for all of wave 1 against `main`. The body must contain:
   closed-shadow-root traversal limitation recorded in the fixture app.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave).
-Wave 1's integration branch _is_ PR #1's branch, so this is the one wave whose sync happens on the
+Wave 1's integration branch _is_ this PR's branch, so this is the one wave whose sync happens on the
 PR that is closing. Confirm every W1.x SHA in this file resolves post-merge, flip this wave's
 **Status** to complete, and **hand the board over**: update the W1.11 tracking issue to show wave 1
-done and wave 2 open, and leave a final line in PR #1's body pointing at that issue as its
+done and wave 2 open, and leave a final line in this PR's body pointing at that issue as its
 successor. From wave 2 onward, rule 7 targets the issue, not this PR.
 
 **Verify:** `gh pr view --json number,title,body` renders as intended and `gh pr checks` is green.

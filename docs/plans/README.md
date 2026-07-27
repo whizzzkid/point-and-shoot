@@ -394,8 +394,11 @@ applies: this table, the wave items that cite it, and the tests that assert it m
 ## Repo facts
 
 - Remote `git@github.com:whizzzkid/point-and-shoot.git`; `gh` authenticated as `whizzzkid`.
-- Default branch `main`. Wave 1 lands on `feat/inital-impl`; later waves branch per the convention
-  in `AGENTS.md`.
+- Default branch `main`. Wave 1's implementation lands on `feat/wave-1-plan`; later waves branch per
+  the convention in `AGENTS.md`. `feat/inital-impl` was wave 1's originally-planned integration
+  branch, but it merged to `main` as PR #1 carrying only the plan and the design bundle, before any
+  wave-1 implementation started — so the branch names in this file's diagrams describe the intended
+  shape, not the branch wave 1 actually uses.
 - Docs layout is fixed: `docs/specs/`, `docs/plans/`, `docs/adr/`, `docs/tutorials/`, `docs/assets/`
   (committed images referenced by docs and PR bodies — W1.9 writes the first of them), plus
   [`docs/README.md`](../README.md) (the published index and doc conventions) and
@@ -403,10 +406,12 @@ applies: this table, the wave items that cite it, and the tests that assert it m
 - **Everything under `docs/` is published** (wave 5, W5.7/W5.8) — rendered to HTML and themed with
   the product's own tokens. Write every doc for a reader who has never seen the repo, keep links
   relative, and put nothing there you would not publish.
-- Two GitHub artefacts are load-bearing and easy to confuse. **PR #1** on `feat/inital-impl` carries
-  the plan and wave 1's work; it closes when wave 1 merges. The **tracking issue** opened by W1.11
-  is the durable status board — it outlives every wave PR, and rule 7 targets it. Until W1.11 lands,
-  PR #1 is standing in for it.
+- One GitHub artefact is load-bearing: the **tracking issue** opened by W1.11 is the durable status
+  board — it outlives every wave PR, and rule 7 targets it. **PR #1** is not that board and never
+  stood in for it in practice: it merged on `feat/inital-impl` carrying only the plan and the design
+  bundle, so it was closed before wave 1's first implementation commit. Wave 1's own PR is the one
+  W1.12 opens on `feat/wave-1-plan`. Until W1.11 lands, sync that PR's body; hand the state to the
+  issue when it opens.
 
 ## Rules for working any wave
 
@@ -425,10 +430,10 @@ applies: this table, the wave items that cite it, and the tests that assert it m
 7. **After your item's PR merges, update the broader plan on the tracking issue — same session,
    before you stop.** This is not optional bookkeeping: the tracking issue (opened by W1.11) is the
    only place a person or an agent can see what is done and what is now unblocked. A merged item
-   that is still unticked there gets picked up twice. Do **not** use PR #1 as the board — PR #1 is
-   wave 1's own PR and closes when wave 1 merges, so four waves of post-merge syncs would be writing
-   to a closed thread. Before W1.11 lands, sync PR #1's body instead and carry the state over when
-   the issue opens.
+   that is still unticked there gets picked up twice. Do **not** use any wave PR as the board — a
+   wave PR closes when its wave merges, so four waves of post-merge syncs would be writing to a
+   closed thread. Before W1.11 lands, sync wave 1's own PR body instead and carry the state over
+   when the issue opens.
 
    In order:
    1. On the wave's integration branch, pull the merge and confirm the wave file records the item's
