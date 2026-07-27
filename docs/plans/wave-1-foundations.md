@@ -3,7 +3,8 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** not started
+- **Status:** in progress — W1.5 partly landed (design bundle committed, `docs/design.md` written; the
+  `deno.json` exclusion is still open). Everything else is unstarted.
 - **Branch:** `feat/inital-impl` (all of wave 1 lands here as one PR)
 - **Goal:** everything later waves stand on — agent instructions, pinned toolchain, git hooks, docs,
   ADRs, CI, the committed design bundle, and the browser fixture app.
@@ -175,37 +176,37 @@ not eyeball them.
 
 ## W1.5 — Commit the design system as source of truth
 
-- [ ] `.claude-design/` committed + `docs/design.md` — SHA: _pending_
+- [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
+- [x] [`docs/design.md`](../design.md) written — SHA: _in the same commit as this plan update_
+- [ ] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: _pending_
 
 **parallel-safe.**
 
-**Why:** `.claude-design/` is currently untracked. Every wave-3 item builds against it, and wave 2
-*generates* token files from it. It has to be in version control before anything depends on it, or
-the generated output has no reproducible input.
+**Why:** `.claude-design/` was untracked. Every wave-3 item builds against it, and wave 2 *generates*
+token files from it. It had to be in version control before anything depended on it, or the generated
+output has no reproducible input.
 
-**Do:**
-- Commit `.claude-design/` exactly as exported. Do not edit, reformat, or "fix" the bundle — it is an
-  upstream artifact, and local edits would be silently lost on the next export. If something in it
-  must change, change it upstream and re-export.
-- Exclude `.claude-design/` from `deno fmt` and `deno lint` in `deno.json` so the formatter doesn't
-  rewrite vendored prototype code.
-- Write `docs/design.md` covering:
-  - What the bundle is and that it is authoritative for visual decisions.
-  - A map of it: `tokens/` (colors, typography, spacing, effects, fonts, base), `guidelines/`
-    specimen cards, `components/` (Button, IconButton, Card, Badge, Tag, Icon, Input, Select,
-    Checkbox, Switch, Tooltip, Toast, Dialog, Tabs, CaptureMinimap), `ui_kits/` (toolbar-overlay,
-    extension-popup, notes-panel, plan-view, options, marketing), `_adherence.oxlintrc.json`.
-  - **The three substitutions MV3 forces,** each stated as a rule with its reason: Google Fonts CDN
-    → subset WOFF2 vendored locally; Lucide via unpkg → vendored inline SVG sprite; and generally,
-    no remote asset of any kind, because MV3 forbids remote code and a remote request from an
-    injected overlay tells a third party which pages you're annotating.
-  - That `_adherence.oxlintrc.json` targets oxlint while the project lints with `deno lint`, so it
-    runs as a separate non-blocking `deno task lint:design` added in wave 2.
-  - That tokens are **generated** into `src/shared/design/` by wave 2 and must never be hand-copied,
-    with a CI drift check.
+**Done — the bundle is committed** exactly as exported, 88 files: the six `tokens/` files, 13
+`guidelines/` specimen cards, 15 components in 14 files under `components/` (each with `.d.ts` and
+`.prompt.md`), the six `ui_kits/`, `assets/icon.svg`, `_adherence.oxlintrc.json`, and `_ds_manifest.json`.
+Nothing was edited, reformatted, or "fixed" — it is an upstream artifact, and local edits are silently
+lost on the next export. If something in it must change, change it upstream and re-export the whole
+bundle in one commit.
 
-**Verify:** `git status` shows `.claude-design/` tracked; `deno task ci` still passes (i.e. the
-exclusions work); every path named in `docs/design.md` exists.
+**Done — [`docs/design.md`](../design.md)** documents the bundle map, the never-hand-edit rule, the three
+substitutions MV3 forces (Google Fonts `@import` → vendored subset WOFF2; Lucide from unpkg → build-time
+SVG sprite of only the icons used; React + `@babel/standalone` from unpkg → precompiled Preact, no
+in-browser transform), the binding brand rules, the non-blocking `deno task lint:design` (oxlint, added
+in wave 2, because the project itself lints with `deno lint`), and the rule that tokens are **generated**
+into `src/shared/design/` and never hand-copied.
+
+**Remaining:** add the `deno fmt` / `deno lint` exclusion for `.claude-design/` in `deno.json`, so the
+formatter cannot rewrite an upstream artifact. This waits on W1.2, which creates `deno.json` — the one
+part of this item that is not parallel-safe. Do it in the same commit as W1.2 or immediately after.
+
+**Verify:** `git status` shows `.claude-design/` tracked (done); every path named in `docs/design.md`
+exists; once `deno.json` exists, `deno task ci` passes with the bundle in the tree and
+`deno fmt --check` reports no files under `.claude-design/`.
 
 **Commit:** `docs: commit design system bundle and document its authority`
 
@@ -426,6 +427,11 @@ One PR for all of wave 1 against `main`. The body must contain:
 - A **Follow-ups** section naming what wave 1 deliberately leaves out: no `dist/`, no manifest, no
   extension load in Playwright yet, no Firefox smoke check, no token generation, and the
   closed-shadow-root traversal limitation recorded in the fixture app.
+
+**After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave).
+Wave 1's integration branch *is* PR #1's branch, so here the sync means confirming every W1.x SHA in
+this file resolves post-merge, flipping this wave's **Status** to complete, and updating PR #1's body to
+say wave 2 is now open.
 
 **Verify:** `gh pr view --json number,title,body` renders as intended and `gh pr checks` is green.
 Open the PR in a browser and confirm the screenshots actually display — raw-URL embedding is easy to

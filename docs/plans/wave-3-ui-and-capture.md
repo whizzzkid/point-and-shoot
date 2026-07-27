@@ -410,6 +410,10 @@ and which framework versions the W3.11 hints were verified against.
 Do not claim the export is agent-ready without having fed a real exported bundle to a local agent and
 saying what happened.
 
+**After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
+every W3.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body so
+it shows wave 3 done and wave 4 open.
+
 ---
 
 ## Wave 3 exit criteria

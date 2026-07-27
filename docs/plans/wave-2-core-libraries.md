@@ -393,6 +393,11 @@ Screenshots: wave 2 has no UI to shoot. Instead attach the `chrome://extensions`
 extension loaded without errors, and paste the `e2e:smoke` output. Say plainly that there's no UI
 yet rather than padding the PR with fixture screenshots already shown in wave 1.
 
+**After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
+every W2.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body so
+it shows wave 2 done and wave 3 open. PR #1 is the project's status board; a merged wave that still
+reads "blocked" there sends the next agent to the wrong item.
+
 ---
 
 ## Wave 2 exit criteria

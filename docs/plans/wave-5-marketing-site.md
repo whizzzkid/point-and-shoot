@@ -3,7 +3,12 @@
 **Read [`README.md`](README.md) in this folder first.**
 
 - **Status:** deferred, post-v1
-- **Goal:** the landing site from `.claude-design/point-and-shoot/ui_kits/marketing/index.html`.
+- **Goal:** the landing site from `.claude-design/point-and-shoot/ui_kits/marketing/index.html`, **and**
+  the published documentation site rendered from the markdown in [`docs/`](../).
+
+Both live in this wave deliberately: they are the project's only two public web surfaces, they want the
+same toolchain, and the docs must be themed with the *product's* design tokens rather than a generic
+docs theme — which only works if the token pipeline (W5.3) is built once and consumed by both.
 
 ## Why this is deferred and separate
 
@@ -36,17 +41,28 @@ flowchart TD
   W54["W5.4 self-hosted fonts"]
   W55["W5.5 install links"]
   W56["W5.6 deploy + lighthouse"]
+  W57["W5.7 render docs markdown"]
+  W58["W5.8 docs nav, diagrams,<br/>link integrity"]
 
   W51 --> W52
   W53 --> W52
   W54 --> W52
   W52 --> W56
   W55 --> W56
+  W51 --> W57
+  W53 --> W57
+  W54 --> W57
+  W57 --> W58
+  W58 --> W56
 ```
 
 W5.1, W5.3, W5.4, and W5.5 are **parallel-safe** starting points. W5.3 and W5.4 consume wave-2 output
 (W2.4 and W2.5 respectively) rather than anything inside this wave, so they can be prepared before
 W5.1 exists.
+
+W5.7 and W5.2 are independent of each other — one renders `docs/`, the other renders the landing page —
+so they can run in parallel once the scaffold and token items land. W5.6 deploys both, which is why it
+waits on W5.8 as well.
 
 ---
 
@@ -140,28 +156,96 @@ placeholder or `#` href remains.
 
 - [ ] `.github/workflows/site.yml` — SHA: _pending_
 
-**Depends on:** W5.2, W5.5.
+**Depends on:** W5.2, W5.5, W5.8.
 
-Deploy via GitHub Pages on a tag or on merge to `main`. Add a Lighthouse check in CI and a real
-accessibility pass using the same axe standard as W4.4 — a tool that markets itself on UI quality
-cannot ship an inaccessible landing page.
+Deploy via GitHub Pages on a tag or on merge to `main` — the landing page at the root and the docs under
+`/docs/`, from one build. Add a Lighthouse check in CI and a real accessibility pass using the same axe
+standard as W4.4, covering **both** surfaces — a tool that markets itself on UI quality cannot ship an
+inaccessible landing page or an inaccessible docs page.
 
-**Verify:** `gh run watch --exit-status` green with the deploy and Lighthouse jobs present; the
-deployed URL serves the built site; axe reports no serious or critical violations. Deliberately
-introduce one contrast violation and confirm the a11y job fails, then revert it — an unproven gate is
-not a gate.
+The docs build is a **blocking** job, not a nice-to-have: a broken link or an unrenderable diagram in
+published docs is a shipped defect. Fail the job on either.
 
-**Commit:** `ci(site): deploy to github pages with lighthouse and axe gates`
+**Verify:** `gh run watch --exit-status` green with the deploy, Lighthouse, and link-check jobs present;
+the deployed URL serves the built site; `/docs/` serves the rendered documentation; axe reports no
+serious or critical violations on either surface. Deliberately introduce one contrast violation and
+confirm the a11y job fails, then revert it — an unproven gate is not a gate.
+
+**Commit:** `ci(site): deploy site and docs to github pages with lighthouse and axe gates`
+
+---
+
+## W5.7 — Render the docs markdown
+
+- [ ] `site/src/content/docs/`, `site/src/pages/docs/` — SHA: _pending_
+
+**Depends on:** W5.1, W5.3, W5.4.
+
+Publish the markdown in [`docs/`](../) as HTML themed with the product's own design tokens. Not a
+generic docs theme: the published docs should look like the tool, using the same palette, type scale,
+and mono treatment for technical strings that the extension uses.
+
+- Source the markdown **in place** from `docs/` — an Astro content collection pointing at the existing
+  directory, or a build step that syncs it. Do **not** fork or copy the markdown into `site/`; two
+  copies of a doc drift within one release, and the repo-local copy is the one contributors edit.
+- Publish `docs/README.md`, `docs/design.md`, `docs/specs/`, `docs/adr/`, and `docs/tutorials/`.
+  Publish `docs/plans/` too — the plan is public and the tracking PR links into it.
+- Style prose from the tokens: body copy in `--font-body`, headings in `--font-display`, and every
+  code span, URL, XPath, and element name in `--font-mono`. Long technical strings truncate with an
+  ellipsis and expose the full value, exactly as in-product.
+- Give code blocks a syntax theme derived from the token palette rather than importing a stock one.
+- Support both themes, honouring `prefers-color-scheme`, since the docs are read on other people's
+  screens (the extension's dual-theme requirement, ADR 0010, applies here for the same reason).
+
+**Verify:** every file under `docs/` appears in the built output — enumerate with `find docs -name '*.md'`
+and assert one page each, so a new doc cannot be silently unpublished. Grep the build for hardcoded
+colours and font stacks: there must be none. No third-party origin in the output.
+
+**Commit:** `feat(site): render the docs markdown as themed html`
+
+---
+
+## W5.8 — Docs navigation, diagrams, and link integrity
+
+- [ ] `site/src/components/docs/`, link-check task — SHA: _pending_
+
+**Depends on:** W5.7.
+
+Make the rendered docs navigable and prove they are not broken.
+
+- Sidebar navigation generated from the directory structure, not hand-maintained — a hand-written nav is
+  the thing that goes stale the first time someone adds an ADR.
+- Rewrite relative markdown links (`design.md`, `plans/README.md`) to their published URLs, so the same
+  link works in the repo, on GitHub, and on the site. This is the single highest-risk part of the
+  pipeline: the docs are written with repo-relative links on purpose.
+- Render Mermaid blocks. `docs/plans/README.md` carries a 48-node graph, so render at **build time** to
+  static SVG rather than shipping a client-side Mermaid runtime — it keeps Astro's zero-JS default and
+  means a malformed diagram fails the build instead of showing an error box to a reader.
+- Anchor links for every heading, so a PR can cite a specific rule.
+- A link checker over the built output covering internal links, anchors, and external URLs, wired as a
+  task and run in CI (W5.6).
+
+**Verify:** the link checker passes with zero broken internal links and zero broken anchors. Every
+Mermaid block in `docs/` renders as SVG with no error box — check each one in a browser, not just the
+exit code. Deliberately break one relative link and confirm the checker fails.
+
+**Commit:** `feat(site): add docs nav, build-time mermaid, and link checking`
 
 ---
 
 ## Wave 5 exit criteria
 
-- W5.1–W5.6 checked with real commit SHAs.
-- Site builds and deploys; the deployed URL serves it.
+- W5.1–W5.8 checked with real commit SHAs.
+- Site builds and deploys; the deployed URL serves it, and `/docs/` serves the rendered documentation.
+- Every markdown file under `docs/` has a published page — verified by enumeration, not by spot check.
 - Tokens and fonts are **shared** with the extension rather than copied — verified by changing one
-  token at source and seeing both builds move.
+  token at source and seeing both builds move. The docs are themed from those same tokens, with no
+  stock docs theme and no second palette.
 - No third-party origin in the built output.
-- Lighthouse and axe both pass, and the a11y gate has been observed failing once.
+- Link checker green; every Mermaid diagram renders as build-time SVG.
+- Lighthouse and axe both pass on the landing page and on a docs page, and the a11y gate has been
+  observed failing once.
 - Every install link resolves.
 - The extension's `deno task ci` is unaffected by anything in `site/`.
+- PR #1 synced per [rule 7](README.md#rules-for-working-any-wave) — wave 5 marked complete and the
+  deployed site and docs URLs recorded there.

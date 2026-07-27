@@ -180,6 +180,11 @@ section stating plainly what remains unverified — Firefox is smoke-tested rath
 Safari is unbuilt, framework hints are verified only against the specific framework versions you
 tested, and scroll-and-stitch capture is not implemented.
 
+**After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
+every W4.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body to
+state that v1 is verified and wave 5 is the only wave left. Wave 5 is deferred rather than blocked — say
+which, so nobody reads the empty checklist as work in flight.
+
 ---
 
 ## Wave 4 exit criteria

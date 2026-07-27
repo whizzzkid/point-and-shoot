@@ -6,7 +6,7 @@ assumes.** An agent prompted with *"work on W3.4"* must read this file first, th
 
 | Wave | File | Status |
 |---|---|---|
-| 1 — Foundations | [`wave-1-foundations.md`](wave-1-foundations.md) | not started |
+| 1 — Foundations | [`wave-1-foundations.md`](wave-1-foundations.md) | in progress — W1.5 partly landed |
 | 2 — Core libraries | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | blocked on wave 1 |
 | 3 — UI and capture | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2 |
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md) | blocked on wave 3 |
@@ -34,7 +34,7 @@ flowchart TD
 
 ### Full item chart
 
-All 48 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
+All 50 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
 transitive reduction — an item also waits on everything upstream of what it points at, not just its
 immediate parent. Anything with no inbound arrow inside its wave can start the moment that wave opens.
 
@@ -141,10 +141,16 @@ flowchart TD
     W54["W5.4 self-hosted fonts"]
     W55["W5.5 install links"]
     W56["W5.6 deploy + lighthouse"]
+    W57["W5.7 render docs markdown"]
+    W58["W5.8 docs nav + links"]
     W51 --> W52 --> W56
     W53 --> W52
     W54 --> W52
     W55 --> W56
+    W51 --> W57
+    W53 --> W57
+    W54 --> W57
+    W57 --> W58 --> W56
   end
 
   W111 --> W21
@@ -176,7 +182,7 @@ out now?" The last column is each wave's landing step. Item ids in parentheses a
 | 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | — | W2.3 → W2.9 → W2.10 | W2.11 |
 | 3 | W3.1, W3.2, W3.10, W3.11 | W3.8, W3.9 (both after W3.1) | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 | W3.12 |
 | 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | — | W4.6 (after W4.1–W4.4) | W4.8 |
-| 5 | W5.1, W5.3, W5.4, W5.5 | — | W5.2 (after W5.1+W5.3+W5.4) | W5.6 |
+| 5 | W5.1, W5.3, W5.4, W5.5 | W5.2, W5.7 (both after W5.1+W5.3+W5.4) | W5.8 (after W5.7) | W5.6 |
 
 Wave 3's serial chain is the critical path of the whole project — five items that genuinely cannot be
 parallelised, because each consumes the previous one's output. Start W3.3 as early as the wave allows
@@ -184,6 +190,11 @@ and run W3.1, W3.2, W3.8, W3.9, W3.10, and W3.11 alongside it.
 
 Wave 5 is the exception to the barrier rule in one respect: W5.3 and W5.4 consume wave-2 output
 (W2.4 and W2.5) rather than anything in wave 5, so they can be prepared before wave 5 formally opens.
+
+Wave 5 also owns **publishing the documentation** (W5.7, W5.8), not just the landing page. Both public
+web surfaces share the Astro toolchain and the same generated design tokens, so the docs are themed like
+the product rather than with a stock docs theme. Writing the docs is not deferred to wave 5 — every wave
+writes its own docs as it goes; wave 5 only renders what is already in `docs/`.
 
 ### Branching for parallel agents
 
@@ -264,8 +275,16 @@ deviate. Each has a corresponding ADR under `docs/adr/`.
   from any page join it until exported or ended.
 
 **Design system**
-- `.claude-design/` is the design source of truth, committed to the repo. Tokens are **generated**
-  from it into `src/shared/design/` — never hand-copied — with a drift check in CI.
+- `.claude-design/` is the design source of truth, committed to the repo as of `9fc9c2a`. It holds the
+  token files, 13 guideline specimen cards, 15 components in 14 files (`.jsx` + `.d.ts` + `.prompt.md`), the six
+  UI kits, the icon mark, and its own adherence lint config. Read
+  [`../design.md`](../design.md) before touching any UI item — it maps the bundle, states the three MV3
+  asset substitutions, and lists the binding brand rules.
+- The bundle is an **upstream artifact**: never edit, reformat, or "fix" a file under
+  `.claude-design/`. Changes go upstream and come back as a whole re-export in one commit, which is
+  also why `deno fmt`/`deno lint` exclude the directory.
+- Tokens are **generated** from it into `src/shared/design/` — never hand-copied — with a drift check
+  in CI.
 - Injected UI mounts in a **closed shadow root** so host-page CSS cannot reach it and its styles
   cannot leak onto the page under inspection. Tokens cross that boundary deliberately.
 - **No remote assets, ever.** The design bundle loads Google Fonts and Lucide icons over CDN; MV3
@@ -312,8 +331,13 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 - Remote `git@github.com:whizzzkid/point-and-shoot.git`; `gh` authenticated as `whizzzkid`.
 - Default branch `main`. Wave 1 lands on `feat/inital-impl`; later waves branch per the convention
   in `AGENTS.md`.
-- Docs layout is fixed: `docs/specs/`, `docs/plans/`, `docs/adr/`, `docs/tutorials/`. Do not invent
-  new top-level directories.
+- Docs layout is fixed: `docs/specs/`, `docs/plans/`, `docs/adr/`, `docs/tutorials/`, plus
+  [`docs/README.md`](../README.md) (the published index and doc conventions) and
+  [`docs/design.md`](../design.md). Do not invent new top-level directories.
+- **Everything under `docs/` is published** (wave 5, W5.7/W5.8) — rendered to HTML and themed with the
+  product's own tokens. Write every doc for a reader who has never seen the repo, keep links relative,
+  and put nothing there you would not publish.
+- The tracking PR is **#1** on `feat/inital-impl`. It is the project's live status board; see rule 7.
 
 ## Rules for working any wave
 
@@ -327,3 +351,23 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 5. Deferred or abandoned → mark `[~]` with one line saying why.
 6. Every claim in a PR body must correspond to a command actually run. If something couldn't be
    verified, say so and why.
+7. **After your item's PR merges, update the broader plan on PR #1 — same session, before you stop.**
+   This is not optional bookkeeping: PR #1 is the only place a person or an agent can see what is done
+   and what is now unblocked. A merged item that is still unticked there gets picked up twice.
+
+   In order:
+   1. On the wave's integration branch, pull the merge and confirm the wave file records the item's
+      real merged SHA (`git log -1 --format=%H -- <the item's paths>`) — if the SHA changed because the
+      merge squashed or rebased, fix it. A SHA that does not resolve is worse than `_pending_`.
+   2. Tick the item in the wave file and update the wave's **Status** line if the wave's state changed
+      (still blocked / in progress / complete).
+   3. If your item was the last prerequisite for another, say so in the wave file so the next agent
+      does not have to re-derive it from the graph.
+   4. Push, then sync PR #1's body: tick the item in its checklist, record the merged SHA and the
+      item's PR number, and update the "what's next / now unblocked" summary. Push first, sync second —
+      a body edited before the push bakes in stale refs.
+   5. If the item changed the plan itself (new items, changed dependency, revised count), update this
+      index too: the graph, the assignment table, and the item count must all agree.
+
+   Docs land with the item, in the item's own commit — never as a follow-up. Same for the plan-file
+   tick: the plan is part of the deliverable, not cleanup after it.
