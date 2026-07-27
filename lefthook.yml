@@ -1,0 +1,32 @@
+# Git hooks for point-and-shoot.
+#
+# These are a fast local warning, not the authoritative gate — CI (.github/workflows/ci.yml)
+# is authoritative, because a hook is bypassable with --no-verify and absent on any
+# machine that never ran `lefthook install`.
+#
+# Install: `mise exec -- lefthook install`
+
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      glob: "*.{ts,tsx,js,jsx,json,jsonc,md}"
+      # deno.json's top-level exclude does not apply to paths passed explicitly on the
+      # command line, so the upstream design bundle is excluded again here.
+      exclude:
+        - ".claude-design/**"
+      run: deno fmt --check {staged_files}
+      fail_text: "Formatting check failed. Fix with: deno task fmt"
+    lint:
+      glob: "*.{ts,tsx,js,jsx}"
+      exclude:
+        - ".claude-design/**"
+      run: deno lint {staged_files}
+      fail_text: "Lint failed. See the rule names above; fix with an edit, not an ignore comment."
+
+pre-push:
+  commands:
+    ci:
+      # The same command CI runs, so a green pre-push strongly predicts a green CI run.
+      run: deno task ci
+      fail_text: "deno task ci failed — CI will fail too. Fix before pushing."
