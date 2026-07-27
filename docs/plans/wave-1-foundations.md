@@ -28,7 +28,7 @@ app.
 
 ## W1.1 — Agent instructions
 
-- [x] `AGENTS.md` + `CLAUDE.md` — SHA: `61118ab`
+- [x] `AGENTS.md` + `CLAUDE.md` — SHA: `1e59e21`
 
 **parallel-safe.**
 
@@ -73,7 +73,7 @@ in it matches the resolved-versions table.
 
 ## W1.2 — Toolchain via mise, and Deno project config
 
-- [x] `mise.toml`, `deno.json`, `.gitignore`, `.editorconfig` — SHA: `3731e2b`
+- [x] `mise.toml`, `deno.json`, `.gitignore`, `.editorconfig` — SHA: `f6d8fea`
 
 **parallel-safe** with W1.1.
 
@@ -141,7 +141,7 @@ mise exec -- deno fmt --check   # must not touch .claude-design/
 
 ## W1.3 — Lefthook git hooks
 
-- [x] `lefthook.yml` + hooks installed and proven — SHA: `afcad51`
+- [x] `lefthook.yml` + hooks installed and proven — SHA: `29c5e17`
 
 **Depends on:** W1.2.
 
@@ -188,7 +188,7 @@ stray `badfmt.ts`; `deno task ci` passes so real pushes aren't blocked.
 ## W1.4 — Docs bootstrap
 
 - [x] [`docs/README.md`](../README.md) written — SHA: `419cfa8`
-- [x] per-folder index files — SHA: `f1e91cf`
+- [x] per-folder index files — SHA: `d6d8cbe`
 
 **parallel-safe** with W1.1 and W1.2.
 
@@ -218,8 +218,8 @@ item must show additions to `docs/README.md`, not a replacement of it.
 
 - [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
 - [x] [`docs/design.md`](../design.md) written — SHA: `419cfa8`
-- [x] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: `3731e2b`
-- [x] export identity recorded in [`docs/design.md`](../design.md) — SHA: `3d7be3f`
+- [x] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: `f6d8fea`
+- [x] export identity recorded in [`docs/design.md`](../design.md) — SHA: `1c0dcbe`
 
 **The two open sub-items have different blockers.** The `deno.json` exclusion waits on W1.2, which
 creates that file — do not hand it out as immediately startable: a second agent holding `deno.json`
@@ -272,7 +272,7 @@ and `deno fmt --check` reports no files under `.claude-design/`.
 
 ## W1.6 — Architecture decision records
 
-- [x] Eleven ADRs written and indexed — SHA: `3314673`
+- [x] Eleven ADRs written and indexed — SHA: `82cb4df`
 
 **Depends on:** W1.4 (template and index), W1.5 (ADRs 0008–0011 reference the design bundle).
 
@@ -347,7 +347,7 @@ pattern string would otherwise match itself.
 
 ## W1.7 — CI workflow
 
-- [x] `.github/workflows/ci.yml` — SHA: `df85366`
+- [x] `.github/workflows/ci.yml` — SHA: `c679184`
 
 **Depends on:** W1.2.
 
@@ -386,7 +386,7 @@ actually driving the CI toolchain.
 
 ## W1.8 — Browser fixture app
 
-- [x] `tests/fixtures/app/` + `deno task fixture` — SHA: `d391207`
+- [x] `tests/fixtures/app/` + `deno task fixture` — SHA: `ba215c3`
 
 **Depends on:** W1.2.
 
@@ -467,7 +467,7 @@ starts".
 
 ## W1.9 — Fixture screenshots for the PR
 
-- [x] `deno task shots` + committed screenshots — SHA: `762d092`
+- [x] `deno task shots` + committed screenshots — SHA: `c670875`
 
 **Depends on:** W1.8, W1.2.
 
@@ -527,7 +527,7 @@ reruns idempotent):
 ## W1.11 — Branch protection and the tracking issue
 
 - [x] Protection configured, tracking issue opened as
-      [#3](https://github.com/whizzzkid/point-and-shoot/issues/3) — SHA: `aea4a74`
+      [#3](https://github.com/whizzzkid/point-and-shoot/issues/3) — SHA: `8b55f02`
 
 **parallel-safe** with W1.10. W1.10 is `gh`-only; this item is `gh` plus one small docs commit (the
 issue number), and it touches no file any other wave-1 item touches.
