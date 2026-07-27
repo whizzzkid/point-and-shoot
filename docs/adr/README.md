@@ -10,11 +10,24 @@ have one behind them.
 
 ## Index
 
-| #    | Title          | Status |
-| ---- | -------------- | ------ |
-| 0001 | _pending W1.6_ | —      |
+| #                                                               | Title                                                            | Status              |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------- |
+| [0001](0001-offscreencanvas-over-chrome-offscreen.md)           | Use OffscreenCanvas for image work, not the Chrome offscreen API | Accepted 2026-07-24 |
+| [0002](0002-activetab-only-permission-model.md)                 | Request activeTab only, never broad host permissions             | Accepted 2026-07-24 |
+| [0003](0003-json-canonical-markdown-projection.md)              | Versioned JSON is canonical; Markdown is a projection            | Accepted 2026-07-24 |
+| [0004](0004-deno-first-toolchain-npm-specifiers.md)             | Deno owns the dev loop; Node tooling via npm: specifiers         | Accepted 2026-07-24 |
+| [0005](0005-safari-deferred.md)                                 | Safari is deferred past v1, but the code stays convertible       | Accepted 2026-07-24 |
+| [0006](0006-closed-shadow-dom-for-injected-ui.md)               | Mount injected UI in a closed shadow root                        | Accepted 2026-07-24 |
+| [0007](0007-playwright-chromium-plus-web-ext-coverage-split.md) | Chromium E2E via Playwright, Firefox via a web-ext smoke check   | Accepted 2026-07-24 |
+| [0008](0008-preact-for-extension-ui-astro-for-marketing.md)     | Preact for the extension UI; Astro only for marketing            | Accepted 2026-07-24 |
+| [0009](0009-no-remote-assets-vendored-fonts-and-icons.md)       | No remote assets: fonts subset locally, icons vendored           | Accepted 2026-07-24 |
+| [0010](0010-backdrop-luminance-theming-with-override.md)        | Theme by sampling backdrop luminance, with a user override       | Accepted 2026-07-24 |
+| [0011](0011-generated-design-tokens-with-drift-check.md)        | Generate design tokens from the bundle, fail CI on drift         | Accepted 2026-07-24 |
 
-W1.6 writes ADRs 0001–0011 and fills this table in the same commit.
+Four of these are load-bearing constraints rather than preferences, and reversing one by accident is
+easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no
+Chrome-only APIs), and **0009** (no remote fetches, including fonts). `AGENTS.md` restates each as a
+rule; this is where the reasoning lives.
 
 ## Filing a new one
 
