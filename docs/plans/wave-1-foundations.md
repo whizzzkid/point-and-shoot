@@ -452,6 +452,15 @@ is a local file-disclosure hole that stays silent until someone looks.
 With `tests/` now holding real files, `--permit-no-files` comes off the `lint` and `test` tasks, as
 W1.2's comment said it should: a mis-scoped `include` now fails loudly instead of passing silently.
 
+**Landed differently than specified:** path resolution goes through `@std/path`'s `fromFileUrl` and
+`join`, which adds `jsr:@std/path@1.1.6` to `deno.json`'s `imports`. The first implementation
+derived the served directory from `new URL(".", import.meta.url).pathname` and resolved each request
+back through `new URL`, which percent-encodes anything a URL cannot carry literally — so a clone
+under a directory whose name contains a space served nothing but 404s, and `deno task shots`
+produced no images. Reproduced before fixing, and pinned by a test that fails against the old
+derivation on any machine. This is why the item's Verify step is "load every page", not "the server
+starts".
+
 **Commit:** `test: add browser fixture app covering selector and capture edge cases`
 
 ---
