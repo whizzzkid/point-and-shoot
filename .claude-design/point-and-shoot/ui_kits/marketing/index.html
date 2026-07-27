@@ -1,0 +1,53 @@
+<!-- @dsCard group="Marketing" viewport="1200x700" name="Marketing site" subtitle="Landing page hero + feature overview" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0}</style>
+<div id="root"></div>
+<script type="text/babel">
+const {Button,Icon,Card,IconButton}=window.PointShootDesignSystem_5498d1;
+
+const FEATURES=[
+{icon:'crosshair',title:'Highlight anything',text:'Draw a box around any element or region — on any site, no setup.'},
+{icon:'camera',title:'Full context, captured',text:'Screenshot, URL, XPath, and surrounding DOM/meta — every time.'},
+{icon:'list-checks',title:'Notes, not tickets',text:'Leave as many notes as you need. Review them all in one place.'},
+{icon:'send',title:'Ship it to an agent',text:'Compile your notes into a plan your local coding agent can act on.'},
+];
+
+function Demo(){
+const [theme,setTheme]=React.useState('dark');
+return (<div data-theme={theme} style={{width:1200,height:700,background:'var(--bg-canvas)',fontFamily:'var(--font-body)',overflow:'hidden',position:'relative'}}>
+<div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 50% -10%,rgba(79,124,255,.14),transparent 60%)'}}></div>
+<div style={{position:'relative',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 48px'}}>
+<div style={{display:'flex',alignItems:'center',gap:8}}>
+<img src="../../assets/icon.svg" alt="" style={{width:20,height:20,filter:'drop-shadow(var(--glow-accent))'}}/>
+<div style={{fontFamily:'var(--font-display)',fontWeight:600,fontSize:16,color:'var(--text-primary)'}}>Point & Shoot</div>
+</div>
+<div style={{display:'flex',gap:28,fontSize:13,color:'var(--text-secondary)'}}><span>Features</span><span>Docs</span><span>Playwright</span></div>
+<div style={{display:'flex',gap:10,alignItems:'center'}}>
+<IconButton icon={<Icon name={theme==='dark'?'sun':'moon'}/>} label="Toggle theme" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}/>
+<Button size="sm">Add to Chrome</Button>
+</div>
+</div>
+<div style={{position:'relative',textAlign:'center',padding:'40px 48px 0'}}>
+<div style={{fontFamily:'var(--font-display)',fontWeight:600,fontSize:52,color:'var(--text-primary)',letterSpacing:'var(--tracking-tight)',lineHeight:1.05}}>Point. Shoot. Fix.</div>
+<div style={{color:'var(--text-secondary)',fontSize:16,maxWidth:520,margin:'16px auto 0'}}>Highlight what's broken on any page, leave a note, and hand it straight to your coding agent.</div>
+<div style={{display:'flex',gap:12,justifyContent:'center',marginTop:26}}>
+<Button size="lg">Add to Chrome — free</Button>
+<Button variant="secondary" size="lg">See it in action</Button>
+</div>
+</div>
+<div style={{position:'relative',display:'flex',gap:16,padding:'48px 48px 0',justifyContent:'center'}}>
+{FEATURES.map(f=><Card key={f.title} style={{width:250}}>
+<Icon name={f.icon} size={20}/>
+<div style={{fontFamily:'var(--font-display)',fontWeight:600,fontSize:14,color:'var(--text-primary)',marginTop:12}}>{f.title}</div>
+<div style={{fontSize:12.5,color:'var(--text-tertiary)',marginTop:6,lineHeight:1.5}}>{f.text}</div>
+</Card>)}
+</div>
+</div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

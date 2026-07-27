@@ -1,0 +1,6 @@
+:root{
+--text-2xs:11px;--text-xs:12px;--text-sm:13px;--text-base:15px;--text-md:17px;--text-lg:20px;--text-xl:26px;--text-2xl:34px;--text-3xl:46px;--text-4xl:64px;
+--leading-tight:1.1;--leading-snug:1.3;--leading-normal:1.5;--leading-relaxed:1.65;
+--tracking-tight:-.02em;--tracking-normal:0;--tracking-wide:.04em;--tracking-wider:.08em;
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+}

@@ -9,3 +9,7 @@
 # https://docs.deno.com/runtime/reference/cli/coverage/
 coverage/
 *.lcov
+
+# Agent scratch output — never part of the repo
+.playwright-mcp/
+.remember/

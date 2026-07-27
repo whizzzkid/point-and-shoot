@@ -1,0 +1,91 @@
+<!-- @dsCard group="Toolbar Overlay" viewport="1000x600" name="Toolbar overlay" subtitle="Injected in-page action bar + highlight/annotate flow" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;overflow:hidden}</style>
+<div id="root"></div>
+<script type="text/babel">
+const {Button,IconButton,Icon,Badge}=window.PointShootDesignSystem_5498d1;
+
+function FakePage(){
+return (<div style={{position:'absolute',inset:0,background:'#f4f4f2',fontFamily:'Arial,sans-serif',userSelect:'none'}}>
+<div style={{height:56,background:'#fff',borderBottom:'1px solid #e2e2e0',display:'flex',alignItems:'center',padding:'0 24px',justifyContent:'space-between'}}>
+<div style={{fontWeight:700,color:'#222'}}>Acme Cloud</div>
+<div style={{display:'flex',gap:20,color:'#555',fontSize:13}}><span>Product</span><span>Pricing</span><span>Docs</span></div>
+</div>
+<div style={{padding:'40px 60px'}}>
+<div style={{fontSize:30,fontWeight:700,color:'#1a1a1a',marginBottom:10}}>Ship faster with Acme</div>
+<div style={{color:'#666',fontSize:14,marginBottom:20,maxWidth:420}}>The platform teams use to deploy, monitor, and scale their apps without the busywork.</div>
+<button style={{background:'#111',color:'#fff',border:'none',padding:'10px 18px',borderRadius:6,fontSize:13,marginBottom:36}} className="hero-cta">Get started</button>
+<div style={{display:'flex',gap:16}}>
+{[1,2,3].map(i=><div key={i} style={{width:180,height:110,background:'#fff',border:'1px solid #e2e2e0',borderRadius:8}}></div>)}
+</div>
+</div>
+</div>);
+}
+
+function Demo(){
+const [tool,setTool]=React.useState('select');
+const [selecting,setSelecting]=React.useState(false);
+const [box,setBox]=React.useState(null);
+const [start,setStart]=React.useState(null);
+const [showNote,setShowNote]=React.useState(false);
+const [note,setNote]=React.useState('');
+const [notes,setNotes]=React.useState([]);
+const [theme,setTheme]=React.useState('dark');
+const areaRef=React.useRef(null);
+
+function onDown(e){
+if(tool!=='select'||showNote)return;
+const r=areaRef.current.getBoundingClientRect();
+const x=e.clientX-r.left,y=e.clientY-r.top;
+setStart({x,y});setBox({x,y,w:0,h:0});setSelecting(true);
+}
+function onMove(e){
+if(!selecting)return;
+const r=areaRef.current.getBoundingClientRect();
+const x=e.clientX-r.left,y=e.clientY-r.top;
+setBox({x:Math.min(x,start.x),y:Math.min(y,start.y),w:Math.abs(x-start.x),h:Math.abs(y-start.y)});
+}
+function onUp(){
+if(!selecting)return;
+setSelecting(false);
+if(box&&box.w>20&&box.h>20)setShowNote(true);
+else setBox(null);
+}
+function saveNote(){
+setNotes([...notes,{id:Date.now(),text:note||'Untitled note',box}]);
+setShowNote(false);setNote('');setBox(null);
+}
+function cancelNote(){setShowNote(false);setNote('');setBox(null);}
+
+return (<div ref={areaRef} data-theme={theme} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} style={{position:'relative',width:1000,height:600,cursor:tool==='select'?'crosshair':'default',overflow:'hidden'}}>
+<FakePage/>
+{notes.map(n=><div key={n.id} style={{position:'absolute',left:n.box.x,top:n.box.y,width:n.box.w,height:n.box.h,border:'2px solid var(--accent)',borderRadius:4,pointerEvents:'none',background:'var(--accent-subtle)'}}></div>)}
+{box&&<div style={{position:'absolute',left:box.x,top:box.y,width:box.w,height:box.h,border:'2px dashed var(--accent)',borderRadius:4,boxShadow:'var(--glow-accent)',pointerEvents:'none',background:'rgba(79,124,255,.08)'}}></div>}
+{showNote&&box&&<div style={{position:'absolute',left:Math.min(box.x,700),top:box.y+box.h+10,width:280,background:'var(--bg-overlay)',backdropFilter:'blur(var(--blur-panel))',border:'1px solid var(--border-strong)',borderRadius:'var(--radius-lg)',padding:14,boxShadow:'var(--shadow-lg)'}}>
+<div style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--text-tertiary)',marginBottom:8}}>button.hero-cta</div>
+<textarea autoFocus value={note} onChange={e=>setNote(e.target.value)} placeholder="What's wrong here?" rows={3} style={{width:'100%',background:'var(--bg-inset)',border:'1px solid var(--border-default)',borderRadius:'var(--radius-sm)',padding:8,color:'var(--text-primary)',fontFamily:'var(--font-body)',fontSize:13,outline:'none',resize:'none',boxSizing:'border-box'}}></textarea>
+<div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:10}}>
+<Button variant="ghost" size="sm" onClick={cancelNote}>Cancel</Button>
+<Button size="sm" onClick={saveNote}>Save note</Button>
+</div>
+</div>}
+
+<div style={{position:'absolute',bottom:24,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,background:'var(--bg-overlay)',backdropFilter:'blur(var(--blur-panel))',border:'1px solid var(--border-strong)',borderRadius:'var(--radius-lg)',padding:'8px',boxShadow:'var(--shadow-lg)'}}>
+<IconButton icon={<Icon name="crosshair"/>} label="Select" active={tool==='select'} onClick={()=>setTool('select')}/>
+<IconButton icon={<Icon name="camera"/>} label="Screenshot" active={tool==='screenshot'} onClick={()=>setTool('screenshot')}/>
+<IconButton icon={<Icon name="message-square-plus"/>} label="Note" active={tool==='note'} onClick={()=>setTool('note')}/>
+<div style={{width:1,height:20,background:'var(--border-default)',margin:'0 4px'}}></div>
+<IconButton icon={<Icon name={theme==='dark'?'sun':'moon'}/>} label="Toggle theme" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}/>
+<div style={{width:1,height:20,background:'var(--border-default)',margin:'0 4px'}}></div>
+<Badge tone={notes.length?'accent':'neutral'}>{`${notes.length} note${notes.length===1?'':'s'}`}</Badge>
+<Button size="sm" disabled={!notes.length}>Send to agent</Button>
+</div>
+</div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

@@ -1,0 +1,29 @@
+<!-- @dsCard group="Components" viewport="700x220" name="Buttons & icon buttons" subtitle="Primary/secondary/ghost/danger, sizes, icon buttons" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<div id="root" style="background:var(--bg-canvas);padding:20px"></div>
+<script type="text/babel">
+const {Button,IconButton,Icon}=window.PointShootDesignSystem_5498d1;
+function Demo(){return (<div style={{display:'flex',flexDirection:'column',gap:14}}>
+<div style={{display:'flex',gap:10,alignItems:'center'}}>
+<Button variant="primary">Send to agent</Button>
+<Button variant="secondary">Cancel</Button>
+<Button variant="ghost">Skip</Button>
+<Button variant="danger">Delete note</Button>
+<Button variant="primary" disabled>Disabled</Button>
+</div>
+<div style={{display:'flex',gap:10,alignItems:'center'}}>
+<Button size="sm">Small</Button>
+<Button size="md">Medium</Button>
+<Button size="lg">Large</Button>
+<IconButton icon={<Icon name="crosshair"/>} label="Select" active/>
+<IconButton icon={<Icon name="camera"/>} label="Capture"/>
+<IconButton icon={<Icon name="settings"/>} label="Settings"/>
+</div>
+</div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

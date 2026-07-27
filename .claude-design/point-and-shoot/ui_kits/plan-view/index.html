@@ -1,0 +1,70 @@
+<!-- @dsCard group="Plan View" viewport="900x600" name="Plan view" subtitle="Compiled notes turned into an agent-ready prompt" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../components/capture/CaptureMinimap.global.js"></script>
+<style>body{margin:0}</style>
+<div id="root"></div>
+<script type="text/babel">
+const DS=window.PointShootDesignSystem_5498d1;
+const {Button,Icon,Tag,Select,Badge,IconButton}=DS;
+const CaptureMinimap=DS.CaptureMinimap||window.PSCaptureMinimap;
+
+const AGENTS=['Claude Code — local','Cursor agent — local','Playwright companion — localhost:3000','Remote host — coming in v2'];
+const CAPTURES=[
+{el:'button.hero-cta',region:{x:.08,y:.42,w:.2,h:.09}},
+{el:'.pricing-card:nth-child(2)',region:{x:.38,y:.55,w:.26,h:.28}},
+{el:'footer a.legal-link',region:{x:.1,y:.82,w:.16,h:.06}},
+];
+
+const PROMPT=`Fix 3 issues found on acme.cloud/pricing:
+
+1. button.hero-cta (//*[@id='hero']/button[1])
+   "CTA color has too little contrast against background — fails WCAG AA."
+   Meta: <button class="hero-cta" style="background:#eee;color:#fff">
+
+2. .pricing-card:nth-child(2) (//*[@id='pricing']/div[2])
+   "'Most popular' badge overlaps the price on smaller screens."
+
+3. footer a.legal-link (//*[@id='footer']/div[3]/a[2])
+   "Link text 'here' is not descriptive for screen readers."
+
+Screenshots and full DOM context attached per note.`;
+
+function Demo(){
+const [agent,setAgent]=React.useState(AGENTS[0]);
+const [copied,setCopied]=React.useState(false);
+const [theme,setTheme]=React.useState('dark');
+return (<div data-theme={theme} style={{width:900,height:600,background:'var(--bg-canvas)',display:'flex',flexDirection:'column',fontFamily:'var(--font-body)'}}>
+<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 24px',borderBottom:'1px solid var(--border-subtle)'}}>
+<div>
+<div style={{fontSize:18,fontFamily:'var(--font-display)',fontWeight:600,color:'var(--text-primary)'}}>Compile plan</div>
+<div style={{fontSize:12,color:'var(--text-tertiary)',marginTop:2}}>3 notes selected from acme.cloud/pricing</div>
+</div>
+<div style={{display:'flex',gap:10,alignItems:'center'}}>
+<IconButton icon={<Icon name={theme==='dark'?'sun':'moon'}/>} label="Toggle theme" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}/>
+<div style={{width:250}}><Select options={AGENTS} value={agent} onChange={setAgent}/></div>
+<Button onClick={()=>{setCopied(true);setTimeout(()=>setCopied(false),1400);}}>{copied?'Copied':'Copy prompt'}</Button>
+</div>
+</div>
+<div style={{padding:'16px 24px 12px',display:'flex',gap:14,alignItems:'flex-start'}}>
+{CAPTURES.map(c=><div key={c.el} style={{display:'flex',flexDirection:'column',gap:6}}>
+<CaptureMinimap width={96} height={72} region={c.region} label={`Captured region — ${c.el}`}/>
+<div style={{fontSize:10.5,fontFamily:'var(--font-mono)',color:'var(--text-tertiary)',maxWidth:96,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.el}</div>
+</div>)}
+<div style={{marginLeft:'auto'}}><Badge tone="accent">ready to send</Badge></div>
+</div>
+<div style={{flex:1,margin:'0 24px 24px',background:'var(--bg-inset)',border:'1px solid var(--border-default)',borderRadius:'var(--radius-lg)',padding:18,overflowY:'auto'}}>
+<pre style={{margin:0,fontFamily:'var(--font-mono)',fontSize:12.5,lineHeight:1.6,color:'var(--text-secondary)',whiteSpace:'pre-wrap'}}>{PROMPT}</pre>
+</div>
+<div style={{padding:'0 24px 20px',display:'flex',justifyContent:'flex-end',gap:10}}>
+<Button variant="ghost">Back to notes</Button>
+<Button variant="primary">Send to agent</Button>
+</div>
+</div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
