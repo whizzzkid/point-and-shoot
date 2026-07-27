@@ -41,7 +41,7 @@ const CONTENT_SECURITY_POLICY = "script-src 'self'; object-src 'self'";
 /** Vendored font and icon-sprite paths exposed to injected content scripts (landed by W2.5). */
 const WEB_ACCESSIBLE_RESOURCES = [
   "src/shared/design/fonts/*.woff2",
-  "src/shared/design/icons/sprite.svg",
+  "src/shared/design/icons.svg",
 ];
 
 /** Fields shared verbatim between the Chrome and Firefox manifests. */
