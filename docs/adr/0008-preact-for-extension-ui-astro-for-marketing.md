@@ -31,9 +31,9 @@ so nobody re-litigates them:
 
 ## Decision
 
-Use Preact with JSX for all extension UI: toolbar, picker overlay, options page, and popup. Use
-Astro for the wave-5 marketing site only, isolated in `site/` with its own Node toolchain, producing
-nothing that ships inside the extension.
+Use Preact with JSX for all five extension surfaces: the injected toolbar overlay, the popup, the
+notes side panel, the plan view, and the options page. Use Astro for the wave-5 marketing site only,
+isolated in `site/` with its own Node toolchain, producing nothing that ships inside the extension.
 
 ## Consequences
 

@@ -259,7 +259,7 @@ deviate. Each has a corresponding ADR under `docs/adr/`.
   `package.json`, no committed `node_modules`. _Exception:_ wave 5's Astro site is isolated in
   `site/` with its own Node toolchain, and never ships inside the extension.
 - TypeScript throughout, strict. Every exported symbol carries TSDoc.
-- **Preact** is the UI layer for all four extension surfaces. JSX transforms via esbuild. Chosen
+- **Preact** is the UI layer for all five extension surfaces. JSX transforms via esbuild. Chosen
   over React (~45KB into arbitrary pages buys nothing here), Lit (rewrites the JSX prototypes), and
   Astro (Vite/Node toolchain, and a content script isn't a page — Astro cannot build the overlay,
   the hardest surface).

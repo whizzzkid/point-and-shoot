@@ -94,7 +94,7 @@ Chrome and Firefox are both first-class. Safari is compatible-by-construction wi
 
 ## UI conventions
 
-- **Preact** is the UI layer for all four extension surfaces, with JSX transformed by esbuild.
+- **Preact** is the UI layer for all five extension surfaces, with JSX transformed by esbuild.
 - **Injected UI mounts in a closed shadow root**, so host-page CSS cannot reach it and its styles
   cannot leak onto the page under inspection. Design tokens cross that boundary deliberately.
 - **Design tokens are generated** from `.claude-design/` into `src/shared/design/` — never
@@ -181,12 +181,18 @@ Actions pin to the official action's semver major, which is this project's one d
 | node               | `26.5.0` | `mise.toml` (Playwright browser install, font subset) |
 | lefthook           | `2.1.10` | `mise.toml`                                           |
 | playwright         | `1.62.0` | `deno.json` imports                                   |
+| `@std/assert`      | `1.0.14` | `deno.json` imports                                   |
 | `@std/path`        | `1.1.6`  | `deno.json` imports                                   |
-| esbuild            | `0.28.1` | `deno.json` imports                                   |
-| web-ext            | `10.5.0` | `deno.json` imports                                   |
+| esbuild            | `0.28.1` | resolved, not yet imported — lands in W2.3            |
+| web-ext            | `10.5.0` | resolved, not yet imported — lands in W4.3            |
 | `actions/checkout` | `v7`     | CI workflows                                          |
 | `jdx/mise-action`  | `v4`     | CI workflows                                          |
 | runner image       | `24.04`  | CI workflows (`runs-on: ubuntu-24.04`)                |
+
+A resolved-but-unimported version is recorded here so the number is decided once, and is written
+into `deno.json` by the item that first needs it. Claiming a pin already lives somewhere it does not
+is worse than an empty row: the next reader greps `deno.json`, finds nothing, and re-picks a
+version.
 
 One pin is only advisory in practice: the git hook `lefthook install` generates prefers a bare
 `lefthook` on `PATH` and only falls back to the mise install path, and `mise exec --` appends its
