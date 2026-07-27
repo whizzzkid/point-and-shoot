@@ -147,6 +147,15 @@ not suggestions. A PR that breaks one is not merged.
   together is three types.
 - Formatting is settled and enforced: 2-space indent, 100-column width, **double quotes**.
   `.editorconfig` agrees with `deno fmt`; keep them in sync if either changes.
+- **DOM types in a shared module.** Deno's default `lib` has no DOM, and `deno.json`'s
+  `compilerOptions` stays that way — most of `src/shared/` is meant to run outside a page context. A
+  module that genuinely needs DOM types (e.g. `src/shared/selectors.ts`) adds
+  `/// <reference lib="dom" />` as its own first line rather than widening the global `lib`.
+- **Selector bundle emission order** (`src/shared/selectors.ts`): test ids (`data-testid`,
+  `data-test`, `data-cy`, `id`) first, then ARIA role plus accessible name, then the structural
+  `cssPath`/`xpath` as the last resort. This is trust order for a consumer chaining fallbacks — a
+  test-authored identifier is the least likely to drift, a structural path the most likely to break
+  the moment the DOM around the element changes shape.
 
 ## Testing
 
