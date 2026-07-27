@@ -53,15 +53,21 @@ flowchart TD
   W34 --> W35
   W35 --> W36
   W36 --> W37
-  W311 --> W37
   W310 --> W33
   W37 --> W312
   W38 --> W312
   W39 --> W312
+  W311 --> W312
 ```
 
 W3.1, W3.2, W3.10, and W3.11 are **parallel-safe** starting points. W3.8 and W3.9 are parallel-safe
 once W3.1 lands. W3.12 is the wave's landing step and waits on everything.
+
+**W3.11 does not gate W3.7.** The serializer needs the `componentHint` *field*, which W2.8 already
+defines as optional — not the probe that populates it. The probe is default-off and its own degraded
+path is "no hint," so the common case for W3.7 is a record with no hint at all. Making the export wait
+on a fragile, opt-in framework probe lengthened the wave's serial chain — the acknowledged critical
+path for the whole project — for a field that is usually absent.
 
 ---
 
@@ -126,8 +132,11 @@ corrupting each other, and it's where the theme decision lands.
   onto the page under inspection and corrupt the screenshots.
 - Load the vendored `@font-face` files by extension URL. Fonts are a documented shadow-DOM sharp
   edge: `@font-face` must be declared in the **document**, not only inside the shadow root, for some
-  engines to apply it. Verify empirically in both browsers and document what you found — do not
-  reason about it from first principles.
+  engines to apply it. Verify empirically and document what you found — do not reason about it from
+  first principles. **Chromium is covered by W2.9's harness; Firefox is covered by W2.12's boot check,
+  which asserts a vendored WOFF2 resolves through `moz-extension://`.** Extend W2.12 with the
+  shadow-root case rather than reaching for a Firefox harness this wave does not have — the
+  behavioural Firefox suite is W4.3.
 - Pin the host's `z-index` to the top of the stacking context and defend against host pages that also
   use extreme z-indexes. Record the chosen strategy in a comment; this is a known source of "the
   toolbar is invisible on exactly one site" bugs.
@@ -146,7 +155,9 @@ corrupting each other, and it's where the theme decision lands.
 not affect shadow content; luminance sampling picks `light` on the `light.html` fixture and `dark` on
 `dark.html`; the override beats sampling.
 
-**Verify:** `deno task test` green; verify the font question in a real browser in both engines.
+**Verify:** `deno task test` green; the font question answered in a real Chromium via W2.9 and in a
+real Firefox via W2.12, with the finding written down either way. Do not mark this item done on a
+Chromium-only result — the whole point of the check is the engine difference.
 
 **Commit:** `feat(content): add closed shadow host and backdrop-adaptive theming`
 
@@ -195,7 +206,8 @@ Requirements:
   indefensible for an accessibility annotation tool.
 - Escape always exits cleanly and removes every overlay. Test this — a picker you can't get out of is
   the worst possible bug in an extension injected into someone's page.
-- Intersecting-element collection must be bounded and ordered: cap the count, order by DOM position,
+- Intersecting-element collection must be bounded and ordered: cap the count at the value in the
+  [index's settled-numbers table](README.md) rather than picking one here, order by DOM position,
   mark one element as `primary`, and skip elements that are purely structural wrappers with no visual
   box. An unbounded drag over `<body>` should not collect two thousand elements.
 - Feed each collected element through W2.6's selector engine and W2.7's style digest.
@@ -233,9 +245,11 @@ Handle explicitly:
 - Capture requires an active-tab grant from a user gesture. A capture attempt without one must produce
   a typed error the UI can explain, not a silent empty image.
 - Firefox's capture API differs in name and in some options; it goes through the W2.1 shim, and the
-  divergence is unit-tested there.
+  divergence is unit-tested there. **Unit-tested against a fake is the only Firefox coverage capture
+  gets until W4.3** — W2.12 boots the Firefox build but does not exercise capture. Say so in the item's
+  Limitations rather than implying the divergence is verified against a real Gecko.
 
-**Verify:** Playwright captures on each fixture page; assert output dimensions honour the 1024px cap
+**Verify:** Playwright captures on each fixture page in Chromium; assert output dimensions honour the 1024px cap
 and the device-pixel-ratio maths; assert `truncated` is set on `tall.html`; assert the extension's own
 UI is absent from the captured image; assert the WebP encodes under a sane byte budget.
 
@@ -260,9 +274,15 @@ shim.
 - Technical values (URL, XPath, element tag) in mono, **truncated with an ellipsis rather than
   wrapped**, with a way to see the full value — `title` attribute or an expand affordance. That's a
   stated content rule.
-- Surface the size budget honestly: show the projected export size and warn as it approaches the
-  point where an agent won't read it. Do not silently truncate.
+- Surface the size budget honestly: show the projected export size and warn as it crosses the
+  threshold in the [index's settled-numbers table](README.md) — a measured number from W2.11's spike,
+  not a guess made here. Do not silently truncate.
 - Deleting a note is destructive and the screenshot is unrecoverable — confirm, or offer undo.
+- **Show the recorded URL in full, and offer to strip its query string.** A page URL routinely carries
+  `?access_token=`, a session id, or a signed query — and the note that carries it is destined for an
+  agent. Default the strip **on** when a parameter name matches `token|key|secret|auth|session`
+  case-insensitively; the path is what an agent needs, the query string usually is not. The user can
+  always turn it back on for a note where the query matters.
 
 **Verify:** Playwright drives capture-then-review end to end; edits persist across a panel close and
 reopen (proving the W2.8 store is wired, not just component state); the panel renders correctly in
@@ -276,10 +296,13 @@ both forced themes.
 
 - [ ] `src/sidepanel/plan/`, `src/shared/serialize/` — SHA: _pending_
 
-**Depends on:** W3.1 (the plan view UI is built from the component library), W3.6, W3.11.
+**Depends on:** W3.1 (the plan view UI is built from the component library), W3.6. **Not W3.11** — see
+the note under the dependency graph; render `componentHint` when the record carries one and omit the
+section when it does not, so the probe can land before or after this item.
 
 Read `.claude-design/point-and-shoot/ui_kits/plan-view/index.html` first. This is the payoff surface:
-collected notes compiled into an agent-ready prompt.
+collected notes compiled into an agent-ready prompt. **Build the format W2.11's spike validated** —
+if the spike found the agent needed something the bundle doesn't carry, that change lands here.
 
 **Write `src/shared/serialize/`:**
 - `toJson()` — the canonical W2.8 record with base64 WebP inline.
@@ -296,9 +319,21 @@ collected notes compiled into an agent-ready prompt.
 toggles, the size budget, and copy plus download actions. Primary action wording per the design:
 "Send to agent"-style phrasing, sentence case, no exclamation.
 
+**State what leaves the machine, at the moment it leaves.** The export bundles screenshots of whatever
+the user pointed at — often an authenticated page — plus full URLs and DOM text, and its whole purpose
+is to be handed to a coding agent, which for a hosted model means it leaves the device. The plan
+view names that plainly before the export action, in the design's voice: what the bundle contains, and
+that the user should treat it like any other file they'd paste into a chat. This is a content change,
+not a feature; the privacy story elsewhere in this project is entirely about what the extension
+*reads* (`activeTab` only, no `<all_urls>`, no remote assets) and says nothing about what it *emits*.
+Record the decision as an ADR alongside ADR 0002, which covers only the inbound half.
+
 **Verify:** golden-file tests for both serializers over a fixture session (so format changes are
-visible in review); the zip contains exactly the expected entries; the extracted Markdown's image
-references resolve to files that exist; round-trip a real captured session end to end in Playwright.
+visible in review), covering **both** record shapes — with a `componentHint` and without — since the
+probe is default-off and the no-hint case is the common one; the zip contains exactly the expected
+entries; the extracted Markdown's image references resolve to files that exist; a URL carrying
+`?access_token=` is stripped by default and the UI says so; round-trip a real captured session end to
+end in Playwright.
 
 **Commit:** `feat(export): add plan view with json and markdown serializers`
 
@@ -331,9 +366,11 @@ popup is a launcher, not a workspace; the panel is the workspace.
 Read `.claude-design/point-and-shoot/ui_kits/options/index.html`.
 
 Settings: theme override (dark / light / follow backdrop, per ADR 0010), the framework-hint probe
-toggle (default **off** — it reads page internals), export size budget, screenshot quality and max
-dimension, keyboard shortcut display with a link to the browser's own shortcut settings (extensions
-cannot rebind shortcuts directly), and a destructive "clear all sessions" with confirmation.
+toggle (default **off** — it reads page internals), export size budget (defaulting to the measured
+value in the [index's settled-numbers table](README.md), not a number chosen here), the W3.6
+query-string stripping toggle, screenshot quality and max dimension, keyboard shortcut display with a
+link to the browser's own shortcut settings (extensions cannot rebind shortcuts directly), and a
+destructive "clear all sessions" with confirmation.
 
 Persist through the W2.1 shim's `storage.local`, with a typed settings schema and defaults in one
 place so every consumer reads the same shape.
@@ -408,11 +445,13 @@ plainly what does not work yet — closed shadow roots, cross-origin iframes, vi
 and which framework versions the W3.11 hints were verified against.
 
 Do not claim the export is agent-ready without having fed a real exported bundle to a local agent and
-saying what happened.
+saying what happened. W2.11's spike did this with a hand-written bundle before any of this UI existed;
+this run is the confirmation that the built pipeline produces what the spike validated, so compare the
+two and report any divergence rather than re-deriving the answer.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
-every W3.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body so
-it shows wave 3 done and wave 4 open.
+every W3.x item with its merged SHA, flip this wave's **Status** to complete, and update the **tracking
+issue** so it shows wave 3 done and wave 4 open.
 
 ---
 
@@ -426,4 +465,6 @@ it shows wave 3 done and wave 4 open.
 - Both themes render every surface correctly, and forced themes make visual output deterministic.
 - No component contains a hardcoded colour, spacing, radius, or duration.
 - No extension UI appears in any captured screenshot.
+- The export UI states what the bundle contains before it is produced, and a token-bearing query
+  string is stripped by default.
 - `deno task gallery` renders every component in every state in both themes.

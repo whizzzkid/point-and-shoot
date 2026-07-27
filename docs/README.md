@@ -15,7 +15,7 @@ rendered documentation site, themed with the same design tokens as the product (
 | Path | What lives there | Published? |
 | --- | --- | --- |
 | [`design.md`](design.md) | The design system: what's in the bundle, the MV3 substitutions, how to apply it | Yes |
-| [`plans/`](plans/) | The wave-by-wave delivery plan — 48 items, dependency graphs, per-item verify steps | Yes |
+| [`plans/`](plans/) | The wave-by-wave delivery plan — 53 items, dependency graphs, per-item verify steps | Yes |
 | `specs/` | Settled behavioral contracts: note schema, export bundle format, capture semantics | Yes |
 | `adr/` | Architecture decision records, numbered, immutable once accepted | Yes |
 | `tutorials/` | Task-shaped walkthroughs: install, first capture, Playwright companion, troubleshooting | Yes |

@@ -119,6 +119,11 @@ a troubleshooting page covering the known limits — closed shadow roots, cross-
 restricted pages, and viewport-clamped regions. Those limits are already known; documenting them
 up front is cheaper than fielding them as bugs.
 
+Add a short **"what an export contains"** section: screenshots of whatever was captured, full page
+URLs, and DOM text — and the reminder that handing the bundle to a hosted agent sends all of it off the
+machine. Users annotate authenticated pages; the tool should say so once, plainly, rather than leaving
+it to be discovered. This pairs with the export-time disclosure in W3.7 and the ADR recorded there.
+
 Verify every command in the docs by running it. A README command that doesn't work is worse than no
 README.
 
@@ -139,8 +144,14 @@ Keep total wall-clock reasonable by running jobs in parallel rather than chainin
 `deno task ci` (the fast gate) separate from the browser tiers. If the suite gets slow enough that
 people start skipping it, that's a correctness problem, not a convenience one.
 
+Extend the branch-protection required-check list (W1.11) with the new jobs in the same PR. A job that
+CI runs but protection does not require is advisory — it can go red and the PR still merges, which is
+exactly the failure mode this wave exists to close.
+
 **Verify:** `gh run watch --exit-status` green with every job present. Deliberately break one assertion
 and confirm the right job fails and uploads its artifact — a CI job nobody has seen fail is unproven.
+Confirm with `gh api repos/{owner}/{repo}/branches/main/protection` that the required-check list now
+names every job in the workflow.
 
 **Commit:** `ci: add full e2e, visual, firefox smoke, and a11y jobs`
 
@@ -181,9 +192,9 @@ Safari is unbuilt, framework hints are verified only against the specific framew
 tested, and scroll-and-stitch capture is not implemented.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
-every W4.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body to
-state that v1 is verified and wave 5 is the only wave left. Wave 5 is deferred rather than blocked — say
-which, so nobody reads the empty checklist as work in flight.
+every W4.x item with its merged SHA, flip this wave's **Status** to complete, and update the **tracking
+issue** to state that v1 is verified and wave 5 is the only wave left. Wave 5 is deferred rather than
+blocked — say which, so nobody reads the empty checklist as work in flight.
 
 ---
 

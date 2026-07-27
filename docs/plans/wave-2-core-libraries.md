@@ -27,7 +27,9 @@ flowchart TD
   W28["W2.8 schema, types, IndexedDB"]
   W29["W2.9 Playwright extension-load smoke"]
   W210["W2.10 CI expansion"]
-  W211["W2.11 pull request"]
+  W211["W2.11 export-format spike"]
+  W212["W2.12 Firefox boot check"]
+  W213["W2.13 pull request"]
 
   W21 --> W23
   W22 --> W23
@@ -35,14 +37,19 @@ flowchart TD
   W25 --> W23
   W23 --> W29
   W21 --> W29
-  W29 --> W210 --> W211
-  W26 --> W211
-  W27 --> W211
+  W23 --> W212
   W28 --> W211
+  W29 --> W210
+  W212 --> W210
+  W210 --> W213
+  W26 --> W213
+  W27 --> W213
+  W211 --> W213
 ```
 
 W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, and W2.8 are all **parallel-safe** with each other — seven
-disjoint file sets, safe to hand to concurrent agents.
+disjoint file sets, safe to hand to concurrent agents. W2.11 joins them as soon as W2.8 fixes the
+record shape; it writes only a spec and a throwaway bundle, so it collides with nothing.
 
 ---
 
@@ -93,6 +100,12 @@ the test pass.
 files guarantees they drift. One typed source, two emitted files.
 
 **Write `build/manifest.ts`:**
+- **Export one `SUPPORTED` constant** holding the minimum Chrome and Firefox versions, resolved from
+  each vendor's MV3 support baseline rather than picked — Firefox's MV3 floor in particular is well
+  below the number a plausible guess produces. This constant is the single source for
+  `strict_min_version`, `minimum_chrome_version`, **and** W2.3's esbuild `target`. Record the resolved
+  numbers in the [index's resolved-versions table](README.md) alongside the tool pins; a project that
+  refuses `^` on a dev dependency should not leave its browser floors to whoever writes the item.
 - A typed `manifest.base` object holding everything shared: `manifest_version: 3`, name, version,
   description, icons, `permissions` (exactly the six from the README's permission list — no more),
   `action`, `commands` (with a suggested default shortcut and a clear description string),
@@ -110,7 +123,9 @@ files guarantees they drift. One typed source, two emitted files.
 
 **Tests:** assert both outputs validate against the required MV3 keys for their browser, that neither
 contains `host_permissions`, that the permission list matches the README's exactly, and that
-Firefox's output has no `service_worker` key while Chrome's has no `scripts` key.
+Firefox's output has no `service_worker` key while Chrome's has no `scripts` key. Also assert each
+manifest's declared floor equals the corresponding value in `SUPPORTED`, so a hand-edited literal
+cannot reintroduce the divergence with W2.3's build target.
 
 **Verify:** `deno task test` green.
 
@@ -133,8 +148,13 @@ Firefox's output has no `service_worker` key while Chrome's has no `scripts` key
 - Entry points: `src/background/index.ts`, `src/content/index.ts`, plus HTML-paired entries for the
   side panel, popup, and options page. Wave 2 may emit placeholder HTML shells for those three —
   a valid document that loads its bundle and renders nothing. Wave 3 fills them.
-- `format: 'esm'`, `target: 'chrome120,firefox121'` (pick real floors and record them in
-  `AGENTS.md`), `bundle: true`, sourcemaps in dev and none in release.
+- `format: 'esm'`, `bundle: true`, sourcemaps in dev and none in release. **Derive `target` from the
+  `SUPPORTED` constant W2.2 exports from `build/manifest.ts`** — do not write browser floors here as
+  literals. The floors are one fact with two consumers (this build target, and W2.2's
+  `strict_min_version` / `minimum_chrome_version`); authored twice they drift, and the failure is an
+  extension that *installs* on an older browser and then throws at parse time on syntax esbuild did
+  not downlevel. Record the resolved floors in the [index's resolved-versions table](README.md) and in
+  `AGENTS.md`.
 - JSX configured for Preact: `jsx: 'automatic'`, `jsxImportSource: 'preact'`.
 - **Content-script caveat:** the content script must be classic-script-compatible or injected as a
   module per browser support; verify which by loading it in W2.9 rather than reasoning about it. An
@@ -150,6 +170,18 @@ Firefox's output has no `service_worker` key while Chrome's has no `scripts` key
 **Verify:** `deno task build` produces `dist/chrome/manifest.json` and `dist/firefox/manifest.json`
 plus bundles; the remote-URL check passes; `deno task build:release` emits both zips.
 
+**Also statically lint the Firefox output the moment it is first produced:**
+
+```bash
+deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox
+```
+
+Nothing *loads* `dist/firefox` until W2.12, so without this the build emits a Firefox artifact that
+goes unchecked for the rest of the wave. `web-ext lint` needs no browser download and catches the
+manifest-shape errors — an MV3 key Gecko rejects, a malformed `web_accessible_resources` entry — that
+are otherwise invisible until much later. Add it as a `deno task lint:firefox` and wire it into
+W2.10's CI.
+
 **Commit:** `feat(build): add esbuild pipeline emitting chrome and firefox bundles`
 
 ---
@@ -164,11 +196,25 @@ plus bundles; the remote-URL check passes; `deno task build:release` emits both 
 CI diff check makes drift impossible to merge.
 
 **Write `build/tokens.ts`:**
-- Read `.claude-design/point-and-shoot/tokens/{colors,typography,spacing,effects,base}.css`.
-- Emit `src/shared/design/tokens.css` — the concatenated custom properties, **with the Google Fonts
-  `@import` stripped** and replaced by `@font-face` rules pointing at the W2.5 vendored WOFF2 files
-  via `chrome.runtime.getURL`-resolvable paths. Preserve the `:root` and `[data-theme="light"]`
-  blocks exactly; the light-theme override is how ADR 0010's theming works.
+- Read **all six** token files:
+  `.claude-design/point-and-shoot/tokens/{fonts,colors,typography,spacing,effects,base}.css`.
+  **`fonts.css` is not optional and is easy to skip** — it is the only file that defines
+  `--font-display`, `--font-body`, and `--font-mono`, and `base.css` (which this list also reads)
+  consumes all three. Omitting it emits a `tokens.css` where every `font-family` resolves to an
+  undefined variable, so the whole UI silently falls back to the browser default sans-serif with no
+  error anywhere.
+- **Concatenate in the order `styles.css` uses** — `fonts`, `colors`, `typography`, `spacing`,
+  `effects`, `base` — not alphabetically and not in directory order. `base.css` consumes variables the
+  five files before it define; reordering produces undefined properties at the point of use.
+- Emit `src/shared/design/tokens.css` — the concatenated custom properties, **with only line 1 of
+  `fonts.css` (the Google Fonts `@import`) stripped** and replaced by `@font-face` rules pointing at
+  the W2.5 vendored WOFF2 files via `chrome.runtime.getURL`-resolvable paths. Keep the rest of
+  `fonts.css` — its `:root` block is the font-family definition, not the remote dependency. Preserve
+  the `:root` and `[data-theme="light"]` blocks exactly; the light-theme override is how ADR 0010's
+  theming works.
+- Record the design bundle's identity in the generated header — the version or content hash from
+  `.claude-design/point-and-shoot/_ds_manifest.json`. Without it, a red `tokens-drift` cannot be told
+  apart from a legitimate bundle re-export, and the agent hitting it has no way to know which.
 - Emit `src/shared/design/tokens.ts` — a typed union of every token name plus a `token()` helper, so
   a typo in a token name is a type error rather than a silently-empty CSS variable.
 - Emit a header comment in both files: generated, do not edit, regenerate with `deno task tokens`.
@@ -181,6 +227,15 @@ CI diff check makes drift impossible to merge.
 
 **Verify:** `deno task tokens` then `deno task tokens:check` exits 0; hand-edit one generated line and
 confirm `tokens:check` exits non-zero (then revert). A drift check that never fails isn't a check.
+
+Also assert the generated CSS is complete, not merely present:
+- `grep -c -- '--font-display\|--font-body\|--font-mono' src/shared/design/tokens.css` finds all three
+  **definitions**, not only uses.
+- `grep -c '@import' src/shared/design/tokens.css` returns 0, and `@font-face` rules are present.
+- **No `var(--…)` in the output references a property the output does not define.** Extract every
+  `var(--x)` reference and every `--x:` definition and assert the reference set is a subset of the
+  definition set. This is the check that would have caught a missing input file; a token generator
+  that emits dangling references produces a UI that renders, looks wrong, and reports nothing.
 
 **Commit:** `feat(build): generate design tokens from the design bundle with drift check`
 
@@ -279,8 +334,12 @@ plus `getBoundingClientRect` — box model (width, height, padding, margin, bord
 hex where possible), and spacing relationships to parent and adjacent siblings. Include the parent
 and immediate siblings, since most spacing bugs are only explicable relative to neighbours.
 
-Keep it **bounded** — cap the number of properties, the subtree depth, and the sibling count, and
-document the caps. An unbounded digest silently balloons the export past what any agent will read.
+Keep it **bounded** — cap the number of properties, the subtree depth, and the sibling count. **Take
+the three numbers from the [index's settled-numbers table](README.md); do not choose your own.** Four
+items across two waves depend on the same budgets, they are parallel-safe with each other, and each
+one picking independently is how W2.7's caps and W3.7's export budget end up disagreeing — a session
+that passes every per-note cap and still blows the export budget, discovered only at export time. An
+unbounded digest silently balloons the export past what any agent will read.
 
 **Tests:** assert stable output for fixture elements, that caps hold on a pathological deep subtree,
 and that values are normalized (e.g. colours to a consistent form) so diffs between two notes are
@@ -358,55 +417,139 @@ fix W2.3's script format — do not weaken the assertion.
 
 - [ ] `.github/workflows/ci.yml` updated — SHA: _pending_
 
-**Depends on:** W2.9, W2.4.
+**Depends on:** W2.9, W2.4, W2.12.
 
 Add to the existing workflow, each as its own job so a failure names itself:
 - `build` — `deno task build`, uploading `dist/` as an artifact.
 - `tokens-drift` — `deno task tokens:check`.
 - `e2e-smoke` — installs the Chromium binary, runs `deno task e2e:smoke`, uploads Playwright traces
   on failure.
+- `lint-firefox` — `deno task lint:firefox` (W2.3). Static, no browser, seconds to run; it is the only
+  automated statement about the Firefox artifact until wave 4.
+- `boot-firefox` — the W2.12 boot check.
 
 Cache the Playwright browser download keyed on the pinned Playwright version, or CI pays a full
-browser download every run. Still no `smoke-firefox` job — that lands in wave 4 with the thing it
-tests.
+browser download every run. This wave now covers Firefox at the *static* and *boots-at-all* level; the
+fuller `smoke-firefox` behavioural check still lands in wave 4 with the thing it tests.
+
+Extend the branch-protection required-check list (W1.11) to include the new jobs in the same PR.
+Adding a job without requiring it leaves the gate advisory, which is the failure W1.11 exists to
+prevent.
 
 **Verify:** push and `gh run watch --exit-status`; confirm all jobs green and the `dist/` artifact is
-downloadable and contains both browser trees.
+downloadable and contains both browser trees. Confirm via
+`gh api repos/{owner}/{repo}/branches/main/protection` that the new jobs are required, not merely
+present.
 
-**Commit:** `ci: add build, token drift, and extension smoke jobs`
+**Commit:** `ci: add build, token drift, firefox lint, and extension smoke jobs`
 
 ---
 
-## W2.11 — Pull request
+## W2.11 — Export-format spike: feed a hand-written bundle to a real agent
+
+- [ ] `docs/specs/export-format-spike.md` — SHA: _pending_
+
+**Depends on:** W2.8 (for the record shape only). **parallel-safe** with W2.9/W2.10.
+
+**Why:** the product's whole premise is that the exported bundle makes a local coding agent fix the
+bug. Nothing validates that until W3.12 — the last item of the last v1 wave — by which point W3.6's
+notes panel, W3.7's plan view and both serializers, W2.6's selector bundle, and W2.7's style digest
+are all built around a format nobody has tested. If the format is wrong, that is five items of rework
+at the end of the critical path with no v1 slack left to absorb it. This item moves first contact to
+the cheapest possible moment: before any UI exists.
+
+- **Hand-write** one export bundle. No UI, no serializer, no build step — a directory you type out:
+  one note with a page URL, a selector bundle in W2.8's shape, a style digest, a real WebP screenshot
+  of a fixture region, note text, and a `plan.md`.
+- Feed it to a local coding agent along with the fixture page's source, and ask it to make the change
+  the note describes.
+- **Record verbatim what the agent did** — what it used, what it ignored, what it asked for that
+  wasn't there, and where it went wrong. Verbatim, not summarised: the useful signal is usually the
+  thing the agent misread, and a paraphrase loses it.
+- Measure the bundle size at which the agent's output degrades. That number becomes the default export
+  size budget the [index's settled-numbers table](README.md) records and W3.6/W3.7/W3.9 consume,
+  instead of each item choosing one.
+- If the format needs to change, say so here and amend W3.7 **before** wave 3 starts.
+
+**Verify:** the spec records an actual agent transcript, not a description of one. The five runtime
+budgets are filled in with measured values in the index. Anyone reading it can tell whether the export
+worked without rerunning it.
+
+**Commit:** `docs(specs): record the export-format spike and its measured budgets`
+
+---
+
+## W2.12 — Firefox boot check
+
+- [ ] `scripts/boot-firefox.sh` (or equivalent), `deno task boot:firefox` — SHA: _pending_
+
+**Depends on:** W2.3.
+
+**Why:** W2.3 emits `dist/firefox`, and until this item nothing ever *loads* it — W2.9 is Chromium-only
+and the behavioural `smoke-firefox` check lands in W4.3, roughly twenty items later. That leaves every
+Firefox-shaped decision in wave 3 unverified against a real Gecko runtime, and it makes W3.2's and
+W3.5's "verify in both engines" instructions impossible to satisfy as written. `web-ext@10.5.0` is
+already pinned for W4.3, so the marginal cost here is small.
+
+Deliberately **minimal** — this is a boot check, not the wave-4 smoke suite:
+- `web-ext run` against `dist/firefox` on a fixture page.
+- Assert the event page starts, the content script injects, and a vendored WOFF2 resolves through
+  `moz-extension://`. `web_accessible_resources` is the single most likely place the two builds
+  silently diverge, so it is the one thing worth asserting beyond "it started."
+- Fail loudly on any console error during load.
+
+Do not grow this into behavioural coverage. Its job is to make a structural Firefox break visible in
+wave 2 rather than wave 4; W4.3 remains the item that actually exercises the product in Firefox, and
+its header comment must keep saying what it does not cover.
+
+**Verify:** `deno task boot:firefox` passes. Then break it deliberately — add a bogus key to the
+Firefox manifest, confirm the check fails, and revert. An unproven gate is not a gate.
+
+**Commit:** `test(firefox): add a minimal web-ext boot check for the firefox build`
+
+---
+
+## W2.13 — Pull request
 
 - [ ] PR opened — record the number here
 
-**Depends on:** W2.1–W2.10, CI green.
+**Depends on:** W2.1–W2.12, CI green.
 
 Body must include: what wave 2 establishes; a checklist with commit SHAs; the **vendored asset byte
-sizes** from W2.5; confirmation that the built bundles contain no remote URLs; a Verification section
-mapping each claim to a command actually run; and a Follow-ups section stating that no UI ships in
-wave 2, the side panel / popup / options pages are placeholder shells, and Firefox is verified only
-by unit-test fakes so far.
+sizes** from W2.5; the **measured export budgets** from W2.11; confirmation that the built bundles
+contain no remote URLs; a Verification section mapping each claim to a command actually run; and a
+Follow-ups section stating that no UI ships in wave 2, the side panel / popup / options pages are
+placeholder shells, and Firefox is verified only by a static lint plus a boot check — not
+behaviourally — so far.
 
 Screenshots: wave 2 has no UI to shoot. Instead attach the `chrome://extensions` view showing the
 extension loaded without errors, and paste the `e2e:smoke` output. Say plainly that there's no UI
 yet rather than padding the PR with fixture screenshots already shown in wave 1.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave). Tick
-every W2.x item with its merged SHA, flip this wave's **Status** to complete, and update PR #1's body so
-it shows wave 2 done and wave 3 open. PR #1 is the project's status board; a merged wave that still
-reads "blocked" there sends the next agent to the wrong item.
+every W2.x item with its merged SHA, flip this wave's **Status** to complete, and update the **tracking
+issue** so it shows wave 2 done and wave 3 open. The tracking issue is the project's status board — not
+PR #1, which closes when wave 1 merges. A merged wave that still reads "blocked" there sends the next
+agent to the wrong item.
 
 ---
 
 ## Wave 2 exit criteria
 
-- W2.1–W2.10 checked with real commit SHAs.
+- W2.1–W2.12 checked with real commit SHAs.
 - `deno task build` produces working `dist/chrome/` and `dist/firefox/` trees.
 - `deno task e2e:smoke` loads the built extension in Chromium with zero console errors.
+- `deno task lint:firefox` and `deno task boot:firefox` both pass, and the boot check has been observed
+  failing once on a deliberately broken manifest.
 - `deno task tokens:check` exits 0, and has been proven to fail on a hand edit.
+- The generated `tokens.css` defines `--font-display`, `--font-body`, and `--font-mono`, contains no
+  `@import`, and references no custom property it does not itself define.
 - No file in `dist/` references any remote URL.
 - Selector round-trip assertions pass against every fixture page, including the flagged-unreachable
   closed-shadow-root and cross-origin-iframe cases.
-- CI green with `build`, `tokens-drift`, and `e2e-smoke` jobs.
+- The browser floors are resolved, recorded in the index, and asserted equal between the manifests and
+  the esbuild target.
+- The export-format spike has run against a real agent, and the five runtime budgets in the index are
+  filled in with measured values.
+- CI green with `build`, `tokens-drift`, `lint-firefox`, `boot-firefox`, and `e2e-smoke` jobs, all of
+  them **required** by branch protection.

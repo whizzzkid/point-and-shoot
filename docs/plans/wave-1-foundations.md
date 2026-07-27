@@ -94,8 +94,18 @@ manages *tools*, `deno task` manages *commands*.
   and `shots` **out** — each lands with the item that implements it. Never stub a task that would
   silently pass.
 
-**`.gitignore`:** `dist/`, `node_modules/`, `.playwright/`, `playwright-report/`,
-`web-ext-artifacts/`, `*.zip`, `.DS_Store`.
+**`.gitignore` — this file already exists; ADD to it, never overwrite it.** It landed with the design
+bundle in `9fc9c2a` and carries the Deno entries (`.deno/`, `coverage/`, `*.lcov`) and an agent-scratch
+section (`.playwright-mcp/`, `.remember/`). Those are load-bearing: without the scratch entries, an
+agent's working directories are untracked-but-unignored and the next `git add` sweeps them into a
+commit. Add the build-output entries this item owns and leave everything else intact:
+`dist/`, `node_modules/`, `.playwright/`, `playwright-report/`, `web-ext-artifacts/`, `*.zip`,
+`.DS_Store`.
+
+**`deno.json` — exclude `.claude-design/` from `fmt` and `lint`** while you are in this file. The
+bundle is an upstream artifact (see [`../design.md`](../design.md)); formatting it manufactures a diff
+in something we don't own. This is the remaining open sub-item of W1.5, which cannot land until this
+file exists.
 
 **`.editorconfig`:** matching `deno fmt`'s indent and width so editors don't fight the formatter.
 
@@ -108,6 +118,13 @@ mise exec -- deno task ci
 ```
 `deno task ci` passes trivially over a near-empty tree — expected. What you're verifying is that the
 tasks resolve and that `mise install` produced the pinned versions.
+
+Also prove nothing was lost from the pre-existing `.gitignore`, and that the bundle is excluded:
+
+```bash
+git check-ignore -v .remember/ .playwright-mcp/ dist/ coverage/   # all four must resolve
+mise exec -- deno fmt --check                                     # must not touch .claude-design/
+```
 
 **Commit:** `chore: pin toolchain via mise and add deno project config`
 
@@ -156,19 +173,27 @@ stray `badfmt.ts`; `deno task ci` passes so real pushes aren't blocked.
 
 ## W1.4 — Docs bootstrap
 
-- [ ] `docs/README.md` + per-folder index files — SHA: _pending_
+- [x] [`docs/README.md`](../README.md) written — SHA: `419cfa8`
+- [ ] per-folder index files — SHA: _pending_
 
 **parallel-safe** with W1.1 and W1.2.
 
-**Files:**
-- `docs/README.md` — map of the docs tree: what `specs/`, `plans/`, `adr/`, and `tutorials/` are for
-  and when to add to each. Link to `docs/plans/README.md` and `docs/adr/README.md`.
+**Done — [`docs/README.md`](../README.md) already exists** and is more than a map: it is the
+publishing contract, carrying the four numbered documentation obligations every item in the project
+inherits and naming what wave 5 renders. **Do not rewrite it from this item's description.** An agent
+handed "write a map of the docs tree" would produce a plausible file that silently drops those
+obligations — the content still reads fine, so nothing in review would catch it.
+
+**Remaining files:**
 - `docs/adr/README.md` — the ADR index table (number, title, status) plus the project's ADR
   template: Context / Decision / Consequences / Alternatives considered. W1.6 fills the table.
 - `docs/specs/README.md`, `docs/tutorials/README.md` — a short paragraph of purpose each.
+- Add the `docs/adr/README.md` link to `docs/README.md` once it exists — that link is the one thing
+  the existing file is missing, because its target isn't written yet.
 
 **Verify:** every relative link in `docs/README.md` resolves to a file that exists. Check them; do
-not eyeball them.
+not eyeball them. Confirm the four documentation obligations are still present — `git diff` on this
+item must show additions to `docs/README.md`, not a replacement of it.
 
 **Commit:** `docs: bootstrap docs tree with index files and ADR template`
 
@@ -177,10 +202,12 @@ not eyeball them.
 ## W1.5 — Commit the design system as source of truth
 
 - [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
-- [x] [`docs/design.md`](../design.md) written — SHA: _in the same commit as this plan update_
+- [x] [`docs/design.md`](../design.md) written — SHA: `419cfa8`
 - [ ] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: _pending_
 
-**parallel-safe.**
+**The two committed sub-items were parallel-safe; the remaining one is not** — it edits `deno.json`,
+which W1.2 creates. Do not hand this out as an immediately-startable item: a second agent holding
+`deno.json` while W1.2 is creating it conflicts on a file that didn't exist when it started.
 
 **Why:** `.claude-design/` was untracked. Every wave-3 item builds against it, and wave 2 *generates*
 token files from it. It had to be in version control before anything depended on it, or the generated
@@ -203,6 +230,13 @@ into `src/shared/design/` and never hand-copied.
 **Remaining:** add the `deno fmt` / `deno lint` exclusion for `.claude-design/` in `deno.json`, so the
 formatter cannot rewrite an upstream artifact. This waits on W1.2, which creates `deno.json` — the one
 part of this item that is not parallel-safe. Do it in the same commit as W1.2 or immediately after.
+
+**Also record which export this is.** Read the version or content hash out of
+`_ds_manifest.json` and note it in [`../design.md`](../design.md). Without it, W2.4's `tokens-drift`
+check cannot distinguish a hand edit (what it exists to catch) from a legitimate re-export with stale
+generated files — and the agent that hits the red check on an unrelated PR has no way to tell which it
+is. A re-export is its own commit that regenerates tokens and refreshes the W4.2 visual baselines
+together, because all of them move at the same instant.
 
 **Verify:** `git status` shows `.claude-design/` tracked (done); every path named in `docs/design.md`
 exists; once `deno.json` exists, `deno task ci` passes with the bundle in the tree and
@@ -412,15 +446,50 @@ reruns idempotent):
 
 ---
 
-## W1.11 — Pull request
+## W1.11 — Branch protection and the tracking issue
+
+- [ ] Protection configured, tracking issue opened — no commit; record the issue number here
+
+**parallel-safe** with W1.10 — both are `gh`-only, no files touched.
+
+Two pieces of durable project infrastructure that the rest of the plan assumes exist.
+
+**Branch protection on `main`.** W1.7 calls CI "the authoritative gate," but an unrequired GitHub
+check is advisory: a PR with a red run stays mergeable, and the pre-push hook is bypassable by
+`--no-verify` or by a machine without hooks installed. The authority the plan asserts is not
+configured anywhere until this item. Require the `checks` context, require the branch be up to date
+before merging, and require signed commits (the project signs already, so this codifies practice
+rather than adding friction). Waves 2 and 4 extend the required-check list as they add jobs.
+
+**The tracking issue.** [Rule 7](README.md#rules-for-working-any-wave) needs a status board that
+survives every wave. PR #1 cannot be it: PR #1 *is* wave 1's PR against `main` (W1.12), so it closes
+on merge and its head branch is typically deleted — after which four waves of post-merge syncs would
+be writing to a closed PR that no one has reason to open. Open a long-lived issue titled for v1,
+carrying the item checklist and the wave status, labelled `wave:1`…`wave:5`. Every wave PR links to
+it; rule 7 targets it; it closes only when v1 ships.
+
+**Verify:**
+
+```bash
+gh api repos/whizzzkid/point-and-shoot/branches/main/protection   # required checks + signed commits
+```
+
+Then open a throwaway PR containing a deliberate lint error and confirm the merge button is blocked —
+an unproven gate is not a gate, and this is the gate over all the other gates. Close the throwaway.
+Confirm the tracking issue is open and referenced from [`README.md`](README.md).
+
+---
+
+## W1.12 — Pull request
 
 - [ ] PR opened with screenshots — no commit; record the PR number here
 
-**Depends on:** W1.1–W1.10 complete, CI green.
+**Depends on:** W1.1–W1.11 complete, CI green.
 
 One PR for all of wave 1 against `main`. The body must contain:
 - What wave 1 establishes, and the explicit statement that **no extension code ships in it**.
-- A checklist mirroring W1.1–W1.10 with each commit SHA.
+- A checklist mirroring W1.1–W1.11 with each commit SHA.
+- A link to the W1.11 tracking issue, named as the status board that succeeds this PR.
 - The fixture screenshots, embedded with the `?raw=1` blob URLs from W1.9.
 - A **Verification** section listing each command run and its result. Every claim must map to a
   command actually executed; if something couldn't be verified, say so and why.
@@ -429,9 +498,11 @@ One PR for all of wave 1 against `main`. The body must contain:
   closed-shadow-root traversal limitation recorded in the fixture app.
 
 **After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave).
-Wave 1's integration branch *is* PR #1's branch, so here the sync means confirming every W1.x SHA in
-this file resolves post-merge, flipping this wave's **Status** to complete, and updating PR #1's body to
-say wave 2 is now open.
+Wave 1's integration branch *is* PR #1's branch, so this is the one wave whose sync happens on the PR
+that is closing. Confirm every W1.x SHA in this file resolves post-merge, flip this wave's **Status**
+to complete, and **hand the board over**: update the W1.11 tracking issue to show wave 1 done and wave
+2 open, and leave a final line in PR #1's body pointing at that issue as its successor. From wave 2
+onward, rule 7 targets the issue, not this PR.
 
 **Verify:** `gh pr view --json number,title,body` renders as intended and `gh pr checks` is green.
 Open the PR in a browser and confirm the screenshots actually display — raw-URL embedding is easy to
@@ -441,12 +512,15 @@ get subtly wrong.
 
 ## Wave 1 exit criteria
 
-- W1.1–W1.10 all checked with real commit SHAs (or `gh` verification for W1.10).
+- W1.1–W1.11 all checked with real commit SHAs (or `gh` verification for W1.10 and W1.11).
 - CI green on `feat/inital-impl`, run log showing Deno `2.9.4`.
 - Lefthook proven to fire by W1.3's deliberate-failure test.
 - `deno task ci` passes from a clean checkout after `mise install`.
 - `deno task fixture` serves all eight pages with zero console errors.
 - `deno task shots` regenerates all screenshots.
-- `.claude-design/` tracked in git.
+- `.claude-design/` tracked in git, excluded from `deno fmt`/`deno lint`, and its export identity
+  recorded in [`../design.md`](../design.md).
 - `grep -rniE 'TBD|TODO|FIXME' docs/` returns nothing.
-- PR open per W1.11 with screenshots rendering.
+- Branch protection on `main` requires the CI checks, and has been observed blocking a red PR.
+- The tracking issue is open and is named as the status board in [`README.md`](README.md).
+- PR open per W1.12 with screenshots rendering.

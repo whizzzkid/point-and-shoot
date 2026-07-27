@@ -12,6 +12,10 @@ assumes.** An agent prompted with *"work on W3.4"* must read this file first, th
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md) | blocked on wave 3 |
 | 5 — Marketing site | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1 |
 
+[`arch-review-point-and-shoot.md`](arch-review-point-and-shoot.md) is the architecture review of this
+plan. Its findings are already folded into the wave files and this index — read it for the reasoning
+behind a rule you are tempted to skip, not as a list of outstanding work.
+
 ---
 
 ## Sequencing: waves are barriers, items inside a wave are parallel
@@ -34,7 +38,7 @@ flowchart TD
 
 ### Full item chart
 
-All 50 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
+All 53 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
 transitive reduction — an item also waits on everything upstream of what it points at, not just its
 immediate parent. Anything with no inbound arrow inside its wave can start the moment that wave opens.
 
@@ -51,18 +55,20 @@ flowchart TD
     W18["W1.8 fixture app"]
     W19["W1.9 fixture screenshots"]
     W110["W1.10 GitHub labels"]
-    W111["W1.11 wave 1 PR"]
+    W111["W1.11 branch protection<br/>+ tracking issue"]
+    W112["W1.12 wave 1 PR"]
     W12 --> W13
     W14 --> W16
     W15 --> W16
     W12 --> W17
     W12 --> W18 --> W19
-    W11 --> W111
-    W13 --> W111
-    W16 --> W111
-    W17 --> W111
-    W19 --> W111
-    W110 --> W111
+    W11 --> W112
+    W13 --> W112
+    W16 --> W112
+    W17 --> W112
+    W19 --> W112
+    W110 --> W112
+    W111 --> W112
   end
 
   subgraph WAVE2["Wave 2 — Core libraries"]
@@ -76,17 +82,23 @@ flowchart TD
     W28["W2.8 schema + IndexedDB"]
     W29["W2.9 extension-load smoke"]
     W210["W2.10 CI expansion"]
-    W211["W2.11 wave 2 PR"]
+    W211["W2.11 export-format spike"]
+    W212["W2.12 firefox boot check"]
+    W213["W2.13 wave 2 PR"]
     W21 --> W23
     W22 --> W23
     W24 --> W23
     W25 --> W23
     W23 --> W29
     W21 --> W29
-    W29 --> W210 --> W211
-    W26 --> W211
-    W27 --> W211
+    W23 --> W212
     W28 --> W211
+    W29 --> W210
+    W212 --> W210
+    W210 --> W213
+    W26 --> W213
+    W27 --> W213
+    W211 --> W213
   end
 
   subgraph WAVE3["Wave 3 — UI and capture"]
@@ -110,10 +122,10 @@ flowchart TD
     W31 --> W37
     W31 --> W38
     W31 --> W39
-    W311 --> W37
     W37 --> W312
     W38 --> W312
     W39 --> W312
+    W311 --> W312
   end
 
   subgraph WAVE4["Wave 4 — Verification and release"]
@@ -153,17 +165,17 @@ flowchart TD
     W57 --> W58 --> W56
   end
 
-  W111 --> W21
-  W111 --> W22
-  W111 --> W24
-  W111 --> W25
-  W111 --> W26
-  W111 --> W27
-  W111 --> W28
-  W211 --> W31
-  W211 --> W32
-  W211 --> W310
-  W211 --> W311
+  W112 --> W21
+  W112 --> W22
+  W112 --> W24
+  W112 --> W25
+  W112 --> W26
+  W112 --> W27
+  W112 --> W28
+  W213 --> W31
+  W213 --> W32
+  W213 --> W310
+  W213 --> W311
   W312 --> W41
   W48 --> W51
   W24 --> W53
@@ -178,8 +190,8 @@ out now?" The last column is each wave's landing step. Item ids in parentheses a
 
 | Wave | Immediately startable | Unblocks after one item lands | Serial chain | Lands the wave |
 |---|---|---|---|---|
-| 1 | W1.1, W1.2, W1.4, W1.5, W1.10 | W1.3, W1.7, W1.8 (all after W1.2) | W1.6 (after W1.4+W1.5); W1.9 (after W1.8) | W1.11 |
-| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | — | W2.3 → W2.9 → W2.10 | W2.11 |
+| 1 | W1.1, W1.2, W1.4, W1.10, W1.11 | W1.3, W1.5, W1.7, W1.8 (all after W1.2) | W1.6 (after W1.4+W1.5); W1.9 (after W1.8) | W1.12 |
+| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8, W2.11 | W2.12 (after W2.3) | W2.3 → W2.9 → W2.10 | W2.13 |
 | 3 | W3.1, W3.2, W3.10, W3.11 | W3.8, W3.9 (both after W3.1) | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 | W3.12 |
 | 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | — | W4.6 (after W4.1–W4.4) | W4.8 |
 | 5 | W5.1, W5.3, W5.4, W5.5 | W5.2, W5.7 (both after W5.1+W5.3+W5.4) | W5.8 (after W5.7) | W5.6 |
@@ -323,8 +335,46 @@ Resolved live on 2026-07-24. **Pin exactly. No `latest`, no `^`, no `~`, no floa
 | `actions/checkout` | `v7` | CI workflows |
 | `jdx/mise-action` | `v4` | CI workflows |
 
+Browser floors are pins too, and they live here for the same reason the tool versions do — three
+things in wave 2 consume them and must not disagree:
+
+| Floor | Version | Consumed by |
+|---|---|---|
+| Chrome minimum | `120` | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
+| Firefox minimum | `121` | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant |
+| esbuild `target` | derived — `chrome120,firefox121` | W2.3, computed from `SUPPORTED`, never written as a literal |
+
+W2.2 **asserts** these values rather than choosing them, and W2.3 derives its `target` from the same
+constant, so the manifests and the transpile floor cannot drift apart. Raising a floor is a one-line
+change in `build/manifest.ts` plus a row here — never an edit in two places.
+
 Preact's version is resolved and pinned in wave 2 (`npm view preact version` at the time), not
 guessed. GitHub Actions pin to the official action's **semver major**, per project convention.
+
+## Settled numbers — the five runtime budgets
+
+Every bound the runtime enforces is fixed here, once. Five items across two waves consume these
+(W2.7, W2.11, W3.4, W3.6, W3.9) and they are parallel-safe with each other — so each one picking its
+own value is exactly how a session passes every per-note cap and still blows the export budget, a
+disagreement discovered only at export time. **Read the number from this table; do not choose one
+inside the item.**
+
+| Budget | Value | Enforced in | Consumed by |
+|---|---|---|---|
+| Style-digest properties per element | `40` | W2.7 | W3.4, W3.6 |
+| Sibling count per element | `6` (3 either side, DOM order) | W2.7 | W3.4 |
+| Subtree depth per element | `3` | W2.7 | W3.4 |
+| Elements collected per drag box | `25` | W3.4 | W3.6, W3.7 |
+| Default export size budget | `2 MB` — **provisional until W2.11 measures it** | W3.7 | W3.6 (warning threshold), W3.9 (user-adjustable default) |
+
+The first four are set to keep a single note legible to an agent rather than to be generous: a digest
+listing every computed property is noise, and a drag over `<body>` must not collect two thousand
+elements. The fifth is the only guess, and W2.11 exists to replace it with a measured number — the
+point at which a real agent's output degrades. When W2.11 lands, update this row and the items that
+read it in the same commit.
+
+Changing any value here is a plan change, so [rule 7](#rules-for-working-any-wave) substep 5 applies:
+this table, the wave items that cite it, and the tests that assert it move together.
 
 ## Repo facts
 
@@ -337,7 +387,10 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 - **Everything under `docs/` is published** (wave 5, W5.7/W5.8) — rendered to HTML and themed with the
   product's own tokens. Write every doc for a reader who has never seen the repo, keep links relative,
   and put nothing there you would not publish.
-- The tracking PR is **#1** on `feat/inital-impl`. It is the project's live status board; see rule 7.
+- Two GitHub artefacts are load-bearing and easy to confuse. **PR #1** on `feat/inital-impl` carries
+  the plan and wave 1's work; it closes when wave 1 merges. The **tracking issue** opened by W1.11 is
+  the durable status board — it outlives every wave PR, and rule 7 targets it. Until W1.11 lands,
+  PR #1 is standing in for it.
 
 ## Rules for working any wave
 
@@ -346,14 +399,18 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 3. Run the item's **Verify** block and get it passing *before* committing.
 4. After the commit lands, edit the wave file: `[ ]` → `[x]`, replace `_pending_` with the real SHA,
    and update the wave's **Status**. Never end a session with the plan file stale. A few items produce
-   no commit and so carry no `_pending_` slot — the PR items (W1.11, W2.11, W3.12, W4.8) record a PR
-   number, and W1.10 records nothing but the verification command. Tick those without inventing a SHA.
+   no commit and so carry no `_pending_` slot — the PR items (W1.12, W2.13, W3.12, W4.8) record a PR
+   number, W1.11 records an issue number, and W1.10 records nothing but the verification command. Tick
+   those without inventing a SHA.
 5. Deferred or abandoned → mark `[~]` with one line saying why.
 6. Every claim in a PR body must correspond to a command actually run. If something couldn't be
    verified, say so and why.
-7. **After your item's PR merges, update the broader plan on PR #1 — same session, before you stop.**
-   This is not optional bookkeeping: PR #1 is the only place a person or an agent can see what is done
-   and what is now unblocked. A merged item that is still unticked there gets picked up twice.
+7. **After your item's PR merges, update the broader plan on the tracking issue — same session,
+   before you stop.** This is not optional bookkeeping: the tracking issue (opened by W1.11) is the only
+   place a person or an agent can see what is done and what is now unblocked. A merged item that is
+   still unticked there gets picked up twice. Do **not** use PR #1 as the board — PR #1 is wave 1's own
+   PR and closes when wave 1 merges, so four waves of post-merge syncs would be writing to a closed
+   thread. Before W1.11 lands, sync PR #1's body instead and carry the state over when the issue opens.
 
    In order:
    1. On the wave's integration branch, pull the merge and confirm the wave file records the item's
@@ -363,11 +420,13 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
       (still blocked / in progress / complete).
    3. If your item was the last prerequisite for another, say so in the wave file so the next agent
       does not have to re-derive it from the graph.
-   4. Push, then sync PR #1's body: tick the item in its checklist, record the merged SHA and the
+   4. Push, then sync the tracking issue: tick the item in its checklist, record the merged SHA and the
       item's PR number, and update the "what's next / now unblocked" summary. Push first, sync second —
-      a body edited before the push bakes in stale refs.
+      a body edited before the push bakes in stale refs. If your item's own PR is still open, sync its
+      body in the same pass.
    5. If the item changed the plan itself (new items, changed dependency, revised count), update this
-      index too: the graph, the assignment table, and the item count must all agree.
+      index too: the graph, the assignment table, the settled-numbers table, and the item count must all
+      agree. W5.8 turns that last one into a CI check; until it exists, it is on you.
 
    Docs land with the item, in the item's own commit — never as a follow-up. Same for the plan-file
    tick: the plan is part of the deliverable, not cleanup after it.
