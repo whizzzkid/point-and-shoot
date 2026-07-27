@@ -35,3 +35,8 @@ jobs:
 
       - name: deno task ci
         run: deno task ci
+
+      # THROWAWAY: forces this job red so W1.11 can prove branch protection blocks a
+      # merge on a failing required check. This branch is deleted, never merged.
+      - name: Deliberate failure (branch-protection probe)
+        run: exit 1
