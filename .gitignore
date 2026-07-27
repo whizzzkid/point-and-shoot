@@ -13,3 +13,4 @@ coverage/
 # Agent scratch output — never part of the repo
 .playwright-mcp/
 .remember/
+.review-playground/
