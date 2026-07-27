@@ -272,7 +272,7 @@ Also assert the generated CSS is complete, not merely present:
 
 ## W2.5 — Vendored fonts and icon sprite
 
-- [ ] `src/shared/design/fonts/`, `icons.svg`, `build/vendor-assets.ts` — SHA: _pending_
+- [x] `src/shared/design/fonts/`, `icons.svg`, `build/vendor-assets.ts` — SHA: 9d48b97
 
 **parallel-safe.**
 
