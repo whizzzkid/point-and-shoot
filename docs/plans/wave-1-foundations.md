@@ -518,7 +518,7 @@ reruns idempotent):
 ## W1.11 — Branch protection and the tracking issue
 
 - [x] Protection configured, tracking issue opened as
-      [#3](https://github.com/whizzzkid/point-and-shoot/issues/3) — SHA: _pending_
+      [#3](https://github.com/whizzzkid/point-and-shoot/issues/3) — SHA: `aea4a74`
 
 **parallel-safe** with W1.10. W1.10 is `gh`-only; this item is `gh` plus one small docs commit (the
 issue number), and it touches no file any other wave-1 item touches.
