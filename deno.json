@@ -4,7 +4,11 @@
   // own, local edits are silently lost on the next export, and its .jsx/.d.ts files
   // import `react` — a dependency this project deliberately does not have, so
   // `deno check` fails on them. See docs/design.md.
-  "exclude": [".claude-design/"],
+  //
+  // `.review-playground/` holds gitignored review scratch — deliberately broken
+  // copies of real modules. Without this, `deno check` and `deno test` discover it
+  // and the authoritative gate fails on files that exist to fail.
+  "exclude": [".claude-design/", ".review-playground/"],
   "lint": {
     "include": ["src/", "tests/", "build/"],
     "rules": {
