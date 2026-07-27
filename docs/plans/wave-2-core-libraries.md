@@ -55,7 +55,7 @@ record shape; it writes only a spec and a throwaway bundle, so it collides with 
 
 ## W2.1 — Promise-based browser shim
 
-- [ ] `src/shared/browser.ts` + unit tests — SHA: _pending_
+- [x] `src/shared/browser.ts` + unit tests — SHA: 869d46c
 
 **parallel-safe.**
 
