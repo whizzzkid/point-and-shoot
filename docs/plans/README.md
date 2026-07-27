@@ -4,13 +4,13 @@
 assumes.** An agent prompted with _"work on W3.4"_ must read this file first, then
 `wave-3-ui-and-capture.md`, and needs nothing else.
 
-| Wave                         | File                                                   | Status                                               |
-| ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
-| 1 — Foundations              | [`wave-1-foundations.md`](wave-1-foundations.md)       | in progress — W1.5 partly landed, two sub-items open |
-| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | blocked on wave 1                                    |
-| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2                                    |
-| 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                                    |
-| 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                                    |
+| Wave                         | File                                                   | Status                                           |
+| ---------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| 1 — Foundations              | [`wave-1-foundations.md`](wave-1-foundations.md)       | in progress — W1.1–W1.11 landed, W1.12's PR open |
+| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | blocked on wave 1                                |
+| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2                                |
+| 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                                |
+| 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                                |
 
 [`arch-review-point-and-shoot.md`](arch-review-point-and-shoot.md) is the architecture review of
 this plan. Its findings are already folded into the wave files and this index — read it for the
@@ -406,12 +406,17 @@ applies: this table, the wave items that cite it, and the tests that assert it m
 - **Everything under `docs/` is published** (wave 5, W5.7/W5.8) — rendered to HTML and themed with
   the product's own tokens. Write every doc for a reader who has never seen the repo, keep links
   relative, and put nothing there you would not publish.
-- One GitHub artefact is load-bearing: the **tracking issue** opened by W1.11 is the durable status
-  board — it outlives every wave PR, and rule 7 targets it. **PR #1** is not that board and never
-  stood in for it in practice: it merged on `feat/inital-impl` carrying only the plan and the design
-  bundle, so it was closed before wave 1's first implementation commit. Wave 1's own PR is the one
-  W1.12 opens on `feat/wave-1-plan`. Until W1.11 lands, sync that PR's body; hand the state to the
-  issue when it opens.
+- One GitHub artefact is load-bearing: the tracking issue W1.11 opened is
+  **[issue #3](https://github.com/whizzzkid/point-and-shoot/issues/3)**, the durable status board.
+  It outlives every wave PR, rule 7 targets it, and it closes only when v1 ships. **PR #1** is not
+  that board and never stood in for it in practice: it merged on `feat/inital-impl` carrying only
+  the plan and the design bundle, so it was closed before wave 1's first implementation commit. Wave
+  1's own PR is the one W1.12 opens on `feat/wave-1-plan`.
+- `main` is protected as of W1.11: required check `checks` (W1.7's job), strict up-to-date-before-
+  merge, signed commits required, force-pushes and deletions denied, and `enforce_admins` on so the
+  gate is not admin-bypassable. A red required check blocks the merge button — proven with a
+  throwaway PR, not assumed. Adding a CI job that must gate merges means adding its context to the
+  required list too; waves 2 and 4 both do this.
 
 ## Rules for working any wave
 
@@ -432,8 +437,8 @@ applies: this table, the wave items that cite it, and the tests that assert it m
    only place a person or an agent can see what is done and what is now unblocked. A merged item
    that is still unticked there gets picked up twice. Do **not** use any wave PR as the board — a
    wave PR closes when its wave merges, so four waves of post-merge syncs would be writing to a
-   closed thread. Before W1.11 lands, sync wave 1's own PR body instead and carry the state over
-   when the issue opens.
+   closed thread. The board is [issue #3](https://github.com/whizzzkid/point-and-shoot/issues/3),
+   open since W1.11.
 
    In order:
    1. On the wave's integration branch, pull the merge and confirm the wave file records the item's

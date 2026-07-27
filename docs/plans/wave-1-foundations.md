@@ -3,9 +3,9 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.1 through W1.9 have landed. What remains is the GitHub-facing tail:
-  W1.10's labels, W1.11's branch protection and tracking issue, and W1.12's PR. W1.7's workflow is
-  still unverified because nothing has been pushed yet — its first real run happens on that PR.
+- **Status:** in progress — W1.1 through W1.11 have landed. Only W1.12's PR remains. W1.7's workflow
+  is no longer unverified: W1.11's throwaway branch-protection probe was its first real run, and
+  everything but the deliberately failing probe step passed.
 - **Branch:** `feat/wave-1-plan` (all of wave 1 lands here as one PR). This supersedes the
   `feat/inital-impl` branch this file was written against: that branch carried only the plan and the
   design bundle, and it merged to `main` as PR #1 before any wave-1 implementation started. Wave 1's
@@ -496,7 +496,7 @@ raw blob form:
 
 ## W1.10 — GitHub labels
 
-- [ ] Labels created — no commit; verify with `gh label list`
+- [x] Labels created — no commit; all 23 verified present with `gh label list --limit 100`
 
 **parallel-safe.**
 
@@ -517,8 +517,8 @@ reruns idempotent):
 
 ## W1.11 — Branch protection and the tracking issue
 
-- [ ] Protection configured, tracking issue opened — SHA: _pending_ (record the issue number here
-      too)
+- [x] Protection configured, tracking issue opened as
+      [#3](https://github.com/whizzzkid/point-and-shoot/issues/3) — SHA: _pending_
 
 **parallel-safe** with W1.10. W1.10 is `gh`-only; this item is `gh` plus one small docs commit (the
 issue number), and it touches no file any other wave-1 item touches.
@@ -555,6 +555,28 @@ Recording that number is the one file change this item makes: edit the index's r
 name the issue, and write the number into this item's checkbox line. That is a single docs commit —
 `docs(plans): record the tracking issue number` — and it is the only commit W1.11 produces. The
 branch-protection half touches no files at all.
+
+**What actually landed.** Three corrections worth carrying forward:
+
+1. **`enforce_admins` is on**, which this item did not ask for. Without it GitHub offers a repo
+   admin a "merge without waiting for requirements" button, so the gate would have been provably
+   bypassable by the only person who can merge — which is not a gate. This also means nobody pushes
+   straight to `main`, including for a one-line fix.
+2. **The probe was a failing workflow step, not a lint error.** A lint error cannot be pushed:
+   `pre-push` runs `deno task ci` and correctly refuses, and reaching for `--no-verify` to get the
+   probe onto the remote would have disabled one gate to test another. The property under test is
+   "red required check blocks the merge" and the mechanism of redness is irrelevant to it, so the
+   throwaway branch added a step running `exit 1`. It reported `mergeStateStatus: BLOCKED`; PR #2
+   was closed and the branch deleted.
+3. **This item took two commits, not one.** The item's own SHA cannot be written inside the commit
+   that carries it — content determines the hash — so one commit records the issue number and a
+   second resolves `_pending_`. The plan's own rule that "a SHA that does not resolve is worse than
+   `_pending_`" makes a self-reference the wrong way out.
+
+The probe also gave **W1.7's CI workflow its first real execution**, which had been unverified
+because nothing was pushed. `actions/checkout@v7`, `jdx/mise-action@v4`, and `deno task ci` all
+passed on a clean runner, which resolved deno `2.9.4` and lefthook `2.1.10` — exactly the
+`mise.toml` pins. Only the deliberate step failed.
 
 ---
 
