@@ -104,8 +104,9 @@ files guarantees they drift. One typed source, two emitted files.
   each vendor's MV3 support baseline rather than picked — Firefox's MV3 floor in particular is well
   below the number a plausible guess produces. This constant is the single source for
   `strict_min_version`, `minimum_chrome_version`, **and** W2.3's esbuild `target`. Record the resolved
-  numbers in the [index's resolved-versions table](README.md) alongside the tool pins; a project that
-  refuses `^` on a dev dependency should not leave its browser floors to whoever writes the item.
+  numbers in the [index's browser-floors table](README.md), whose cells read `_pending W2.2_` until
+  you fill them; a project that refuses `^` on a dev dependency should not leave its browser floors to
+  whoever writes the item.
 - A typed `manifest.base` object holding everything shared: `manifest_version: 3`, name, version,
   description, icons, `permissions` (exactly the six from the README's permission list — no more),
   `action`, `commands` (with a suggested default shortcut and a clear description string),
@@ -153,8 +154,8 @@ cannot reintroduce the divergence with W2.3's build target.
   literals. The floors are one fact with two consumers (this build target, and W2.2's
   `strict_min_version` / `minimum_chrome_version`); authored twice they drift, and the failure is an
   extension that *installs* on an older browser and then throws at parse time on syntax esbuild did
-  not downlevel. Record the resolved floors in the [index's resolved-versions table](README.md) and in
-  `AGENTS.md`.
+  not downlevel. W2.2 records the resolved floors in the [index's browser-floors table](README.md);
+  mirror them in `AGENTS.md`.
 - JSX configured for Preact: `jsx: 'automatic'`, `jsxImportSource: 'preact'`.
 - **Content-script caveat:** the content script must be classic-script-compatible or injected as a
   module per browser support; verify which by loading it in W2.9 rather than reasoning about it. An
@@ -212,8 +213,9 @@ CI diff check makes drift impossible to merge.
   `fonts.css` — its `:root` block is the font-family definition, not the remote dependency. Preserve
   the `:root` and `[data-theme="light"]` blocks exactly; the light-theme override is how ADR 0010's
   theming works.
-- Record the design bundle's identity in the generated header — the version or content hash from
-  `.claude-design/point-and-shoot/_ds_manifest.json`. Without it, a red `tokens-drift` cannot be told
+- Record the design bundle's identity in the generated header — the `namespace` value from
+  `.claude-design/point-and-shoot/_ds_manifest.json` (it carries no version field) plus the bundle
+  content hash W1.5 recorded in [`docs/design.md`](../design.md); the two must agree. Without it, a red `tokens-drift` cannot be told
   apart from a legitimate bundle re-export, and the agent hitting it has no way to know which.
 - Emit `src/shared/design/tokens.ts` — a typed union of every token name plus a `token()` helper, so
   a typo in a token name is a type error rather than a silently-empty CSS variable.
@@ -229,9 +231,20 @@ CI diff check makes drift impossible to merge.
 confirm `tokens:check` exits non-zero (then revert). A drift check that never fails isn't a check.
 
 Also assert the generated CSS is complete, not merely present:
-- `grep -c -- '--font-display\|--font-body\|--font-mono' src/shared/design/tokens.css` finds all three
-  **definitions**, not only uses.
-- `grep -c '@import' src/shared/design/tokens.css` returns 0, and `@font-face` rules are present.
+- All three font families are **defined**, not merely referenced. A definition is `--font-x:`; a use
+  is `var(--font-x)`, so match on the colon and check each name separately — one combined `grep -c`
+  counts matching *lines*, and the bundle's minified `:root` puts all three on a single line, so it
+  returns `1` whether three are defined or none are:
+
+  ```bash
+  for t in display body mono; do
+    grep -q -- "--font-$t:" src/shared/design/tokens.css || echo "MISSING definition: --font-$t"
+  done   # prints nothing when all three are defined
+  ```
+
+- `! grep -q '@import' src/shared/design/tokens.css` — note the negation: a bare `grep -c` returning
+  `0` also *exits* non-zero, so it aborts a `set -e` wrapper on the passing case. `@font-face` rules
+  are present.
 - **No `var(--…)` in the output references a property the output does not define.** Extract every
   `var(--x)` reference and every `--x:` definition and assert the reference set is a subset of the
   definition set. This is the check that would have caught a missing input file; a token generator
@@ -335,7 +348,7 @@ hex where possible), and spacing relationships to parent and adjacent siblings. 
 and immediate siblings, since most spacing bugs are only explicable relative to neighbours.
 
 Keep it **bounded** — cap the number of properties, the subtree depth, and the sibling count. **Take
-the three numbers from the [index's settled-numbers table](README.md); do not choose your own.** Four
+the three numbers from the [index's settled-numbers table](README.md); do not choose your own.** Five
 items across two waves depend on the same budgets, they are parallel-safe with each other, and each
 one picking independently is how W2.7's caps and W3.7's export budget end up disagreeing — a session
 that passes every per-note cap and still blows the export budget, discovered only at export time. An
@@ -471,8 +484,10 @@ the cheapest possible moment: before any UI exists.
   instead of each item choosing one.
 - If the format needs to change, say so here and amend W3.7 **before** wave 3 starts.
 
-**Verify:** the spec records an actual agent transcript, not a description of one. The five runtime
-budgets are filled in with measured values in the index. Anyone reading it can tell whether the export
+**Verify:** the spec records an actual agent transcript, not a description of one. The **export size
+budget** row in the [index's settled-numbers table](README.md) carries the measured number with its
+provisional marker removed. Leave the other four rows alone — they are deliberate design caps that
+W2.7 and W3.4 are already built to, not measurements this spike re-derives. Anyone reading it can tell whether the export
 worked without rerunning it.
 
 **Commit:** `docs(specs): record the export-format spike and its measured budgets`
@@ -498,8 +513,10 @@ Deliberately **minimal** — this is a boot check, not the wave-4 smoke suite:
   silently diverge, so it is the one thing worth asserting beyond "it started."
 - Fail loudly on any console error during load.
 
-Do not grow this into behavioural coverage. Its job is to make a structural Firefox break visible in
-wave 2 rather than wave 4; W4.3 remains the item that actually exercises the product in Firefox, and
+Do not grow this into behavioural coverage *within wave 2*. One wave-3 extension is sanctioned and
+pre-agreed: W3.2 adds a shadow-root font case to this script, in W3.2's own commit — that does not
+reopen this item or wave 2's exit criteria. Anything else waits for W4.3. This check's job is to make
+a structural Firefox break visible in wave 2 rather than wave 4; W4.3 remains the item that actually exercises the product in Firefox, and
 its header comment must keep saying what it does not cover.
 
 **Verify:** `deno task boot:firefox` passes. Then break it deliberately — add a bogus key to the
@@ -549,7 +566,8 @@ agent to the wrong item.
   closed-shadow-root and cross-origin-iframe cases.
 - The browser floors are resolved, recorded in the index, and asserted equal between the manifests and
   the esbuild target.
-- The export-format spike has run against a real agent, and the five runtime budgets in the index are
-  filled in with measured values.
+- The export-format spike has run against a real agent, and the index's export-size-budget row carries
+  its measured value with the provisional marker removed. The other four budgets are unchanged design
+  caps.
 - CI green with `build`, `tokens-drift`, `lint-firefox`, `boot-firefox`, and `e2e-smoke` jobs, all of
   them **required** by branch protection.

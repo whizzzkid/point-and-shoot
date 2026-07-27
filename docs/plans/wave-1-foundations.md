@@ -15,8 +15,8 @@ Wave 1 ships **no extension code**. There is no `dist/`, no manifest, and nothin
 browser until wave 2. So wave 1 commits are gated on `deno fmt --check`, `deno lint`, `deno check`,
 `deno test`, and CI green.
 
-Wave 1 *is* browser-verifiable in exactly one respect: W1.9's fixture app renders in a real browser
-and W1.10 captures Playwright screenshots of it for the PR. The first **extension** load in
+Wave 1 *is* browser-verifiable in exactly one respect: W1.8's fixture app renders in a real browser
+and W1.9 captures Playwright screenshots of it for the PR. The first **extension** load in
 Playwright is a wave 2 exit criterion. Do not describe wave 1 as browser-verified beyond the
 fixture app.
 
@@ -204,8 +204,9 @@ item must show additions to `docs/README.md`, not a replacement of it.
 - [x] `.claude-design/` committed — SHA: `9fc9c2a0752369d7a049398e0bdd76d1fe5ed13c`
 - [x] [`docs/design.md`](../design.md) written — SHA: `419cfa8`
 - [ ] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: _pending_
+- [ ] export identity recorded in [`docs/design.md`](../design.md) — SHA: _pending_
 
-**The two committed sub-items were parallel-safe; the remaining one is not** — it edits `deno.json`,
+**The two committed sub-items were parallel-safe; the remaining two are not** — it edits `deno.json`,
 which W1.2 creates. Do not hand this out as an immediately-startable item: a second agent holding
 `deno.json` while W1.2 is creating it conflicts on a file that didn't exist when it started.
 
@@ -231,8 +232,12 @@ into `src/shared/design/` and never hand-copied.
 formatter cannot rewrite an upstream artifact. This waits on W1.2, which creates `deno.json` — the one
 part of this item that is not parallel-safe. Do it in the same commit as W1.2 or immediately after.
 
-**Also record which export this is.** Read the version or content hash out of
-`_ds_manifest.json` and note it in [`../design.md`](../design.md). Without it, W2.4's `tokens-drift`
+**Also record which export this is** — this is the second open box, and it is not optional.
+`_ds_manifest.json` carries no version field; its identity is the `namespace` key (currently
+`PointShootDesignSystem_5498d1`). Record that namespace **and** a content hash of the bundle
+(`git ls-files -s .claude-design | git hash-object --stdin`) in
+[`../design.md`](../design.md), together with the rule that a re-export is its own commit. Without it,
+W2.4's `tokens-drift`
 check cannot distinguish a hand edit (what it exists to catch) from a legitimate re-export with stale
 generated files — and the agent that hits the red check on an unrelated PR has no way to tell which it
 is. A re-export is its own commit that regenerates tokens and refreshes the W4.2 visual baselines
@@ -309,7 +314,10 @@ Write each in `docs/adr/` from the W1.4 template, status `Accepted`, dated `2026
     design bundle and re-exported.
 
 **Verify:** all eleven exist; each is linked from `docs/adr/README.md` with a resolving link;
-`grep -rniE 'TBD|TODO|FIXME|lorem' docs/` returns nothing.
+`grep -rniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
+returns nothing. `docs/plans/` is deliberately excluded: the plan files carry `SHA: _pending_` slots
+and the architecture review carries `Effort: TBD` on every finding, both of which are the record
+working as intended, and this recipe's own pattern string would otherwise match itself.
 
 **Commit:** `docs: add ADRs 0001-0011 covering architecture, design, and toolchain decisions`
 
@@ -448,7 +456,7 @@ reruns idempotent):
 
 ## W1.11 — Branch protection and the tracking issue
 
-- [ ] Protection configured, tracking issue opened — no commit; record the issue number here
+- [ ] Protection configured, tracking issue opened — SHA: _pending_ (record the issue number here too)
 
 **parallel-safe** with W1.10 — both are `gh`-only, no files touched.
 
@@ -476,7 +484,12 @@ gh api repos/whizzzkid/point-and-shoot/branches/main/protection   # required che
 
 Then open a throwaway PR containing a deliberate lint error and confirm the merge button is blocked —
 an unproven gate is not a gate, and this is the gate over all the other gates. Close the throwaway.
-Confirm the tracking issue is open and referenced from [`README.md`](README.md).
+Confirm the tracking issue is open and referenced **by number** from [`README.md`](README.md).
+
+Recording that number is the one file change this item makes: edit the index's repo-facts bullet to
+name the issue, and write the number into this item's checkbox line. That is a single docs commit —
+`docs(plans): record the tracking issue number` — and it is the only commit W1.11 produces. The
+branch-protection half touches no files at all.
 
 ---
 
@@ -516,11 +529,12 @@ get subtly wrong.
 - CI green on `feat/inital-impl`, run log showing Deno `2.9.4`.
 - Lefthook proven to fire by W1.3's deliberate-failure test.
 - `deno task ci` passes from a clean checkout after `mise install`.
-- `deno task fixture` serves all eight pages with zero console errors.
+- `deno task fixture` serves all seven fixture pages with zero console errors.
 - `deno task shots` regenerates all screenshots.
 - `.claude-design/` tracked in git, excluded from `deno fmt`/`deno lint`, and its export identity
   recorded in [`../design.md`](../design.md).
-- `grep -rniE 'TBD|TODO|FIXME' docs/` returns nothing.
+- `grep -rniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
+  returns nothing (see W1.6 for why `docs/plans/` is out of scope).
 - Branch protection on `main` requires the CI checks, and has been observed blocking a red PR.
 - The tracking issue is open and is named as the status board in [`README.md`](README.md).
 - PR open per W1.12 with screenshots rendering.

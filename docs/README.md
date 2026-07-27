@@ -19,6 +19,7 @@ rendered documentation site, themed with the same design tokens as the product (
 | `specs/` | Settled behavioral contracts: note schema, export bundle format, capture semantics | Yes |
 | `adr/` | Architecture decision records, numbered, immutable once accepted | Yes |
 | `tutorials/` | Task-shaped walkthroughs: install, first capture, Playwright companion, troubleshooting | Yes |
+| `assets/` | Committed images referenced by these docs and by PR bodies, one subdirectory per wave | Yes, as images |
 
 `plans/` is the entry point for anyone about to do work. Start at
 [`plans/README.md`](plans/README.md) — it carries the shared context, the settled decisions, the

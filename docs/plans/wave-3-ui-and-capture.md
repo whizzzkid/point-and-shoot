@@ -134,9 +134,10 @@ corrupting each other, and it's where the theme decision lands.
   edge: `@font-face` must be declared in the **document**, not only inside the shadow root, for some
   engines to apply it. Verify empirically and document what you found — do not reason about it from
   first principles. **Chromium is covered by W2.9's harness; Firefox is covered by W2.12's boot check,
-  which asserts a vendored WOFF2 resolves through `moz-extension://`.** Extend W2.12 with the
-  shadow-root case rather than reaching for a Firefox harness this wave does not have — the
-  behavioural Firefox suite is W4.3.
+  which asserts a vendored WOFF2 resolves through `moz-extension://`.** Add the shadow-root case to
+  that boot-check script **in this item's own commit** rather than reaching for a Firefox harness this
+  wave does not have — W2.12 names this as its one sanctioned extension, so it does not reopen wave 2.
+  The behavioural Firefox suite is still W4.3.
 - Pin the host's `z-index` to the top of the stacking context and defend against host pages that also
   use extreme z-indexes. Record the chosen strategy in a comment; this is a known source of "the
   toolbar is invisible on exactly one site" bugs.
@@ -316,7 +317,11 @@ if the spike found the agent needed something the bundle doesn't carry, that cha
   what makes them unit-testable and what makes v2's remote handoff a swap rather than a rewrite.
 
 **Plan view UI:** preview the generated Markdown with the real content, per-note include/exclude
-toggles, the size budget, and copy plus download actions. Primary action wording per the design:
+toggles, the size budget, and copy plus download actions. This item **enforces** the export size
+budget — take the number from the [index's settled-numbers table](README.md) and do not pick your
+own; W3.6 warns against the same value and W3.9 defaults its setting to it, so a locally-chosen
+number here is a disagreement that only surfaces at export time. Take the drag-box element cap from
+the same table. Primary action wording per the design:
 "Send to agent"-style phrasing, sentence case, no exclamation.
 
 **State what leaves the machine, at the moment it leaves.** The export bundles screenshots of whatever

@@ -58,6 +58,7 @@ flowchart TD
     W111["W1.11 branch protection<br/>+ tracking issue"]
     W112["W1.12 wave 1 PR"]
     W12 --> W13
+    W12 --> W15
     W14 --> W16
     W15 --> W16
     W12 --> W17
@@ -191,7 +192,7 @@ out now?" The last column is each wave's landing step. Item ids in parentheses a
 | Wave | Immediately startable | Unblocks after one item lands | Serial chain | Lands the wave |
 |---|---|---|---|---|
 | 1 | W1.1, W1.2, W1.4, W1.10, W1.11 | W1.3, W1.5, W1.7, W1.8 (all after W1.2) | W1.6 (after W1.4+W1.5); W1.9 (after W1.8) | W1.12 |
-| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8, W2.11 | W2.12 (after W2.3) | W2.3 → W2.9 → W2.10 | W2.13 |
+| 2 | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | W2.11 (after W2.8); W2.12 (after W2.3) | W2.3 → W2.9 → W2.10 | W2.13 |
 | 3 | W3.1, W3.2, W3.10, W3.11 | W3.8, W3.9 (both after W3.1) | W3.3 → W3.4 → W3.5 → W3.6 → W3.7 | W3.12 |
 | 4 | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7 | — | W4.6 (after W4.1–W4.4) | W4.8 |
 | 5 | W5.1, W5.3, W5.4, W5.5 | W5.2, W5.7 (both after W5.1+W5.3+W5.4) | W5.8 (after W5.7) | W5.6 |
@@ -335,18 +336,21 @@ Resolved live on 2026-07-24. **Pin exactly. No `latest`, no `^`, no `~`, no floa
 | `actions/checkout` | `v7` | CI workflows |
 | `jdx/mise-action` | `v4` | CI workflows |
 
-Browser floors are pins too, and they live here for the same reason the tool versions do — three
-things in wave 2 consume them and must not disagree:
+Browser floors belong here too, for the same reason the tool versions do — three things in wave 2
+consume them and must not disagree. **They are not resolved yet.** W2.2 resolves them and fills this
+table in; until then the cells below are empty on purpose, and no item may substitute a guess.
 
 | Floor | Version | Consumed by |
 |---|---|---|
-| Chrome minimum | `120` | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
-| Firefox minimum | `121` | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant |
-| esbuild `target` | derived — `chrome120,firefox121` | W2.3, computed from `SUPPORTED`, never written as a literal |
+| Chrome minimum | _pending W2.2_ | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
+| Firefox minimum | _pending W2.2_ | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant |
+| esbuild `target` | derived from `SUPPORTED` — never written as a literal | W2.3 |
 
-W2.2 **asserts** these values rather than choosing them, and W2.3 derives its `target` from the same
-constant, so the manifests and the transpile floor cannot drift apart. Raising a floor is a one-line
-change in `build/manifest.ts` plus a row here — never an edit in two places.
+Resolve each from **that vendor's MV3 support baseline**, not from the other's number: Firefox
+shipped MV3 well before Chrome's current release, so the two floors are years apart and a plausible
+Chrome-plus-one guess locks out most of the Firefox installed base. W2.2 writes the resolved numbers
+into this table in its own commit; after that, raising a floor is a one-line change in
+`build/manifest.ts` plus a row here — never an edit in two places.
 
 Preact's version is resolved and pinned in wave 2 (`npm view preact version` at the time), not
 guessed. GitHub Actions pin to the official action's **semver major**, per project convention.
@@ -354,10 +358,11 @@ guessed. GitHub Actions pin to the official action's **semver major**, per proje
 ## Settled numbers — the five runtime budgets
 
 Every bound the runtime enforces is fixed here, once. Five items across two waves consume these
-(W2.7, W2.11, W3.4, W3.6, W3.9) and they are parallel-safe with each other — so each one picking its
+(W2.7, W3.4, W3.6, W3.7, W3.9) and they are parallel-safe with each other — so each one picking its
 own value is exactly how a session passes every per-note cap and still blows the export budget, a
 disagreement discovered only at export time. **Read the number from this table; do not choose one
-inside the item.**
+inside the item.** W2.11 is not in that list: it *produces* the fifth number rather than consuming
+any of them.
 
 | Budget | Value | Enforced in | Consumed by |
 |---|---|---|---|
@@ -367,11 +372,12 @@ inside the item.**
 | Elements collected per drag box | `25` | W3.4 | W3.6, W3.7 |
 | Default export size budget | `2 MB` — **provisional until W2.11 measures it** | W3.7 | W3.6 (warning threshold), W3.9 (user-adjustable default) |
 
-The first four are set to keep a single note legible to an agent rather than to be generous: a digest
-listing every computed property is noise, and a drag over `<body>` must not collect two thousand
-elements. The fifth is the only guess, and W2.11 exists to replace it with a measured number — the
-point at which a real agent's output degrades. When W2.11 lands, update this row and the items that
-read it in the same commit.
+The first four are **deliberate design caps**, set to keep a single note legible to an agent rather
+than to be generous: a digest listing every computed property is noise, and a drag over `<body>` must
+not collect two thousand elements. They are settled — no item re-derives them. The fifth is the only
+guess, and W2.11 exists to replace *that one row* with a measured number — the point at which a real
+agent's output degrades. When W2.11 lands, update that row and the items that read it in the same
+commit.
 
 Changing any value here is a plan change, so [rule 7](#rules-for-working-any-wave) substep 5 applies:
 this table, the wave items that cite it, and the tests that assert it move together.
@@ -381,8 +387,9 @@ this table, the wave items that cite it, and the tests that assert it move toget
 - Remote `git@github.com:whizzzkid/point-and-shoot.git`; `gh` authenticated as `whizzzkid`.
 - Default branch `main`. Wave 1 lands on `feat/inital-impl`; later waves branch per the convention
   in `AGENTS.md`.
-- Docs layout is fixed: `docs/specs/`, `docs/plans/`, `docs/adr/`, `docs/tutorials/`, plus
-  [`docs/README.md`](../README.md) (the published index and doc conventions) and
+- Docs layout is fixed: `docs/specs/`, `docs/plans/`, `docs/adr/`, `docs/tutorials/`,
+  `docs/assets/` (committed images referenced by docs and PR bodies — W1.9 writes the first of them),
+  plus [`docs/README.md`](../README.md) (the published index and doc conventions) and
   [`docs/design.md`](../design.md). Do not invent new top-level directories.
 - **Everything under `docs/` is published** (wave 5, W5.7/W5.8) — rendered to HTML and themed with the
   product's own tokens. Write every doc for a reader who has never seen the repo, keep links relative,
