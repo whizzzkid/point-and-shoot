@@ -25,6 +25,33 @@ and committed verbatim so every agent working an item builds against the same to
   `_adherence.oxlintrc.json` ruleset over our components to flag drift. It reports; it does not gate
   CI.
 
+## Export identity of the committed bundle
+
+`_ds_manifest.json` carries no version field, so the bundle's identity is its `namespace` key plus a
+content hash of every tracked file under it.
+
+| Field         | Value                                      |
+| ------------- | ------------------------------------------ |
+| Namespace     | `PointShootDesignSystem_5498d1`            |
+| Content hash  | `2ed2f2a9a1d9f5a67189eb42cdef0c16192474f4` |
+| Tracked files | 88                                         |
+
+Recompute the hash with:
+
+```bash
+git -C "$(git rev-parse --show-toplevel)" ls-files -s .claude-design | git hash-object --stdin
+```
+
+The `-C "$(git rev-parse --show-toplevel)"` is load-bearing: run from any subdirectory,
+`git ls-files .claude-design` matches nothing and the pipeline silently returns the hash of an empty
+blob, which looks exactly like a real answer.
+
+**A re-export gets its own commit.** That commit updates the two values above, regenerates the
+tokens under `src/shared/design/`, and refreshes W4.2's visual baselines — all in the same commit,
+because all three move at the same instant. Without this record, W2.4's `tokens-drift` check cannot
+tell a hand edit (which the rule above exists to catch) from a legitimate re-export with stale
+generated files, and an agent hits a red check on an unrelated PR with no way to know which it is.
+
 ## What is in the bundle
 
 | Path                        | Contents                                                                                                                                                                                                           |
