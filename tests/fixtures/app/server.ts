@@ -54,7 +54,7 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
  *
  * @param pathname The request's URL pathname, percent-encoded as the browser sent it.
  * @returns The absolute path to serve, or `null` when the request escapes the served
- *   directory or names a directory rather than a file.
+ *   directory, names a directory rather than a file, or is not decodable.
  *
  * @example
  * ```ts
@@ -62,10 +62,20 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
  * resolvePath("/");                // -> "<root>/index.html"
  * resolvePath("/a%20file.html");   // -> "<root>/a file.html"
  * resolvePath("/../../etc/hosts"); // -> null
+ * resolvePath("/bad%ZZ.html");     // -> null
  * ```
  */
 export function resolvePath(pathname: string): string | null {
-  const decoded = decodeURIComponent(pathname);
+  // Malformed percent-encoding is a miss, not an exception. `decodeURIComponent` throws
+  // `URIError` on `%ZZ`, and an uncaught throw here reaches `Deno.serve` as a logged 500 —
+  // noise that reads like a fixture bug when it is only a malformed request.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+
   const relative = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
 
   // Directory listing is off, and there is no index fallback below the root: a request for a

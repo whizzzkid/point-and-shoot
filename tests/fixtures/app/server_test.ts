@@ -55,6 +55,14 @@ Deno.test("resolvePath rejects percent-encoded traversal", () => {
   assertEquals(resolvePath("/%2e%2e%2f%2e%2e%2fdeno.json"), null);
 });
 
+Deno.test("resolvePath treats malformed percent-encoding as a miss", () => {
+  // `decodeURIComponent` throws `URIError` on these. Uncaught, the throw escapes the handler and
+  // `Deno.serve` answers 500 with a logged stack — a malformed request reading as a fixture bug.
+  assertEquals(resolvePath("/bad%ZZ.html"), null);
+  assertEquals(resolvePath("/%"), null);
+  assertEquals(resolvePath("/%E0%A4%A.html"), null);
+});
+
 Deno.test("resolvePath rejects a directory request rather than listing it", () => {
   assertEquals(resolvePath("/subdir/"), null);
   assertEquals(resolvePath(""), null);
@@ -85,7 +93,9 @@ Deno.test("handler returns 404 for a missing page and for traversal", async () =
   // `/../deno.json` is not in this list: the URL parser normalises it to `/deno.json` before the
   // handler runs, so it would test a plain miss. `%2e%2e%2f` survives parsing and does reach the
   // resolver.
-  for (const path of ["/nope.html", "/%2e%2e%2fdeno.json"]) {
+  // `/bad%ZZ.html` covers the handler end of the malformed-encoding path: before the guard in
+  // `resolvePath`, the `URIError` escaped this function and `Deno.serve` answered 500.
+  for (const path of ["/nope.html", "/%2e%2e%2fdeno.json", "/bad%ZZ.html"]) {
     const response = await handler(new Request(`http://localhost${path}`));
     assertEquals(response.status, 404, path);
     await response.body?.cancel();
