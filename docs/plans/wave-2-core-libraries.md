@@ -194,7 +194,7 @@ W2.10's CI.
 
 ## W2.4 — Generated design tokens
 
-- [ ] `build/tokens.ts`, `src/shared/design/`, drift check — SHA: _pending_
+- [x] `build/tokens.ts`, `src/shared/design/`, drift check — SHA: 1f79fb7
 
 **parallel-safe.**
 
