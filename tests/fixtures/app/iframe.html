@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: frames</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      color: #18181b;
+      background: #fff;
+    }
+    section {
+      border: 1px solid #d4d4d8;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    iframe {
+      width: 100%;
+      height: 160px;
+      border: 1px solid #a1a1aa;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: frames</h1>
+    <p>
+      A same-origin frame and a cross-origin one. Cross-origin is a hard content-script boundary —
+      this page makes it explicit rather than leaving it to be discovered by a capture that silently
+      returns nothing.
+    </p>
+
+    <section>
+      <h2>Same-origin frame</h2>
+      <!-- Same scheme, host and port, so the parent can reach into contentDocument. -->
+      <iframe src="/frame-content.html" title="Same-origin frame"
+        data-testid="same-origin-frame"></iframe>
+    </section>
+
+    <section>
+      <h2>Cross-origin frame</h2>
+      <!-- Same host, different port. A different port is a different origin, so this is a genuine
+           cross-origin boundary served entirely from this machine: the fixtures make no external
+           network requests. __CROSS_ORIGIN__ is substituted by server.ts for the second origin's
+           base URL, whose port the OS assigns at bind time — so the origin is never written down
+           twice and cannot drift. -->
+      <iframe
+        src="__CROSS_ORIGIN__/frame-content.html"
+        title="Cross-origin frame"
+        data-testid="cross-origin-frame"
+      ></iframe>
+    </section>
+  </body>
+</html>

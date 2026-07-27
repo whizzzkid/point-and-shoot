@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: dark page</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      /* Near-black, not pure black: a real dark page has a surface ramp, and a sampler that
+         only handles #000 passes here while failing in the wild. */
+      background: #0a0b0d;
+      color: #f4f4f5;
+    }
+    .panel {
+      background: #16181c;
+      border: 1px solid #2a2d34;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .bright-patch {
+      /* One bright region on an otherwise dark page. A sampler that averages the whole
+         viewport instead of the area behind the toolbar picks the wrong theme here. */
+      background: #fafafa;
+      color: #0a0b0d;
+      padding: 16px;
+    }
+    button {
+      font: inherit;
+      padding: 6px 12px;
+      background: #22252b;
+      color: #f4f4f5;
+      border: 1px solid #3a3e46;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Fixture: dark page</h1>
+    <p>
+      Light content on a near-black backdrop. This is one pole of the backdrop-luminance theming
+      path in ADR-0010, and the contrast case for the picker highlight.
+    </p>
+
+    <div class="panel">
+      <h2>Dark surface</h2>
+      <p>Body text at the page's default contrast.</p>
+      <button type="button" data-testid="dark-action">Action on dark</button>
+    </div>
+
+    <div class="bright-patch">
+      <h2>Bright patch on a dark page</h2>
+      <p>
+        A toolbar positioned over this region should sample light, while the same page sampled
+        anywhere else reads dark.
+      </p>
+    </div>
+  </body>
+</html>

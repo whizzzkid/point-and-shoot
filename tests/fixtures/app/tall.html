@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fixture: tall page</title>
+    <style>
+    body {
+      font: 16px/1.5 system-ui, sans-serif;
+      margin: 0;
+      color: #18181b;
+      background: #fff;
+    }
+    header {
+      /* Sticky, so it appears in every scrolled screenshot — and so a full-page capture has to
+         decide whether it is captured once or once per screen. */
+      position: sticky;
+      top: 0;
+      background: #18181b;
+      color: #fafafa;
+      padding: 12px 24px;
+      z-index: 1;
+    }
+    main {
+      padding: 24px;
+    }
+    .screen {
+      /* Each block is a viewport tall at the 1280x800 shot size, so the page is comfortably
+         several screens deep. */
+      min-height: 100vh;
+      border-bottom: 1px solid #d4d4d8;
+      padding: 16px 0;
+    }
+    .taller-than-viewport {
+      /* Deliberately taller than any viewport: a region capture of this element must clamp and
+         report truncated: true rather than silently returning a cropped image as complete. */
+      height: 2400px;
+      background: linear-gradient(#eef2ff, #c7d2fe);
+      border: 1px solid #6366f1;
+    }
+    </style>
+  </head>
+  <body>
+    <header data-testid="sticky-header">Sticky header — visible at every scroll position</header>
+    <main>
+      <h1>Fixture: tall page</h1>
+      <p>
+        Several viewports of content, a sticky header, and one element taller than any viewport, for
+        region clamping and the <code>truncated: true</code> path.
+      </p>
+
+      <div class="screen" data-testid="screen-1">
+        <h2>Screen one</h2>
+        <p>Content at the top of the document.</p>
+      </div>
+      <div class="screen" data-testid="screen-2">
+        <h2>Screen two</h2>
+        <p>Reached only by scrolling, so a capture must scroll or stitch to include it.</p>
+      </div>
+      <div class="screen" data-testid="screen-3">
+        <h2>Screen three</h2>
+        <p>Far enough down that a sticky header overlaps content above it.</p>
+      </div>
+
+      <h2>Element taller than the viewport</h2>
+      <div class="taller-than-viewport" data-testid="over-tall-region">
+        <p style="padding: 16px">Top of an element 2400px tall.</p>
+      </div>
+    </main>
+  </body>
+</html>
