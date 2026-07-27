@@ -3,8 +3,9 @@
 **Read [`README.md`](README.md) in this folder first** — it holds the project context, settled
 decisions, resolved versions, and working rules that every item below assumes.
 
-- **Status:** in progress — W1.5 partly landed (design bundle committed, `docs/design.md` written; the
-  `deno.json` exclusion is still open). Everything else is unstarted.
+- **Status:** in progress — W1.5 partly landed (design bundle committed, `docs/design.md` written).
+  **Two of its sub-items are still open**: the `deno.json` exclusion and the export-identity record.
+  Everything else is unstarted.
 - **Branch:** `feat/inital-impl` (all of wave 1 lands here as one PR)
 - **Goal:** everything later waves stand on — agent instructions, pinned toolchain, git hooks, docs,
   ADRs, CI, the committed design bundle, and the browser fixture app.
@@ -53,7 +54,8 @@ right before anyone writes code.
    the code they describe, PRs carry screenshots of visible work.
 9. *Version pinning* — exact everywhere, with the README's resolved-versions table inlined.
 10. *One-time setup* — `mise install`, then `deno run -A npm:playwright@1.62.0 install chromium`.
-11. *Docs layout* — the four `docs/` folders and what belongs in each.
+11. *Docs layout* — the five `docs/` folders (`specs/`, `plans/`, `adr/`, `tutorials/`, `assets/`) and
+    what belongs in each, per [`docs/README.md`](../README.md).
 
 **Write `CLAUDE.md`** as a pointer only: a few lines telling the reader to read `AGENTS.md`, which is
 authoritative. Do not duplicate content between the two — duplication guarantees drift.
@@ -206,9 +208,11 @@ item must show additions to `docs/README.md`, not a replacement of it.
 - [ ] `.claude-design/` excluded from `deno fmt` / `deno lint` in `deno.json` — SHA: _pending_
 - [ ] export identity recorded in [`docs/design.md`](../design.md) — SHA: _pending_
 
-**The two committed sub-items were parallel-safe; the remaining two are not** — it edits `deno.json`,
-which W1.2 creates. Do not hand this out as an immediately-startable item: a second agent holding
-`deno.json` while W1.2 is creating it conflicts on a file that didn't exist when it started.
+**The two open sub-items have different blockers.** The `deno.json` exclusion waits on W1.2, which
+creates that file — do not hand it out as immediately startable: a second agent holding `deno.json`
+while W1.2 is creating it conflicts on a file that didn't exist when it started. The export-identity
+record edits [`../design.md`](../design.md), which already exists, so that half is parallel-safe and
+can land at any time.
 
 **Why:** `.claude-design/` was untracked. Every wave-3 item builds against it, and wave 2 *generates*
 token files from it. It had to be in version control before anything depended on it, or the generated
@@ -235,7 +239,9 @@ part of this item that is not parallel-safe. Do it in the same commit as W1.2 or
 **Also record which export this is** — this is the second open box, and it is not optional.
 `_ds_manifest.json` carries no version field; its identity is the `namespace` key (currently
 `PointShootDesignSystem_5498d1`). Record that namespace **and** a content hash of the bundle
-(`git ls-files -s .claude-design | git hash-object --stdin`) in
+(`git -C "$(git rev-parse --show-toplevel)" ls-files -s .claude-design | git hash-object --stdin` —
+anchor it to the repo root, because from any subdirectory `git ls-files` matches nothing and the
+pipeline silently returns the empty-blob hash, which looks like a real answer) in
 [`../design.md`](../design.md), together with the rule that a re-export is its own commit. Without it,
 W2.4's `tokens-drift`
 check cannot distinguish a hand edit (what it exists to catch) from a legitimate re-export with stale
@@ -314,10 +320,13 @@ Write each in `docs/adr/` from the W1.4 template, status `Accepted`, dated `2026
     design bundle and re-exported.
 
 **Verify:** all eleven exist; each is linked from `docs/adr/README.md` with a resolving link;
-`grep -rniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
-returns nothing. `docs/plans/` is deliberately excluded: the plan files carry `SHA: _pending_` slots
-and the architecture review carries `Effort: TBD` on every finding, both of which are the record
-working as intended, and this recipe's own pattern string would otherwise match itself.
+`grep -srniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
+prints nothing. Judge it on **output, not exit status**: `-s` silences the warning when one of those
+directories does not exist yet (W1.4 creates them), but BSD grep still exits `2` there while GNU grep
+exits `1`, so a status check passes or fails depending on the machine. `docs/plans/` is out of scope
+deliberately — the plan files carry `SHA: _pending_` slots, the architecture review carries
+`Effort: TBD` on every finding — both are the record working as intended — and this recipe's own
+pattern string would otherwise match itself.
 
 **Commit:** `docs: add ADRs 0001-0011 covering architecture, design, and toolchain decisions`
 
@@ -458,7 +467,8 @@ reruns idempotent):
 
 - [ ] Protection configured, tracking issue opened — SHA: _pending_ (record the issue number here too)
 
-**parallel-safe** with W1.10 — both are `gh`-only, no files touched.
+**parallel-safe** with W1.10. W1.10 is `gh`-only; this item is `gh` plus one small docs commit (the
+issue number), and it touches no file any other wave-1 item touches.
 
 Two pieces of durable project infrastructure that the rest of the plan assumes exist.
 
@@ -525,7 +535,8 @@ get subtly wrong.
 
 ## Wave 1 exit criteria
 
-- W1.1–W1.11 all checked with real commit SHAs (or `gh` verification for W1.10 and W1.11).
+- W1.1–W1.11 all checked with real commit SHAs (W1.10 is the sole exception — it is `gh` verification
+  only; W1.11 carries the commit that records its issue number).
 - CI green on `feat/inital-impl`, run log showing Deno `2.9.4`.
 - Lefthook proven to fire by W1.3's deliberate-failure test.
 - `deno task ci` passes from a clean checkout after `mise install`.
@@ -533,8 +544,8 @@ get subtly wrong.
 - `deno task shots` regenerates all screenshots.
 - `.claude-design/` tracked in git, excluded from `deno fmt`/`deno lint`, and its export identity
   recorded in [`../design.md`](../design.md).
-- `grep -rniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
-  returns nothing (see W1.6 for why `docs/plans/` is out of scope).
+- `grep -srniE 'TBD|TODO|FIXME|lorem' docs/adr docs/specs docs/tutorials docs/README.md docs/design.md`
+  prints nothing — judged on output, not exit status (see W1.6 for why).
 - Branch protection on `main` requires the CI checks, and has been observed blocking a red PR.
 - The tracking issue is open and is named as the status board in [`README.md`](README.md).
 - PR open per W1.12 with screenshots rendering.

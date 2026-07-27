@@ -237,10 +237,16 @@ Also assert the generated CSS is complete, not merely present:
   returns `1` whether three are defined or none are:
 
   ```bash
+  missing=0
   for t in display body mono; do
-    grep -q -- "--font-$t:" src/shared/design/tokens.css || echo "MISSING definition: --font-$t"
-  done   # prints nothing when all three are defined
+    grep -q -- "--font-$t:" src/shared/design/tokens.css \
+      || { echo "MISSING definition: --font-$t"; missing=1; }
+  done
+  exit "$missing"   # silent and exit 0 when all three are defined
   ```
+
+  The `exit "$missing"` is load-bearing: a bare `|| echo` loop reports the problem and still exits
+  `0`, so it reads as a pass under `set -e` and cannot back wave 2's exit criterion.
 
 - `! grep -q '@import' src/shared/design/tokens.css` — note the negation: a bare `grep -c` returning
   `0` also *exits* non-zero, so it aborts a `set -e` wrapper on the passing case. `@font-face` rules
@@ -533,7 +539,8 @@ Firefox manifest, confirm the check fails, and revert. An unproven gate is not a
 **Depends on:** W2.1–W2.12, CI green.
 
 Body must include: what wave 2 establishes; a checklist with commit SHAs; the **vendored asset byte
-sizes** from W2.5; the **measured export budgets** from W2.11; confirmation that the built bundles
+sizes** from W2.5; the **measured export size budget** from W2.11 (one number — the other four
+budgets are settled design caps, not measurements); confirmation that the built bundles
 contain no remote URLs; a Verification section mapping each claim to a command actually run; and a
 Follow-ups section stating that no UI ships in wave 2, the side panel / popup / options pages are
 placeholder shells, and Firefox is verified only by a static lint plus a boot check — not

@@ -6,7 +6,7 @@ assumes.** An agent prompted with *"work on W3.4"* must read this file first, th
 
 | Wave | File | Status |
 |---|---|---|
-| 1 — Foundations | [`wave-1-foundations.md`](wave-1-foundations.md) | in progress — W1.5 partly landed |
+| 1 — Foundations | [`wave-1-foundations.md`](wave-1-foundations.md) | in progress — W1.5 partly landed, two sub-items open |
 | 2 — Core libraries | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | blocked on wave 1 |
 | 3 — UI and capture | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2 |
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md) | blocked on wave 3 |
@@ -338,7 +338,9 @@ Resolved live on 2026-07-24. **Pin exactly. No `latest`, no `^`, no `~`, no floa
 
 Browser floors belong here too, for the same reason the tool versions do — three things in wave 2
 consume them and must not disagree. **They are not resolved yet.** W2.2 resolves them and fills this
-table in; until then the cells below are empty on purpose, and no item may substitute a guess.
+table in; until then the cells below read `_pending W2.2_` on purpose, and no item may substitute a
+guess. They are the one exception to this section's heading: everything above is resolved and pinned,
+the two floors are not resolved yet.
 
 | Floor | Version | Consumed by |
 |---|---|---|
@@ -407,8 +409,9 @@ this table, the wave items that cite it, and the tests that assert it move toget
 4. After the commit lands, edit the wave file: `[ ]` → `[x]`, replace `_pending_` with the real SHA,
    and update the wave's **Status**. Never end a session with the plan file stale. A few items produce
    no commit and so carry no `_pending_` slot — the PR items (W1.12, W2.13, W3.12, W4.8) record a PR
-   number, W1.11 records an issue number, and W1.10 records nothing but the verification command. Tick
-   those without inventing a SHA.
+   number and W1.10 records nothing but the verification command. Tick those without inventing a SHA.
+   W1.11 is **not** in that set: it produces one docs commit recording the tracking issue's number, so
+   it carries a real SHA like any other item.
 5. Deferred or abandoned → mark `[~]` with one line saying why.
 6. Every claim in a PR body must correspond to a command actually run. If something couldn't be
    verified, say so and why.
