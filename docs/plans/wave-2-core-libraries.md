@@ -312,7 +312,7 @@ render in the W2.9 smoke load; `deno task check` clean.
 
 ## W2.6 — Selector engine
 
-- [ ] `src/shared/selectors.ts` + tests — SHA: _pending_
+- [x] `src/shared/selectors.ts` + tests — SHA: 3e6a5d5
 
 **parallel-safe.**
 
