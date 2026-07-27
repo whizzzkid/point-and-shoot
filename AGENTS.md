@@ -205,10 +205,13 @@ pinned binary when you need to:
 LEFTHOOK_BIN="$(mise which lefthook)" mise exec -- git commit
 ```
 
-Browser minimums (`minimum_chrome_version`, `strict_min_version`) and the esbuild `target` are **not
-resolved yet** — W2.2 resolves them from each vendor's own MV3 support baseline and writes them into
-the table in [`docs/plans/README.md`](docs/plans/README.md). Until then, no item may substitute a
-guess.
+Browser minimums are resolved from each vendor's own MV3 support baseline, not guessed:
+`minimum_chrome_version` is `116` (the first Chrome version whose `chrome.sidePanel.open()` ships —
+`sidePanel` itself landed in Chrome 114, but the shim calls `open()`), and
+`browser_specific_settings.gecko.strict_min_version` is `109.0` (Firefox's Manifest V3 general
+availability). The esbuild `target` derives from the same `SUPPORTED` constant W2.2 exports in
+`build/manifest.ts` — never a separate literal. See the table in
+[`docs/plans/README.md`](docs/plans/README.md).
 
 ## Docs layout
 

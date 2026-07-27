@@ -344,21 +344,21 @@ Resolved live on 2026-07-24. **Pin exactly. No `latest`, no `^`, no `~`, no floa
 | `jdx/mise-action`  | `v4`     | CI workflows                                              |
 
 Browser floors belong here too, for the same reason the tool versions do — three things in wave 2
-consume them and must not disagree. **They are not resolved yet.** W2.2 resolves them and fills this
-table in; until then the cells below read `_pending W2.2_` on purpose, and no item may substitute a
-guess. They are the one exception to this section's heading: everything above is resolved and
-pinned, the two floors are not resolved yet.
+consume them and must not disagree. Resolved by W2.2 from each vendor's own MV3 support baseline,
+not guessed.
 
 | Floor            | Version                                               | Consumed by                                                                            |
 | ---------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Chrome minimum   | _pending W2.2_                                        | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
-| Firefox minimum  | _pending W2.2_                                        | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant    |
+| Chrome minimum   | `116`                                                 | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
+| Firefox minimum  | `109`                                                 | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant    |
 | esbuild `target` | derived from `SUPPORTED` — never written as a literal | W2.3                                                                                   |
 
-Resolve each from **that vendor's MV3 support baseline**, not from the other's number: Firefox
-shipped MV3 well before Chrome's current release, so the two floors are years apart and a plausible
-Chrome-plus-one guess locks out most of the Firefox installed base. W2.2 writes the resolved numbers
-into this table in its own commit; after that, raising a floor is a one-line change in
+Resolved each from **that vendor's own MV3 support baseline**, not from the other's number: Chrome's
+`chrome.sidePanel` API landed in Chrome 114, but the `sidePanel.open()` method the browser shim
+(W2.1) calls did not ship until Chrome 116, so the Chrome floor is 116. Firefox's Manifest V3 became
+generally available in Firefox 109, so the Firefox floor is 109 — years below Chrome's, because
+Firefox shipped MV3 well before Chrome's current release; a plausible Chrome-plus-one guess would
+have locked out most of the Firefox installed base. Raising a floor is a one-line change in
 `build/manifest.ts` plus a row here — never an edit in two places.
 
 Preact's version is resolved and pinned in wave 2 (`npm view preact version` at the time), not

@@ -95,7 +95,7 @@ the test pass.
 
 ## W2.2 — Manifest generation for both targets
 
-- [ ] `build/manifest.ts` + generated manifests — SHA: _pending_
+- [x] `build/manifest.ts` + generated manifests — SHA: 1998f49
 
 **parallel-safe.**
 
