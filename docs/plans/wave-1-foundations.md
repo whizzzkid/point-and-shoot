@@ -98,9 +98,9 @@ manages *tools*, `deno task` manages *commands*.
 
 **`.gitignore` — this file already exists; ADD to it, never overwrite it.** It landed with the design
 bundle in `9fc9c2a` and carries the Deno entries (`.deno/`, `coverage/`, `*.lcov`) and an agent-scratch
-section (`.playwright-mcp/`, `.remember/`). Those are load-bearing: without the scratch entries, an
-agent's working directories are untracked-but-unignored and the next `git add` sweeps them into a
-commit. Add the build-output entries this item owns and leave everything else intact:
+section (`.playwright-mcp/`, `.remember/`, `.review-playground/`). Those are load-bearing: without the
+scratch entries, an agent's working directories are untracked-but-unignored and the next `git add`
+sweeps them into a commit. Add the build-output entries this item owns and leave everything else intact:
 `dist/`, `node_modules/`, `.playwright/`, `playwright-report/`, `web-ext-artifacts/`, `*.zip`,
 `.DS_Store`.
 
@@ -124,8 +124,8 @@ tasks resolve and that `mise install` produced the pinned versions.
 Also prove nothing was lost from the pre-existing `.gitignore`, and that the bundle is excluded:
 
 ```bash
-git check-ignore -v .remember/ .playwright-mcp/ dist/ coverage/   # all four must resolve
-mise exec -- deno fmt --check                                     # must not touch .claude-design/
+git check-ignore -v .remember/ .playwright-mcp/ .review-playground/ dist/ coverage/  # all five resolve
+mise exec -- deno fmt --check   # must not touch .claude-design/
 ```
 
 **Commit:** `chore: pin toolchain via mise and add deno project config`
