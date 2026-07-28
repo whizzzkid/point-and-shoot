@@ -156,6 +156,10 @@ not suggestions. A PR that breaks one is not merged.
   `cssPath`/`xpath` as the last resort. This is trust order for a consumer chaining fallbacks — a
   test-authored identifier is the least likely to drift, a structural path the most likely to break
   the moment the DOM around the element changes shape.
+- **Settled runtime budgets live in one table.** `docs/plans/README.md`'s settled-numbers table is
+  the single source for caps multiple wave-2/3 items share (style-digest property/sibling/subtree
+  caps, element-collection and export-size limits). An item that needs one of these numbers reads it
+  from that table and exports it from its own module — never re-derives or hand-picks its own value.
 
 ## Testing
 
