@@ -353,7 +353,7 @@ and text nodes passed in by mistake.
 
 ## W2.7 — Computed-style digest engine
 
-- [ ] `src/shared/style-digest.ts` + tests — SHA: _pending_
+- [x] `src/shared/style-digest.ts` + tests — SHA: 796bd88
 
 **parallel-safe.**
 
