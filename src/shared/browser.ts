@@ -5,10 +5,11 @@
  * This is the single seam where Chrome and Firefox differ. Firefox exposes a `browser.*` global
  * whose methods return promises natively. Chrome exposes only `chrome.*`, and in MV3 that global
  * returns promises for some methods when the callback is omitted, but not uniformly — so every
- * Chrome call in this module goes through {@link promisifyWithResult} or {@link promisifyVoid}
- * regardless of whether that particular method happens to support a promise on its own. Detection
- * of which global is present happens once, on first access to {@link browser}, and every method on
- * the resulting object delegates to that one detected adapter — never a per-call-site branch.
+ * asynchronous Chrome call in this module goes through {@link promisifyWithResult} or
+ * {@link promisifyVoid} regardless of whether that particular method happens to support a promise
+ * on its own. The synchronous `runtime.getURL` stays synchronous in both engines. Detection of
+ * which global is present happens once, on first access to {@link browser}, and every method on the
+ * resulting object delegates to that one detected adapter — never a per-call-site branch.
  *
  * Nothing outside this module should reference `chrome.*` or `browser.*` directly.
  *
@@ -88,7 +89,7 @@ export type StorageItems = Record<string, unknown>;
 /**
  * The normalized, promise-based surface every other module in this codebase imports instead of
  * `chrome.*` or `browser.*`. Every method here resolves or rejects a promise; none take a
- * callback.
+ * callback. The native synchronous `runtime.getURL` is the one exception.
  */
 export interface BrowserShim {
   readonly runtimeInfo: RuntimeInfo;
@@ -102,6 +103,14 @@ export interface BrowserShim {
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
   };
   readonly runtime: {
+    /**
+     * Resolves a manifest-relative asset path against the browser-assigned extension origin.
+     *
+     * @param path The resource path relative to `manifest.json`.
+     * @returns A fully qualified extension URL. Chrome returns a session-scoped host for resources
+     *   protected by `use_dynamic_url`; Firefox returns its random extension-origin UUID.
+     */
+    getURL(path: string): string;
     sendMessage(message: unknown): Promise<unknown>;
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
@@ -132,7 +141,7 @@ export interface BrowserShim {
   openPanel(tabId?: number): Promise<void>;
 }
 
-/** Shape of Chrome's MV3 global this module depends on — callback-based throughout. */
+/** Shape of Chrome's MV3 global this module depends on — callback-based for asynchronous calls. */
 export interface ChromeGlobalShape {
   readonly tabs: {
     captureVisibleTab(
@@ -143,6 +152,7 @@ export interface ChromeGlobalShape {
     query(queryInfo: TabQueryInfo, callback: (tabs: TabInfo[]) => void): void;
   };
   readonly runtime: {
+    getURL(path: string): string;
     sendMessage(message: unknown, callback: (response: unknown) => void): void;
     readonly onMessage: { addListener(listener: MessageListener): void };
     readonly lastError: { readonly message?: string } | undefined;
@@ -175,13 +185,14 @@ export interface ChromeGlobalShape {
   };
 }
 
-/** Shape of Firefox's MV3 global this module depends on — promise-based throughout. */
+/** Shape of Firefox's MV3 global this module depends on — promise-native for asynchronous calls. */
 export interface FirefoxGlobalShape {
   readonly tabs: {
     captureTab(tabId: number | undefined, options?: CaptureOptions): Promise<string>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
   };
   readonly runtime: {
+    getURL(path: string): string;
     sendMessage(message: unknown): Promise<unknown>;
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
@@ -256,6 +267,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       },
     },
     runtime: {
+      getURL(path) {
+        return chromeGlobal.runtime.getURL(path);
+      },
       sendMessage(message) {
         return promisifyWithResult(
           chromeGlobal,
@@ -321,6 +335,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       },
     },
     runtime: {
+      getURL(path) {
+        return firefoxGlobal.runtime.getURL(path);
+      },
       sendMessage(message) {
         return firefoxGlobal.runtime.sendMessage(message);
       },

@@ -104,9 +104,8 @@ export const manifestBase: ManifestBase = {
       // A resource pattern, not a permission: it says which pages may *load* these font and sprite
       // files, and grants the extension nothing over page content. It cannot be narrowed, because
       // the injected overlay has to render on whatever page the user pointed at. Its one real cost
-      // is that a page can probe these paths to detect the extension; `use_dynamic_url` would
-      // rotate them, but it is Chrome-only and changes how the injected UI must resolve them, so
-      // wave 3 decides that alongside the overlay that actually loads these files.
+      // is that a page can probe a stable Chrome extension id for these paths. ADR-0012 rotates
+      // Chrome's public URLs per session; Firefox already assigns a random extension-origin UUID.
       matches: ["<all_urls>"],
     },
   ],
@@ -119,6 +118,10 @@ export const manifestBase: ManifestBase = {
 export function forChrome(): Record<string, unknown> {
   return {
     ...manifestBase,
+    web_accessible_resources: manifestBase.web_accessible_resources.map((rule) => ({
+      ...rule,
+      use_dynamic_url: true,
+    })),
     minimum_chrome_version: String(SUPPORTED.chrome),
     background: {
       service_worker: "background/background.js",

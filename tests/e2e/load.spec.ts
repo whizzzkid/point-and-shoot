@@ -3,8 +3,8 @@
 /**
  * Loads the real built `dist/chrome/` extension into Chromium via Playwright and asserts it is a
  * working extension, not just a plausible-looking directory: the service worker boots, the content
- * script executes on an ordinary page, nothing logs a console or page error, and a vendored font and
- * the icon sprite resolve through the extension's own `web_accessible_resources` URLs.
+ * script executes on an ordinary page, nothing logs a console or page error, every exposed asset
+ * resolves through a dynamic `web_accessible_resources` URL, and the stable URL form is rejected.
  *
  * Named `.spec.ts`, not `.test.ts`, so `deno task test`/`ci`'s default glob skips it — this suite
  * needs a real built `dist/chrome/` and a real browser, so it runs on its own slower tier via
@@ -18,7 +18,7 @@
  * @module
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { chromium } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
@@ -30,9 +30,21 @@ const TRACE_PATH = fromFileUrl(
   new URL("../../playwright-report/e2e-smoke-trace.zip", import.meta.url),
 );
 
-/** One vendored font, arbitrarily chosen — proves `web_accessible_resources` covers the font set. */
-const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
-const ICON_SPRITE_RESOURCE = "src/shared/design/icons.svg";
+/** Every file currently exposed through the manifest's two web-accessible resource patterns. */
+const WEB_ACCESSIBLE_RESOURCES = [
+  "src/shared/design/fonts/space-grotesk-400.woff2",
+  "src/shared/design/fonts/space-grotesk-500.woff2",
+  "src/shared/design/fonts/space-grotesk-600.woff2",
+  "src/shared/design/fonts/space-grotesk-700.woff2",
+  "src/shared/design/fonts/inter-400.woff2",
+  "src/shared/design/fonts/inter-500.woff2",
+  "src/shared/design/fonts/inter-600.woff2",
+  "src/shared/design/fonts/inter-700.woff2",
+  "src/shared/design/fonts/jetbrains-mono-400.woff2",
+  "src/shared/design/fonts/jetbrains-mono-500.woff2",
+  "src/shared/design/fonts/jetbrains-mono-600.woff2",
+  "src/shared/design/icons.svg",
+] as const;
 
 Deno.test("built chrome extension - boots and executes without error", async () => {
   let missingDist = false;
@@ -101,12 +113,38 @@ Deno.test("built chrome extension - boots and executes without error", async () 
 
     assertEquals(consoleErrors, [], "expected zero console/page errors during load");
 
-    for (const resource of [FONT_RESOURCE, ICON_SPRITE_RESOURCE]) {
-      const status = await page.evaluate(async (url) => {
-        const response = await fetch(url);
-        return response.status;
-      }, `chrome-extension://${extensionId}/${resource}`);
-      assertEquals(status, 200, `expected ${resource} to resolve through web_accessible_resources`);
+    for (const resource of WEB_ACCESSIBLE_RESOURCES) {
+      const staticUrl = `chrome-extension://${extensionId}/${resource}`;
+      const dynamicUrl = await serviceWorker.evaluate((resourcePath) => {
+        const extensionGlobal = globalThis as unknown as {
+          readonly chrome: { readonly runtime: { getURL(path: string): string } };
+        };
+        return extensionGlobal.chrome.runtime.getURL(resourcePath);
+      }, resource);
+      assertNotEquals(
+        new URL(dynamicUrl).host,
+        extensionId,
+        `expected ${resource} to use a session-scoped extension id`,
+      );
+
+      const staticStatus = await page.evaluate(async (url) => {
+        try {
+          return (await fetch(url)).status;
+        } catch {
+          return null;
+        }
+      }, staticUrl);
+      assertNotEquals(staticStatus, 200, `expected the stable URL for ${resource} to be rejected`);
+
+      const dynamicStatus = await page.evaluate(
+        async (url) => (await fetch(url)).status,
+        dynamicUrl,
+      );
+      assertEquals(
+        dynamicStatus,
+        200,
+        `expected ${resource} to resolve through its dynamic web-accessible URL`,
+      );
     }
     await context.tracing.stop();
   } catch (error) {

@@ -7,7 +7,7 @@ interface FakeChrome {
   setLastError(message: string | undefined): void;
 }
 
-/** Chrome-shaped fake: callback-based throughout, modeled on the real MV3 signatures. */
+/** Chrome-shaped fake: callback-based for asynchronous calls, modeled on the real MV3 signatures. */
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
@@ -27,6 +27,9 @@ function createFakeChrome(): FakeChrome {
       },
     },
     runtime: {
+      getURL(path) {
+        return `chrome-extension://dynamic-id/${path}`;
+      },
       sendMessage(message, callback) {
         calls.push("runtime.sendMessage");
         queueMicrotask(() => callback({ echo: message }));
@@ -104,7 +107,7 @@ interface FakeFirefox {
   calls: string[];
 }
 
-/** Firefox-shaped fake: promise-based throughout, modeled on the real MV3 signatures. */
+/** Firefox-shaped fake: promise-native for asynchronous calls, modeled on the real MV3 signatures. */
 function createFakeFirefox(): FakeFirefox {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
@@ -121,6 +124,9 @@ function createFakeFirefox(): FakeFirefox {
       },
     },
     runtime: {
+      getURL(path) {
+        return `moz-extension://random-uuid/${path}`;
+      },
       sendMessage(message) {
         calls.push("runtime.sendMessage");
         return Promise.resolve({ echo: message });
@@ -180,6 +186,21 @@ Deno.test("browser shim - runtimeInfo reports the detected engine", () => {
   const { firefoxGlobal } = createFakeFirefox();
   assertEquals(createBrowserShim({ chrome: chromeGlobal }).runtimeInfo.engine, "chrome");
   assertEquals(createBrowserShim({ browser: firefoxGlobal }).runtimeInfo.engine, "firefox");
+});
+
+Deno.test("browser shim - getURL delegates resource paths to each engine", () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+  const resource = "src/shared/design/fonts/inter-400.woff2";
+
+  assertEquals(
+    createBrowserShim({ chrome: chromeGlobal }).runtime.getURL(resource),
+    `chrome-extension://dynamic-id/${resource}`,
+  );
+  assertEquals(
+    createBrowserShim({ browser: firefoxGlobal }).runtime.getURL(resource),
+    `moz-extension://random-uuid/${resource}`,
+  );
 });
 
 Deno.test("browser shim - firefox is checked before chrome (109+ ships a chrome-alias global)", () => {
