@@ -11,6 +11,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { SCHEMA_VERSION, type Session } from "./schema.ts";
 import {
   DB_NAME,
+  DB_VERSION,
   deleteSession,
   getSession,
   listSessions,
@@ -47,6 +48,28 @@ Deno.test("openStore - creates the sessions store via the v0->v1 migration on a 
     assertEquals(Array.from(db.objectStoreNames), ["sessions"]);
   } finally {
     db.close();
+  }
+});
+
+Deno.test("openStore - yields to a later version bump instead of deadlocking it", async () => {
+  await resetDb();
+  // Stands in for the service worker holding a connection while the side panel, loaded after an
+  // extension update, opens the same database at a higher version. Without `onversionchange` closing
+  // this connection, that upgrade blocks and — since MV3 keeps every context on one database — the
+  // first `DB_VERSION` bump after release deadlocks whichever context opened second.
+  const held = await openStore();
+  try {
+    const upgraded = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION + 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("upgrade was blocked by the held connection"));
+    });
+    assertEquals(upgraded.version, DB_VERSION + 1);
+    upgraded.close();
+  } finally {
+    held.close();
+    await resetDb();
   }
 });
 

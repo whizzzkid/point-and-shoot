@@ -54,7 +54,9 @@ function promisifyTransaction(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+    // `tx.error` is `null` on an explicit `abort()`, and rejecting with `null` produces a thrown
+    // value no `catch` can classify — `isQuotaExceeded` would see it and report a plain failure.
+    tx.onabort = () => reject(tx.error ?? new Error("store: transaction aborted"));
   });
 }
 
@@ -74,7 +76,25 @@ export function openStore(): Promise<IDBDatabase> {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
+    // An MV3 extension opens this database from the service worker, the side panel, the popup and
+    // every injected content script at once. Without `onblocked` a version bump that finds an older
+    // connection still open settles neither `onsuccess` nor `onerror`, so the caller's promise hangs
+    // forever with no error to report.
+    request.onblocked = () =>
+      reject(
+        new Error(
+          `openStore: upgrade to version ${DB_VERSION} is blocked by an open connection in another ` +
+            `extension context`,
+        ),
+      );
+
+    request.onsuccess = () => {
+      const db = request.result;
+      // The other half of the same problem: this connection is what blocks the *next* context's
+      // upgrade. Closing on `versionchange` lets that upgrade proceed instead of deadlocking it.
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = () => reject(request.error);
   });
 }
