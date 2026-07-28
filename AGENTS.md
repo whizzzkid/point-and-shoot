@@ -160,6 +160,12 @@ not suggestions. A PR that breaks one is not merged.
   the single source for caps multiple wave-2/3 items share (style-digest property/sibling/subtree
   caps, element-collection and export-size limits). An item that needs one of these numbers reads it
   from that table and exports it from its own module — never re-derives or hand-picks its own value.
+- **Never trust a stored record's shape.** `src/shared/schema.ts`'s `validateSession` re-validates
+  every record read from IndexedDB against the current `Session` shape rather than casting — a
+  record can predate a schema bump or be corrupted, and the type system's static guarantees say
+  nothing about what is actually on disk. `src/shared/store.ts`'s `MIGRATIONS` array follows the
+  same rule for the database shape itself: append an entry keyed to the version it bumps _to_, never
+  edit an existing entry once it has shipped.
 
 ## Testing
 

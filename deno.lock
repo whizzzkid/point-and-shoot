@@ -5,6 +5,7 @@
     "jsr:@std/internal@^1.0.10": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1.1.6": "1.1.6",
+    "npm:fake-indexeddb@6.2.5": "6.2.5",
     "npm:playwright@1.62.0": "1.62.0",
     "npm:subset-font@2.5.0": "2.5.0"
   },
@@ -28,6 +29,9 @@
   "npm": {
     "argparse@2.0.1": {
       "integrity": "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="
+    },
+    "fake-indexeddb@6.2.5": {
+      "integrity": "sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w=="
     },
     "fontverter@2.0.0": {
       "integrity": "sha512-DFVX5hvXuhi1Jven1tbpebYTCT9XYnvx6/Z+HFUPb7ZRMCW+pj2clU9VMhoTPgWKPhAs7JJDSk3CW1jNUvKCZQ==",
@@ -100,6 +104,7 @@
     "dependencies": [
       "jsr:@std/assert@1.0.14",
       "jsr:@std/path@1.1.6",
+      "npm:fake-indexeddb@6.2.5",
       "npm:playwright@1.62.0"
     ]
   }
