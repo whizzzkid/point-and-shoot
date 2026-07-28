@@ -491,8 +491,8 @@ Add to the existing workflow, each as its own job so a failure names itself:
   on failure.
 - `lint-firefox` — `deno task lint:firefox` (W2.3). Static, no browser, seconds to run; it is the
   only automated statement about the Firefox artifact until wave 4.
-- `boot-firefox` — the W2.12 boot check. Present but **deliberately not required** — see W2.12's
-  note; it cannot currently install any add-on, so requiring it would red-wall `main`.
+- `boot-firefox` — the W2.12 boot check. Required, and green — though only after its first CI run
+  exposed two defects in the check itself; see W2.12's note.
 
 Cache the Playwright browser download keyed on the pinned Playwright version, or CI pays a full
 browser download every run. This wave now covers Firefox at the _static_ and _boots-at-all_ level;
@@ -500,11 +500,9 @@ the fuller `smoke-firefox` behavioural check still lands in wave 4 with the thin
 
 Extend the branch-protection required-check list (W1.11) to include the new jobs in the same PR.
 Done: `required_status_checks.contexts` is now
-`["checks", "build", "tokens-drift", "e2e-smoke",
-"lint-firefox"]` with `strict=true`.
-`boot-firefox` is excluded on purpose — a check that cannot pass is not a gate, it is a permanent
-block, and W2.12 records why. Adding a job without requiring it leaves the gate advisory, which is
-the failure W1.11 exists to prevent.
+`["checks", "build", "tokens-drift", "e2e-smoke", "lint-firefox", "boot-firefox"]` with
+`strict=true`. Adding a job without requiring it leaves the gate advisory, which is the failure
+W1.11 exists to prevent.
 
 **Verify:** push and `gh run watch --exit-status`; confirm all jobs green and the `dist/` artifact
 is downloadable and contains both browser trees. Confirm via
@@ -583,23 +581,24 @@ Firefox manifest, confirm the check fails, and revert. An unproven gate is not a
 
 **Commit:** `test(firefox): add a minimal web-ext boot check for the firefox build`
 
-> **Known broken, and not by this branch.** `deno task boot:firefox` currently fails at install:
-> `WebExtError: installTemporaryAddon: Add-on point-and-shoot@gusto.com is not compatible with
+> **Passes in CI; fails on this developer's machine.** `deno task boot:firefox` locally dies at
+> install —
+> `installTemporaryAddon: Add-on point-and-shoot@gusto.com is not compatible with
 > application version. add-on minVersion: 109.0.`
-> Narrowed to the toolchain, not the manifest:
+> — and that reproduces with a bare four-line MV3 manifest, so it is the local Firefox 153.0 /
+> web-ext 10.5.0 pairing, not anything this repo declares. On GitHub's runner the same command
+> installs the add-on, boots the background script, and resolves the `moz-extension://` font. The
+> job is **required** by branch protection.
 >
-> - Reproduces on the pre-change tree (`git stash -u`, rebuild, rerun) — identical error.
-> - Reproduces with a bare four-line MV3 manifest in a scratch directory, so no field of ours causes
->   it.
-> - Unchanged by `strict_min_version: 128.0`, by removing `strict_min_version` entirely, and by
->   `--pref extensions.checkCompatibility=false --pref extensions.strictCompatibility=false`.
-> - `web-ext@10.5.0` is the newest published release; local Firefox is 153.0, which is also the
->   version CI pins.
+> Two real defects surfaced only when the job first ran in CI, and both are fixed:
 >
-> So the CI `boot-firefox` job will fail there too, and it is excluded from branch protection
-> (W2.10). Wave 3 owns the fix — most likely a `web-ext` upgrade once one ships, or driving
-> `installTemporaryAddon` over RDP directly. Until then Firefox's only automated coverage is the
-> static `lint-firefox` job.
+> - The woff2 marker was parsed with `(\S+)`, so Firefox's quote-wrapped console line yielded `200"`
+>   and the check failed on a run where the resource had resolved (5f9982c).
+> - `-foreground` and Firefox's favicon MIME sniffer emit `console.error` lines on the runner that
+>   the check counted as extension errors (31583a2).
+>
+> The lesson worth keeping: a gate that has never executed is not a gate. This one was written,
+> committed, and ticked three items before anything ran it.
 
 ---
 
@@ -647,6 +646,5 @@ there sends the next agent to the wrong item.
 - The export-format spike has run against a real agent, and the index's export-size-budget row
   carries its measured value with the provisional marker removed. The other four budgets are
   unchanged design caps.
-- CI green with `build`, `tokens-drift`, `lint-firefox`, and `e2e-smoke` jobs, all of them
-  **required** by branch protection. `boot-firefox` ships as an advisory job only — W2.12 records
-  why it cannot pass yet, and wave 3 owns making it a gate.
+- CI green with `build`, `tokens-drift`, `lint-firefox`, `boot-firefox`, and `e2e-smoke` jobs, all
+  of them **required** by branch protection.
