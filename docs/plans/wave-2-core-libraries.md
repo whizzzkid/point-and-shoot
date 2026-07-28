@@ -418,7 +418,7 @@ extension has a live context.
 
 ## W2.9 — Playwright extension-load smoke
 
-- [ ] `tests/e2e/load.spec.ts` + `deno task e2e:smoke` — SHA: _pending_
+- [x] `tests/e2e/load.spec.ts` + `deno task e2e:smoke` — SHA: `5a9c675`
 
 **Depends on:** W2.3, W2.1.
 
