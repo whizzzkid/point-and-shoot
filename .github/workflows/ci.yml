@@ -35,6 +35,21 @@ jobs:
           deno --version
           lefthook version
 
+      # `deno task ci` is not browser-free. Two unit suites — `src/shared/selectors.test.ts` and
+      # `src/shared/style-digest.test.ts` — call `chromium.launch()`, because a selector that
+      # round-trips and a bounded computed-style digest can only be verified against a real engine.
+      # Locally that browser is already installed, which is why the gap survived until this job first
+      # ran. Same cache key and install command as `e2e-smoke`, so the two share one download.
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-1.62.0
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+
       - name: deno task ci
         run: deno task ci
 
