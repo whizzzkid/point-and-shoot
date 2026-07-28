@@ -1,0 +1,85 @@
+/// <reference lib="dom" />
+
+/**
+ * Loads the real built `dist/chrome/` extension into Chromium via Playwright and asserts it is a
+ * working extension, not just a plausible-looking directory: the service worker boots, the content
+ * script executes on an ordinary page, nothing logs a console or page error, and a vendored font and
+ * the icon sprite resolve through the extension's own `web_accessible_resources` URLs.
+ *
+ * Named `.spec.ts`, not `.test.ts`, so `deno task test`/`ci`'s default glob skips it — this suite
+ * needs a real built `dist/chrome/` and a real browser, so it runs on its own slower tier via
+ * `deno task e2e:smoke`, per the three-tier testing split in `docs/plans/README.md`.
+ *
+ * Playwright cannot load extensions in Firefox, so this covers Chromium only; a `web-ext` smoke
+ * check (W2.12) is Firefox's equivalent gate.
+ *
+ * Run with `deno task build && deno task e2e:smoke`.
+ *
+ * @module
+ */
+
+import { assert, assertEquals } from "@std/assert";
+import { fromFileUrl } from "@std/path";
+import { chromium } from "playwright";
+import { startFixtureServer } from "../fixtures/app/server.ts";
+
+const EXTENSION_DIR = fromFileUrl(new URL("../../dist/chrome/", import.meta.url));
+
+/** One vendored font, arbitrarily chosen — proves `web_accessible_resources` covers the font set. */
+const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
+const ICON_SPRITE_RESOURCE = "src/shared/design/icons.svg";
+
+Deno.test("built chrome extension - boots and executes without error", async () => {
+  let missingDist = false;
+  try {
+    await Deno.stat(new URL("manifest.json", `file://${EXTENSION_DIR}`));
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+    missingDist = true;
+  }
+  assert(!missingDist, `dist/chrome/ not found — run \`deno task build\` first (${EXTENSION_DIR})`);
+
+  const context = await chromium.launchPersistentContext("", {
+    channel: "chromium",
+    args: [
+      `--disable-extensions-except=${EXTENSION_DIR}`,
+      `--load-extension=${EXTENSION_DIR}`,
+    ],
+  });
+  const fixture = startFixtureServer();
+
+  try {
+    const serviceWorker = context.serviceWorkers()[0] ??
+      await context.waitForEvent("serviceworker", { timeout: 10_000 });
+    const extensionId = new URL(serviceWorker.url()).host;
+    assert(extensionId.length > 0, "expected the extension's service worker to expose an id");
+
+    const page = await context.newPage();
+
+    const consoleErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(`${page.url()}: ${message.text()}`);
+    });
+    page.on("pageerror", (error) => consoleErrors.push(`${page.url()}: ${error.message}`));
+
+    await page.goto(`${fixture.base}/index.html`, { waitUntil: "load" });
+
+    const contentReady = await page.evaluate(() =>
+      document.documentElement.dataset.pointAndShootContentReady
+    );
+    assertEquals(contentReady, "true", "content script did not set its boot signal");
+
+    assertEquals(consoleErrors, [], "expected zero console/page errors during load");
+
+    for (const resource of [FONT_RESOURCE, ICON_SPRITE_RESOURCE]) {
+      const status = await page.evaluate(async (url) => {
+        const response = await fetch(url);
+        return response.status;
+      }, `chrome-extension://${extensionId}/${resource}`);
+      assertEquals(status, 200, `expected ${resource} to resolve through web_accessible_resources`);
+    }
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
