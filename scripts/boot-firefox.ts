@@ -70,7 +70,10 @@ async function waitForBootSignal(
   const processLine = (line: string) => {
     lines.push(line);
     if (line.includes("point-and-shoot: background ready")) backgroundReady = true;
-    const woff2Match = line.match(/firefox-boot: woff2-status=(\S+)/);
+    // Excludes quotes rather than taking `\S+`: Firefox prints a page's console message wrapped in
+    // them (`console.log: "firefox-boot: woff2-status=200"`), so `\S+` captured `200"` and the
+    // comparison against `"200"` failed on a run where the resource had in fact resolved.
+    const woff2Match = line.match(/firefox-boot: woff2-status=([^\s"']+)/);
     if (woff2Match) woff2Status = woff2Match[1] ?? null;
     if (line.includes("console.error:") && !KNOWN_NOISE.some((pattern) => pattern.test(line))) {
       unexpectedErrors.push(line.trim());
