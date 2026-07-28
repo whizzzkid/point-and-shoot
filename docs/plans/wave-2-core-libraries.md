@@ -518,7 +518,7 @@ tell whether the export worked without rerunning it.
 
 ## W2.12 — Firefox boot check
 
-- [ ] `scripts/boot-firefox.sh` (or equivalent), `deno task boot:firefox` — SHA: _pending_
+- [x] `scripts/boot-firefox.sh` (or equivalent), `deno task boot:firefox` — SHA: dcc7c56
 
 **Depends on:** W2.3.
 
