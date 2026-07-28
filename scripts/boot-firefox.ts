@@ -1,7 +1,10 @@
 /**
  * Firefox boot check (W2.12): loads the real built `dist/firefox/` extension into Firefox via
- * `web-ext run` and asserts it actually boots — the content script injects and a
+ * `web-ext run` and asserts it actually boots — the background script starts and a
  * `web_accessible_resources` file resolves through `moz-extension://`.
+ *
+ * It does not assert the content script ran: ADR-0002 removed the static registration, so nothing
+ * injects without a toolbar gesture, and web-ext offers no way to fire one.
  *
  * Playwright cannot load extensions in Firefox (see tests/e2e/load.spec.ts), so this drives
  * Firefox directly and observes it through Firefox's own `devtools.console.stdout.*` prefs, which
@@ -42,7 +45,7 @@ const KNOWN_NOISE = [
 
 interface BootResult {
   timedOut: boolean;
-  contentReady: boolean;
+  backgroundReady: boolean;
   woff2Status: string | null;
   unexpectedErrors: string[];
   lines: string[];
@@ -59,14 +62,14 @@ async function waitForBootSignal(
   });
 
   let buffer = "";
-  let contentReady = false;
+  let backgroundReady = false;
   let woff2Status: string | null = null;
   const unexpectedErrors: string[] = [];
   const lines: string[] = [];
 
   const processLine = (line: string) => {
     lines.push(line);
-    if (line.includes("firefox-boot: content-ready=true")) contentReady = true;
+    if (line.includes("point-and-shoot: background ready")) backgroundReady = true;
     const woff2Match = line.match(/firefox-boot: woff2-status=(\S+)/);
     if (woff2Match) woff2Status = woff2Match[1] ?? null;
     if (line.includes("console.error:") && !KNOWN_NOISE.some((pattern) => pattern.test(line))) {
@@ -78,7 +81,7 @@ async function waitForBootSignal(
     while (true) {
       const result = await Promise.race([reader.read(), timeout]);
       if (result === "timeout") {
-        return { timedOut: true, contentReady, woff2Status, unexpectedErrors, lines };
+        return { timedOut: true, backgroundReady, woff2Status, unexpectedErrors, lines };
       }
       const { value, done } = result;
       if (done) break;
@@ -86,13 +89,13 @@ async function waitForBootSignal(
       const parts = buffer.split("\n");
       buffer = parts.pop() ?? "";
       for (const line of parts) processLine(line);
-      if (contentReady && woff2Status !== null) break;
+      if (backgroundReady && woff2Status !== null) break;
     }
   } finally {
     reader.releaseLock();
   }
 
-  return { timedOut: false, contentReady, woff2Status, unexpectedErrors, lines };
+  return { timedOut: false, backgroundReady, woff2Status, unexpectedErrors, lines };
 }
 
 async function main() {
@@ -168,8 +171,8 @@ async function main() {
     console.error(result.lines.slice(-40).join("\n"));
     Deno.exit(1);
   }
-  if (!result.contentReady) {
-    console.error("Content script never signaled ready (firefox-boot: content-ready=true).");
+  if (!result.backgroundReady) {
+    console.error("Background script never signaled ready (point-and-shoot: background ready).");
     Deno.exit(1);
   }
   if (result.woff2Status !== "200") {
@@ -182,7 +185,7 @@ async function main() {
     Deno.exit(1);
   }
 
-  console.log("Firefox boot check passed: content script injected, woff2 resource resolved.");
+  console.log("Firefox boot check passed: background script booted, woff2 resource resolved.");
 }
 
 if (import.meta.main) {

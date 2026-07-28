@@ -61,11 +61,6 @@ interface ManifestBase {
       readonly description: string;
     }>
   >;
-  readonly content_scripts: ReadonlyArray<{
-    readonly matches: readonly string[];
-    readonly js: readonly string[];
-    readonly run_at: string;
-  }>;
   readonly web_accessible_resources: ReadonlyArray<{
     readonly resources: readonly string[];
     readonly matches: readonly string[];
@@ -97,16 +92,21 @@ export const manifestBase: ManifestBase = {
       description: "Start pointing at or dragging a box around a broken element",
     },
   },
-  content_scripts: [
-    {
-      matches: ["<all_urls>"],
-      js: ["content/content.js"],
-      run_at: "document_idle",
-    },
-  ],
+  // No `content_scripts` key, deliberately. A static registration with any useful match pattern is
+  // standing access to those pages, granted at install time rather than by the gesture that
+  // ADR-0002 makes the whole permission model turn on — so `content/content.js` is injected on
+  // demand by `src/background/index.ts` via `scripting.executeScript` under `activeTab`. That still
+  // works on every site the user invokes it on; what it drops is the ability to run where they
+  // didn't.
   web_accessible_resources: [
     {
       resources: WEB_ACCESSIBLE_RESOURCES,
+      // A resource pattern, not a permission: it says which pages may *load* these font and sprite
+      // files, and grants the extension nothing over page content. It cannot be narrowed, because
+      // the injected overlay has to render on whatever page the user pointed at. Its one real cost
+      // is that a page can probe these paths to detect the extension; `use_dynamic_url` would
+      // rotate them, but it is Chrome-only and changes how the injected UI must resolve them, so
+      // wave 3 decides that alongside the overlay that actually loads these files.
       matches: ["<all_urls>"],
     },
   ],

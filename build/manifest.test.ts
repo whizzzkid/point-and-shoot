@@ -22,6 +22,28 @@ Deno.test("manifest - neither target declares host_permissions", () => {
   assertFalse("host_permissions" in forFirefox());
 });
 
+Deno.test("manifest - neither target registers a static content script", () => {
+  // ADR-0002: a static registration is standing access to every matched page, granted at install
+  // time. The gesture is the grant, so `content/content.js` is injected by the background instead.
+  assertFalse("content_scripts" in forChrome());
+  assertFalse("content_scripts" in forFirefox());
+});
+
+Deno.test("manifest - `<all_urls>` appears in no permission or injection field", () => {
+  // `web_accessible_resources[].matches` is deliberately excluded: it decides which pages may load
+  // the vendored font and sprite files and grants the extension nothing. Every field checked here
+  // *is* a grant of access to page content.
+  for (const manifest of [forChrome(), forFirefox()]) {
+    for (const field of ["permissions", "host_permissions", "content_scripts"] as const) {
+      const value = manifest[field];
+      assertFalse(
+        JSON.stringify(value ?? null).includes("<all_urls>"),
+        `${field} must not grant <all_urls>`,
+      );
+    }
+  }
+});
+
 Deno.test("manifest - chrome uses a module service worker and side_panel, no background.scripts", () => {
   const chrome = forChrome();
   const background = chrome.background as Record<string, unknown>;

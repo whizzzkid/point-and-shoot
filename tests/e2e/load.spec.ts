@@ -70,10 +70,32 @@ Deno.test("built chrome extension - boots and executes without error", async () 
 
     await page.goto(`${fixture.base}/index.html`, { waitUntil: "load" });
 
+    // ADR-0002's guarantee, asserted rather than trusted: with no static `content_scripts` entry,
+    // an ordinary page load must leave no trace of the extension. A regression here would be a
+    // manifest that silently reacquired standing access to every page.
+    const readyBeforeGesture = await page.evaluate(() =>
+      document.documentElement.dataset.pointAndShootContentReady
+    );
+    assertEquals(readyBeforeGesture, undefined, "content script ran without a user gesture");
+
+    // Playwright exposes no way to click an extension's toolbar action, so the real gesture path
+    // (`action.onClicked` → `scripting.executeScript`) cannot be driven from here; wave 3's
+    // interaction tests cover it. What this does check is the half that can go wrong silently: the
+    // *built* content bundle executes cleanly on a real page and sets its boot signal.
+    await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
     const contentReady = await page.evaluate(() =>
       document.documentElement.dataset.pointAndShootContentReady
     );
     assertEquals(contentReady, "true", "content script did not set its boot signal");
+
+    // Injected twice by design — a second gesture on the same tab re-runs the file, and the guard in
+    // `src/content/index.ts` is what keeps that from double-initialising wave 3's overlay.
+    await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
+    assertEquals(
+      await page.evaluate(() => document.documentElement.dataset.pointAndShootContentReady),
+      "true",
+      "re-injection clobbered the boot signal",
+    );
 
     assertEquals(consoleErrors, [], "expected zero console/page errors during load");
 
