@@ -7,8 +7,8 @@ assumes.** An agent prompted with _"work on W3.4"_ must read this file first, th
 | Wave                         | File                                                   | Status                               |
 | ---------------------------- | ------------------------------------------------------ | ------------------------------------ |
 | 1 — Foundations              | [`wave-1-foundations.md`](wave-1-foundations.md)       | complete — PR #4 merged as `4758b19` |
-| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | open — wave 1's barrier is lifted    |
-| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | blocked on wave 2                    |
+| 2 — Core libraries           | [`wave-2-core-libraries.md`](wave-2-core-libraries.md) | complete — PR #6 merged as `6b732e2` |
+| 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | open — wave 2's barrier is lifted    |
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                    |
 | 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                    |
 
