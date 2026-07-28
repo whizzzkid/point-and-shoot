@@ -3,7 +3,7 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 2 assumes
 [wave 1](wave-1-foundations.md) is complete.
 
-- **Status:** complete — PR #6 merged as `6b732e2`, with one carried gap named below
+- **Status:** complete — PR #6 merged as `6b732e2`; exit criteria re-verified post-merge
 - **Goal:** every non-visual mechanism the UI will consume — the browser shim, manifest generation,
   the build pipeline, generated design tokens, vendored fonts and icons, the selector and
   style-digest engines, and the storage layer. Wave 2 ends with a **real extension loading in
@@ -488,8 +488,8 @@ fix W2.3's script format — do not weaken the assertion.
 > `404`. The `required_status_checks.contexts` write recorded here therefore landed nowhere the
 > platform enforces, and for the whole of wave 2 no status check was actually required — a red job
 > did not block a merge, which is precisely the advisory-gate failure W1.11 exists to prevent. The
-> rule was added to the ruleset by hand during this reconcile, and all six contexts are required as
-> of now; see the verify block below for the one residual setting.
+> rule was added to the ruleset during this reconcile: all six contexts are required and the strict
+> up-to-date policy is on. Verified against the API, not against the write's return code.
 >
 > The lesson matches W2.12's: assert the gate from the outside, against the object the platform
 > actually enforces. A write that returns success to a _different_ object proves nothing, and a
@@ -535,13 +535,13 @@ gh api repos/{owner}/{repo}/rulesets/<id> \
 ```
 
 That second command must print the six contexts, and `strict_required_status_checks_policy` must be
-`true`. As of this reconcile it prints all six plus `copilot-pull-request-reviewer` — the six are
-required, so a red job now blocks a merge.
+`true`. Both hold as of this reconcile — the six are required plus `copilot-pull-request-reviewer`,
+and the strict policy is on, so a red job blocks a merge and a PR cannot merge on checks that passed
+against an older `main`.
 
-One residual: `strict_required_status_checks_policy` is `false` ("require branches to be up to date
-before merging" unticked), so a PR whose checks passed against an older `main` can merge without
-re-running them against the merge target. That is a ruleset edit, not code, and it is wave 2's only
-carried gap.
+One trap worth knowing before you touch that ruleset: `PUT /rulesets/{id}` replaces the rule array
+wholesale, so read the current ruleset and edit that object rather than sending only the rule you
+care about — a partial payload silently drops `required_signatures` and the rest.
 
 **Commit:** `ci: add build, token drift, firefox lint, and extension smoke jobs`
 
@@ -686,23 +686,23 @@ there sends the next agent to the wrong item.
 ### Exit verdict — re-run after the merge, 2026-07-28
 
 Every criterion above was re-checked against `main` at `6b732e2` rather than trusted from the
-session that wrote it. All hold, with the three qualifications below.
+session that wrote it. All hold, with the two qualifications below.
 
-| Criterion                        | Verdict | Evidence                                                                             |
-| -------------------------------- | ------- | ------------------------------------------------------------------------------------ |
-| W2.1–W2.12 ticked with real SHAs | ✅      | every SHA resolves from `main`; W2.10's box closed by this reconcile                 |
-| `dist/chrome` + `dist/firefox`   | ✅      | `deno task build` emits both trees                                                   |
-| `e2e:smoke` zero console errors  | ✅      | 1 passed, re-run locally on this branch                                              |
-| `lint:firefox` + `boot:firefox`  | ⚠️      | both green in CI; `boot:firefox` cannot run on this machine — see W2.12's note       |
-| `tokens:check` exits 0           | ✅      | `tokens:check — up to date`                                                          |
-| `tokens.css` completeness        | ✅      | all three families defined, no `@import`, zero dangling `var(--…)` references        |
-| no remote URL in `dist/`         | ⚠️      | holds; the only `http://` strings are XML namespaces, excluded deliberately — below  |
-| selector round-trips             | ✅      | `deno task ci` 70/70 including the closed-shadow-root and cross-origin cases         |
-| browser floors resolved          | ✅      | Chrome `116`, Firefox `109` in the index, asserted equal to `SUPPORTED`              |
-| export-format spike measured     | ✅      | `2 MB`, provisional marker removed in the index                                      |
-| CI jobs green **and required**   | ⚠️      | all six green and now required; `strict` policy still off — see W2.10's verify block |
+| Criterion                        | Verdict | Evidence                                                                            |
+| -------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| W2.1–W2.12 ticked with real SHAs | ✅      | every SHA resolves from `main`; W2.10's box closed by this reconcile                |
+| `dist/chrome` + `dist/firefox`   | ✅      | `deno task build` emits both trees                                                  |
+| `e2e:smoke` zero console errors  | ✅      | 1 passed, re-run locally on this branch                                             |
+| `lint:firefox` + `boot:firefox`  | ⚠️      | both green in CI; `boot:firefox` cannot run on this machine — see W2.12's note      |
+| `tokens:check` exits 0           | ✅      | `tokens:check — up to date`                                                         |
+| `tokens.css` completeness        | ✅      | all three families defined, no `@import`, zero dangling `var(--…)` references       |
+| no remote URL in `dist/`         | ⚠️      | holds; the only `http://` strings are XML namespaces, excluded deliberately — below |
+| selector round-trips             | ✅      | `deno task ci` 70/70 including the closed-shadow-root and cross-origin cases        |
+| browser floors resolved          | ✅      | Chrome `116`, Firefox `109` in the index, asserted equal to `SUPPORTED`             |
+| export-format spike measured     | ✅      | `2 MB`, provisional marker removed in the index                                     |
+| CI jobs green **and required**   | ✅      | all six green, all six required on the `default` ruleset, strict policy on          |
 
-The three qualifications, stated plainly rather than folded into a tick:
+The two qualifications, stated plainly rather than folded into a tick:
 
 1. **`boot:firefox` is a CI-only gate.** It has never passed on the developer machine, and the
    "observed failing once on a deliberately broken manifest" half of that criterion was never
@@ -713,7 +713,6 @@ The three qualifications, stated plainly rather than folded into a tick:
    so a remote `<image href>` smuggled into `icons.svg` would ship unflagged. Nothing does today —
    the sprite's only absolute URL is the SVG namespace — but the guard is narrower than the
    criterion it backs.
-3. **Required checks are not strict.** See W2.10.
 
 ### Carried into wave 3
 
@@ -729,5 +728,5 @@ Recorded here because a follow-up that lives only in a merged PR body is a follo
   `scripting.executeScript` under `activeTab`, and `load.spec.ts` asserts the background boots but
   never fires the gesture — the path the permission model now depends on is unexercised by
   Playwright. Wave 3 should close this with the UI that triggers it.
-- **Two small fixes:** tick `strict_required_status_checks_policy` on the `default` ruleset, and
-  widen `collectRemoteUrlOffenders` to `.svg`.
+- **One small fix:** widen `collectRemoteUrlOffenders` to `.svg`, so the ADR-0009 guard covers the
+  sprite it already ships.
