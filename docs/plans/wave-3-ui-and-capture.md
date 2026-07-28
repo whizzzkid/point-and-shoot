@@ -305,6 +305,10 @@ the 1024px cap and the device-pixel-ratio maths; assert `truncated` is set on `t
 the extension's own UI is absent from the captured image; assert the WebP encodes under a sane byte
 budget.
 
+**Limitations:** Firefox's divergent capture method and options are covered at the browser-shim seam
+with fakes. The Firefox boot check proves the built extension starts in Gecko, but does not exercise
+capture; real-Gecko capture coverage begins in W4.3.
+
 **Commit:** `feat(background): add region screenshot capture, crop, and webp encoding`
 
 ---
