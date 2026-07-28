@@ -39,6 +39,28 @@ Deno.test("collectRemoteUrlOffenders - flags an injected http(s) literal, ignore
   }
 });
 
+Deno.test("collectRemoteUrlOffenders - scans .svg, and a namespace declaration alone is not an offence", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const dir = new URL(`${toFileUrl(tempDir).href}/`);
+    // Shaped like the real sprite: the namespace attribute is the only http literal, so a guard
+    // that scanned .svg without sanitizing namespaces would fail every build on this file.
+    await Deno.writeTextFile(
+      new URL("sprite.svg", dir),
+      '<svg xmlns="http://www.w3.org/2000/svg"><symbol id="a"><path d="M0 0h1v1H0z"/></symbol></svg>',
+    );
+    await Deno.writeTextFile(
+      new URL("remote.svg", dir),
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example.com/pixel.png"/></svg>',
+    );
+    const offenders = await collectRemoteUrlOffenders(dir);
+    assertEquals(offenders.length, 1);
+    assert(offenders[0]?.endsWith("remote.svg"));
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
 Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bundles for both targets", async () => {
   await withTempOutDir(async (outDir) => {
     await build({ release: false, outDir });

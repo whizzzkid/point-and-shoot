@@ -83,14 +83,17 @@ export type SelectorBundle = ReachableSelectorBundle | UnreachableSelectorBundle
  * resolve back to `el` — see `resolveCssPath`/`resolveXPath` below, also exported so tests (and any
  * future dev-mode guard) can run the exact same round-trip check.
  *
- * @param el - The element to build a selector bundle for.
+ * @param el - The element to build a selector bundle for. Typed as `Node`, not `Element`, because
+ *   the `not-an-element` sad path below is real: this function is stringified into a host page and
+ *   fed whatever the DOM handed the caller — a text node from a range selection, say — so an
+ *   `Element` signature would type away a branch that still executes at runtime.
  * @returns A bundle with a verified path back to `el`, or an {@link UnreachableSelectorBundle} when
  *   no path can be trusted — closed shadow root interior, cross-origin iframe interior, an element
  *   belonging to another realm's document, a detached element, or a non-element node passed in by
  *   mistake.
  * @example buildSelectorBundle(document.querySelector("button")!) // => { reachable: true, ... }
  */
-export function buildSelectorBundle(el: Element): SelectorBundle {
+export function buildSelectorBundle(el: Node): SelectorBundle {
   /** `Node.nodeType` values — inlined since this runs before DOM globals are assumed. */
   const ELEMENT_NODE = 1;
   const DOCUMENT_NODE = 9;

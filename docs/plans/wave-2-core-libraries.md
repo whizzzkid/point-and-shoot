@@ -3,7 +3,7 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 2 assumes
 [wave 1](wave-1-foundations.md) is complete.
 
-- **Status:** blocked on wave 1
+- **Status:** complete — PR #6 merged as `6b732e2`; exit criteria re-verified post-merge
 - **Goal:** every non-visual mechanism the UI will consume — the browser shim, manifest generation,
   the build pipeline, generated design tokens, vendored fonts and icons, the selector and
   style-digest engines, and the storage layer. Wave 2 ends with a **real extension loading in
@@ -476,10 +476,25 @@ fix W2.3's script format — do not weaken the assertion.
 
 ## W2.10 — CI expansion
 
-- [ ] `.github/workflows/ci.yml` updated — SHA: fdcfb79; branch protection updated; **CI run still
-      unverified** — the workflow triggers only on `push: main` and `pull_request:`, so none of
-      these jobs has ever executed. W2.13's PR is their first run, and this box stays open until it
-      is green.
+- [x] `.github/workflows/ci.yml` updated — SHA: fdcfb79, with `checks` fixed in 2900121
+
+> **The jobs are green.** All six — `checks`, `build`, `tokens-drift`, `e2e-smoke`, `lint-firefox`,
+> `boot-firefox` — ran and passed on the PR and again on the merge commit `6b732e2`, so the "never
+> executed" caveat this box carried is discharged.
+>
+> **The branch-protection claim this file originally made was wrong, and reconciling wave 2 is what
+> caught it.** `main` is protected by a repository **ruleset** (`default`, id `19850077`), not by
+> the legacy branch-protection object: `GET /repos/{owner}/{repo}/branches/main/protection` returns
+> `404`. The `required_status_checks.contexts` write recorded here therefore landed nowhere the
+> platform enforces, and for the whole of wave 2 no status check was actually required — a red job
+> did not block a merge, which is precisely the advisory-gate failure W1.11 exists to prevent. The
+> rule was added to the ruleset during this reconcile: all six contexts are required and the strict
+> up-to-date policy is on. Verified against the API, not against the write's return code.
+>
+> The lesson matches W2.12's: assert the gate from the outside, against the object the platform
+> actually enforces. A write that returns success to a _different_ object proves nothing, and a
+> `404` from the legacy endpoint means neither "unprotected" nor "protected" — it means the
+> protection lives elsewhere.
 
 **Depends on:** W2.9, W2.4, W2.12.
 
@@ -498,16 +513,35 @@ Cache the Playwright browser download keyed on the pinned Playwright version, or
 browser download every run. This wave now covers Firefox at the _static_ and _boots-at-all_ level;
 the fuller `smoke-firefox` behavioural check still lands in wave 4 with the thing it tests.
 
-Extend the branch-protection required-check list (W1.11) to include the new jobs in the same PR.
-Done: `required_status_checks.contexts` is now
+Extend the required-check list (W1.11) to include the new jobs. Expressed as a
+`required_status_checks` rule on the `default` ruleset — **not** as legacy branch protection, which
+this repo does not use — carrying the six contexts
 `["checks", "build", "tokens-drift", "e2e-smoke", "lint-firefox", "boot-firefox"]` with
-`strict=true`. Adding a job without requiring it leaves the gate advisory, which is the failure
-W1.11 exists to prevent.
+`strict_required_status_checks_policy: true`. Adding a job without requiring it leaves the gate
+advisory, which is the failure W1.11 exists to prevent.
 
 **Verify:** push and `gh run watch --exit-status`; confirm all jobs green and the `dist/` artifact
-is downloadable and contains both browser trees. Confirm via
-`gh api repos/{owner}/{repo}/branches/main/protection` that the new jobs are required, not merely
-present.
+is downloadable and contains both browser trees. **Done** — the run on `6b732e2` reports all six
+jobs `success`.
+
+Then confirm the new jobs are **required**, not merely present. Read the ruleset, not the legacy
+protection object, and do not accept a `404` from the latter as "unprotected" or as "protected":
+
+```bash
+gh api repos/{owner}/{repo}/rulesets --jq '.[] | {id, name, enforcement}'
+gh api repos/{owner}/{repo}/rulesets/<id> \
+  --jq '[.rules[] | select(.type == "required_status_checks")
+         | .parameters.required_status_checks[].context]'
+```
+
+That second command must print the six contexts, and `strict_required_status_checks_policy` must be
+`true`. Both hold as of this reconcile — the six are required plus `copilot-pull-request-reviewer`,
+and the strict policy is on, so a red job blocks a merge and a PR cannot merge on checks that passed
+against an older `main`.
+
+One trap worth knowing before you touch that ruleset: `PUT /rulesets/{id}` replaces the rule array
+wholesale, so read the current ruleset and edit that object rather than sending only the rule you
+care about — a partial payload silently drops `required_signatures` and the rest.
 
 **Commit:** `ci: add build, token drift, firefox lint, and extension smoke jobs`
 
@@ -604,7 +638,7 @@ Firefox manifest, confirm the check fails, and revert. An unproven gate is not a
 
 ## W2.13 — Pull request
 
-- [ ] PR opened — record the number here
+- [x] PR opened — **#6**, merged as `6b732e2` on 2026-07-28
 
 **Depends on:** W2.1–W2.12, CI green.
 
@@ -648,3 +682,63 @@ there sends the next agent to the wrong item.
   unchanged design caps.
 - CI green with `build`, `tokens-drift`, `lint-firefox`, `boot-firefox`, and `e2e-smoke` jobs, all
   of them **required** by branch protection.
+
+### Exit verdict — re-run after the merge, 2026-07-28
+
+Every criterion above was re-checked against `main` at `6b732e2` rather than trusted from the
+session that wrote it. All hold, with the two qualifications below.
+
+| Criterion                        | Verdict | Evidence                                                                            |
+| -------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| W2.1–W2.12 ticked with real SHAs | ✅      | every SHA resolves from `main`; W2.10's box closed by this reconcile                |
+| `dist/chrome` + `dist/firefox`   | ✅      | `deno task build` emits both trees                                                  |
+| `e2e:smoke` zero console errors  | ✅      | 1 passed, re-run locally on this branch                                             |
+| `lint:firefox` + `boot:firefox`  | ⚠️      | both green in CI; `boot:firefox` cannot run on this machine — see W2.12's note      |
+| `tokens:check` exits 0           | ✅      | `tokens:check — up to date`                                                         |
+| `tokens.css` completeness        | ✅      | all three families defined, no `@import`, zero dangling `var(--…)` references       |
+| no remote URL in `dist/`         | ✅      | holds; the only `http://` strings are XML namespaces, excluded deliberately — below |
+| selector round-trips             | ✅      | `deno task ci` 70/70 including the closed-shadow-root and cross-origin cases        |
+| browser floors resolved          | ✅      | Chrome `116`, Firefox `109` in the index, asserted equal to `SUPPORTED`             |
+| export-format spike measured     | ✅      | `2 MB`, provisional marker removed in the index                                     |
+| CI jobs green **and required**   | ✅      | all six green, all six required on the `default` ruleset, strict policy on          |
+
+The qualifications, stated plainly rather than folded into a tick:
+
+1. **`boot:firefox` is a CI-only gate.** It has never passed on the developer machine, and the
+   "observed failing once on a deliberately broken manifest" half of that criterion was never
+   demonstrated — the local run fails at install for an unrelated reason, so a deliberate break
+   there proves nothing. The gate is real but unproven; proving it needs a run on a machine where
+   the baseline passes. Tracked as
+   [N.1](wave-nice-to-haves.md#n1--make-bootfirefox-runnable-locally).
+2. **The remote-URL scan skipped `.svg` — fixed here.** `collectRemoteUrlOffenders` filtered on
+   `\.(js|css|html)$`, so a remote `<image href>` smuggled into `icons.svg` would have shipped
+   unflagged. Nothing did — the sprite's only absolute URL is the SVG namespace, which
+   `withoutKnownNamespaceUris` already strips — but the guard was narrower than the criterion it
+   backs. It now scans `.svg` too, with a test that fails if the extension list regresses.
+
+### Carried into wave 3
+
+Recorded here because a follow-up that lives only in a merged PR body is a follow-up nobody reads.
+Each one now has a home; this list is the index, not the backlog:
+
+- **No UI shipped.** The side panel, popup, and options pages are placeholder shells; the toolbar
+  overlay and drag-box land in wave 3 as W3.3 and W3.4 — already planned, nothing to add.
+- **The `web_accessible_resources` fingerprinting surface is unaddressed.** Every site can probe for
+  the extension's font and sprite URLs. Deferred to wave 3 deliberately, not overlooked — and wave 3
+  had no item for it, so it now does:
+  [W3.0](wave-3-ui-and-capture.md#w30--web_accessible_resources-fingerprinting-decision).
+- **The toolbar-gesture injection path is not covered end to end.** 921ae94 moved injection to
+  `scripting.executeScript` under `activeTab`, and `load.spec.ts` asserts the background boots but
+  never fires the gesture — the path the permission model now depends on is unexercised by
+  Playwright. Closed by [W3.10](wave-3-ui-and-capture.md#w310--activation-and-shortcuts), whose
+  verification section now names it explicitly.
+- **One small fix — done.** `collectRemoteUrlOffenders` now scans `.svg`, so the ADR-0009 guard
+  covers the sprite it already ships. Fixed in this reconcile rather than carried; the `.svg` row in
+  the exit-verdict table above is settled.
+- **Firefox coverage is load-and-boot only** — `web-ext lint` plus the W2.12 boot check. Nothing
+  behavioural until W4.3, by
+  [ADR-0007](../adr/0007-playwright-chromium-plus-web-ext-coverage-split.md)'s deliberate split. The
+  part W4.3 does not reach is capture, tracked as
+  [N.2](wave-nice-to-haves.md#n2--deepen-firefox-coverage-beyond-load-and-boot).
+- **`boot:firefox` does not run on every machine.** CI-only gates fail after the push rather than
+  before it. Tracked as [N.1](wave-nice-to-haves.md#n1--make-bootfirefox-runnable-locally).

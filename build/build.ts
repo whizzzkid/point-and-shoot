@@ -139,7 +139,10 @@ export async function collectRemoteUrlOffenders(dir: URL): Promise<string[]> {
       offenders.push(...await collectRemoteUrlOffenders(new URL(`${entry.name}/`, dir)));
       continue;
     }
-    if (!/\.(js|css|html)$/.test(entry.name)) continue;
+    // `.svg` is in the list because the icon sprite ships inside the extension and can carry a
+    // remote reference in an `<image href>` or a `url()` fill — the namespace declarations that
+    // every SVG carries are why `withoutKnownNamespaceUris` exists above.
+    if (!/\.(js|css|html|svg)$/.test(entry.name)) continue;
     const fileUrl = new URL(entry.name, dir);
     const text = await Deno.readTextFile(fileUrl);
     if (/https?:\/\//.test(withoutKnownNamespaceUris(text))) offenders.push(fromFileUrl(fileUrl));

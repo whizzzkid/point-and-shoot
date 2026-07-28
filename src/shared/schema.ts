@@ -1,6 +1,6 @@
 /**
  * Versioned session/note record shape — the canonical JSON stored in IndexedDB by
- * {@link ../store.ts}. Per ADR-0003, this JSON is the source of truth; Markdown and clipboard text
+ * {@link ./store.ts}. Per ADR-0003, this JSON is the source of truth; Markdown and clipboard text
  * are read-time projections computed from it and never stored or round-tripped back in.
  *
  * @module
