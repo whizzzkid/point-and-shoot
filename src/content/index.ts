@@ -1,9 +1,8 @@
 /// <reference lib="dom" />
 
 /**
- * Content-script entry point. Wave 3 injects the toolbar overlay and drag-box UI; this stub only
- * proves the content bundle loads on the page. Bundled as an IIFE — see build/build.ts — rather
- * than ESM, since MV3 content-script module support is verified in W2.9, not assumed here.
+ * Content-script entry point. Creates the isolated Wave 3 UI host after the explicit activation
+ * gesture. Bundled as an IIFE because MV3 content scripts are classic scripts in both targets.
  *
  * Injected on a user gesture by `src/background/index.ts`, never registered in the manifest
  * (ADR-0002), so it must tolerate running on a page that finished loading long ago and being
@@ -15,9 +14,53 @@
  * @module
  */
 
+import { browser } from "../shared/browser.ts";
+import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
+import { createShadowHost } from "./host.ts";
+
+const TOOLBAR_MAXIMUM_WIDTH = 420;
+const TOOLBAR_PROSPECTIVE_HEIGHT = 72;
+const TOOLBAR_VIEWPORT_GAP = 24;
+const ownerWindow = globalThis as unknown as Window;
+
+function prospectiveToolbarBounds(ownerWindow: Window): DOMRect {
+  const width = Math.min(
+    TOOLBAR_MAXIMUM_WIDTH,
+    Math.max(0, ownerWindow.innerWidth - 2 * TOOLBAR_VIEWPORT_GAP),
+  );
+  const height = Math.min(
+    TOOLBAR_PROSPECTIVE_HEIGHT,
+    Math.max(0, ownerWindow.innerHeight - 2 * TOOLBAR_VIEWPORT_GAP),
+  );
+  return new DOMRect(
+    (ownerWindow.innerWidth - width) / 2,
+    Math.max(0, ownerWindow.innerHeight - height - TOOLBAR_VIEWPORT_GAP),
+    width,
+    height,
+  );
+}
+
 if (document.documentElement.dataset.pointAndShootContentReady === "true") {
   console.log("point-and-shoot: content script already present, skipping re-init");
 } else {
+  const sample = () =>
+    sampleBackdrop(
+      document,
+      prospectiveToolbarBounds(ownerWindow),
+      document.querySelector("[data-point-and-shoot-host]") ?? undefined,
+    );
+  const initialTheme = resolveTheme({ sample });
+  const shadowHost = createShadowHost({
+    resourceUrl: (path) => browser.runtime.getURL(path),
+    theme: initialTheme,
+  });
+  watchTheme({
+    onChange: (theme) => {
+      shadowHost.element.dataset.theme = theme;
+    },
+    ownerWindow,
+    sample,
+  });
   document.documentElement.dataset.pointAndShootContentReady = "true";
   console.log("point-and-shoot: content script ready");
 }

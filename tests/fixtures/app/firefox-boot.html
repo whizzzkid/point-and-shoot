@@ -24,7 +24,8 @@
     // This page deliberately does not wait for the content script: ADR-0002 removed the static
     // registration, so nothing injects without a toolbar gesture, and driving that gesture needs a
     // remote-debugging client this check does not have. The background's own boot marker is what
-    // `scripts/boot-firefox.ts` matches instead; this page's job is only the resource fetch.
+    // `scripts/boot-firefox.ts` matches instead; this page verifies the resource fetch and the
+    // document-scoped font-face behavior inside a closed shadow root.
     const MAX_ATTEMPTS = 30;
     const RETRY_INTERVAL_MS = 500;
 
@@ -42,8 +43,54 @@
       }
     };
 
-    fetchFontStatus().then((status) => {
+    const verifyShadowFont = async () => {
+      const family = "Point Shoot Boot Inter";
+      const resourceUrl = `moz-extension://${EXTENSION_UUID}/${FONT_RESOURCE}`;
+      const fontSheet = new CSSStyleSheet();
+      fontSheet.replaceSync(`
+        @font-face {
+          font-family: "${family}";
+          font-style: normal;
+          font-weight: 400;
+          src: url("${resourceUrl}") format("woff2");
+        }
+      `);
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, fontSheet];
+
+      const host = document.createElement("div");
+      const root = host.attachShadow({ mode: "closed" });
+      const rootSheet = new CSSStyleSheet();
+      rootSheet.replaceSync(`
+        :host { all: initial; }
+        span { font: 400 16px/1 "${family}", sans-serif; }
+      `);
+      root.adoptedStyleSheets = [rootSheet];
+      const sample = document.createElement("span");
+      sample.textContent = "Shadow font";
+      root.append(sample);
+      document.body.append(host);
+
+      const descriptor = `400 16px "${family}"`;
+      const loadedFaces = await document.fonts.load(descriptor, sample.textContent);
+      return host.shadowRoot === null &&
+        loadedFaces.length > 0 &&
+        document.fonts.check(descriptor, sample.textContent) &&
+        getComputedStyle(sample).fontFamily.includes(family);
+    };
+
+    fetchFontStatus().then(async (status) => {
       console.log(`firefox-boot: woff2-status=${status}`);
+      if (status !== "200") {
+        console.log("firefox-boot: shadow-font=error");
+        return;
+      }
+      try {
+        const ready = await verifyShadowFont();
+        console.log(`firefox-boot: shadow-font=${ready ? "ready" : "error"}`);
+      } catch (error) {
+        console.error("firefox-boot: shadow font check failed", error);
+        console.log("firefox-boot: shadow-font=error");
+      }
     });
     </script>
   </body>

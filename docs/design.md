@@ -93,6 +93,23 @@ Substitutions 1 and 2 are verified in the Firefox smoke check
 and `web_accessible_resources` resolve differently from Chrome's and that is the most likely place
 the builds silently diverge.
 
+## Vendored fonts across the shadow boundary
+
+The injected UI keeps token and component rules inside its closed shadow root, but
+[`src/content/host.ts`](../src/content/host.ts) installs the generated `@font-face` blocks in a
+document-scoped constructable stylesheet. Each WOFF2 URL is resolved individually through the shared
+browser shim, which preserves Chrome's session-scoped resource URL and Firefox's random
+`moz-extension://` origin.
+
+This arrangement is empirical rather than assumed.
+[`tests/e2e/load.spec.ts`](../tests/e2e/load.spec.ts) loads the built Chrome extension, creates the
+closed host, and waits for vendored Inter through `document.fonts`. Firefox's real-browser check in
+[`scripts/boot-firefox.ts`](../scripts/boot-firefox.ts) fetches the WOFF2, declares the face at
+document scope, applies it to content in a closed root, and requires `document.fonts` to report the
+face ready. Both engines applied the font with this arrangement. The checks do not claim that a
+shadow-root-only `@font-face` works; production deliberately uses the cross-engine path the checks
+exercise.
+
 ## Applying the system
 
 The production Preact components live in `src/ui/components/`. Run `deno task gallery` to serve the

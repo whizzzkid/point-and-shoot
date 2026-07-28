@@ -20,7 +20,7 @@
 
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
-import { chromium } from "playwright";
+import { chromium, type Page, type Worker } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 
 const EXTENSION_DIR = fromFileUrl(new URL("../../dist/chrome/", import.meta.url));
@@ -45,6 +45,41 @@ const WEB_ACCESSIBLE_RESOURCES = [
   "src/shared/design/fonts/jetbrains-mono-600.woff2",
   "src/shared/design/icons.svg",
 ] as const;
+
+async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<void> {
+  const resourceUrls = await serviceWorker.evaluate((resources) => {
+    const extensionGlobal = globalThis as unknown as {
+      readonly chrome: { readonly runtime: { getURL(path: string): string } };
+    };
+    return Object.fromEntries(
+      resources.map((resource) => [resource, extensionGlobal.chrome.runtime.getURL(resource)]),
+    );
+  }, WEB_ACCESSIBLE_RESOURCES);
+  await page.evaluate((urls) => {
+    const noOp = () => {};
+    const chromeGlobal = (globalThis as unknown as { chrome: Record<string, unknown> }).chrome;
+    Object.assign(chromeGlobal, {
+      action: { onClicked: { addListener: noOp } },
+      commands: { onCommand: { addListener: noOp } },
+      downloads: { download: noOp },
+      runtime: {
+        getURL(path: string) {
+          const url = urls[path];
+          if (url === undefined) throw new Error(`unmapped extension resource: ${path}`);
+          return url;
+        },
+        lastError: undefined,
+        onMessage: { addListener: noOp },
+        sendMessage: noOp,
+      },
+      scripting: { executeScript: noOp },
+      sidePanel: { open: noOp },
+      storage: { local: { get: noOp, remove: noOp, set: noOp } },
+      tabs: { captureVisibleTab: noOp, query: noOp },
+    });
+  }, resourceUrls);
+  await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
+}
 
 Deno.test("built chrome extension - boots and executes without error", async () => {
   let missingDist = false;
@@ -82,7 +117,7 @@ Deno.test("built chrome extension - boots and executes without error", async () 
     });
     page.on("pageerror", (error) => consoleErrors.push(`${page.url()}: ${error.message}`));
 
-    await page.goto(`${fixture.base}/index.html`, { waitUntil: "load" });
+    await page.goto(`${fixture.base}/light.html`, { waitUntil: "load" });
 
     // ADR-0002's guarantee, asserted rather than trusted: with no static `content_scripts` entry,
     // an ordinary page load must leave no trace of the extension. A regression here would be a
@@ -92,23 +127,46 @@ Deno.test("built chrome extension - boots and executes without error", async () 
     );
     assertEquals(readyBeforeGesture, undefined, "content script ran without a user gesture");
 
-    // Playwright exposes no way to click an extension's toolbar action, so the real gesture path
-    // (`action.onClicked` → `scripting.executeScript`) cannot be driven from here; wave 3's
-    // interaction tests cover it. What this does check is the half that can go wrong silently: the
-    // *built* content bundle executes cleanly on a real page and sets its boot signal.
-    await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
+    // Playwright cannot click the browser-action chrome, and calling `scripting.executeScript`
+    // without that gesture correctly lacks the `activeTab` grant. Page-inject the built bundle
+    // with a narrow runtime shim that returns the real extension's session-scoped asset URLs.
+    await injectBuiltContent(page, serviceWorker);
     const contentReady = await page.evaluate(() =>
       document.documentElement.dataset.pointAndShootContentReady
     );
     assertEquals(contentReady, "true", "content script did not set its boot signal");
 
+    const hostState = await page.evaluate(async () => {
+      const hosts = document.querySelectorAll<HTMLElement>("[data-point-and-shoot-host]");
+      const host = hosts[0];
+      if (host === undefined) {
+        return {
+          closed: false,
+          count: 0,
+          fontLoaded: false,
+          theme: undefined,
+        };
+      }
+      const loadedFaces = await document.fonts.load('400 15px "Inter"');
+      return {
+        closed: host.shadowRoot === null,
+        count: hosts.length,
+        fontLoaded: loadedFaces.length > 0 && document.fonts.check('400 15px "Inter"'),
+        theme: host.dataset.theme,
+      };
+    });
+    assertEquals(hostState.count, 1, "content script did not create exactly one shadow host");
+    assert(hostState.closed, "content script shadow root must be closed");
+    assertEquals(hostState.theme, "light", "light fixture did not select its matching theme");
+    assert(hostState.fontLoaded, "vendored Inter did not load into the shadow-host document");
+
     // Injected twice by design — a second gesture on the same tab re-runs the file, and the guard in
     // `src/content/index.ts` is what keeps that from double-initialising wave 3's overlay.
-    await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
+    await injectBuiltContent(page, serviceWorker);
     assertEquals(
-      await page.evaluate(() => document.documentElement.dataset.pointAndShootContentReady),
-      "true",
-      "re-injection clobbered the boot signal",
+      await page.evaluate(() => document.querySelectorAll("[data-point-and-shoot-host]").length),
+      1,
+      "re-injection created a second shadow host",
     );
 
     assertEquals(consoleErrors, [], "expected zero console/page errors during load");
