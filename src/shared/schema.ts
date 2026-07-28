@@ -132,11 +132,80 @@ function validateNoteShape(candidate: unknown): string | null {
   for (const field of ["id", "createdAt", "pageUrl", "pageTitle", "text"] as const) {
     if (typeof note[field] !== "string") return `missing or non-string field: ${field}`;
   }
-  if (typeof note.region !== "object" || note.region === null) return "missing field: region";
-  if (typeof (note.region as Record<string, unknown>).truncated !== "boolean") {
-    return "missing field: region.truncated";
-  }
+  const regionError = validateRegionShape(note.region);
+  if (regionError !== null) return regionError;
+
   if (!Array.isArray(note.elements)) return "missing field: elements";
+  for (let i = 0; i < note.elements.length; i++) {
+    const elementError = validateNoteElementShape(note.elements[i]);
+    if (elementError !== null) return `elements[${i}]: ${elementError}`;
+  }
+
+  return null;
+}
+
+/** Returns `null` when `candidate` matches {@link RegionCapture}, else a human-readable reason. */
+function validateRegionShape(candidate: unknown): string | null {
+  if (typeof candidate !== "object" || candidate === null) return "missing field: region";
+  const region = candidate as Record<string, unknown>;
+
+  // The screenshot is the field an export is least able to do without and the one most likely to
+  // arrive malformed — a `null` here reaches the Markdown projection as `![](null)`.
+  if (typeof region.screenshot !== "string") {
+    return "missing or non-string field: region.screenshot";
+  }
+  if (typeof region.truncated !== "boolean") return "missing field: region.truncated";
+
+  const dimensionError = validateNumericFields(region.viewport, "region.viewport", [
+    "width",
+    "height",
+  ]);
+  if (dimensionError !== null) return dimensionError;
+
+  return validateNumericFields(region.box, "region.box", ["x", "y", "width", "height"]);
+}
+
+/** Returns `null` when every named field on `candidate` is a finite number, else a reason. */
+function validateNumericFields(
+  candidate: unknown,
+  path: string,
+  fields: readonly string[],
+): string | null {
+  if (typeof candidate !== "object" || candidate === null) return `missing field: ${path}`;
+  const record = candidate as Record<string, unknown>;
+  for (const field of fields) {
+    const value = record[field];
+    // `NaN`/`Infinity` survive JSON round-trips as `null`, and a geometry field that is not a real
+    // number cannot be rendered — reject both here rather than at draw time.
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return `missing or non-finite field: ${path}.${field}`;
+    }
+  }
+  return null;
+}
+
+/** Returns `null` when `candidate` matches {@link NoteElement}, else a human-readable reason. */
+function validateNoteElementShape(candidate: unknown): string | null {
+  if (typeof candidate !== "object" || candidate === null) return "not an object";
+  const element = candidate as Record<string, unknown>;
+
+  if (typeof element.selectors !== "object" || element.selectors === null) {
+    return "missing field: selectors";
+  }
+  // `reachable` is the discriminant every consumer branches on, so its absence is what turns a
+  // malformed record into a wrong-element lookup rather than a visible failure.
+  if (typeof (element.selectors as Record<string, unknown>).reachable !== "boolean") {
+    return "missing field: selectors.reachable";
+  }
+  if (element.styleDigest !== null && typeof element.styleDigest !== "object") {
+    return "field styleDigest must be an object or null";
+  }
+  if (
+    element.componentHint !== undefined &&
+    (typeof element.componentHint !== "object" || element.componentHint === null)
+  ) {
+    return "field componentHint must be an object when present";
+  }
 
   return null;
 }
