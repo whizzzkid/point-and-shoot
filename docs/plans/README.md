@@ -11,6 +11,11 @@ assumes.** An agent prompted with _"work on W3.4"_ must read this file first, th
 | 3 — UI and capture           | [`wave-3-ui-and-capture.md`](wave-3-ui-and-capture.md) | open — wave 2's barrier is lifted    |
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3                    |
 | 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                    |
+| — Nice-to-haves              | [`wave-nice-to-haves.md`](wave-nice-to-haves.md)       | open, unscheduled                    |
+
+`wave-nice-to-haves.md` is not a wave. It holds work that is worth doing but blocks nothing, so no
+wave's exit criteria reference it and no barrier waits on it. An item there that turns out to block
+a wave gets **moved** into that wave's file, not copied.
 
 [`arch-review-point-and-shoot.md`](arch-review-point-and-shoot.md) is the architecture review of
 this plan. Its findings are already folded into the wave files and this index — read it for the
@@ -38,7 +43,7 @@ flowchart TD
 
 ### Full item chart
 
-All 53 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
+All 54 items across all five waves. Solid arrows are hard dependencies, and the graph is drawn as a
 transitive reduction — an item also waits on everything upstream of what it points at, not just its
 immediate parent. Anything with no inbound arrow inside its wave can start the moment that wave
 opens.
@@ -104,6 +109,7 @@ flowchart TD
   end
 
   subgraph WAVE3["Wave 3 — UI and capture"]
+    W30["W3.0 web-accessible resources"]
     W31["W3.1 component library"]
     W32["W3.2 shadow host + theming"]
     W33["W3.3 toolbar overlay"]
@@ -116,6 +122,7 @@ flowchart TD
     W310["W3.10 activation + shortcuts"]
     W311["W3.11 framework hints"]
     W312["W3.12 wave 3 PR"]
+    W30 --> W32
     W31 --> W33
     W32 --> W33
     W310 --> W33
@@ -174,6 +181,7 @@ flowchart TD
   W112 --> W26
   W112 --> W27
   W112 --> W28
+  W213 --> W30
   W213 --> W31
   W213 --> W32
   W213 --> W310
@@ -194,13 +202,13 @@ _prerequisites_, not listed as work — an id can be assigned in one column and 
 | ---- | ---------------------------------------- | --------------------------------------- | ----------------------------------------- | -------------- |
 | 1    | W1.1, W1.2, W1.4, W1.10, W1.11           | W1.3, W1.5, W1.7, W1.8 (all after W1.2) | W1.6 (after W1.4+W1.5); W1.9 (after W1.8) | W1.12          |
 | 2    | W2.1, W2.2, W2.4, W2.5, W2.6, W2.7, W2.8 | W2.11 (after W2.8); W2.12 (after W2.3)  | W2.3 → W2.9 → W2.10                       | W2.13          |
-| 3    | W3.1, W3.2, W3.10, W3.11                 | W3.8, W3.9 (both after W3.1)            | W3.3 → W3.4 → W3.5 → W3.6 → W3.7          | W3.12          |
+| 3    | W3.0, W3.1, W3.2, W3.10, W3.11           | W3.8, W3.9 (both after W3.1)            | W3.3 → W3.4 → W3.5 → W3.6 → W3.7          | W3.12          |
 | 4    | W4.1, W4.2, W4.3, W4.4, W4.5, W4.7       | —                                       | W4.6 (after W4.1–W4.4)                    | W4.8           |
 | 5    | W5.1, W5.3, W5.4, W5.5                   | W5.2, W5.7 (both after W5.1+W5.3+W5.4)  | W5.8 (after W5.7)                         | W5.6           |
 
 Wave 3's serial chain is the critical path of the whole project — five items that genuinely cannot
 be parallelised, because each consumes the previous one's output. Start W3.3 as early as the wave
-allows and run W3.1, W3.2, W3.8, W3.9, W3.10, and W3.11 alongside it.
+allows and run W3.0, W3.1, W3.2, W3.8, W3.9, W3.10, and W3.11 alongside it.
 
 Wave 5 is the exception to the barrier rule in one respect: W5.3 and W5.4 consume wave-2 output
 (W2.4 and W2.5) rather than anything in wave 5, so they can be prepared before wave 5 formally

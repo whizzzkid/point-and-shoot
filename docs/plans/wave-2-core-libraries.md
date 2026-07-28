@@ -696,37 +696,49 @@ session that wrote it. All hold, with the two qualifications below.
 | `lint:firefox` + `boot:firefox`  | ⚠️      | both green in CI; `boot:firefox` cannot run on this machine — see W2.12's note      |
 | `tokens:check` exits 0           | ✅      | `tokens:check — up to date`                                                         |
 | `tokens.css` completeness        | ✅      | all three families defined, no `@import`, zero dangling `var(--…)` references       |
-| no remote URL in `dist/`         | ⚠️      | holds; the only `http://` strings are XML namespaces, excluded deliberately — below |
+| no remote URL in `dist/`         | ✅      | holds; the only `http://` strings are XML namespaces, excluded deliberately — below |
 | selector round-trips             | ✅      | `deno task ci` 70/70 including the closed-shadow-root and cross-origin cases        |
 | browser floors resolved          | ✅      | Chrome `116`, Firefox `109` in the index, asserted equal to `SUPPORTED`             |
 | export-format spike measured     | ✅      | `2 MB`, provisional marker removed in the index                                     |
 | CI jobs green **and required**   | ✅      | all six green, all six required on the `default` ruleset, strict policy on          |
 
-The two qualifications, stated plainly rather than folded into a tick:
+The qualifications, stated plainly rather than folded into a tick:
 
 1. **`boot:firefox` is a CI-only gate.** It has never passed on the developer machine, and the
    "observed failing once on a deliberately broken manifest" half of that criterion was never
    demonstrated — the local run fails at install for an unrelated reason, so a deliberate break
    there proves nothing. The gate is real but unproven; proving it needs a run on a machine where
-   the baseline passes.
-2. **The remote-URL scan skips `.svg`.** `collectRemoteUrlOffenders` filters on `\.(js|css|html)$`,
-   so a remote `<image href>` smuggled into `icons.svg` would ship unflagged. Nothing does today —
-   the sprite's only absolute URL is the SVG namespace — but the guard is narrower than the
-   criterion it backs.
+   the baseline passes. Tracked as
+   [N.1](wave-nice-to-haves.md#n1--make-bootfirefox-runnable-locally).
+2. **The remote-URL scan skipped `.svg` — fixed here.** `collectRemoteUrlOffenders` filtered on
+   `\.(js|css|html)$`, so a remote `<image href>` smuggled into `icons.svg` would have shipped
+   unflagged. Nothing did — the sprite's only absolute URL is the SVG namespace, which
+   `withoutKnownNamespaceUris` already strips — but the guard was narrower than the criterion it
+   backs. It now scans `.svg` too, with a test that fails if the extension list regresses.
 
 ### Carried into wave 3
 
-Recorded here because a follow-up that lives only in a merged PR body is a follow-up nobody reads:
+Recorded here because a follow-up that lives only in a merged PR body is a follow-up nobody reads.
+Each one now has a home; this list is the index, not the backlog:
 
 - **No UI shipped.** The side panel, popup, and options pages are placeholder shells; the toolbar
-  overlay and drag-box land in wave 3.
-- **Firefox coverage is load-and-boot only** — `web-ext lint` plus the W2.12 boot check. Nothing
-  behavioural until W4.3.
+  overlay and drag-box land in wave 3 as W3.3 and W3.4 — already planned, nothing to add.
 - **The `web_accessible_resources` fingerprinting surface is unaddressed.** Every site can probe for
-  the extension's font and sprite URLs. Deferred to wave 3 deliberately, not overlooked.
+  the extension's font and sprite URLs. Deferred to wave 3 deliberately, not overlooked — and wave 3
+  had no item for it, so it now does:
+  [W3.0](wave-3-ui-and-capture.md#w30--web_accessible_resources-fingerprinting-decision).
 - **The toolbar-gesture injection path is not covered end to end.** 921ae94 moved injection to
   `scripting.executeScript` under `activeTab`, and `load.spec.ts` asserts the background boots but
   never fires the gesture — the path the permission model now depends on is unexercised by
-  Playwright. Wave 3 should close this with the UI that triggers it.
-- **One small fix:** widen `collectRemoteUrlOffenders` to `.svg`, so the ADR-0009 guard covers the
-  sprite it already ships.
+  Playwright. Closed by [W3.10](wave-3-ui-and-capture.md#w310--activation-and-shortcuts), whose
+  verification section now names it explicitly.
+- **One small fix — done.** `collectRemoteUrlOffenders` now scans `.svg`, so the ADR-0009 guard
+  covers the sprite it already ships. Fixed in this reconcile rather than carried; the `.svg` row in
+  the exit-verdict table above is settled.
+- **Firefox coverage is load-and-boot only** — `web-ext lint` plus the W2.12 boot check. Nothing
+  behavioural until W4.3, by
+  [ADR-0007](../adr/0007-playwright-chromium-plus-web-ext-coverage-split.md)'s deliberate split. The
+  part W4.3 does not reach is capture, tracked as
+  [N.2](wave-nice-to-haves.md#n2--deepen-firefox-coverage-beyond-load-and-boot).
+- **`boot:firefox` does not run on every machine.** CI-only gates fail after the push rather than
+  before it. Tracked as [N.1](wave-nice-to-haves.md#n1--make-bootfirefox-runnable-locally).

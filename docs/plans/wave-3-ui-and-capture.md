@@ -3,7 +3,7 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 3 assumes
 [wave 2](wave-2-core-libraries.md) is complete.
 
-- **Status:** blocked on wave 2
+- **Status:** open — wave 2 merged as `6b732e2`
 - **Goal:** the product. Every surface from the design bundle, built in Preact against the generated
   tokens, plus the capture pipeline and the export that turns notes into an agent prompt.
 
@@ -30,6 +30,7 @@ rather than background shifts define most edges; animation is functional only �
 
 ```mermaid
 flowchart TD
+  W30["W3.0 web_accessible_resources decision"]
   W31["W3.1 Preact component library"]
   W32["W3.2 shadow host + theming"]
   W33["W3.3 toolbar overlay"]
@@ -43,6 +44,7 @@ flowchart TD
   W311["W3.11 framework component hints"]
   W312["W3.12 pull request"]
 
+  W30 --> W32
   W31 --> W33
   W31 --> W36
   W31 --> W37
@@ -60,14 +62,57 @@ flowchart TD
   W311 --> W312
 ```
 
-W3.1, W3.2, W3.10, and W3.11 are **parallel-safe** starting points. W3.8 and W3.9 are parallel-safe
-once W3.1 lands. W3.12 is the wave's landing step and waits on everything.
+W3.0, W3.1, W3.2, W3.10, and W3.11 are **parallel-safe** starting points. W3.8 and W3.9 are
+parallel-safe once W3.1 lands. W3.12 is the wave's landing step and waits on everything.
+
+**W3.0 gates W3.2, not the whole wave.** The decision changes how the injected host resolves the
+font and sprite URLs, so the shadow host should not be written against the current static-URL
+assumption and then retrofitted. Nothing else in the wave reads those resources directly.
 
 **W3.11 does not gate W3.7.** The serializer needs the `componentHint` _field_, which W2.8 already
 defines as optional — not the probe that populates it. The probe is default-off and its own degraded
 path is "no hint," so the common case for W3.7 is a record with no hint at all. Making the export
 wait on a fragile, opt-in framework probe lengthened the wave's serial chain — the acknowledged
 critical path for the whole project — for a field that is usually absent.
+
+---
+
+## W3.0 — `web_accessible_resources` fingerprinting decision
+
+- [ ] `build/manifest.ts` + `docs/adr/0012-*.md` — SHA: _pending_
+
+**parallel-safe.** Carried in from wave 2, which deferred this decision here on purpose rather than
+overlooking it — see [wave 2's carried list](wave-2-core-libraries.md#carried-into-wave-3).
+
+The manifest exposes the vendored font and icon sprite to `<all_urls>` so the injected overlay can
+load them. The pattern grants the extension nothing over page content, but it does mean **any page
+can probe those paths to detect that this extension is installed** — a fingerprinting surface the
+user did not opt into. `build/manifest.ts` already records the tradeoff in a comment; what it does
+not do is resolve it.
+
+Chrome's `use_dynamic_url: true` rotates the resource URLs per session, which removes the stable
+probe. It is Chrome-only, and it changes how the injected UI resolves those URLs —
+`runtime.getURL()` must be called from the extension context and the result passed in, rather than
+hardcoded — so it is coupled to W3.2's shadow host, and to whatever W3.1 does about the sprite.
+
+Decide it here, before the overlay is written against the current assumption:
+
+- Measure the actual exposure first. Enumerate exactly which resources are listed, and confirm
+  whether a page can distinguish "extension installed" from "resource missing" for each.
+- Cost out the two-target split: `use_dynamic_url` on Chrome and the static URL on Firefox means the
+  resolution path differs per target, and the W2.1 shim is where that belongs if it lands.
+- Consider the narrower alternative — inlining the sprite into the injected DOM instead of shipping
+  it as a fetchable resource — which would shrink the listed set rather than obscure it. ADR-0009
+  forbids remote assets, not inline ones.
+- Whatever the outcome, **write the ADR.** "We accept the fingerprinting surface because X" is a
+  legitimate resolution and needs recording as one; leaving no ADR is what makes this recur.
+
+**Verify:** a test asserting the manifest's resource list matches the intended set for each target,
+and — if `use_dynamic_url` lands — that the injected UI resolves resources through
+`runtime.getURL()` rather than a hardcoded path, so the Chrome build cannot silently break when the
+URL rotates.
+
+**Commit:** `feat(manifest): resolve the web_accessible_resources fingerprinting surface`
 
 ---
 
@@ -415,6 +460,11 @@ leave an orphaned host; and the shortcut must work when the popup has never been
 **Verify:** Playwright asserts single-mount on repeated activation, a clear message on a restricted
 page, and clean teardown across navigation.
 
+This item also closes a wave-2 gap: `tests/e2e/load.spec.ts` asserts the background boots but never
+fires a gesture, so the `scripting.executeScript` path the whole permission model now rests on is
+unexercised end to end. The activation check here is the first test that actually drives it — assert
+the content script's presence in the page after activation, not just that the click dispatched.
+
 **Commit:** `feat(background): add icon and keyboard activation with single-mount guard`
 
 ---
@@ -472,7 +522,11 @@ Tick every W3.x item with its merged SHA, flip this wave's **Status** to complet
 
 ## Wave 3 exit criteria
 
-- W3.1–W3.12 checked with real commit SHAs (W3.12 records a PR number rather than a SHA).
+- W3.0–W3.12 checked with real commit SHAs (W3.12 records a PR number rather than a SHA).
+- The `web_accessible_resources` fingerprinting surface is resolved either way, with an ADR saying
+  which way and why.
+- The gesture-driven injection path is exercised end to end by at least one Playwright check, not
+  only asserted at the background-boot level.
 - Full flow works in Chromium end to end: activate → pick → note → review → export, with the
   exported zip containing valid JSON, Markdown, and screenshots.
 - The toolbar provably never overlaps the active selection, asserted by bounding-box comparison.
