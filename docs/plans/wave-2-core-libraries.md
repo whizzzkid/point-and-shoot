@@ -386,7 +386,7 @@ meaningful rather than noise.
 
 ## W2.8 — Schema, types, and IndexedDB layer
 
-- [ ] `src/shared/schema.ts`, `src/shared/store.ts` + tests — SHA: _pending_
+- [x] `src/shared/schema.ts`, `src/shared/store.ts` + tests — SHA: f819058
 
 **parallel-safe.**
 
