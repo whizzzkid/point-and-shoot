@@ -482,7 +482,7 @@ present.
 
 ## W2.11 — Export-format spike: feed a hand-written bundle to a real agent
 
-- [ ] `docs/specs/export-format-spike.md` — SHA: _pending_
+- [x] `docs/specs/export-format-spike.md` — SHA: a1f96e3
 
 **Depends on:** W2.8 (for the record shape only). **parallel-safe** with W2.9/W2.10.
 
