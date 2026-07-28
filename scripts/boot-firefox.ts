@@ -64,7 +64,7 @@ async function waitForBootSignal(
 ): Promise<BootResult> {
   const reader = child.stdout.getReader();
   const decoder = new TextDecoder();
-  // The handle is kept so the `finally` below can clear it: an unclear timer is a pending Deno op,
+  // The handle is kept so the `finally` below can clear it: an uncleared timer is a pending Deno op,
   // so a fast boot would still sit out the whole `timeoutMs` before the process could exit.
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<"timeout">((resolve) => {
