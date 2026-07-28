@@ -15,8 +15,10 @@
  */
 
 import { browser } from "../shared/browser.ts";
+import { TOGGLE_OVERLAY_MESSAGE } from "../shared/messages.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
 import { createShadowHost } from "./host.ts";
+import { createOverlayLifecycle } from "./lifecycle.ts";
 
 const TOOLBAR_MAXIMUM_WIDTH = 420;
 const TOOLBAR_PROSPECTIVE_HEIGHT = 72;
@@ -40,9 +42,7 @@ function prospectiveToolbarBounds(ownerWindow: Window): DOMRect {
   );
 }
 
-if (document.documentElement.dataset.pointAndShootContentReady === "true") {
-  console.log("point-and-shoot: content script already present, skipping re-init");
-} else {
+function mountOverlay(): () => void {
   const sample = () =>
     sampleBackdrop(
       document,
@@ -54,12 +54,28 @@ if (document.documentElement.dataset.pointAndShootContentReady === "true") {
     resourceUrl: (path) => browser.runtime.getURL(path),
     theme: initialTheme,
   });
-  watchTheme({
+  const stopTheme = watchTheme({
     onChange: (theme) => {
       shadowHost.element.dataset.theme = theme;
     },
     ownerWindow,
     sample,
+  });
+
+  return () => {
+    stopTheme();
+    shadowHost.destroy();
+  };
+}
+
+if (document.documentElement.dataset.pointAndShootContentReady === "true") {
+  console.log("point-and-shoot: content script already present, skipping re-init");
+} else {
+  const lifecycle = createOverlayLifecycle(mountOverlay);
+  lifecycle.toggle();
+  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message !== TOGGLE_OVERLAY_MESSAGE) return;
+    sendResponse({ mounted: lifecycle.toggle() });
   });
   document.documentElement.dataset.pointAndShootContentReady = "true";
   console.log("point-and-shoot: content script ready");

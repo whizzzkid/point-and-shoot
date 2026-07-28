@@ -43,6 +43,18 @@ export interface TabQueryInfo {
   readonly currentWindow?: boolean;
 }
 
+/** Tab-scoped browser-action badge text. An empty string clears the badge. */
+export interface ActionBadgeTextDetails {
+  readonly tabId?: number;
+  readonly text: string;
+}
+
+/** Tab-scoped browser-action title shown on hover and to assistive technology. */
+export interface ActionTitleDetails {
+  readonly tabId?: number;
+  readonly title: string;
+}
+
 /** Injection target and payload for {@link BrowserShim.scripting}'s `executeScript`. */
 export interface ExecuteScriptInjection {
   readonly target: { readonly tabId: number; readonly frameIds?: readonly number[] };
@@ -101,6 +113,7 @@ export interface BrowserShim {
      */
     captureVisibleTab(options?: CaptureOptions): Promise<string>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
+    sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
   readonly runtime: {
     /**
@@ -132,6 +145,8 @@ export interface BrowserShim {
   };
   readonly action: {
     readonly onClicked: { addListener(listener: ActionClickedListener): void };
+    setBadgeText(details: ActionBadgeTextDetails): Promise<void>;
+    setTitle(details: ActionTitleDetails): Promise<void>;
   };
   /**
    * Opens the extension's side panel / sidebar for the given tab (or the current one).
@@ -150,6 +165,11 @@ export interface ChromeGlobalShape {
       callback: (dataUrl: string) => void,
     ): void;
     query(queryInfo: TabQueryInfo, callback: (tabs: TabInfo[]) => void): void;
+    sendMessage(
+      tabId: number,
+      message: unknown,
+      callback: (response: unknown) => void,
+    ): void;
   };
   readonly runtime: {
     getURL(path: string): string;
@@ -179,6 +199,8 @@ export interface ChromeGlobalShape {
   };
   readonly action: {
     readonly onClicked: { addListener(listener: ActionClickedListener): void };
+    setBadgeText(details: ActionBadgeTextDetails, callback: () => void): void;
+    setTitle(details: ActionTitleDetails, callback: () => void): void;
   };
   readonly sidePanel: {
     open(options: { readonly tabId?: number }, callback: () => void): void;
@@ -190,6 +212,7 @@ export interface FirefoxGlobalShape {
   readonly tabs: {
     captureTab(tabId: number | undefined, options?: CaptureOptions): Promise<string>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
+    sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
   readonly runtime: {
     getURL(path: string): string;
@@ -210,6 +233,8 @@ export interface FirefoxGlobalShape {
   readonly downloads: { download(options: DownloadOptions): Promise<number> };
   readonly action: {
     readonly onClicked: { addListener(listener: ActionClickedListener): void };
+    setBadgeText(details: ActionBadgeTextDetails): Promise<void>;
+    setTitle(details: ActionTitleDetails): Promise<void>;
   };
   readonly sidebarAction: { open(): Promise<void> };
 }
@@ -265,6 +290,12 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       query(queryInfo) {
         return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.tabs.query(queryInfo, cb));
       },
+      sendMessage(tabId, message) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.tabs.sendMessage(tabId, message, cb),
+        );
+      },
     },
     runtime: {
       getURL(path) {
@@ -302,7 +333,11 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
         );
       },
     },
-    commands: { onCommand: chromeGlobal.commands.onCommand },
+    commands: {
+      get onCommand() {
+        return chromeGlobal.commands.onCommand;
+      },
+    },
     downloads: {
       download(options) {
         return promisifyWithResult(
@@ -311,7 +346,20 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
         );
       },
     },
-    action: { onClicked: chromeGlobal.action.onClicked },
+    action: {
+      get onClicked() {
+        return chromeGlobal.action.onClicked;
+      },
+      setBadgeText(details) {
+        return promisifyVoid(
+          chromeGlobal,
+          (cb) => chromeGlobal.action.setBadgeText(details, cb),
+        );
+      },
+      setTitle(details) {
+        return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.action.setTitle(details, cb));
+      },
+    },
     openPanel(tabId) {
       const options = tabId === undefined ? {} : { tabId };
       return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.sidePanel.open(options, cb));
@@ -332,6 +380,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       },
       query(queryInfo) {
         return firefoxGlobal.tabs.query(queryInfo);
+      },
+      sendMessage(tabId, message) {
+        return firefoxGlobal.tabs.sendMessage(tabId, message);
       },
     },
     runtime: {
@@ -361,13 +412,27 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
         return firefoxGlobal.scripting.executeScript(injection);
       },
     },
-    commands: { onCommand: firefoxGlobal.commands.onCommand },
+    commands: {
+      get onCommand() {
+        return firefoxGlobal.commands.onCommand;
+      },
+    },
     downloads: {
       download(options) {
         return firefoxGlobal.downloads.download(options);
       },
     },
-    action: { onClicked: firefoxGlobal.action.onClicked },
+    action: {
+      get onClicked() {
+        return firefoxGlobal.action.onClicked;
+      },
+      setBadgeText(details) {
+        return firefoxGlobal.action.setBadgeText(details);
+      },
+      setTitle(details) {
+        return firefoxGlobal.action.setTitle(details);
+      },
+    },
     openPanel() {
       return firefoxGlobal.sidebarAction.open();
     },
