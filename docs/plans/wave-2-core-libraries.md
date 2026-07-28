@@ -140,7 +140,7 @@ cannot reintroduce the divergence with W2.3's build target.
 
 ## W2.3 — esbuild build pipeline
 
-- [ ] `build/build.ts` + `deno task build` — SHA: _pending_
+- [x] `build/build.ts` + `deno task build` — SHA: `41ed74e`
 
 **Depends on:** W2.1, W2.2, W2.4, W2.5.
 
