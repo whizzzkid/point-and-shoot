@@ -55,7 +55,7 @@ record shape; it writes only a spec and a throwaway bundle, so it collides with 
 
 ## W2.1 — Promise-based browser shim
 
-- [ ] `src/shared/browser.ts` + unit tests — SHA: _pending_
+- [x] `src/shared/browser.ts` + unit tests — SHA: 869d46c
 
 **parallel-safe.**
 
@@ -95,7 +95,12 @@ the test pass.
 
 ## W2.2 — Manifest generation for both targets
 
-- [ ] `build/manifest.ts` + generated manifests — SHA: _pending_
+- [x] `build/manifest.ts` + generated manifests — SHA: 1998f49, fixed in 921ae94
+
+> 1998f49 registered `content_scripts` against `<all_urls>`, which is exactly the standing
+> install-time access ADR-0002 forbids. 921ae94 drops the registration and moves injection to
+> `scripting.executeScript` under `activeTab` in the background — the extension still reaches every
+> site, but only the one the user invoked it on.
 
 **parallel-safe.**
 
@@ -113,8 +118,10 @@ files guarantees they drift. One typed source, two emitted files.
   leave its browser floors to whoever writes the item.
 - A typed `manifest.base` object holding everything shared: `manifest_version: 3`, name, version,
   description, icons, `permissions` (exactly the six from the README's permission list — no more),
-  `action`, `commands` (with a suggested default shortcut and a clear description string),
-  `content_scripts`, and `web_accessible_resources` for the vendored fonts and icon sprite.
+  `action`, `commands` (with a suggested default shortcut and a clear description string), and
+  `web_accessible_resources` for the vendored fonts and icon sprite. **No `content_scripts`** — a
+  static registration is standing access to every matched page, granted at install rather than by
+  the gesture ADR-0002 turns the permission model on, so the background injects on demand instead.
 - A `forChrome()` producing `background.service_worker` (type `module`) and `side_panel`.
 - A `forFirefox()` producing `background.scripts` (Firefox MV3 uses an event page, **not** a service
   worker) plus `browser_specific_settings.gecko.id` and a `strict_min_version`, and `sidebar_action`
@@ -140,7 +147,12 @@ cannot reintroduce the divergence with W2.3's build target.
 
 ## W2.3 — esbuild build pipeline
 
-- [ ] `build/build.ts` + `deno task build` — SHA: _pending_
+- [x] `build/build.ts` + `deno task build` — SHA: `41ed74e`, fixed in 6f6765a
+
+> 41ed74e's tests built into the real `dist/` and removed it afterwards. `deno task ci` is the
+> lefthook pre-push hook, so every push deleted the developer's built extension — and the documented
+> `deno task build && deno task e2e:smoke` flow needs that tree. `build()` now takes an `outDir` and
+> the tests pass a temp directory.
 
 **Depends on:** W2.1, W2.2, W2.4, W2.5.
 
@@ -194,7 +206,7 @@ W2.10's CI.
 
 ## W2.4 — Generated design tokens
 
-- [ ] `build/tokens.ts`, `src/shared/design/`, drift check — SHA: _pending_
+- [x] `build/tokens.ts`, `src/shared/design/`, drift check — SHA: 1f79fb7
 
 **parallel-safe.**
 
@@ -272,7 +284,13 @@ Also assert the generated CSS is complete, not merely present:
 
 ## W2.5 — Vendored fonts and icon sprite
 
-- [ ] `src/shared/design/fonts/`, `icons.svg`, `build/vendor-assets.ts` — SHA: _pending_
+- [x] `src/shared/design/fonts/`, `icons.svg`, `build/vendor-assets.ts` — SHA: 9d48b97, guards fixed
+      in 6f6765a
+
+> The no-remote-URL assertions 9d48b97 shipped were inert: `^(?!.*https?://)[\s\S]*$` only inspects
+> line 1, because `.` does not cross a newline without the `s` flag. A remote URL anywhere below the
+> first line passed. 6f6765a asserts the absence directly, and the rewrite was mutation-verified by
+> injecting a URL on line 3 and confirming the test fails.
 
 **parallel-safe.**
 
@@ -312,7 +330,11 @@ render in the W2.9 smoke load; `deno task check` clean.
 
 ## W2.6 — Selector engine
 
-- [ ] `src/shared/selectors.ts` + tests — SHA: _pending_
+- [x] `src/shared/selectors.ts` + tests — SHA: 3e6a5d5, fixed in e97fb6a
+
+> The first landing emitted XPath that did not resolve and used `instanceof` across realms, so it
+> failed on the iframe interiors this item exists to handle. e97fb6a is what makes the checkbox
+> true; 3e6a5d5 alone did not.
 
 **parallel-safe.**
 
@@ -353,7 +375,7 @@ and text nodes passed in by mistake.
 
 ## W2.7 — Computed-style digest engine
 
-- [ ] `src/shared/style-digest.ts` + tests — SHA: _pending_
+- [x] `src/shared/style-digest.ts` + tests — SHA: 796bd88
 
 **parallel-safe.**
 
@@ -386,7 +408,12 @@ meaningful rather than noise.
 
 ## W2.8 — Schema, types, and IndexedDB layer
 
-- [ ] `src/shared/schema.ts`, `src/shared/store.ts` + tests — SHA: _pending_
+- [x] `src/shared/schema.ts`, `src/shared/store.ts` + tests — SHA: f819058, fixed in d5a64f3 and
+      2a95742
+
+> f819058's validator accepted malformed `region` and `element` fields (shallow checks only), and
+> its store deadlocked on a version bump because the upgrade path ran inside the open request. Both
+> are load-bearing for ADR-0003's record shape, so the item is only done as of 2a95742.
 
 **parallel-safe.**
 
@@ -418,7 +445,7 @@ extension has a live context.
 
 ## W2.9 — Playwright extension-load smoke
 
-- [ ] `tests/e2e/load.spec.ts` + `deno task e2e:smoke` — SHA: _pending_
+- [x] `tests/e2e/load.spec.ts` + `deno task e2e:smoke` — SHA: `5a9c675`
 
 **Depends on:** W2.3, W2.1.
 
@@ -449,7 +476,10 @@ fix W2.3's script format — do not weaken the assertion.
 
 ## W2.10 — CI expansion
 
-- [ ] `.github/workflows/ci.yml` updated — SHA: _pending_
+- [ ] `.github/workflows/ci.yml` updated — SHA: fdcfb79; branch protection updated; **CI run still
+      unverified** — the workflow triggers only on `push: main` and `pull_request:`, so none of
+      these jobs has ever executed. W2.13's PR is their first run, and this box stays open until it
+      is green.
 
 **Depends on:** W2.9, W2.4, W2.12.
 
@@ -461,15 +491,18 @@ Add to the existing workflow, each as its own job so a failure names itself:
   on failure.
 - `lint-firefox` — `deno task lint:firefox` (W2.3). Static, no browser, seconds to run; it is the
   only automated statement about the Firefox artifact until wave 4.
-- `boot-firefox` — the W2.12 boot check.
+- `boot-firefox` — the W2.12 boot check. Required, and green — though only after its first CI run
+  exposed two defects in the check itself; see W2.12's note.
 
 Cache the Playwright browser download keyed on the pinned Playwright version, or CI pays a full
 browser download every run. This wave now covers Firefox at the _static_ and _boots-at-all_ level;
 the fuller `smoke-firefox` behavioural check still lands in wave 4 with the thing it tests.
 
 Extend the branch-protection required-check list (W1.11) to include the new jobs in the same PR.
-Adding a job without requiring it leaves the gate advisory, which is the failure W1.11 exists to
-prevent.
+Done: `required_status_checks.contexts` is now
+`["checks", "build", "tokens-drift", "e2e-smoke", "lint-firefox", "boot-firefox"]` with
+`strict=true`. Adding a job without requiring it leaves the gate advisory, which is the failure
+W1.11 exists to prevent.
 
 **Verify:** push and `gh run watch --exit-status`; confirm all jobs green and the `dist/` artifact
 is downloadable and contains both browser trees. Confirm via
@@ -482,7 +515,7 @@ present.
 
 ## W2.11 — Export-format spike: feed a hand-written bundle to a real agent
 
-- [ ] `docs/specs/export-format-spike.md` — SHA: _pending_
+- [x] `docs/specs/export-format-spike.md` — SHA: a1f96e3
 
 **Depends on:** W2.8 (for the record shape only). **parallel-safe** with W2.9/W2.10.
 
@@ -518,7 +551,7 @@ tell whether the export worked without rerunning it.
 
 ## W2.12 — Firefox boot check
 
-- [ ] `scripts/boot-firefox.sh` (or equivalent), `deno task boot:firefox` — SHA: _pending_
+- [x] `scripts/boot-firefox.sh` (or equivalent), `deno task boot:firefox` — SHA: dcc7c56
 
 **Depends on:** W2.3.
 
@@ -547,6 +580,25 @@ cover.
 Firefox manifest, confirm the check fails, and revert. An unproven gate is not a gate.
 
 **Commit:** `test(firefox): add a minimal web-ext boot check for the firefox build`
+
+> **Passes in CI; fails on this developer's machine.** `deno task boot:firefox` locally dies at
+> install —
+> `installTemporaryAddon: Add-on point-and-shoot@gusto.com is not compatible with
+> application version. add-on minVersion: 109.0.`
+> — and that reproduces with a bare four-line MV3 manifest, so it is the local Firefox 153.0 /
+> web-ext 10.5.0 pairing, not anything this repo declares. On GitHub's runner the same command
+> installs the add-on, boots the background script, and resolves the `moz-extension://` font. The
+> job is **required** by branch protection.
+>
+> Two real defects surfaced only when the job first ran in CI, and both are fixed:
+>
+> - The woff2 marker was parsed with `(\S+)`, so Firefox's quote-wrapped console line yielded `200"`
+>   and the check failed on a run where the resource had resolved (5f9982c).
+> - `-foreground` and Firefox's favicon MIME sniffer emit `console.error` lines on the runner that
+>   the check counted as extension errors (31583a2).
+>
+> The lesson worth keeping: a gate that has never executed is not a gate. This one was written,
+> committed, and ticked three items before anything ran it.
 
 ---
 

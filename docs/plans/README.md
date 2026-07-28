@@ -344,21 +344,21 @@ Resolved live on 2026-07-24. **Pin exactly. No `latest`, no `^`, no `~`, no floa
 | `jdx/mise-action`  | `v4`     | CI workflows                                              |
 
 Browser floors belong here too, for the same reason the tool versions do — three things in wave 2
-consume them and must not disagree. **They are not resolved yet.** W2.2 resolves them and fills this
-table in; until then the cells below read `_pending W2.2_` on purpose, and no item may substitute a
-guess. They are the one exception to this section's heading: everything above is resolved and
-pinned, the two floors are not resolved yet.
+consume them and must not disagree. Resolved by W2.2 from each vendor's own MV3 support baseline,
+not guessed.
 
 | Floor            | Version                                               | Consumed by                                                                            |
 | ---------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Chrome minimum   | _pending W2.2_                                        | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
-| Firefox minimum  | _pending W2.2_                                        | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant    |
+| Chrome minimum   | `116`                                                 | `minimum_chrome_version` in the Chrome manifest; the `SUPPORTED` constant W2.2 exports |
+| Firefox minimum  | `109`                                                 | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant    |
 | esbuild `target` | derived from `SUPPORTED` — never written as a literal | W2.3                                                                                   |
 
-Resolve each from **that vendor's MV3 support baseline**, not from the other's number: Firefox
-shipped MV3 well before Chrome's current release, so the two floors are years apart and a plausible
-Chrome-plus-one guess locks out most of the Firefox installed base. W2.2 writes the resolved numbers
-into this table in its own commit; after that, raising a floor is a one-line change in
+Resolved each from **that vendor's own MV3 support baseline**, not from the other's number: Chrome's
+`chrome.sidePanel` API landed in Chrome 114, but the `sidePanel.open()` method the browser shim
+(W2.1) calls did not ship until Chrome 116, so the Chrome floor is 116. Firefox's Manifest V3 became
+generally available in Firefox 109, so the Firefox floor is 109 — years below Chrome's, because
+Firefox shipped MV3 well before Chrome's current release; a plausible Chrome-plus-one guess would
+have locked out most of the Firefox installed base. Raising a floor is a one-line change in
 `build/manifest.ts` plus a row here — never an edit in two places.
 
 Preact's version is resolved and pinned in wave 2 (`npm view preact version` at the time), not
@@ -373,20 +373,21 @@ disagreement discovered only at export time. **Read the number from this table; 
 inside the item.** W2.11 is not in that list: it _produces_ the fifth number rather than consuming
 any of them.
 
-| Budget                              | Value                                            | Enforced in | Consumed by                                              |
-| ----------------------------------- | ------------------------------------------------ | ----------- | -------------------------------------------------------- |
-| Style-digest properties per element | `40`                                             | W2.7        | W3.4, W3.6                                               |
-| Sibling count per element           | `6` (3 either side, DOM order)                   | W2.7        | W3.4                                                     |
-| Subtree depth per element           | `3`                                              | W2.7        | W3.4                                                     |
-| Elements collected per drag box     | `25`                                             | W3.4        | W3.6, W3.7                                               |
-| Default export size budget          | `2 MB` — **provisional until W2.11 measures it** | W3.7        | W3.6 (warning threshold), W3.9 (user-adjustable default) |
+| Budget                              | Value                                                                 | Enforced in | Consumed by                                              |
+| ----------------------------------- | --------------------------------------------------------------------- | ----------- | -------------------------------------------------------- |
+| Style-digest properties per element | `40`                                                                  | W2.7        | W3.4, W3.6                                               |
+| Sibling count per element           | `6` (3 either side, DOM order)                                        | W2.7        | W3.4                                                     |
+| Subtree depth per element           | `3`                                                                   | W2.7        | W3.4                                                     |
+| Elements collected per drag box     | `25`                                                                  | W3.4        | W3.6, W3.7                                               |
+| Default export size budget          | `2 MB` — measured, see [W2.11 spike](../specs/export-format-spike.md) | W3.7        | W3.6 (warning threshold), W3.9 (user-adjustable default) |
 
 The first four are **deliberate design caps**, set to keep a single note legible to an agent rather
 than to be generous: a digest listing every computed property is noise, and a drag over `<body>`
-must not collect two thousand elements. They are settled — no item re-derives them. The fifth is the
-only guess, and W2.11 exists to replace _that one row_ with a measured number — the point at which a
-real agent's output degrades. When W2.11 lands, update that row and the items that read it in the
-same commit.
+must not collect two thousand elements. They are settled — no item re-derives them. The fifth was
+the only guess; [W2.11's spike](../specs/export-format-spike.md) fed real bundles at five sizes (13
+KB to ~9.93 MB) to real agents and found zero degradation through ~2.13 MB, with the first failure
+mode (the markdown projection silently losing note text to tool-side compression, not a schema
+defect) appearing at ~4.26 MB — confirming `2 MB` rather than revising it.
 
 Changing any value here is a plan change, so [rule 7](#rules-for-working-any-wave) substep 5
 applies: this table, the wave items that cite it, and the tests that assert it move together.

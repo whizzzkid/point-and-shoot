@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture: Firefox boot check</title>
+  </head>
+  <body>
+    <h1>Fixture: Firefox boot check</h1>
+    <p>
+      Loaded only by <code>scripts/boot-firefox.ts</code> (W2.12). Logs plain-text markers that the
+      boot check greps out of Firefox's own stdout (via <code>devtools.console.stdout.content</code>),
+      since Playwright cannot drive an extension-loaded Firefox instance directly.
+    </p>
+    <script>
+    // Must match the UUID pinned via `extensions.webextensions.uuids` in scripts/boot-firefox.ts —
+    // that pref is what makes this extension's moz-extension:// origin predictable across runs.
+    const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
+    const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
+
+    // web-ext's --start-url opens this page before the temporary add-on finishes installing over
+    // RDP, so the extension's moz-extension:// origin does not resolve on the first attempt. Retry
+    // on a short interval until the install lands rather than reporting the race as a failure.
+    //
+    // This page deliberately does not wait for the content script: ADR-0002 removed the static
+    // registration, so nothing injects without a toolbar gesture, and driving that gesture needs a
+    // remote-debugging client this check does not have. The background's own boot marker is what
+    // `scripts/boot-firefox.ts` matches instead; this page's job is only the resource fetch.
+    const MAX_ATTEMPTS = 30;
+    const RETRY_INTERVAL_MS = 500;
+
+    console.log("firefox-boot: script-loaded");
+
+    const fetchFontStatus = async () => {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const response = await fetch(`moz-extension://${EXTENSION_UUID}/${FONT_RESOURCE}`);
+          if (response.status === 200 || attempt === MAX_ATTEMPTS) return String(response.status);
+        } catch (error) {
+          if (attempt === MAX_ATTEMPTS) return `error:${error}`;
+        }
+        await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL_MS));
+      }
+    };
+
+    fetchFontStatus().then((status) => {
+      console.log(`firefox-boot: woff2-status=${status}`);
+    });
+    </script>
+  </body>
+</html>

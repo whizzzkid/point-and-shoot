@@ -41,19 +41,32 @@ Deno-first. Deno owns source, lint, formatting, type-checking, and unit tests.
 Tasks land with the item that implements them. A stub task that silently passes is worse than a
 missing one, because it turns an unimplemented gate into a green check.
 
-| Task                  | What it does                                          | Landed in |
-| --------------------- | ----------------------------------------------------- | --------- |
-| `deno task fmt`       | Formats the tree                                      | W1.2      |
-| `deno task fmt:check` | Fails on any unformatted file                         | W1.2      |
-| `deno task lint`      | `recommended` rules plus `no-slow-types`              | W1.2      |
-| `deno task check`     | Type-checks the project                               | W1.2      |
-| `deno task test`      | Deno unit tests                                       | W1.2      |
-| `deno task ci`        | `fmt:check` → `lint` → `check` → `test`, in sequence  | W1.2      |
-| `deno task fixture`   | Serves the browser fixture app, printing both origins | W1.8      |
-| `deno task shots`     | Captures fixture screenshots into `docs/assets/`      | W1.9      |
+| Task                      | What it does                                                           | Landed in |
+| ------------------------- | ---------------------------------------------------------------------- | --------- |
+| `deno task fmt`           | Formats the tree                                                       | W1.2      |
+| `deno task fmt:check`     | Fails on any unformatted file                                          | W1.2      |
+| `deno task lint`          | `recommended` rules plus `no-slow-types`                               | W1.2      |
+| `deno task check`         | Type-checks the project                                                | W1.2      |
+| `deno task test`          | Deno unit tests                                                        | W1.2      |
+| `deno task ci`            | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
+| `deno task fixture`       | Serves the browser fixture app, printing both origins                  | W1.8      |
+| `deno task shots`         | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
+| `deno task tokens`        | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
+| `deno task tokens:check`  | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
+| `deno task lint:design`   | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
+| `deno task build`         | esbuild dev build → `dist/chrome/`, `dist/firefox/`                    | W2.3      |
+| `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
+| `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
+| `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
+
+`lint:design` is deliberately **not** part of `ci`: it checks _adherence to the design bundle's own
+conventions_ (`.claude-design/point-and-shoot/_adherence.oxlintrc.json`), a design-system concern,
+not a correctness one. `tokens:check` already makes token drift a hard CI failure; adding
+`lint:design` to the same gate would block merges on a linter tuned for the upstream design tool,
+not for this repo. Run it manually when touching `src/shared/design/`.
 
 The fixture app binds **OS-assigned ports**, not fixed ones, and prints both. Tests read the two
 base URLs from `startFixtureServer()`'s return value — never a hardcoded number. It serves two
@@ -138,6 +151,25 @@ not suggestions. A PR that breaks one is not merged.
   together is three types.
 - Formatting is settled and enforced: 2-space indent, 100-column width, **double quotes**.
   `.editorconfig` agrees with `deno fmt`; keep them in sync if either changes.
+- **DOM types in a shared module.** Deno's default `lib` has no DOM, and `deno.json`'s
+  `compilerOptions` stays that way — most of `src/shared/` is meant to run outside a page context. A
+  module that genuinely needs DOM types (e.g. `src/shared/selectors.ts`) adds
+  `/// <reference lib="dom" />` as its own first line rather than widening the global `lib`.
+- **Selector bundle emission order** (`src/shared/selectors.ts`): test ids (`data-testid`,
+  `data-test`, `data-cy`, `id`) first, then ARIA role plus accessible name, then the structural
+  `cssPath`/`xpath` as the last resort. This is trust order for a consumer chaining fallbacks — a
+  test-authored identifier is the least likely to drift, a structural path the most likely to break
+  the moment the DOM around the element changes shape.
+- **Settled runtime budgets live in one table.** `docs/plans/README.md`'s settled-numbers table is
+  the single source for caps multiple wave-2/3 items share (style-digest property/sibling/subtree
+  caps, element-collection and export-size limits). An item that needs one of these numbers reads it
+  from that table and exports it from its own module — never re-derives or hand-picks its own value.
+- **Never trust a stored record's shape.** `src/shared/schema.ts`'s `validateSession` re-validates
+  every record read from IndexedDB against the current `Session` shape rather than casting — a
+  record can predate a schema bump or be corrupted, and the type system's static guarantees say
+  nothing about what is actually on disk. `src/shared/store.ts`'s `MIGRATIONS` array follows the
+  same rule for the database shape itself: append an entry keyed to the version it bumps _to_, never
+  edit an existing entry once it has shipped.
 
 ## Testing
 
@@ -175,19 +207,20 @@ edge cases (boundaries, empty collections, concurrency).
 **Exact versions everywhere.** No `latest`, no `stable`, no floating tags, no `^`, no `~`. GitHub
 Actions pin to the official action's semver major, which is this project's one deliberate exception.
 
-| Tool               | Version  | Pinned in                                             |
-| ------------------ | -------- | ----------------------------------------------------- |
-| deno               | `2.9.4`  | `mise.toml`                                           |
-| node               | `26.5.0` | `mise.toml` (Playwright browser install, font subset) |
-| lefthook           | `2.1.10` | `mise.toml`                                           |
-| playwright         | `1.62.0` | `deno.json` imports                                   |
-| `@std/assert`      | `1.0.14` | `deno.json` imports                                   |
-| `@std/path`        | `1.1.6`  | `deno.json` imports                                   |
-| esbuild            | `0.28.1` | resolved, not yet imported — lands in W2.3            |
-| web-ext            | `10.5.0` | resolved, not yet imported — lands in W4.3            |
-| `actions/checkout` | `v7`     | CI workflows                                          |
-| `jdx/mise-action`  | `v4`     | CI workflows                                          |
-| runner image       | `24.04`  | CI workflows (`runs-on: ubuntu-24.04`)                |
+| Tool               | Version   | Pinned in                                                                                      |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------- |
+| deno               | `2.9.4`   | `mise.toml`                                                                                    |
+| node               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                                          |
+| lefthook           | `2.1.10`  | `mise.toml`                                                                                    |
+| playwright         | `1.62.0`  | `deno.json` imports                                                                            |
+| `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
+| `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
+| preact             | `10.29.7` | `deno.json` imports                                                                            |
+| esbuild            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
+| web-ext            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
+| `actions/checkout` | `v7`      | CI workflows                                                                                   |
+| `jdx/mise-action`  | `v4`      | CI workflows                                                                                   |
+| runner image       | `24.04`   | CI workflows (`runs-on: ubuntu-24.04`)                                                         |
 
 A resolved-but-unimported version is recorded here so the number is decided once, and is written
 into `deno.json` by the item that first needs it. Claiming a pin already lives somewhere it does not
@@ -205,10 +238,13 @@ pinned binary when you need to:
 LEFTHOOK_BIN="$(mise which lefthook)" mise exec -- git commit
 ```
 
-Browser minimums (`minimum_chrome_version`, `strict_min_version`) and the esbuild `target` are **not
-resolved yet** — W2.2 resolves them from each vendor's own MV3 support baseline and writes them into
-the table in [`docs/plans/README.md`](docs/plans/README.md). Until then, no item may substitute a
-guess.
+Browser minimums are resolved from each vendor's own MV3 support baseline, not guessed:
+`minimum_chrome_version` is `116` (the first Chrome version whose `chrome.sidePanel.open()` ships —
+`sidePanel` itself landed in Chrome 114, but the shim calls `open()`), and
+`browser_specific_settings.gecko.strict_min_version` is `109.0` (Firefox's Manifest V3 general
+availability). The esbuild `target` derives from the same `SUPPORTED` constant W2.2 exports in
+`build/manifest.ts` — never a separate literal. See the table in
+[`docs/plans/README.md`](docs/plans/README.md).
 
 ## Docs layout
 
