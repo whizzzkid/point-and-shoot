@@ -20,6 +20,7 @@ export type ToolbarTool = "select" | "screenshot" | "note";
 
 /** Props accepted by {@link FloatingToolbar}. */
 export interface FloatingToolbarProps {
+  readonly activeTool?: ToolbarTool | null;
   readonly iconSpriteUrl: string;
   readonly selection?: PlacementRect;
   readonly composer?: PlacementRect;
@@ -235,6 +236,7 @@ function notesLabel(noteCount: number): string {
  */
 export function FloatingToolbar(
   {
+    activeTool,
     composer,
     iconSpriteUrl,
     noteCount = 0,
@@ -253,9 +255,10 @@ export function FloatingToolbar(
     ownerDocument,
     ownerWindow,
   );
-  const [activeTool, setActiveTool] = useState<ToolbarTool>("select");
+  const [uncontrolledTool, setUncontrolledTool] = useState<ToolbarTool>("select");
+  const selectedTool = activeTool === undefined ? uncontrolledTool : activeTool;
   const chooseTool = (tool: ToolbarTool): void => {
-    setActiveTool(tool);
+    if (activeTool === undefined) setUncontrolledTool(tool);
     onToolChange?.(tool);
   };
   const style = positioned === undefined ? undefined : {
@@ -276,19 +279,19 @@ export function FloatingToolbar(
         style={style}
       >
         <IconButton
-          active={activeTool === "select"}
+          active={selectedTool === "select"}
           icon={<Icon name="crosshair" />}
           label="Select"
           onClick={() => chooseTool("select")}
         />
         <IconButton
-          active={activeTool === "screenshot"}
+          active={selectedTool === "screenshot"}
           icon={<Icon name="camera" />}
           label="Screenshot"
           onClick={() => chooseTool("screenshot")}
         />
         <IconButton
-          active={activeTool === "note"}
+          active={selectedTool === "note"}
           icon={<Icon name="message-square-plus" />}
           label="Note"
           onClick={() => chooseTool("note")}

@@ -19,9 +19,10 @@ import { browser } from "../shared/browser.ts";
 import iconSprite from "../shared/design/icons.svg" with { type: "text" };
 import { TOGGLE_OVERLAY_MESSAGE } from "../shared/messages.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
+import { CaptureOverlay } from "./CaptureOverlay.tsx";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
-import { FloatingToolbar } from "./toolbar/FloatingToolbar.tsx";
+import pickerStyles from "./picker/picker.css" with { type: "text" };
 import toolbarStyles from "./toolbar/toolbar.css" with { type: "text" };
 
 const TOOLBAR_MAXIMUM_WIDTH = 420;
@@ -55,10 +56,10 @@ function mountOverlay(): () => void {
     );
   const initialTheme = resolveTheme({ sample });
   const shadowHost = createShadowHost({
-    children: h(FloatingToolbar, { iconSpriteUrl: "" }),
+    children: h(CaptureOverlay, { iconSpriteUrl: "" }),
     inlineIconSprite: iconSprite,
     resourceUrl: (path) => browser.runtime.getURL(path),
-    styles: [toolbarStyles],
+    styles: [pickerStyles, toolbarStyles],
     theme: initialTheme,
   });
   const stopTheme = watchTheme({
