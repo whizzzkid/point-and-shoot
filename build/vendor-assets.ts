@@ -11,7 +11,7 @@ import { Buffer } from "node:buffer";
 import subsetFont from "npm:subset-font@2.5.0";
 
 /** Weights actually requested by `.claude-design/point-and-shoot/tokens/fonts.css`. */
-const FONT_SPECS = [
+export const FONT_SPECS = [
   {
     family: "Space Grotesk",
     cssName: "Space+Grotesk",
