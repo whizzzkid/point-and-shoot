@@ -41,19 +41,22 @@ Deno-first. Deno owns source, lint, formatting, type-checking, and unit tests.
 Tasks land with the item that implements them. A stub task that silently passes is worse than a
 missing one, because it turns an unimplemented gate into a green check.
 
-| Task                     | What it does                                                           | Landed in |
-| ------------------------ | ---------------------------------------------------------------------- | --------- |
-| `deno task fmt`          | Formats the tree                                                       | W1.2      |
-| `deno task fmt:check`    | Fails on any unformatted file                                          | W1.2      |
-| `deno task lint`         | `recommended` rules plus `no-slow-types`                               | W1.2      |
-| `deno task check`        | Type-checks the project                                                | W1.2      |
-| `deno task test`         | Deno unit tests                                                        | W1.2      |
-| `deno task ci`           | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
-| `deno task fixture`      | Serves the browser fixture app, printing both origins                  | W1.8      |
-| `deno task shots`        | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
-| `deno task tokens`       | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
-| `deno task tokens:check` | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
-| `deno task lint:design`  | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
+| Task                      | What it does                                                           | Landed in |
+| ------------------------- | ---------------------------------------------------------------------- | --------- |
+| `deno task fmt`           | Formats the tree                                                       | W1.2      |
+| `deno task fmt:check`     | Fails on any unformatted file                                          | W1.2      |
+| `deno task lint`          | `recommended` rules plus `no-slow-types`                               | W1.2      |
+| `deno task check`         | Type-checks the project                                                | W1.2      |
+| `deno task test`          | Deno unit tests                                                        | W1.2      |
+| `deno task ci`            | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
+| `deno task fixture`       | Serves the browser fixture app, printing both origins                  | W1.8      |
+| `deno task shots`         | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
+| `deno task tokens`        | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
+| `deno task tokens:check`  | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
+| `deno task lint:design`   | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
+| `deno task build`         | esbuild dev build → `dist/chrome/`, `dist/firefox/`                    | W2.3      |
+| `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
+| `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
@@ -203,19 +206,20 @@ edge cases (boundaries, empty collections, concurrency).
 **Exact versions everywhere.** No `latest`, no `stable`, no floating tags, no `^`, no `~`. GitHub
 Actions pin to the official action's semver major, which is this project's one deliberate exception.
 
-| Tool               | Version  | Pinned in                                             |
-| ------------------ | -------- | ----------------------------------------------------- |
-| deno               | `2.9.4`  | `mise.toml`                                           |
-| node               | `26.5.0` | `mise.toml` (Playwright browser install, font subset) |
-| lefthook           | `2.1.10` | `mise.toml`                                           |
-| playwright         | `1.62.0` | `deno.json` imports                                   |
-| `@std/assert`      | `1.0.14` | `deno.json` imports                                   |
-| `@std/path`        | `1.1.6`  | `deno.json` imports                                   |
-| esbuild            | `0.28.1` | resolved, not yet imported — lands in W2.3            |
-| web-ext            | `10.5.0` | resolved, not yet imported — lands in W4.3            |
-| `actions/checkout` | `v7`     | CI workflows                                          |
-| `jdx/mise-action`  | `v4`     | CI workflows                                          |
-| runner image       | `24.04`  | CI workflows (`runs-on: ubuntu-24.04`)                |
+| Tool               | Version   | Pinned in                                                                                      |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------- |
+| deno               | `2.9.4`   | `mise.toml`                                                                                    |
+| node               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                                          |
+| lefthook           | `2.1.10`  | `mise.toml`                                                                                    |
+| playwright         | `1.62.0`  | `deno.json` imports                                                                            |
+| `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
+| `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
+| preact             | `10.29.7` | `deno.json` imports                                                                            |
+| esbuild            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
+| web-ext            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
+| `actions/checkout` | `v7`      | CI workflows                                                                                   |
+| `jdx/mise-action`  | `v4`      | CI workflows                                                                                   |
+| runner image       | `24.04`   | CI workflows (`runs-on: ubuntu-24.04`)                                                         |
 
 A resolved-but-unimported version is recorded here so the number is decided once, and is written
 into `deno.json` by the item that first needs it. Claiming a pin already lives somewhere it does not
