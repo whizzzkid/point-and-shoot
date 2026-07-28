@@ -14,5 +14,9 @@ that only covers the happy path leaves the interesting half of the contract unde
 cited here comes from the settled-numbers table in [`../plans/README.md`](../plans/README.md) rather
 than being chosen locally, so two specs cannot disagree about the same limit.
 
-This folder is empty until wave 2, which is where the first contracts — the note schema and the
-export bundle format — are settled and written down.
+## Published contracts
+
+- [Export bundle](export-bundle.md) — note selection, privacy projection, canonical JSON, Markdown,
+  ZIP layout, size enforcement, and delivery failures.
+- [Export-format spike](export-format-spike.md) — the measured agent trial that settled the v1
+  bundle shape and `2 MB` default limit.

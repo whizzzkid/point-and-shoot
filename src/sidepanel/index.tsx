@@ -16,6 +16,12 @@ const root = document.getElementById("app");
 if (root === null) throw new Error("sidepanel/index.html is missing #app");
 render(
   <NotesPanel
+    exportDelivery={{
+      clipboard: navigator.clipboard,
+      createObjectURL: (blob) => URL.createObjectURL(blob),
+      downloads: browser.downloads,
+      revokeObjectURL: (url) => URL.revokeObjectURL(url),
+    }}
     iconSpriteUrl="/src/shared/design/icons.svg"
     repository={createNotesRepository(browser.storage.local)}
   />,

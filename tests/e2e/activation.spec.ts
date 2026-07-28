@@ -22,12 +22,33 @@ interface ReadActionStateOptions {
   readonly waitForBadge?: boolean;
 }
 
+function readStoredZipEntries(archive: Uint8Array): Map<string, Uint8Array> {
+  const view = new DataView(archive.buffer, archive.byteOffset, archive.byteLength);
+  const entries = new Map<string, Uint8Array>();
+  const decoder = new TextDecoder();
+  let offset = 0;
+
+  while (view.getUint32(offset, true) === 0x04034b50) {
+    const compressedSize = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const name = decoder.decode(archive.subarray(nameStart, nameStart + nameLength));
+    entries.set(name, archive.slice(dataStart, dataStart + compressedSize));
+    offset = dataStart + compressedSize;
+  }
+
+  return entries;
+}
+
 async function launchExtension(): Promise<{
   readonly context: Awaited<ReturnType<typeof chromium.launchPersistentContext>>;
   readonly extensionId: string;
   readonly serviceWorker: Worker;
 }> {
   const context = await chromium.launchPersistentContext("", {
+    acceptDownloads: true,
     channel: "chromium",
     args: [
       `--disable-extensions-except=${EXTENSION_DIR}`,
@@ -335,6 +356,32 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     const reopenedPanel = await context.newPage();
     await reopenedPanel.goto(panelUrl);
     await reopenedPanel.getByText("Captured from the real overlay.").waitFor();
+    await reopenedPanel.getByRole("button", { name: "Compile plan" }).click();
+    await reopenedPanel.getByRole("heading", { name: "Compile plan" }).waitFor();
+    const markdownPreview = await reopenedPanel.locator("[data-markdown-preview]").textContent();
+    assertStringIncludes(markdownPreview ?? "", "Captured from the real overlay.");
+    assertEquals(markdownPreview?.includes("access_token"), false);
+
+    const downloadStarted = reopenedPanel.waitForEvent("download");
+    await reopenedPanel.getByRole("button", { name: "Download for agent" }).click();
+    const download = await downloadStarted;
+    const downloadPath = await download.path();
+    if (downloadPath === null) {
+      throw new Error("agent bundle download did not produce a local file");
+    }
+    const entries = readStoredZipEntries(await Deno.readFile(downloadPath));
+    assertEquals([...entries.keys()], [
+      "session.json",
+      "plan.md",
+      "shots/note-01.webp",
+    ]);
+    const decoder = new TextDecoder();
+    const exportedJson = decoder.decode(entries.get("session.json"));
+    const exportedMarkdown = decoder.decode(entries.get("plan.md"));
+    assertEquals(exportedJson.includes("e2e-secret"), false);
+    assertEquals(exportedMarkdown.includes("e2e-secret"), false);
+    assertStringIncludes(exportedMarkdown, "./shots/note-01.webp");
+    assertEquals((entries.get("shots/note-01.webp")?.byteLength ?? 0) > 0, true);
     assertEquals(runtimeErrors, [], "capture or notes-panel runtime logged an error");
   } finally {
     await fixture.close();

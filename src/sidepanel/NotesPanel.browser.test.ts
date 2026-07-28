@@ -143,6 +143,10 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
       await page.locator("[data-export-budget]").getAttribute("data-over-budget"),
       "true",
     );
+    await page.getByRole("button", { name: "Compile plan" }).click();
+    await page.getByRole("heading", { name: "Compile plan" }).waitFor();
+    await page.getByRole("button", { name: "Back to notes" }).click();
+    await page.getByRole("heading", { name: "Checkout review" }).waitFor();
 
     const darkBackground = await page.evaluate(() =>
       getComputedStyle(document.body).backgroundColor

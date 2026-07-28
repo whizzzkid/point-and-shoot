@@ -23,10 +23,14 @@ import {
   setNoteStripQuery,
   updateNoteText,
 } from "./model.ts";
+import { copySessionPrompt, downloadSessionArchive } from "./plan/delivery.ts";
+import type { ExportDeliveryDependencies } from "./plan/delivery.ts";
+import { PlanView } from "./plan/PlanView.tsx";
 import type { NotesRepository } from "./repository.ts";
 
 /** Props accepted by {@link NotesPanel}. */
 export interface NotesPanelProps {
+  readonly exportDelivery: ExportDeliveryDependencies;
   readonly iconSpriteUrl: string;
   readonly repository: NotesRepository;
   readonly sizeBudgetBytes?: number;
@@ -151,6 +155,7 @@ function NoteCard(
  */
 export function NotesPanel(
   {
+    exportDelivery,
     iconSpriteUrl,
     repository,
     sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
@@ -163,6 +168,7 @@ export function NotesPanel(
   const [deleting, setDeleting] = useState<Note>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [view, setView] = useState<"notes" | "plan">("notes");
 
   useEffect(() => {
     let active = true;
@@ -222,6 +228,26 @@ export function NotesPanel(
   const noteCount = session?.notes.length ?? 0;
   const projectedBytes = session === null ? 0 : projectedSessionSize(session);
   const isOverBudget = projectedBytes > sizeBudgetBytes;
+
+  if (session !== null && view === "plan") {
+    return (
+      <IconSpriteProvider url={iconSpriteUrl}>
+        <PlanView
+          actions={{
+            copy: (includedNoteIds) =>
+              copySessionPrompt(session, { includedNoteIds }, exportDelivery),
+            download: (includedNoteIds) =>
+              downloadSessionArchive(session, { includedNoteIds }, exportDelivery).then(
+                () => undefined,
+              ),
+          }}
+          onBack={() => setView("notes")}
+          session={session}
+          sizeBudgetBytes={sizeBudgetBytes}
+        />
+      </IconSpriteProvider>
+    );
+  }
 
   return (
     <IconSpriteProvider url={iconSpriteUrl}>
@@ -289,6 +315,13 @@ export function NotesPanel(
                       {activeGroup?.pageUrl}
                     </p>
                   </div>
+                  <Button
+                    disabled={busy}
+                    icon={<Icon name="list-checks" />}
+                    onClick={() => setView("plan")}
+                  >
+                    Compile plan
+                  </Button>
                 </header>
                 <div className="ps-note-list">
                   {activeGroup?.notes.map((note, index) => (

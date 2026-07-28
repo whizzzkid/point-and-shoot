@@ -66,6 +66,12 @@ function renderPanel(
   document.documentElement.dataset.theme = theme;
   render(
     <NotesPanel
+      exportDelivery={{
+        clipboard: { writeText: () => Promise.resolve() },
+        createObjectURL: () => "blob:notes-panel-harness",
+        downloads: { download: () => Promise.resolve(1) },
+        revokeObjectURL: () => undefined,
+      }}
       iconSpriteUrl=""
       repository={selectedRepository}
       {...(sizeBudgetBytes === undefined ? {} : { sizeBudgetBytes })}

@@ -152,7 +152,10 @@ textarea {
 }
 
 .ps-notes-header {
+  align-items: center;
   border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
   padding: var(--space-5) var(--space-6);
 }
 
@@ -246,4 +249,203 @@ textarea {
   flex-direction: column;
   font-size: var(--text-xs);
   gap: var(--space-2);
+}
+
+.ps-plan-view {
+  background: var(--bg-canvas);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.ps-plan-header,
+.ps-plan-preview__header,
+.ps-plan-selection__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ps-plan-header {
+  border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
+  padding: var(--space-5) var(--space-6);
+}
+
+.ps-plan-header h1,
+.ps-plan-selection h2,
+.ps-plan-preview h2,
+.ps-plan-disclosure h2 {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-0);
+}
+
+.ps-plan-header h1 {
+  font-size: var(--text-xl);
+}
+
+.ps-plan-header p:last-child {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: var(--space-1) var(--space-0) var(--space-0);
+}
+
+.ps-plan-layout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(calc(var(--space-24) * 3), 0.8fr) minmax(0, 1.2fr);
+  min-height: 0;
+}
+
+.ps-plan-selection,
+.ps-plan-preview {
+  min-inline-size: 0;
+  padding: var(--space-5) var(--space-6);
+}
+
+.ps-plan-selection {
+  border-inline-end: calc(var(--space-1) / 4) solid var(--border-subtle);
+}
+
+.ps-plan-selection h2,
+.ps-plan-preview h2,
+.ps-plan-disclosure h2 {
+  font-size: var(--text-base);
+}
+
+.ps-plan-selection__bulk {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+  margin-block: var(--space-3);
+}
+
+.ps-plan-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ps-plan-note {
+  align-items: start;
+  background: var(--bg-surface);
+  border: calc(var(--space-1) / 4) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--space-3);
+}
+
+.ps-plan-note > div {
+  min-inline-size: 0;
+}
+
+.ps-plan-note .ps-checkbox > input:checked + .ps-checkbox__box {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.ps-plan-note .ps-checkbox > input:checked + .ps-checkbox__box .ps-checkbox__check {
+  border-color: var(--bg-canvas);
+}
+
+.ps-plan-note p {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin: var(--space-2) var(--space-0);
+}
+
+.ps-plan-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-plan-preview__header {
+  margin-block-end: var(--space-3);
+}
+
+.ps-plan-preview pre {
+  background: var(--bg-surface);
+  border: calc(var(--space-1) / 4) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  margin: var(--space-0);
+  max-block-size: calc(var(--space-24) * 7);
+  overflow: auto;
+  padding: var(--space-4);
+  white-space: pre-wrap;
+}
+
+.ps-plan-footer {
+  align-items: end;
+  background: var(--bg-surface);
+  border-block-start: calc(var(--space-1) / 4) solid var(--border-subtle);
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr) minmax(calc(var(--space-24) * 3), auto);
+  padding: var(--space-4) var(--space-6);
+}
+
+.ps-plan-disclosure {
+  align-items: start;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.ps-plan-disclosure > .ps-icon {
+  color: var(--warning);
+  margin-block-start: var(--space-1);
+}
+
+.ps-plan-disclosure p {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin: var(--space-1) var(--space-0) var(--space-0);
+  max-inline-size: calc(var(--space-24) * 7);
+}
+
+.ps-plan-actions {
+  min-inline-size: calc(var(--space-24) * 3);
+}
+
+.ps-plan-actions__buttons {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-block-start: var(--space-3);
+}
+
+.ps-plan-status {
+  color: var(--success);
+  font-size: var(--text-xs);
+  margin: var(--space-2) var(--space-0) var(--space-0);
+  text-align: end;
+}
+
+.ps-plan-actions > .ps-panel-error {
+  font-size: var(--text-xs);
+  margin: var(--space-2) var(--space-0) var(--space-0);
+}
+
+@media (max-width: 760px) {
+  .ps-plan-layout,
+  .ps-plan-footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ps-plan-selection {
+    border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
+    border-inline-end: none;
+  }
+
+  .ps-plan-actions {
+    min-inline-size: 0;
+  }
 }
