@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture: Firefox boot check</title>
+  </head>
+  <body>
+    <h1>Fixture: Firefox boot check</h1>
+    <p>
+      Loaded only by <code>scripts/boot-firefox.ts</code> (W2.12). Logs plain-text markers that the
+      boot check greps out of Firefox's own stdout (via <code>devtools.console.stdout.content</code>),
+      since Playwright cannot drive an extension-loaded Firefox instance directly.
+    </p>
+    <script>
+    // Must match the UUID pinned via `extensions.webextensions.uuids` in scripts/boot-firefox.ts —
+    // that pref is what makes this extension's moz-extension:// origin predictable across runs.
+    const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
+    const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
+
+    // web-ext's --start-url opens this page before the temporary add-on finishes installing over
+    // RDP, and content scripts never retroactively inject into a tab that already finished loading
+    // — so the first load(s) here race the install and never get the ready signal. Reload on a
+    // short interval until the install lands and a fresh navigation picks up the content script.
+    const RELOAD_COUNT_KEY = "pns-firefox-boot-reload-count";
+    const MAX_RELOADS = 10;
+    const RELOAD_INTERVAL_MS = 1000;
+
+    const isContentReady = () => document.documentElement.dataset.pointAndShootContentReady === "true";
+
+    console.log(
+      `firefox-boot: script-loaded reload-count=${sessionStorage.getItem(RELOAD_COUNT_KEY) ?? "0"}`,
+    );
+
+    if (!isContentReady()) {
+      const reloadCount = Number(sessionStorage.getItem(RELOAD_COUNT_KEY) ?? "0");
+      if (reloadCount < MAX_RELOADS) {
+        setTimeout(() => {
+          if (!isContentReady()) {
+            sessionStorage.setItem(RELOAD_COUNT_KEY, String(reloadCount + 1));
+            location.reload();
+          }
+        }, RELOAD_INTERVAL_MS);
+      }
+    }
+
+    const waitForContentScript = () =>
+      new Promise((resolve) => {
+        const poll = () => {
+          if (isContentReady()) {
+            resolve(true);
+          } else {
+            setTimeout(poll, 50);
+          }
+        };
+        poll();
+      });
+
+    waitForContentScript().then(async () => {
+      console.log("firefox-boot: content-ready=true");
+      try {
+        const response = await fetch(`moz-extension://${EXTENSION_UUID}/${FONT_RESOURCE}`);
+        console.log(`firefox-boot: woff2-status=${response.status}`);
+      } catch (error) {
+        console.log(`firefox-boot: woff2-status=error:${error}`);
+      }
+    });
+    </script>
+  </body>
+</html>

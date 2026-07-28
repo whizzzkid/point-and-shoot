@@ -10,7 +10,7 @@
   // and the authoritative gate fails on files that exist to fail.
   "exclude": [".claude-design/", ".review-playground/"],
   "lint": {
-    "include": ["src/", "tests/", "build/"],
+    "include": ["src/", "tests/", "build/", "scripts/"],
     "rules": {
       "tags": ["recommended"],
       "include": ["no-slow-types"]
@@ -60,6 +60,7 @@
     "build:release": "deno run -A build/build.ts --release",
     "lint:firefox": "deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox",
     "e2e:smoke": "deno test -A tests/e2e/load.spec.ts",
+    "boot:firefox": "deno run -A scripts/boot-firefox.ts",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }
 }

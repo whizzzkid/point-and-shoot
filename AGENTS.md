@@ -57,6 +57,7 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task build`         | esbuild dev build → `dist/chrome/`, `dist/firefox/`                    | W2.3      |
 | `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
 | `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
+| `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
