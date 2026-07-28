@@ -27,6 +27,7 @@ export type UnreachableReason =
   | "closed-shadow-root"
   | "cross-origin-iframe"
   | "detached"
+  | "foreign-document"
   | "not-an-element";
 
 /** A bundle whose `cssPath`/`xpath` are verified to round-trip back to the element. */
@@ -84,16 +85,34 @@ export type SelectorBundle = ReachableSelectorBundle | UnreachableSelectorBundle
  *
  * @param el - The element to build a selector bundle for.
  * @returns A bundle with a verified path back to `el`, or an {@link UnreachableSelectorBundle} when
- *   no path can be trusted — closed shadow root interior, cross-origin iframe interior, a detached
- *   element, or a non-element node passed in by mistake.
+ *   no path can be trusted — closed shadow root interior, cross-origin iframe interior, an element
+ *   belonging to another realm's document, a detached element, or a non-element node passed in by
+ *   mistake.
  * @example buildSelectorBundle(document.querySelector("button")!) // => { reachable: true, ... }
  */
 export function buildSelectorBundle(el: Element): SelectorBundle {
-  /** `Node.nodeType` for an element node — inlined since this runs before DOM globals are assumed. */
+  /** `Node.nodeType` values — inlined since this runs before DOM globals are assumed. */
   const ELEMENT_NODE = 1;
+  const DOCUMENT_NODE = 9;
+  const DOCUMENT_FRAGMENT_NODE = 11;
 
   function isElement(node: Node): node is Element {
     return node.nodeType === ELEMENT_NODE;
+  }
+
+  /**
+   * `instanceof` is realm-scoped: an element inside a same-origin iframe has its root node built
+   * from that frame's constructors, so `root instanceof Document` is false there even though the
+   * root *is* a document. Duck-typing is the only realm-independent test, and every caller here runs
+   * against nodes that may live in a nested frame.
+   */
+  function isDocumentNode(root: Node): root is Document {
+    return root.nodeType === DOCUMENT_NODE;
+  }
+
+  /** Realm-independent `ShadowRoot` test — see {@link isDocumentNode}. */
+  function isShadowRoot(root: Node): root is ShadowRoot {
+    return root.nodeType === DOCUMENT_FRAGMENT_NODE && "host" in root && "mode" in root;
   }
 
   /** Walks up shadow-boundary crossings from `node`, true if any crossed root is closed. */
@@ -101,7 +120,7 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
     let current: Node = node;
     while (true) {
       const root = current.getRootNode();
-      if (root instanceof ShadowRoot) {
+      if (isShadowRoot(root)) {
         if (root.mode === "closed") return true;
         current = root.host;
         continue;
@@ -200,8 +219,8 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
    * an exact CSS `:nth-of-type` equivalent, and resolution goes through that equivalent instead.
    */
   function xpathSegmentToCss(segment: string): string {
-    const withoutLeadingSlash = segment.startsWith("/") ? segment.slice(1) : segment;
-    return withoutLeadingSlash
+    const withoutAxis = segment.replace(/^\.?\/\/?/, "");
+    return withoutAxis
       .split("/")
       .map((part) => part.replace(/\[(\d+)\]$/, ":nth-of-type($1)"))
       .join(" > ");
@@ -243,7 +262,7 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
 
   /** Shortest XPath, scoped to `root`, that resolves to exactly `target` within it. */
   function uniqueXPathWithin(target: Element, root: Document | ShadowRoot): string {
-    const isAbsolute = root instanceof Document;
+    const isAbsolute = isDocumentNode(root);
 
     function isUniqueMatch(expression: string): boolean {
       const matches = root.querySelectorAll(xpathSegmentToCss(expression));
@@ -266,7 +285,13 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
       }
       segments.unshift(segment);
 
-      const candidate = isAbsolute ? `/${segments.join("/")}` : segments.join("/");
+      // A suffix that stopped short of the root is only a valid path when anchored with `//`
+      // ("anywhere"), which is exactly what its CSS translation's descendant scoping means. A bare
+      // `/` prefix would claim the first segment is a child of the document node — true only of
+      // `<html>` — so `/button` resolves to nothing. `.//` is the ShadowRoot equivalent: relative to
+      // the context node, since a shadow root is not a document root.
+      const path = segments.join("/");
+      const candidate = isAbsolute ? (parent === null ? `/${path}` : `//${path}`) : `.//${path}`;
       if (isUniqueMatch(candidate)) return candidate;
       if (parent === null) return candidate;
       current = parent;
@@ -282,13 +307,15 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
     let currentEl = target;
     while (true) {
       const root = currentEl.getRootNode();
-      if (root instanceof Document) {
+      if (isDocumentNode(root)) {
         segments.unshift(uniqueWithin(currentEl, root));
         return segments;
       }
-      const shadowRoot = root as ShadowRoot;
-      segments.unshift(uniqueWithin(currentEl, shadowRoot));
-      currentEl = shadowRoot.host;
+      if (!isShadowRoot(root)) {
+        throw new Error(`selector bundle: unexpected root node type ${root.nodeType}`);
+      }
+      segments.unshift(uniqueWithin(currentEl, root));
+      currentEl = root.host;
     }
   }
 
@@ -313,6 +340,22 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
     return {
       reachable: false,
       unreachable: "detached",
+      testIds,
+      ...ariaRoleNameField,
+      tagClasses,
+      textSnippet,
+    };
+  }
+
+  // Every path this function emits is scoped to *this* realm's `document`, and the resolvers start
+  // there too. An element handed in from a same-origin iframe's interior belongs to another document,
+  // so no path from here can reach it — the content script injected into that frame is what captures
+  // it, and there the frame's document *is* `document`. Without this guard the realm mismatch shows
+  // up much later, as a round-trip failure on a path that looked fine.
+  if (el.ownerDocument !== document) {
+    return {
+      reachable: false,
+      unreachable: "foreign-document",
       testIds,
       ...ariaRoleNameField,
       tagClasses,
@@ -359,7 +402,9 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
     let root: Document | ShadowRoot = document;
     let match: Element | null = null;
     for (const segment of segments) {
-      match = root.querySelector(segment);
+      const hits: NodeListOf<Element> = root.querySelectorAll(segment);
+      if (hits.length !== 1) return null;
+      match = hits[0] ?? null;
       if (match === null) return null;
       if (match.shadowRoot !== null) root = match.shadowRoot;
     }
@@ -371,7 +416,9 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
     let root: Document | ShadowRoot = document;
     let match: Element | null = null;
     for (const segment of segments) {
-      match = root.querySelector(xpathSegmentToCss(segment));
+      const hits: NodeListOf<Element> = root.querySelectorAll(xpathSegmentToCss(segment));
+      if (hits.length !== 1) return null;
+      match = hits[0] ?? null;
       if (match === null) return null;
       if (match.shadowRoot !== null) root = match.shadowRoot;
     }
@@ -386,6 +433,23 @@ export function buildSelectorBundle(el: Element): SelectorBundle {
   }
   if (roundTripXPath(xpath) !== el) {
     throw new Error(`selector bundle: xpath ${JSON.stringify(xpath)} did not round-trip`);
+  }
+  // `roundTripXPath` checks the CSS *translation*, which is a different language from the string we
+  // ship — it cannot catch a path that is unresolvable as XPath. Native evaluation is the only check
+  // that can, and it is limited to the no-shadow case because `document.evaluate` rejects a
+  // `ShadowRoot` context node outright.
+  const soleSegment = xpath.length === 1 ? xpath[0] : undefined;
+  if (soleSegment !== undefined) {
+    const native = document.evaluate(
+      soleSegment,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null,
+    );
+    if (native.singleNodeValue !== el) {
+      throw new Error(`selector bundle: xpath ${JSON.stringify(xpath)} did not resolve natively`);
+    }
   }
 
   return {
@@ -412,7 +476,12 @@ export function resolveCssPath(segments: readonly string[]): Element | null {
   let root: Document | ShadowRoot = document;
   let match: Element | null = null;
   for (const segment of segments) {
-    match = root.querySelector(segment);
+    // `querySelectorAll` + a length check, not `querySelector`: a segment that now matches several
+    // elements has stopped identifying the recorded one, and silently returning the first is how an
+    // agent gets pointed at the wrong element. Ambiguity is a resolution failure.
+    const hits: NodeListOf<Element> = root.querySelectorAll(segment);
+    if (hits.length !== 1) return null;
+    match = hits[0] ?? null;
     if (match === null) return null;
     if (match.shadowRoot !== null) root = match.shadowRoot;
   }
@@ -435,8 +504,8 @@ export function resolveCssPath(segments: readonly string[]): Element | null {
  */
 export function resolveXPath(segments: readonly string[]): Element | null {
   function xpathSegmentToCss(segment: string): string {
-    const withoutLeadingSlash = segment.startsWith("/") ? segment.slice(1) : segment;
-    return withoutLeadingSlash
+    const withoutAxis = segment.replace(/^\.?\/\/?/, "");
+    return withoutAxis
       .split("/")
       .map((part) => part.replace(/\[(\d+)\]$/, ":nth-of-type($1)"))
       .join(" > ");
@@ -445,7 +514,10 @@ export function resolveXPath(segments: readonly string[]): Element | null {
   let root: Document | ShadowRoot = document;
   let match: Element | null = null;
   for (const segment of segments) {
-    match = root.querySelector(xpathSegmentToCss(segment));
+    // Ambiguity is a resolution failure — see {@link resolveCssPath}.
+    const hits: NodeListOf<Element> = root.querySelectorAll(xpathSegmentToCss(segment));
+    if (hits.length !== 1) return null;
+    match = hits[0] ?? null;
     if (match === null) return null;
     if (match.shadowRoot !== null) root = match.shadowRoot;
   }

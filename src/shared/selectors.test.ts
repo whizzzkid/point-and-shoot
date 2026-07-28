@@ -36,6 +36,14 @@ function buildBundleFor(handle: ElementHandle): Promise<SelectorBundle> {
  * Confirms `bundle.cssPath` and `bundle.xpath` both resolve back to the exact element `handle`
  * wraps, using the exported resolve helpers rather than trusting {@link buildSelectorBundle}'s own
  * internal check — this is the test suite's own round-trip assertion, run for every fixture case.
+ *
+ * `native` additionally evaluates the emitted xpath *as XPath*, via `document.evaluate`, whenever the
+ * path crosses no shadow boundary. The resolve helpers deliberately go through each segment's CSS
+ * translation (`document.evaluate` rejects a `ShadowRoot` context node), so on their own they cannot
+ * tell a working xpath from one that is unresolvable in the language it is written in — a `/button`
+ * that means "button as a child of the document node" translates to a CSS selector that matches
+ * fine and an xpath that matches nothing. `null` for a shadow-crossing path, which has no native
+ * equivalent to check.
  */
 async function assertRoundTrips(
   handle: ElementHandle,
@@ -47,7 +55,16 @@ async function assertRoundTrips(
       const resolveCss = new Function(`return (${cssSrc})`)() as (p: readonly string[]) => any;
       // deno-lint-ignore no-explicit-any
       const resolveXpath = new Function(`return (${xpathSrc})`)() as (p: readonly string[]) => any;
-      return { css: resolveCss(cssPath) === el, xpath: resolveXpath(xpath) === el };
+      const soleSegment = xpath.length === 1 ? xpath[0] : undefined;
+      const doc = el.ownerDocument;
+      const native = soleSegment === undefined || doc === null ? null : doc.evaluate(
+        soleSegment,
+        doc,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null,
+      ).singleNodeValue === el;
+      return { css: resolveCss(cssPath) === el, xpath: resolveXpath(xpath) === el, native };
     },
     {
       cssPath: bundle.cssPath,
@@ -56,7 +73,8 @@ async function assertRoundTrips(
       xpathSrc: resolveXPath.toString(),
     },
   );
-  assertEquals(matches, { css: true, xpath: true });
+  const expectNative = bundle.xpath.length === 1 ? true : null;
+  assertEquals(matches, { css: true, xpath: true, native: expectNative });
 }
 
 function assertReachable(bundle: SelectorBundle): asserts bundle is ReachableSelectorBundle {
@@ -221,6 +239,47 @@ Deno.test("selector bundle engine", async (t) => {
           assertReachable(bundle);
           assertEquals(bundle.testIds, [{ attribute: "data-testid", value: "same-origin-frame" }]);
           await assertRoundTrips(handle, bundle);
+        },
+      );
+
+      await t.step(
+        "same-origin iframe interior — element in a nested realm still round-trips",
+        async () => {
+          // The interior element's root node is built from the frame's own constructors, so a
+          // realm-scoped `root instanceof Document` reports false for a node that *is* in a
+          // document. Everything downstream of that test then takes the shadow-root branch. This
+          // asserts the path from inside the frame, which the parent-side iframe case above cannot
+          // reach.
+          const frame = page.frames().find((f) => f.url().endsWith("/frame-content.html"));
+          assert(frame !== undefined, "expected the same-origin frame to be attached");
+          const handle = await frame.waitForSelector('[data-testid="frame-button"]');
+          const bundle = await buildBundleFor(handle);
+          assertReachable(bundle);
+          assertEquals(bundle.testIds, [{ attribute: "data-testid", value: "frame-button" }]);
+          await assertRoundTrips(handle, bundle);
+        },
+      );
+
+      await t.step(
+        "frame interior reached from the parent realm — foreign-document, not a crash",
+        async () => {
+          // Same element as the step above, but the bundle is built in the *parent's* realm, so the
+          // element's root document comes from another realm's constructors. `root instanceof
+          // Document` is false there for a node that is in a document, which sends the walk down the
+          // shadow-root branch and dereferences an undefined `host`. No path from this realm can
+          // reach the element, so the honest answer is `unreachable`.
+          const handle = await page.evaluateHandle(() => {
+            const frame = document.querySelector<HTMLIFrameElement>(
+              '[data-testid="same-origin-frame"]',
+            );
+            return frame?.contentDocument?.querySelector('[data-testid="frame-button"]') ?? null;
+          });
+          const element = handle.asElement();
+          assert(element !== null, "expected to reach the frame's button from the parent realm");
+          const bundle = await buildBundleFor(element);
+          assertEquals(bundle.reachable, false);
+          assertEquals((bundle as { unreachable: string }).unreachable, "foreign-document");
+          assertEquals(bundle.testIds, [{ attribute: "data-testid", value: "frame-button" }]);
         },
       );
 
