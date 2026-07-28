@@ -41,6 +41,13 @@ const KNOWN_NOISE = [
   /Policies: ?Invalid ExtensionSettings/,
   /unknown featureId/,
   /Crash Reports/,
+  // Both of these appear only on GitHub's runner, which is why they surfaced on this job's first CI
+  // run rather than locally. Neither involves the extension: web-ext passes `-foreground`, which that
+  // Firefox build does not recognise, and Firefox's own favicon loader cannot sniff a MIME type for
+  // the fixture page's icon. This check exists to catch *our* errors, so filtering the browser's is
+  // the point, not a weakening of it.
+  /unrecognized command line flag/,
+  /FaviconLoader\.sys\.mjs/,
 ];
 
 interface BootResult {
