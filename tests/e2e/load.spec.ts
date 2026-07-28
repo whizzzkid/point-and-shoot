@@ -25,6 +25,11 @@ import { startFixtureServer } from "../fixtures/app/server.ts";
 
 const EXTENSION_DIR = fromFileUrl(new URL("../../dist/chrome/", import.meta.url));
 
+/** Written only on failure — CI uploads this directory so a red run ships a replayable trace. */
+const TRACE_PATH = fromFileUrl(
+  new URL("../../playwright-report/e2e-smoke-trace.zip", import.meta.url),
+);
+
 /** One vendored font, arbitrarily chosen — proves `web_accessible_resources` covers the font set. */
 const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
 const ICON_SPRITE_RESOURCE = "src/shared/design/icons.svg";
@@ -46,6 +51,7 @@ Deno.test("built chrome extension - boots and executes without error", async () 
       `--load-extension=${EXTENSION_DIR}`,
     ],
   });
+  await context.tracing.start({ screenshots: true, snapshots: true });
   const fixture = startFixtureServer();
 
   try {
@@ -78,6 +84,13 @@ Deno.test("built chrome extension - boots and executes without error", async () 
       }, `chrome-extension://${extensionId}/${resource}`);
       assertEquals(status, 200, `expected ${resource} to resolve through web_accessible_resources`);
     }
+    await context.tracing.stop();
+  } catch (error) {
+    await Deno.mkdir(fromFileUrl(new URL("../../playwright-report/", import.meta.url)), {
+      recursive: true,
+    });
+    await context.tracing.stop({ path: TRACE_PATH });
+    throw error;
   } finally {
     await fixture.close();
     await context.close();

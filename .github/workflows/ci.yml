@@ -37,3 +37,86 @@ jobs:
 
       - name: deno task ci
         run: deno task ci
+
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - name: deno task build
+        run: deno task build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  tokens-drift:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - name: deno task tokens:check
+        run: deno task tokens:check
+
+  e2e-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      # Keyed on the pinned Playwright version in deno.json's imports, not a floating tag —
+      # bumping that pin invalidates the cache instead of silently running a stale browser.
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-1.62.0
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+
+      - name: deno task build
+        run: deno task build
+
+      - name: deno task e2e:smoke
+        run: deno task e2e:smoke
+
+      - name: Upload Playwright trace
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-smoke-trace
+          path: playwright-report/
+
+  lint-firefox:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - name: deno task build
+        run: deno task build
+      - name: deno task lint:firefox
+        run: deno task lint:firefox
+
+  boot-firefox:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      # web-ext auto-detects an installed Firefox with no pin, which drifts silently across
+      # runner-image updates. Install and pin explicitly so this job is reproducible like every
+      # other toolchain piece here.
+      - uses: browser-actions/setup-firefox@v1
+        id: setup-firefox
+        with:
+          firefox-version: "153.0"
+
+      - name: deno task build
+        run: deno task build
+
+      - name: deno task boot:firefox
+        run: deno task boot:firefox
+        env:
+          PNS_FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}
