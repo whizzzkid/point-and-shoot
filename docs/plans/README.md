@@ -373,20 +373,21 @@ disagreement discovered only at export time. **Read the number from this table; 
 inside the item.** W2.11 is not in that list: it _produces_ the fifth number rather than consuming
 any of them.
 
-| Budget                              | Value                                            | Enforced in | Consumed by                                              |
-| ----------------------------------- | ------------------------------------------------ | ----------- | -------------------------------------------------------- |
-| Style-digest properties per element | `40`                                             | W2.7        | W3.4, W3.6                                               |
-| Sibling count per element           | `6` (3 either side, DOM order)                   | W2.7        | W3.4                                                     |
-| Subtree depth per element           | `3`                                              | W2.7        | W3.4                                                     |
-| Elements collected per drag box     | `25`                                             | W3.4        | W3.6, W3.7                                               |
-| Default export size budget          | `2 MB` — **provisional until W2.11 measures it** | W3.7        | W3.6 (warning threshold), W3.9 (user-adjustable default) |
+| Budget                              | Value                                                                 | Enforced in | Consumed by                                              |
+| ----------------------------------- | --------------------------------------------------------------------- | ----------- | -------------------------------------------------------- |
+| Style-digest properties per element | `40`                                                                  | W2.7        | W3.4, W3.6                                               |
+| Sibling count per element           | `6` (3 either side, DOM order)                                        | W2.7        | W3.4                                                     |
+| Subtree depth per element           | `3`                                                                   | W2.7        | W3.4                                                     |
+| Elements collected per drag box     | `25`                                                                  | W3.4        | W3.6, W3.7                                               |
+| Default export size budget          | `2 MB` — measured, see [W2.11 spike](../specs/export-format-spike.md) | W3.7        | W3.6 (warning threshold), W3.9 (user-adjustable default) |
 
 The first four are **deliberate design caps**, set to keep a single note legible to an agent rather
 than to be generous: a digest listing every computed property is noise, and a drag over `<body>`
-must not collect two thousand elements. They are settled — no item re-derives them. The fifth is the
-only guess, and W2.11 exists to replace _that one row_ with a measured number — the point at which a
-real agent's output degrades. When W2.11 lands, update that row and the items that read it in the
-same commit.
+must not collect two thousand elements. They are settled — no item re-derives them. The fifth was
+the only guess; [W2.11's spike](../specs/export-format-spike.md) fed real bundles at five sizes (13
+KB to ~9.93 MB) to real agents and found zero degradation through ~2.13 MB, with the first failure
+mode (the markdown projection silently losing note text to tool-side compression, not a schema
+defect) appearing at ~4.26 MB — confirming `2 MB` rather than revising it.
 
 Changing any value here is a plan change, so [rule 7](#rules-for-working-any-wave) substep 5
 applies: this table, the wave items that cite it, and the tests that assert it move together.
