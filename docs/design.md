@@ -95,6 +95,11 @@ the builds silently diverge.
 
 ## Applying the system
 
+The production Preact components live in `src/ui/components/`. Run `deno task gallery` to serve the
+same components in a local review gallery with both forced themes, representative content, the
+required interaction states, and a behavior harness. The server chooses an available loopback port
+and prints its URL; it does not write a build artifact or make external requests.
+
 - **Sentence case everywhere** — buttons, headings, labels. No title case. No ALL CAPS except tiny
   eyebrow labels at `--text-2xs` with `--tracking-wider`.
 - **No emoji in product UI, ever.** Status is carried by color and icon.

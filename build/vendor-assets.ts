@@ -117,13 +117,20 @@ const ICON_BODIES: Record<(typeof ICON_NAMES)[number], string> = {
     '<path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />',
 };
 
-/** Assembles the vendored Lucide icons into one `<symbol>`-based sprite and its typed name union. */
-async function vendorIcons(): Promise<void> {
+/**
+ * Assembles the vendored Lucide icons into one `<symbol>`-based sprite and its typed name union.
+ *
+ * @returns A promise that resolves after both generated files are written.
+ */
+export async function vendorIcons(): Promise<void> {
   const symbols = ICON_NAMES.map((name) =>
-    `  <symbol id="icon-${name}" viewBox="0 0 24 24">\n    ${ICON_BODIES[name]}\n  </symbol>`
+    `  <symbol id="icon-${name}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    ${ICON_BODIES[name]}
+  </symbol>`
   ).join("\n");
   const sprite = `<!-- @license lucide-static v1.27.0 - ISC -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 ${symbols}
 </svg>
 `;
