@@ -25,6 +25,7 @@ const HOST_STYLES = `
 [${MOUNT_ATTRIBUTE}] {
   height: 100%;
   pointer-events: none;
+  position: relative;
   width: 100%;
 }
 `;
@@ -32,8 +33,10 @@ const HOST_STYLES = `
 /** Inputs accepted by {@link createShadowHost}. */
 export interface CreateShadowHostOptions {
   readonly children?: ComponentChildren;
+  readonly inlineIconSprite?: string;
   readonly ownerDocument?: Document;
   readonly resourceUrl: (path: string) => string;
+  readonly styles?: readonly string[];
   readonly theme: Theme;
 }
 
@@ -105,17 +108,49 @@ function defendHostElement(element: HTMLElement): void {
   }
 }
 
+function syncHostParent(element: HTMLElement, ownerDocument: Document): void {
+  const fullscreenElement = ownerDocument.fullscreenElement;
+  const isExternalFullscreen = fullscreenElement !== null &&
+    fullscreenElement !== element &&
+    !element.contains(fullscreenElement);
+  const parent = isExternalFullscreen ? fullscreenElement : ownerDocument.documentElement;
+  element.style.setProperty("position", isExternalFullscreen ? "absolute" : "fixed", "important");
+  if (element.parentElement !== parent) parent.append(element);
+}
+
+function appendInlineIconSprite(
+  root: ShadowRoot,
+  source: string,
+  ownerDocument: Document,
+): void {
+  const Parser = ownerDocument.defaultView?.DOMParser;
+  if (Parser === undefined) throw new Error("shadow host cannot parse the icon sprite");
+  const parsed = new Parser().parseFromString(source, "image/svg+xml");
+  if (parsed.querySelector("parsererror") !== null) {
+    throw new Error("shadow host received an invalid icon sprite");
+  }
+  const sprite = ownerDocument.importNode(parsed.documentElement, true);
+  sprite.setAttribute("aria-hidden", "true");
+  sprite.setAttribute("data-point-and-shoot-icons", "");
+  sprite.setAttribute("height", "0");
+  sprite.setAttribute("width", "0");
+  root.append(sprite);
+}
+
 /**
  * Creates the extension's single closed shadow boundary, adopts its styles, and mounts Preact.
  *
  * @param options Initial content, document, extension URL resolver, and forced first-paint theme.
  * @returns Extension-owned handles for later rendering and teardown.
+ * @throws When an inline icon sprite is invalid or its owner document cannot parse XML.
  */
 export function createShadowHost(
   {
     children,
+    inlineIconSprite,
     ownerDocument = document,
     resourceUrl,
+    styles = [],
     theme,
   }: CreateShadowHostOptions,
 ): ShadowHost {
@@ -125,17 +160,23 @@ export function createShadowHost(
   defendHostElement(element);
 
   const root = element.attachShadow({ mode: "closed" });
+  if (inlineIconSprite !== undefined) {
+    appendInlineIconSprite(root, inlineIconSprite, ownerDocument);
+  }
   const fontSheet = createStyleSheet(documentFontStyles(resourceUrl));
   const tokenSheet = createStyleSheet(shadowTokenStyles(resourceUrl));
   const componentSheet = createStyleSheet(componentStyles);
+  const additionalSheets = styles.map(createStyleSheet);
   const hostSheet = createStyleSheet(HOST_STYLES);
   ownerDocument.adoptedStyleSheets = [...ownerDocument.adoptedStyleSheets, fontSheet];
-  root.adoptedStyleSheets = [tokenSheet, componentSheet, hostSheet];
+  root.adoptedStyleSheets = [tokenSheet, componentSheet, ...additionalSheets, hostSheet];
 
   const mount = ownerDocument.createElement("div");
   mount.setAttribute(MOUNT_ATTRIBUTE, "");
   root.append(mount);
-  ownerDocument.documentElement.append(element);
+  const handleFullscreenChange = (): void => syncHostParent(element, ownerDocument);
+  ownerDocument.addEventListener("fullscreenchange", handleFullscreenChange);
+  syncHostParent(element, ownerDocument);
   render(children, mount);
 
   return {
@@ -143,6 +184,7 @@ export function createShadowHost(
     mount,
     root,
     destroy(): void {
+      ownerDocument.removeEventListener("fullscreenchange", handleFullscreenChange);
       render(null, mount);
       element.remove();
       ownerDocument.adoptedStyleSheets = ownerDocument.adoptedStyleSheets.filter(

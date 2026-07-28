@@ -1,0 +1,74 @@
+.ps-floating-toolbar {
+  align-items: center;
+  backdrop-filter: blur(var(--blur-panel));
+  background: var(--bg-overlay);
+  border: calc(var(--space-1) / 4) solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-inline-size: calc(100% - var(--space-12));
+  padding: var(--space-2);
+  pointer-events: auto;
+  position: absolute;
+  visibility: hidden;
+}
+
+.ps-floating-toolbar[data-anchor="bottom-center"] {
+  --ps-toolbar-enter-offset: calc(var(--space-1) * -1);
+}
+
+.ps-floating-toolbar[data-anchor="top-right"] {
+  --ps-toolbar-enter-offset: var(--space-1);
+}
+
+.ps-floating-toolbar[data-positioned="true"] {
+  visibility: visible;
+}
+
+.ps-floating-toolbar[data-motion="a"] {
+  animation: ps-toolbar-reposition-a var(--duration-base) var(--ease-out);
+}
+
+.ps-floating-toolbar[data-motion="b"] {
+  animation: ps-toolbar-reposition-b var(--duration-base) var(--ease-out);
+}
+
+.ps-toolbar-divider {
+  align-self: center;
+  block-size: var(--space-5);
+  border-inline-start: calc(var(--space-1) / 4) solid var(--border-default);
+  inline-size: var(--space-0);
+  margin-inline: var(--space-1);
+}
+
+@keyframes ps-toolbar-reposition-a {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ps-toolbar-enter-offset));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(var(--space-0));
+  }
+}
+
+@keyframes ps-toolbar-reposition-b {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ps-toolbar-enter-offset));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(var(--space-0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-floating-toolbar {
+    animation: none;
+  }
+}
