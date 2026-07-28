@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 /**
- * IndexedDB layer for the {@link ../schema.ts} record shape. Opens with an explicit version and an
+ * IndexedDB layer for the {@link ./schema.ts} record shape. Opens with an explicit version and an
  * `onupgradeneeded` migration path from day one — retrofitting migrations onto a store with real
  * user data is how a schema change becomes a data-loss bug, so the path exists before it is needed.
  *

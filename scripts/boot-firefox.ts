@@ -16,7 +16,7 @@
  * @module
  */
 
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { startFixtureServer } from "../tests/fixtures/app/server.ts";
 
 const SOURCE_DIR = fromFileUrl(new URL("../dist/firefox/", import.meta.url));
@@ -64,8 +64,11 @@ async function waitForBootSignal(
 ): Promise<BootResult> {
   const reader = child.stdout.getReader();
   const decoder = new TextDecoder();
+  // The handle is kept so the `finally` below can clear it: an unclear timer is a pending Deno op,
+  // so a fast boot would still sit out the whole `timeoutMs` before the process could exit.
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<"timeout">((resolve) => {
-    setTimeout(() => resolve("timeout"), timeoutMs);
+    timeoutHandle = setTimeout(() => resolve("timeout"), timeoutMs);
   });
 
   let buffer = "";
@@ -102,6 +105,7 @@ async function waitForBootSignal(
       if (backgroundReady && woff2Status !== null) break;
     }
   } finally {
+    clearTimeout(timeoutHandle);
     reader.releaseLock();
   }
 
@@ -110,7 +114,7 @@ async function waitForBootSignal(
 
 async function main() {
   try {
-    await Deno.stat(new URL("manifest.json", `file://${SOURCE_DIR}`));
+    await Deno.stat(join(SOURCE_DIR, "manifest.json"));
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
     console.error(`dist/firefox/ not found — run \`deno task build\` first (${SOURCE_DIR})`);

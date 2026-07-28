@@ -123,7 +123,10 @@ if (import.meta.main) {
     // `deno fmt` reformats both generated files (e.g. expanding minified CSS onto
     // multiple lines), so the temp copy must go through the same formatter as the
     // committed one before diffing — otherwise every check run reports drift.
-    await new Deno.Command("deno", { args: ["fmt", targetDir] }).output();
+    // `Deno.execPath()`, not a bare `"deno"`: this script is already running under Deno, so the
+    // interpreter's own path is known, while `deno` on `PATH` is an assumption about the caller's
+    // environment that a mise shim or a CI runner need not satisfy.
+    await new Deno.Command(Deno.execPath(), { args: ["fmt", targetDir] }).output();
     const committedDir = new URL("../src/shared/design/", import.meta.url).pathname;
     const diff = await new Deno.Command("diff", {
       args: [

@@ -19,7 +19,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { chromium } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 
@@ -37,13 +37,15 @@ const ICON_SPRITE_RESOURCE = "src/shared/design/icons.svg";
 Deno.test("built chrome extension - boots and executes without error", async () => {
   let missingDist = false;
   try {
-    await Deno.stat(new URL("manifest.json", `file://${EXTENSION_DIR}`));
+    await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
     missingDist = true;
   }
   assert(!missingDist, `dist/chrome/ not found — run \`deno task build\` first (${EXTENSION_DIR})`);
 
+  // The empty `userDataDir` is Playwright's documented request for a throwaway profile directory,
+  // not a path that falls back to the cwd — so no profile state leaks between runs.
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     args: [
