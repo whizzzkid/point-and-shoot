@@ -135,6 +135,16 @@ Deno.test("validateSession - accepts endedAt as either a string or null", () => 
   assert(validateSession(makeSession({ endedAt: "2026-07-27T01:00:00.000Z" })).valid);
 });
 
+Deno.test("validateSession - accepts a boolean stripQuery preference and rejects other values", () => {
+  const base = makeSession();
+  const note = base.notes[0];
+  assert(note !== undefined);
+
+  assert(validateSession({ ...base, notes: [{ ...note, stripQuery: true }] }).valid);
+  const invalid = validateSession({ ...base, notes: [{ ...note, stripQuery: "yes" }] });
+  assertEquals(invalid.valid, false);
+});
+
 Deno.test("validateSession - rejects endedAt of the wrong type", () => {
   const result = validateSession({ ...makeSession(), endedAt: 12345 });
   assertEquals(result.valid, false);

@@ -156,6 +156,76 @@ async function readActiveActionState(
   });
 }
 
+async function waitForCapturedNote(
+  serviceWorker: Worker,
+): Promise<{ readonly pageUrl: string; readonly screenshot: string }> {
+  return await serviceWorker.evaluate(async ({ pollMilliseconds, timeoutMilliseconds }) => {
+    const extensionGlobal = globalThis as unknown as {
+      readonly chrome: {
+        readonly storage: {
+          readonly local: {
+            get(key: string): Promise<Record<string, unknown>>;
+          };
+        };
+      };
+    };
+    const openDatabase = (): Promise<IDBDatabase> =>
+      new Promise((resolve, reject) => {
+        const request = indexedDB.open("point-and-shoot");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    const deadline = Date.now() + timeoutMilliseconds;
+    do {
+      const stored = await extensionGlobal.chrome.storage.local.get("activeSessionId");
+      const sessionId = stored.activeSessionId;
+      if (typeof sessionId === "string") {
+        const database = await openDatabase();
+        try {
+          const session = await new Promise<unknown>((resolve, reject) => {
+            const request = database.transaction("sessions", "readonly")
+              .objectStore("sessions")
+              .get(sessionId);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          if (typeof session === "object" && session !== null && "notes" in session) {
+            const note = (session.notes as unknown[])[0];
+            if (
+              typeof note === "object" &&
+              note !== null &&
+              "pageUrl" in note &&
+              "region" in note &&
+              typeof note.pageUrl === "string" &&
+              typeof note.region === "object" &&
+              note.region !== null &&
+              "screenshot" in note.region &&
+              typeof note.region.screenshot === "string"
+            ) {
+              return {
+                pageUrl: note.pageUrl,
+                screenshot: note.region.screenshot,
+              };
+            }
+          }
+        } finally {
+          database.close();
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollMilliseconds));
+    } while (Date.now() < deadline);
+    const storage = await extensionGlobal.chrome.storage.local.get("activeSessionId");
+    throw new Error(
+      `captured note was not persisted within ${timeoutMilliseconds}ms: ${
+        JSON.stringify({ storage })
+      }`,
+    );
+  }, {
+    pollMilliseconds: LISTENER_POLL_INTERVAL_MILLISECONDS,
+    timeoutMilliseconds: ACTION_STATE_TIMEOUT_MILLISECONDS,
+  });
+}
+
 Deno.test("browser action toggles one host and remounts cleanly after navigation", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
@@ -202,6 +272,70 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
       "dark",
     );
     assertEquals(pageErrors, [], "activation logged a console or page error");
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
+Deno.test("capture persists into the notes panel across a close and reopen", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId, serviceWorker } = await launchExtension();
+
+  try {
+    const runtimeErrors: string[] = [];
+    context.on("page", (browserPage) => {
+      browserPage.on("console", (message) => {
+        if (message.type() === "error") runtimeErrors.push(`page: ${message.text()}`);
+      });
+      browserPage.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
+    });
+    serviceWorker.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(`worker: ${message.text()}`);
+    });
+    const page = await context.newPage();
+    const recordedUrl = `${fixture.base}/light.html?access_token=e2e-secret`;
+    await page.goto(recordedUrl);
+    await triggerExtensionAction(context, page, extensionId);
+    await waitForHostCount(page, 1);
+    await page.getByTestId("light-action").click();
+
+    let captured: Awaited<ReturnType<typeof waitForCapturedNote>>;
+    try {
+      captured = await waitForCapturedNote(serviceWorker);
+    } catch (error) {
+      throw new Error(`capture diagnostics: ${JSON.stringify({ runtimeErrors })}`, {
+        cause: error,
+      });
+    }
+    assertEquals(captured.pageUrl, recordedUrl);
+    assertStringIncludes(captured.screenshot, "data:image/webp;base64,");
+
+    const panelUrl = `chrome-extension://${extensionId}/sidepanel/sidepanel.html`;
+    const panel = await context.newPage();
+    await panel.goto(panelUrl);
+    await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+    const note = panel.locator("[data-note-id]");
+    await note.waitFor();
+    assertEquals(await note.locator("[data-recorded-url]").getAttribute("title"), recordedUrl);
+    assertEquals(
+      await note.getByRole("switch", { name: "Strip query when exporting" }).getAttribute(
+        "aria-checked",
+      ),
+      "true",
+    );
+
+    await note.getByRole("button", { name: "Edit" }).click();
+    await panel.getByRole("textbox", { name: "Note text" }).fill("Captured from the real overlay.");
+    await panel.getByRole("button", { name: "Save changes" }).click();
+    await panel.getByText("Captured from the real overlay.").waitFor();
+    await panel.close();
+
+    const reopenedPanel = await context.newPage();
+    await reopenedPanel.goto(panelUrl);
+    await reopenedPanel.getByText("Captured from the real overlay.").waitFor();
+    assertEquals(runtimeErrors, [], "capture or notes-panel runtime logged an error");
   } finally {
     await fixture.close();
     await context.close();

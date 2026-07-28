@@ -67,7 +67,9 @@ function minimapContents(
           />
         ))
         : <img alt="" src={screenshot} />}
-      <span aria-hidden="true" className="ps-capture-minimap__region" style={regionStyle} />
+      {screenshot === undefined
+        ? <span aria-hidden="true" className="ps-capture-minimap__region" style={regionStyle} />
+        : null}
       {truncated ? <span className="ps-capture-minimap__clipped">Clipped</span> : null}
     </>
   );

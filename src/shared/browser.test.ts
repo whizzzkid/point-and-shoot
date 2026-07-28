@@ -142,6 +142,9 @@ function createFakeFirefox(): FakeFirefox {
       },
     },
     runtime: {
+      getBrowserInfo() {
+        return Promise.resolve({ name: "Firefox" });
+      },
       getURL(path) {
         return `moz-extension://random-uuid/${path}`;
       },
@@ -238,6 +241,29 @@ Deno.test("browser shim - firefox is checked before chrome (109+ ships a chrome-
   assertEquals(shim.runtimeInfo.engine, "firefox");
 });
 
+Deno.test("browser shim - chromium browser alias without Firefox identity stays on chrome", async () => {
+  const { chromeGlobal, calls } = createFakeChrome();
+  const chromiumBrowserAlias = chromeGlobal as unknown as FirefoxGlobalShape;
+  const shim = createBrowserShim({ browser: chromiumBrowserAlias, chrome: chromeGlobal });
+
+  assertEquals(shim.runtimeInfo.engine, "chrome");
+  assertEquals(
+    await shim.tabs.captureVisibleTab({ format: "png" }),
+    "data:image/png;base64,FAKE-CAPTURE",
+  );
+  assertEquals(calls, ["tabs.captureVisibleTab"]);
+});
+
+Deno.test("browser shim - partial page browser global does not mask chrome", () => {
+  const { chromeGlobal } = createFakeChrome();
+  const partialBrowserGlobal = {} as FirefoxGlobalShape;
+
+  assertEquals(
+    createBrowserShim({ browser: partialBrowserGlobal, chrome: chromeGlobal }).runtimeInfo.engine,
+    "chrome",
+  );
+});
+
 Deno.test("browser shim - construction defers APIs unavailable to content scripts", () => {
   const { chromeGlobal } = createFakeChrome();
   const { firefoxGlobal } = createFakeFirefox();
@@ -250,6 +276,7 @@ Deno.test("browser shim - construction defers APIs unavailable to content script
     ...firefoxGlobal,
     action: undefined,
     commands: undefined,
+    tabs: undefined,
   } as unknown as FirefoxGlobalShape;
 
   assertEquals(

@@ -1,11 +1,12 @@
 /// <reference lib="dom" />
 
 import type { NoteElement } from "../../shared/schema.ts";
+import { MAXIMUM_NOTE_ELEMENTS } from "../../shared/session.ts";
 import { buildSelectorBundle, type UnreachableReason } from "../../shared/selectors.ts";
 import { buildStyleDigest, MAX_SUBTREE_DEPTH } from "../../shared/style-digest.ts";
 
 /** Settled maximum number of elements captured by one drag box. */
-export const MAX_DRAG_ELEMENTS = 25;
+export const MAX_DRAG_ELEMENTS = MAXIMUM_NOTE_ELEMENTS;
 
 /** Viewport-coordinate point used for hit testing. */
 export interface PickerPoint {

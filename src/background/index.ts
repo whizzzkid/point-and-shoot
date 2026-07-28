@@ -3,6 +3,7 @@
 import { registerActivationHandlers } from "./activation.ts";
 import { browser } from "../shared/browser.ts";
 import { registerCaptureHandler } from "./capture.ts";
+import { registerNoteHandler } from "./notes.ts";
 
 /**
  * Boot marker. `scripts/boot-firefox.ts` greps this out of Firefox's own stdout: with no static
@@ -13,3 +14,4 @@ console.log("point-and-shoot: background ready");
 
 registerActivationHandlers(browser);
 registerCaptureHandler(browser);
+registerNoteHandler(browser);

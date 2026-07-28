@@ -1,10 +1,37 @@
-import type { RegionCapture } from "./schema.ts";
+import type { NoteElement, RegionCapture } from "./schema.ts";
+import type { SelectorBundle } from "./selectors.ts";
+import { MAX_SIBLINGS } from "./style-digest.ts";
 
 /** Runtime message sent from the background to toggle the current page's overlay. */
 export const TOGGLE_OVERLAY_MESSAGE = "point-and-shoot:toggle-overlay";
 
 /** Runtime message sent from the content picker to capture one visible viewport region. */
 export const CAPTURE_REGION_MESSAGE = "point-and-shoot:capture-region";
+
+/** Runtime message sent after a capture to append its serializable note evidence. */
+export const ADD_NOTE_MESSAGE = "point-and-shoot:add-note";
+
+/** Runtime message sent by a direct content-UI gesture to open the notes workspace. */
+export const OPEN_NOTES_PANEL_MESSAGE = "point-and-shoot:open-notes-panel";
+
+/** Captured note payload sent from the inspected page to extension-owned persistence. */
+export interface AddNoteRequest {
+  readonly type: typeof ADD_NOTE_MESSAGE;
+  readonly capture: RegionCapture;
+  readonly elements: readonly NoteElement[];
+  readonly pageTitle: string;
+  readonly pageUrl: string;
+}
+
+/** Result returned after one captured note is durably appended. */
+export type AddNoteResponse =
+  | {
+    readonly ok: true;
+    readonly noteCount: number;
+    readonly noteId: string;
+    readonly sessionId: string;
+  }
+  | { readonly ok: false; readonly error: { readonly message: string } };
 
 /** Serializable capture request measured in the inspected page's CSS-pixel coordinate space. */
 export interface CaptureRegionRequest {
@@ -55,6 +82,192 @@ function hasFiniteNumbers(candidate: unknown, fields: readonly string[]): boolea
   });
 }
 
+function hasOnlyKeys(candidate: Record<string, unknown>, allowed: readonly string[]): boolean {
+  return Object.keys(candidate).every((key) => allowed.includes(key));
+}
+
+function isStringArray(candidate: unknown): candidate is readonly string[] {
+  return Array.isArray(candidate) && candidate.every((value) => typeof value === "string");
+}
+
+function isRegionCapture(candidate: unknown): candidate is RegionCapture {
+  if (!isRecord(candidate)) return false;
+  if (
+    typeof candidate.screenshot !== "string" ||
+    !candidate.screenshot.startsWith(WEBP_DATA_URL_PREFIX) ||
+    typeof candidate.truncated !== "boolean" ||
+    !hasFiniteNumbers(candidate.box, ["x", "y", "width", "height"]) ||
+    !hasFiniteNumbers(candidate.viewport, ["width", "height"])
+  ) {
+    return false;
+  }
+  const box = candidate.box as Record<"height" | "width" | "x" | "y", number>;
+  const viewport = candidate.viewport as Record<"height" | "width", number>;
+  return box.x >= 0 &&
+    box.y >= 0 &&
+    box.width > 0 &&
+    box.height > 0 &&
+    viewport.width > 0 &&
+    viewport.height > 0 &&
+    hasOnlyKeys(box, ["height", "width", "x", "y"]) &&
+    hasOnlyKeys(viewport, ["height", "width"]) &&
+    hasOnlyKeys(candidate, ["box", "screenshot", "truncated", "viewport"]);
+}
+
+function isAriaRoleName(candidate: unknown): boolean {
+  return isRecord(candidate) &&
+    hasOnlyKeys(candidate, ["name", "role"]) &&
+    typeof candidate.name === "string" &&
+    typeof candidate.role === "string";
+}
+
+function isSelectorBundle(candidate: unknown): candidate is SelectorBundle {
+  if (!isRecord(candidate) || typeof candidate.reachable !== "boolean") return false;
+  const testIdAttributes = ["data-testid", "data-test", "data-cy", "id"];
+  if (
+    !Array.isArray(candidate.testIds) ||
+    !candidate.testIds.every((signal) =>
+      isRecord(signal) && typeof signal.attribute === "string" &&
+      testIdAttributes.includes(signal.attribute) &&
+      typeof signal.value === "string" &&
+      hasOnlyKeys(signal, ["attribute", "value"])
+    ) ||
+    typeof candidate.tagClasses !== "string" ||
+    typeof candidate.textSnippet !== "string" ||
+    (candidate.ariaRoleName !== undefined && !isAriaRoleName(candidate.ariaRoleName))
+  ) {
+    return false;
+  }
+  if (candidate.reachable) {
+    return hasOnlyKeys(candidate, [
+      "ariaRoleName",
+      "cssPath",
+      "reachable",
+      "tagClasses",
+      "testIds",
+      "textSnippet",
+      "xpath",
+    ]) &&
+      isStringArray(candidate.cssPath) &&
+      candidate.cssPath.length > 0 &&
+      isStringArray(candidate.xpath) &&
+      candidate.xpath.length > 0;
+  }
+  return hasOnlyKeys(candidate, [
+    "ariaRoleName",
+    "reachable",
+    "tagClasses",
+    "testIds",
+    "textSnippet",
+    "unreachable",
+  ]) &&
+    [
+      "closed-shadow-root",
+      "cross-origin-iframe",
+      "detached",
+      "foreign-document",
+      "not-an-element",
+    ].includes(candidate.unreachable as string);
+}
+
+function isElementDigest(candidate: unknown): boolean {
+  if (
+    !isRecord(candidate) ||
+    !hasOnlyKeys(candidate, ["box", "color", "typography"]) ||
+    !isRecord(candidate.typography) ||
+    !isRecord(candidate.color)
+  ) {
+    return false;
+  }
+  const boxFields = [
+    "borderBottomWidth",
+    "borderLeftWidth",
+    "borderRightWidth",
+    "borderTopWidth",
+    "height",
+    "marginBottom",
+    "marginLeft",
+    "marginRight",
+    "marginTop",
+    "paddingBottom",
+    "paddingLeft",
+    "paddingRight",
+    "paddingTop",
+    "width",
+  ];
+  const typographyFields = [
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "letterSpacing",
+    "lineHeight",
+  ];
+  const colorFields = [
+    "backgroundColor",
+    "borderBottomColor",
+    "borderLeftColor",
+    "borderRightColor",
+    "borderTopColor",
+    "color",
+  ];
+  const color = candidate.color;
+  return isRecord(candidate.box) &&
+    hasOnlyKeys(candidate.box, boxFields) &&
+    hasFiniteNumbers(candidate.box, boxFields) &&
+    hasOnlyKeys(candidate.typography, typographyFields) &&
+    typeof candidate.typography.fontFamily === "string" &&
+    typeof candidate.typography.fontSize === "number" &&
+    Number.isFinite(candidate.typography.fontSize) &&
+    typeof candidate.typography.fontWeight === "string" &&
+    typeof candidate.typography.letterSpacing === "string" &&
+    typeof candidate.typography.lineHeight === "string" &&
+    hasOnlyKeys(color, colorFields) &&
+    colorFields.every((field) => typeof color[field] === "string");
+}
+
+function isStyleDigest(candidate: unknown): boolean {
+  if (
+    !isRecord(candidate) ||
+    !hasOnlyKeys(candidate, ["parent", "self", "siblings"]) ||
+    !isElementDigest(candidate.self) ||
+    (candidate.parent !== null && !isElementDigest(candidate.parent)) ||
+    !Array.isArray(candidate.siblings) ||
+    candidate.siblings.length > MAX_SIBLINGS
+  ) {
+    return false;
+  }
+  return candidate.siblings.every((sibling) =>
+    isRecord(sibling) &&
+    hasOnlyKeys(sibling, ["direction", "distance", "element", "gapPx"]) &&
+    (sibling.direction === "preceding" || sibling.direction === "following") &&
+    typeof sibling.distance === "number" &&
+    Number.isInteger(sibling.distance) &&
+    sibling.distance > 0 &&
+    typeof sibling.gapPx === "number" &&
+    Number.isFinite(sibling.gapPx) &&
+    isElementDigest(sibling.element)
+  );
+}
+
+function isNoteElement(candidate: unknown): candidate is NoteElement {
+  if (
+    !isRecord(candidate) ||
+    !hasOnlyKeys(candidate, ["componentHint", "selectors", "styleDigest"]) ||
+    !isSelectorBundle(candidate.selectors) ||
+    (candidate.styleDigest !== null && !isStyleDigest(candidate.styleDigest))
+  ) {
+    return false;
+  }
+  if (!candidate.selectors.reachable) {
+    return candidate.styleDigest === null && candidate.componentHint === undefined;
+  }
+  if (candidate.componentHint === undefined) return true;
+  return isRecord(candidate.componentHint) &&
+    hasOnlyKeys(candidate.componentHint, ["framework", "name"]) &&
+    ["react", "vue", "svelte", "angular"].includes(candidate.componentHint.framework as string) &&
+    typeof candidate.componentHint.name === "string";
+}
+
 /**
  * Narrows an untrusted runtime message to {@link CaptureRegionRequest}.
  *
@@ -87,10 +300,39 @@ export function isCaptureRegionResponse(message: unknown): message is CaptureReg
     if (!isRecord(message.error) || typeof message.error.message !== "string") return false;
     return CAPTURE_REGION_ERROR_CODES.includes(message.error.code as CaptureRegionErrorCode);
   }
-  if (!isRecord(message.capture)) return false;
-  return typeof message.capture.screenshot === "string" &&
-    message.capture.screenshot.startsWith(WEBP_DATA_URL_PREFIX) &&
-    typeof message.capture.truncated === "boolean" &&
-    hasFiniteNumbers(message.capture.box, ["x", "y", "width", "height"]) &&
-    hasFiniteNumbers(message.capture.viewport, ["width", "height"]);
+  return isRegionCapture(message.capture);
+}
+
+/**
+ * Narrows an untrusted runtime message to {@link AddNoteRequest}.
+ *
+ * @param message Value received from another extension context.
+ * @returns Whether the value contains only serializable captured-note evidence.
+ */
+export function isAddNoteRequest(message: unknown): message is AddNoteRequest {
+  return isRecord(message) &&
+    message.type === ADD_NOTE_MESSAGE &&
+    typeof message.pageTitle === "string" &&
+    typeof message.pageUrl === "string" &&
+    isRegionCapture(message.capture) &&
+    Array.isArray(message.elements) &&
+    message.elements.every(isNoteElement);
+}
+
+/**
+ * Narrows an untrusted runtime reply to {@link AddNoteResponse}.
+ *
+ * @param message Value returned by the background note handler.
+ * @returns Whether the reply contains a durable result or typed storage error.
+ */
+export function isAddNoteResponse(message: unknown): message is AddNoteResponse {
+  if (!isRecord(message) || typeof message.ok !== "boolean") return false;
+  if (!message.ok) {
+    return isRecord(message.error) && typeof message.error.message === "string";
+  }
+  return typeof message.noteCount === "number" &&
+    Number.isInteger(message.noteCount) &&
+    message.noteCount >= 0 &&
+    typeof message.noteId === "string" &&
+    typeof message.sessionId === "string";
 }
