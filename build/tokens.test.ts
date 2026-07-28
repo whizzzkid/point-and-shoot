@@ -1,4 +1,4 @@
-import { assertEquals, assertMatch } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { FONT_SPECS } from "./vendor-assets.ts";
 
 const TOKENS_CSS = new URL("../src/shared/design/tokens.css", import.meta.url);
@@ -20,7 +20,9 @@ Deno.test("tokens - every font family is defined via @font-face, not merely refe
 
 Deno.test("tokens - tokens.css has no @import (remote font import stripped)", async () => {
   const css = await Deno.readTextFile(TOKENS_CSS);
-  assertMatch(css, /^(?!.*@import)[\s\S]*$/);
+  // `^(?!.*@import)` only rules out an `@import` on the first line, and a stripped import would sit
+  // wherever the upstream stylesheet had it. A plain substring check has no such blind spot.
+  assertEquals(css.includes("@import"), false);
 });
 
 Deno.test("tokens - every var() reference resolves to a defined token", async () => {

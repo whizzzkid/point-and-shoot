@@ -1,4 +1,4 @@
-import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 const FONTS_DIR = new URL("../src/shared/design/fonts/", import.meta.url);
 const ICONS_SVG = new URL("../src/shared/design/icons.svg", import.meta.url);
@@ -54,7 +54,12 @@ Deno.test("vendor-assets - icons.svg defines a symbol for every referenced icon 
 Deno.test("vendor-assets - icons.svg has no remote asset references", async () => {
   const sprite = await Deno.readFile(ICONS_SVG);
   const text = new TextDecoder().decode(sprite);
-  assertMatch(text, /^(?!.*\bhttps?:\/\/(?!www\.w3\.org))[\s\S]*$/);
+  // A negative lookahead anchored at `^` only inspects the first line — `.` does not cross a
+  // newline without the `s` flag, so a remote URL on line 2 passed. Assert the absence directly.
+  const remote = [...text.matchAll(/https?:\/\/[^\s"'<>)]+/g)]
+    .map((m) => m[0])
+    .filter((url) => !url.startsWith("http://www.w3.org/"));
+  assertEquals(remote, []);
 });
 
 Deno.test("vendor-assets - IconName union matches the vendored sprite exactly", async () => {

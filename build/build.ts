@@ -21,7 +21,6 @@ import { ICON_SIZES, placeholderIconPng } from "./icons.ts";
 const ROOT = new URL("../", import.meta.url);
 const SRC = new URL("src/", ROOT);
 const DIST = new URL("dist/", ROOT);
-const BUNDLE_DIR = new URL(".bundle/", DIST);
 
 const TARGETS = ["chrome", "firefox"] as const;
 
@@ -173,17 +172,32 @@ async function zipDir(dir: URL, outZip: URL): Promise<void> {
   }
 }
 
-export async function build(options: { readonly release: boolean }): Promise<void> {
+/**
+ * Builds both targets into `options.outDir` (default `dist/`), wiping it first.
+ *
+ * `outDir` exists so the build tests can point at a temp directory. They cannot run against the
+ * default: `deno task ci` is the lefthook pre-push hook, so every push would wipe the developer's
+ * real `dist/` on the way out — and the documented `deno task build && deno task e2e:smoke` flow
+ * needs it to still be there.
+ *
+ * @param options.release - Minify, drop sourcemaps, and emit a zip per target.
+ * @param options.outDir - Where to write. Wiped before the build; defaults to the repo's `dist/`.
+ */
+export async function build(
+  options: { readonly release: boolean; readonly outDir?: URL },
+): Promise<void> {
   const target = esbuildTargetFrom(SUPPORTED);
+  const outDir = options.outDir ?? DIST;
+  const bundleDir = new URL(".bundle/", outDir);
 
-  await removeIfExists(DIST);
-  await Deno.mkdir(DIST, { recursive: true });
+  await removeIfExists(outDir);
+  await Deno.mkdir(outDir, { recursive: true });
 
   try {
     await esbuild.build({
       entryPoints: IIFE_ENTRY_POINTS,
       absWorkingDir: fromFileUrl(ROOT),
-      outdir: fromFileUrl(BUNDLE_DIR),
+      outdir: fromFileUrl(bundleDir),
       bundle: true,
       format: "iife",
       target,
@@ -194,7 +208,7 @@ export async function build(options: { readonly release: boolean }): Promise<voi
     await esbuild.build({
       entryPoints: ESM_ENTRY_POINTS,
       absWorkingDir: fromFileUrl(ROOT),
-      outdir: fromFileUrl(BUNDLE_DIR),
+      outdir: fromFileUrl(bundleDir),
       bundle: true,
       format: "esm",
       target,
@@ -209,11 +223,11 @@ export async function build(options: { readonly release: boolean }): Promise<voi
     await esbuild.stop();
   }
 
-  await assertNoRemoteUrls(BUNDLE_DIR);
+  await assertNoRemoteUrls(bundleDir);
 
   for (const t of TARGETS) {
-    const targetDir = new URL(`${t}/`, DIST);
-    await copyRecursive(BUNDLE_DIR, targetDir);
+    const targetDir = new URL(`${t}/`, outDir);
+    await copyRecursive(bundleDir, targetDir);
     for (const shell of HTML_SHELLS) {
       await Deno.copyFile(new URL(shell.from, SRC), new URL(shell.to, targetDir));
     }
@@ -227,12 +241,12 @@ export async function build(options: { readonly release: boolean }): Promise<voi
     console.log(`build: wrote dist/${t}`);
   }
 
-  await removeIfExists(BUNDLE_DIR);
+  await removeIfExists(bundleDir);
 
   if (options.release) {
     for (const t of TARGETS) {
-      const zipPath = new URL(`${t}.zip`, DIST);
-      await zipDir(new URL(`${t}/`, DIST), zipPath);
+      const zipPath = new URL(`${t}.zip`, outDir);
+      await zipDir(new URL(`${t}/`, outDir), zipPath);
       console.log(`build: wrote dist/${t}.zip`);
     }
   }
