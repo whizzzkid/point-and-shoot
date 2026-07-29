@@ -1,6 +1,16 @@
 import { assertEquals, assertFalse } from "@std/assert";
 import { forChrome, forFirefox, manifestBase, SUPPORTED } from "./manifest.ts";
 
+const EXPECTED_WEB_ACCESSIBLE_RESOURCES = [
+  {
+    resources: [
+      "src/shared/design/fonts/*.woff2",
+      "src/shared/design/icons.svg",
+    ],
+    matches: ["<all_urls>"],
+  },
+];
+
 Deno.test("manifest - both targets declare manifest_version 3", () => {
   assertEquals(forChrome().manifest_version, 3);
   assertEquals(forFirefox().manifest_version, 3);
@@ -42,6 +52,20 @@ Deno.test("manifest - `<all_urls>` appears in no permission or injection field",
       );
     }
   }
+});
+
+Deno.test("manifest - web exposure is limited to the vendored fonts and icon sprite", () => {
+  assertEquals(manifestBase.web_accessible_resources, EXPECTED_WEB_ACCESSIBLE_RESOURCES);
+});
+
+Deno.test("manifest - chrome rotates exposed resource URLs while firefox omits the unsupported key", () => {
+  assertEquals(forChrome().web_accessible_resources, [
+    {
+      ...EXPECTED_WEB_ACCESSIBLE_RESOURCES[0],
+      use_dynamic_url: true,
+    },
+  ]);
+  assertEquals(forFirefox().web_accessible_resources, EXPECTED_WEB_ACCESSIBLE_RESOURCES);
 });
 
 Deno.test("manifest - chrome uses a module service worker and side_panel, no background.scripts", () => {

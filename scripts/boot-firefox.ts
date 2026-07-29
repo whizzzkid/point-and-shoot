@@ -48,14 +48,50 @@ const KNOWN_NOISE = [
   // the point, not a weakening of it.
   /unrecognized command line flag/,
   /FaviconLoader\.sys\.mjs/,
+  // Firefox 124's font loader serializes an empty internal error object even when the face resolves
+  // and `document.fonts.load()` returns it. Keep this exact so named extension errors still fail.
+  /^(?:.*Firefox stdout: )?console\.error: \(\{\}\)$/,
 ];
 
 interface BootResult {
   timedOut: boolean;
   backgroundReady: boolean;
+  shadowFontStatus: string | null;
   woff2Status: string | null;
   unexpectedErrors: string[];
   lines: string[];
+}
+
+/** Independent signals extracted from one Firefox or web-ext output line. */
+export interface BootLineSignals {
+  readonly backgroundReady: boolean;
+  readonly shadowFontStatus: string | null;
+  readonly unexpectedError: string | null;
+  readonly woff2Status: string | null;
+}
+
+/**
+ * Extracts extension boot markers and unexpected console errors from one Firefox output line.
+ *
+ * @param line Raw line forwarded by web-ext.
+ * @returns Any boot signals carried by the line.
+ */
+export function parseBootLine(line: string): BootLineSignals {
+  const woff2Match = line.match(
+    /firefox-boot: woff2-status=(?<status>[^\s"']+)/,
+  );
+  const shadowFontMatch = line.match(
+    /firefox-boot: shadow-font=(?<status>[^\s"']+)/,
+  );
+  return {
+    backgroundReady: line.includes("point-and-shoot: background ready"),
+    shadowFontStatus: shadowFontMatch?.groups?.status ?? null,
+    unexpectedError: line.includes("console.error:") &&
+        !KNOWN_NOISE.some((pattern) => pattern.test(line))
+      ? line.trim()
+      : null,
+    woff2Status: woff2Match?.groups?.status ?? null,
+  };
 }
 
 async function waitForBootSignal(
@@ -73,43 +109,54 @@ async function waitForBootSignal(
 
   let buffer = "";
   let backgroundReady = false;
+  let shadowFontStatus: string | null = null;
   let woff2Status: string | null = null;
   const unexpectedErrors: string[] = [];
   const lines: string[] = [];
 
   const processLine = (line: string) => {
     lines.push(line);
-    if (line.includes("point-and-shoot: background ready")) backgroundReady = true;
-    // Excludes quotes rather than taking `\S+`: Firefox prints a page's console message wrapped in
-    // them (`console.log: "firefox-boot: woff2-status=200"`), so `\S+` captured `200"` and the
-    // comparison against `"200"` failed on a run where the resource had in fact resolved.
-    const woff2Match = line.match(/firefox-boot: woff2-status=([^\s"']+)/);
-    if (woff2Match) woff2Status = woff2Match[1] ?? null;
-    if (line.includes("console.error:") && !KNOWN_NOISE.some((pattern) => pattern.test(line))) {
-      unexpectedErrors.push(line.trim());
-    }
+    const signals = parseBootLine(line);
+    if (signals.backgroundReady) backgroundReady = true;
+    shadowFontStatus ??= signals.shadowFontStatus;
+    woff2Status ??= signals.woff2Status;
+    if (signals.unexpectedError !== null) unexpectedErrors.push(signals.unexpectedError);
   };
 
   try {
     while (true) {
-      const result = await Promise.race([reader.read(), timeout]);
-      if (result === "timeout") {
-        return { timedOut: true, backgroundReady, woff2Status, unexpectedErrors, lines };
+      const readOutcome = await Promise.race([reader.read(), timeout]);
+      if (readOutcome === "timeout") {
+        return {
+          timedOut: true,
+          backgroundReady,
+          shadowFontStatus,
+          woff2Status,
+          unexpectedErrors,
+          lines,
+        };
       }
-      const { value, done } = result;
+      const { value, done } = readOutcome;
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const parts = buffer.split("\n");
       buffer = parts.pop() ?? "";
       for (const line of parts) processLine(line);
-      if (backgroundReady && woff2Status !== null) break;
+      if (backgroundReady && woff2Status !== null && shadowFontStatus !== null) break;
     }
   } finally {
     clearTimeout(timeoutHandle);
     reader.releaseLock();
   }
 
-  return { timedOut: false, backgroundReady, woff2Status, unexpectedErrors, lines };
+  return {
+    timedOut: false,
+    backgroundReady,
+    shadowFontStatus,
+    woff2Status,
+    unexpectedErrors,
+    lines,
+  };
 }
 
 async function main() {
@@ -167,9 +214,9 @@ async function main() {
   });
 
   const child = command.spawn();
-  let result: BootResult;
+  let bootResult: BootResult;
   try {
-    result = await waitForBootSignal(child, BOOT_TIMEOUT_MS);
+    bootResult = await waitForBootSignal(child, BOOT_TIMEOUT_MS);
   } finally {
     try {
       child.kill();
@@ -180,26 +227,34 @@ async function main() {
     await fixture.close();
   }
 
-  if (result.timedOut) {
+  if (bootResult.timedOut) {
     console.error(`Timed out after ${BOOT_TIMEOUT_MS}ms waiting for the boot signal. Last output:`);
-    console.error(result.lines.slice(-40).join("\n"));
+    console.error(bootResult.lines.slice(-40).join("\n"));
     Deno.exit(1);
   }
-  if (!result.backgroundReady) {
+  if (!bootResult.backgroundReady) {
     console.error("Background script never signaled ready (point-and-shoot: background ready).");
     Deno.exit(1);
   }
-  if (result.woff2Status !== "200") {
-    console.error(`Expected woff2-status=200, got ${result.woff2Status}.`);
+  if (bootResult.woff2Status !== "200") {
+    console.error(`Expected woff2-status=200, got ${bootResult.woff2Status}.`);
     Deno.exit(1);
   }
-  if (result.unexpectedErrors.length > 0) {
+  if (bootResult.shadowFontStatus !== "ready") {
+    console.error(`Expected shadow-font=ready, got ${bootResult.shadowFontStatus}.`);
+    Deno.exit(1);
+  }
+  if (bootResult.unexpectedErrors.length > 0) {
     console.error("Unexpected console.error output during boot:");
-    for (const line of result.unexpectedErrors) console.error(`  ${line}`);
+    for (const line of bootResult.unexpectedErrors) console.error(`  ${line}`);
+    console.error("Last Firefox output:");
+    console.error(bootResult.lines.slice(-40).join("\n"));
     Deno.exit(1);
   }
 
-  console.log("Firefox boot check passed: background script booted, woff2 resource resolved.");
+  console.log(
+    "Firefox boot check passed: background booted and the vendored font applied in a closed shadow root.",
+  );
 }
 
 if (import.meta.main) {

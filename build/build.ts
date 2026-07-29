@@ -17,6 +17,7 @@ import { fromFileUrl } from "@std/path";
 import * as esbuild from "npm:esbuild@0.28.1";
 import { forChrome, forFirefox, SUPPORTED } from "./manifest.ts";
 import { ICON_SIZES, placeholderIconPng } from "./icons.ts";
+import { preactResolverPlugin } from "./preact.ts";
 
 const ROOT = new URL("../", import.meta.url);
 const SRC = new URL("src/", ROOT);
@@ -40,22 +41,6 @@ const ESM_ENTRY_POINTS: Record<string, string> = {
   "sidepanel/sidepanel": fromFileUrl(new URL("sidepanel/index.tsx", SRC)),
   "popup/popup": fromFileUrl(new URL("popup/index.tsx", SRC)),
   "options/options": fromFileUrl(new URL("options/index.tsx", SRC)),
-};
-
-/**
- * esbuild (run standalone under `npm:esbuild`) has no `node_modules` to resolve bare specifiers
- * against, so `import "preact"` and the JSX-runtime's implicit `"preact/jsx-runtime"` fail to
- * resolve on their own. Deno's own resolver already knows where its npm cache put them — via
- * `deno.json`'s `imports` map for `"preact"` and package-exports subpath resolution for
- * `"preact/jsx-runtime"` — so this plugin just hands matching specifiers to `import.meta.resolve`.
- */
-const preactResolverPlugin: esbuild.Plugin = {
-  name: "deno-preact-resolver",
-  setup(pluginBuild) {
-    pluginBuild.onResolve({ filter: /^preact(\/.*)?$/ }, (args) => ({
-      path: fromFileUrl(import.meta.resolve(args.path)),
-    }));
-  },
 };
 
 const HTML_SHELLS: ReadonlyArray<{ readonly from: string; readonly to: string }> = [
@@ -204,6 +189,10 @@ export async function build(
       bundle: true,
       format: "iife",
       target,
+      jsx: "automatic",
+      jsxImportSource: "preact",
+      loader: { ".css": "text" },
+      plugins: [preactResolverPlugin],
       sourcemap: !options.release,
       minify: options.release,
       legalComments: "none",
@@ -217,6 +206,7 @@ export async function build(
       target,
       jsx: "automatic",
       jsxImportSource: "preact",
+      loader: { ".css": "text" },
       plugins: [preactResolverPlugin],
       sourcemap: !options.release,
       minify: options.release,

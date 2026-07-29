@@ -51,6 +51,16 @@ Deno.test("vendor-assets - icons.svg defines a symbol for every referenced icon 
   }
 });
 
+Deno.test("vendor-assets - every external symbol carries Lucide presentation attributes", async () => {
+  const text = await Deno.readTextFile(ICONS_SVG);
+  for (const name of EXPECTED_ICON_NAMES) {
+    assertStringIncludes(
+      text,
+      `<symbol id="icon-${name}" viewBox="0 0 24 24" fill="none" stroke="currentColor"`,
+    );
+  }
+});
+
 Deno.test("vendor-assets - icons.svg has no remote asset references", async () => {
   const sprite = await Deno.readFile(ICONS_SVG);
   const text = new TextDecoder().decode(sprite);

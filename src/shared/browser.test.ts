@@ -7,7 +7,7 @@ interface FakeChrome {
   setLastError(message: string | undefined): void;
 }
 
-/** Chrome-shaped fake: callback-based throughout, modeled on the real MV3 signatures. */
+/** Chrome-shaped fake: callback-based for asynchronous calls, modeled on the real MV3 signatures. */
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
@@ -25,8 +25,15 @@ function createFakeChrome(): FakeChrome {
         calls.push("tabs.query");
         queueMicrotask(() => callback([{ id: 1, windowId: 1, active: true }]));
       },
+      sendMessage(tabId, message, callback) {
+        calls.push(`tabs.sendMessage:${tabId}`);
+        queueMicrotask(() => callback({ echo: message }));
+      },
     },
     runtime: {
+      getURL(path) {
+        return `chrome-extension://dynamic-id/${path}`;
+      },
       sendMessage(message, callback) {
         calls.push("runtime.sendMessage");
         queueMicrotask(() => callback({ echo: message }));
@@ -81,7 +88,17 @@ function createFakeChrome(): FakeChrome {
         queueMicrotask(() => callback(42));
       },
     },
-    action: { onClicked: { addListener() {} } },
+    action: {
+      onClicked: { addListener() {} },
+      setBadgeText(details, callback) {
+        calls.push(`action.setBadgeText:${details.tabId}:${details.text}`);
+        queueMicrotask(callback);
+      },
+      setTitle(details, callback) {
+        calls.push(`action.setTitle:${details.tabId}:${details.title}`);
+        queueMicrotask(callback);
+      },
+    },
     sidePanel: {
       open(_options, callback) {
         calls.push("sidePanel.open");
@@ -104,7 +121,7 @@ interface FakeFirefox {
   calls: string[];
 }
 
-/** Firefox-shaped fake: promise-based throughout, modeled on the real MV3 signatures. */
+/** Firefox-shaped fake: promise-native for asynchronous calls, modeled on the real MV3 signatures. */
 function createFakeFirefox(): FakeFirefox {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
@@ -119,8 +136,15 @@ function createFakeFirefox(): FakeFirefox {
         calls.push("tabs.query");
         return Promise.resolve([{ id: 1, windowId: 1, active: true }]);
       },
+      sendMessage(tabId, message) {
+        calls.push(`tabs.sendMessage:${tabId}`);
+        return Promise.resolve({ echo: message });
+      },
     },
     runtime: {
+      getURL(path) {
+        return `moz-extension://random-uuid/${path}`;
+      },
       sendMessage(message) {
         calls.push("runtime.sendMessage");
         return Promise.resolve({ echo: message });
@@ -163,7 +187,17 @@ function createFakeFirefox(): FakeFirefox {
         return Promise.resolve(42);
       },
     },
-    action: { onClicked: { addListener() {} } },
+    action: {
+      onClicked: { addListener() {} },
+      setBadgeText(details) {
+        calls.push(`action.setBadgeText:${details.tabId}:${details.text}`);
+        return Promise.resolve();
+      },
+      setTitle(details) {
+        calls.push(`action.setTitle:${details.tabId}:${details.title}`);
+        return Promise.resolve();
+      },
+    },
     sidebarAction: {
       open() {
         calls.push("sidebarAction.open");
@@ -182,11 +216,50 @@ Deno.test("browser shim - runtimeInfo reports the detected engine", () => {
   assertEquals(createBrowserShim({ browser: firefoxGlobal }).runtimeInfo.engine, "firefox");
 });
 
+Deno.test("browser shim - getURL delegates resource paths to each engine", () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+  const resource = "src/shared/design/fonts/inter-400.woff2";
+
+  assertEquals(
+    createBrowserShim({ chrome: chromeGlobal }).runtime.getURL(resource),
+    `chrome-extension://dynamic-id/${resource}`,
+  );
+  assertEquals(
+    createBrowserShim({ browser: firefoxGlobal }).runtime.getURL(resource),
+    `moz-extension://random-uuid/${resource}`,
+  );
+});
+
 Deno.test("browser shim - firefox is checked before chrome (109+ ships a chrome-alias global)", () => {
   const { chromeGlobal } = createFakeChrome();
   const { firefoxGlobal } = createFakeFirefox();
   const shim = createBrowserShim({ chrome: chromeGlobal, browser: firefoxGlobal });
   assertEquals(shim.runtimeInfo.engine, "firefox");
+});
+
+Deno.test("browser shim - construction defers APIs unavailable to content scripts", () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+  const chromeContentGlobal = {
+    ...chromeGlobal,
+    action: undefined,
+    commands: undefined,
+  } as unknown as ChromeGlobalShape;
+  const firefoxContentGlobal = {
+    ...firefoxGlobal,
+    action: undefined,
+    commands: undefined,
+  } as unknown as FirefoxGlobalShape;
+
+  assertEquals(
+    createBrowserShim({ chrome: chromeContentGlobal }).runtime.getURL("asset.svg"),
+    "chrome-extension://dynamic-id/asset.svg",
+  );
+  assertEquals(
+    createBrowserShim({ browser: firefoxContentGlobal }).runtime.getURL("asset.svg"),
+    "moz-extension://random-uuid/asset.svg",
+  );
 });
 
 Deno.test("browser shim - captureVisibleTab agrees across engines via divergent underlying calls", async () => {
@@ -242,7 +315,7 @@ Deno.test("browser shim - storage round-trips identically on both engines", asyn
   }
 });
 
-Deno.test("browser shim - sendMessage and executeScript results agree across engines", async () => {
+Deno.test("browser shim - messages and executeScript results agree across engines", async () => {
   const { chromeGlobal } = createFakeChrome();
   const { firefoxGlobal } = createFakeFirefox();
   const chromeShim = createBrowserShim({ chrome: chromeGlobal });
@@ -250,6 +323,12 @@ Deno.test("browser shim - sendMessage and executeScript results agree across eng
 
   assertEquals(await chromeShim.runtime.sendMessage({ ping: 1 }), { echo: { ping: 1 } });
   assertEquals(await firefoxShim.runtime.sendMessage({ ping: 1 }), { echo: { ping: 1 } });
+  assertEquals(await chromeShim.tabs.sendMessage(7, { toggle: true }), {
+    echo: { toggle: true },
+  });
+  assertEquals(await firefoxShim.tabs.sendMessage(7, { toggle: true }), {
+    echo: { toggle: true },
+  });
 
   const injection = { target: { tabId: 1 }, args: ["hi"] };
   assertEquals(await chromeShim.scripting.executeScript(injection), [
@@ -257,6 +336,30 @@ Deno.test("browser shim - sendMessage and executeScript results agree across eng
   ]);
   assertEquals(await firefoxShim.scripting.executeScript(injection), [
     { frameId: 0, result: "hi" },
+  ]);
+});
+
+Deno.test("browser shim - browser action state agrees across engines", async () => {
+  const { chromeGlobal, calls: chromeCalls } = createFakeChrome();
+  const { firefoxGlobal, calls: firefoxCalls } = createFakeFirefox();
+
+  for (
+    const shim of [
+      createBrowserShim({ chrome: chromeGlobal }),
+      createBrowserShim({ browser: firefoxGlobal }),
+    ]
+  ) {
+    await shim.action.setBadgeText({ tabId: 7, text: "!" });
+    await shim.action.setTitle({ tabId: 7, title: "Unavailable" });
+  }
+
+  assertEquals(chromeCalls, [
+    "action.setBadgeText:7:!",
+    "action.setTitle:7:Unavailable",
+  ]);
+  assertEquals(firefoxCalls, [
+    "action.setBadgeText:7:!",
+    "action.setTitle:7:Unavailable",
   ]);
 });
 
