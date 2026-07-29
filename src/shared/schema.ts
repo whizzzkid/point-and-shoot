@@ -48,6 +48,8 @@ export interface Note {
   readonly createdAt: string;
   readonly pageUrl: string;
   readonly pageTitle: string;
+  /** Whether export projections omit the query while retaining the full recorded URL here. */
+  readonly stripQuery?: boolean;
   readonly region: RegionCapture;
   readonly elements: readonly NoteElement[];
   readonly text: string;
@@ -131,6 +133,9 @@ function validateNoteShape(candidate: unknown): string | null {
 
   for (const field of ["id", "createdAt", "pageUrl", "pageTitle", "text"] as const) {
     if (typeof note[field] !== "string") return `missing or non-string field: ${field}`;
+  }
+  if (note.stripQuery !== undefined && typeof note.stripQuery !== "boolean") {
+    return "field stripQuery must be boolean when present";
   }
   const regionError = validateRegionShape(note.region);
   if (regionError !== null) return regionError;

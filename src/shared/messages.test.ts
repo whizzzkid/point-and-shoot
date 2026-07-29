@@ -1,6 +1,9 @@
 import { assertEquals } from "@std/assert";
 import {
+  ADD_NOTE_MESSAGE,
   CAPTURE_REGION_MESSAGE,
+  isAddNoteRequest,
+  isAddNoteResponse,
   isCaptureRegionRequest,
   isCaptureRegionResponse,
 } from "./messages.ts";
@@ -67,4 +70,99 @@ Deno.test("capture message guards reject malformed and non-finite geometry", () 
     false,
   );
   assertEquals(isCaptureRegionResponse(undefined), false);
+});
+
+Deno.test("isAddNoteRequest accepts serializable evidence and rejects malformed elements", () => {
+  const request = {
+    capture: VALID_CAPTURE,
+    elements: [{
+      selectors: {
+        cssPath: ["button"],
+        reachable: true,
+        tagClasses: "button.primary",
+        testIds: [],
+        textSnippet: "Save",
+        xpath: ["//button"],
+      },
+      styleDigest: null,
+    }],
+    pageTitle: "Checkout",
+    pageUrl: "https://example.com/checkout?access_token=secret",
+    type: ADD_NOTE_MESSAGE,
+  };
+  const element = request.elements[0]!;
+  assertEquals(isAddNoteRequest(request), true);
+  assertEquals(
+    isAddNoteRequest({
+      ...request,
+      elements: [{ ...element, element: { nodeType: 1 } }],
+    }),
+    false,
+  );
+  assertEquals(
+    isAddNoteRequest({
+      ...request,
+      elements: [{
+        ...element,
+        componentHint: { framework: "jquery", name: "CheckoutButton" },
+      }],
+    }),
+    false,
+  );
+  assertEquals(
+    isAddNoteRequest({
+      ...request,
+      elements: [{ ...element, styleDigest: {} }],
+    }),
+    false,
+  );
+  assertEquals(
+    isAddNoteRequest({
+      ...request,
+      elements: [{
+        ...element,
+        selectors: {
+          ...element.selectors,
+          ariaRoleName: { name: 12, role: "button" },
+        },
+      }],
+    }),
+    false,
+  );
+  assertEquals(isAddNoteRequest({ ...request, pageUrl: undefined }), false);
+  assertEquals(
+    isAddNoteRequest({
+      ...request,
+      capture: {
+        ...request.capture,
+        viewport: { ...request.capture.viewport, width: -1 },
+      },
+    }),
+    false,
+  );
+});
+
+Deno.test("isAddNoteResponse accepts durable results and typed errors", () => {
+  assertEquals(
+    isAddNoteResponse({
+      noteCount: 2,
+      noteId: "note-2",
+      ok: true,
+      sessionId: "session-1",
+    }),
+    true,
+  );
+  assertEquals(
+    isAddNoteResponse({ error: { message: "Storage quota exceeded." }, ok: false }),
+    true,
+  );
+  assertEquals(
+    isAddNoteResponse({
+      noteCount: Number.NaN,
+      noteId: "note-2",
+      ok: true,
+      sessionId: "session-1",
+    }),
+    false,
+  );
 });

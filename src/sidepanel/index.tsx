@@ -1,17 +1,29 @@
 /// <reference lib="dom" />
-/**
- * Side-panel entry point. Wave 3 renders the notes list and plan view; this placeholder only
- * proves the bundle boots and mounts in a real panel.
- *
- * @module
- */
+/** Side-panel entry point for the active session review workspace. */
 
 import { render } from "preact";
+import { browser } from "../shared/browser.ts";
+import componentStyles from "../ui/components/components.css" with { type: "text" };
+import { NotesPanel } from "./NotesPanel.tsx";
+import { createNotesRepository } from "./repository.ts";
+import panelStyles from "./sidepanel.css" with { type: "text" };
 
-function App() {
-  return <div>Point and Shoot — side panel (wave 3)</div>;
-}
+const styleSheet = new CSSStyleSheet();
+styleSheet.replaceSync(`${componentStyles}\n${panelStyles}`);
+document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
 
 const root = document.getElementById("app");
 if (root === null) throw new Error("sidepanel/index.html is missing #app");
-render(<App />, root);
+render(
+  <NotesPanel
+    exportDelivery={{
+      clipboard: navigator.clipboard,
+      createObjectURL: (blob) => URL.createObjectURL(blob),
+      downloads: browser.downloads,
+      revokeObjectURL: (url) => URL.revokeObjectURL(url),
+    }}
+    iconSpriteUrl="/src/shared/design/icons.svg"
+    repository={createNotesRepository(browser.storage.local)}
+  />,
+  root,
+);

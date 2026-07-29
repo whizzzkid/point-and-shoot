@@ -1,0 +1,154 @@
+import type { Note, Session } from "../schema.ts";
+import { pageUrlForExport, shouldStripQueryByDefault } from "../session.ts";
+
+/** Controls which notes and image references an export projection includes. */
+export interface SerializeOptions {
+  readonly includedNoteIds?: ReadonlySet<string>;
+  readonly includeImageReferences?: boolean;
+}
+
+function includedNotes(session: Session, includedNoteIds?: ReadonlySet<string>): readonly Note[] {
+  if (includedNoteIds === undefined) return session.notes;
+  return session.notes.filter((note) => includedNoteIds.has(note.id));
+}
+
+function projectedPageUrl(note: Note): string {
+  return pageUrlForExport(
+    note.pageUrl,
+    note.stripQuery ?? shouldStripQueryByDefault(note.pageUrl),
+  );
+}
+
+function projectSession(session: Session, options: SerializeOptions): Session {
+  return {
+    ...session,
+    notes: includedNotes(session, options.includedNoteIds).map((note) => ({
+      ...note,
+      pageUrl: projectedPageUrl(note),
+    })),
+  };
+}
+
+function noteNumberWidth(noteCount: number): number {
+  return Math.max(2, String(noteCount).length);
+}
+
+/**
+ * Returns the relative WebP path assigned to a note at an export position.
+ *
+ * @param index Zero-based note position in the projected session.
+ * @param noteCount Total projected note count.
+ * @returns A stable path such as `shots/note-01.webp`.
+ */
+export function shotPath(index: number, noteCount: number): string {
+  return `shots/note-${String(index + 1).padStart(noteNumberWidth(noteCount), "0")}.webp`;
+}
+
+/**
+ * Serializes a session into the canonical, versioned JSON export record.
+ *
+ * @param session Validated session record.
+ * @param options Optional note inclusion selection.
+ * @returns Pretty-printed JSON with a trailing newline.
+ */
+export function toJson(session: Session, options: SerializeOptions = {}): string {
+  return `${JSON.stringify(projectSession(session, options), null, 2)}\n`;
+}
+
+function jsonEvidence(value: unknown): string {
+  return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function singleLine(value: string, fallback: string): string {
+  const collapsed = value.replace(/\s+/g, " ").trim();
+  return collapsed || fallback;
+}
+
+function noteMarkdown(
+  note: Note,
+  index: number,
+  noteCount: number,
+  includeImageReferences: boolean,
+): string {
+  const lines = [
+    `## Note ${index + 1}/${noteCount} — ${singleLine(note.pageTitle, "Untitled page")}`,
+    "",
+    "### Problem",
+    "",
+    note.text.trim() || "_No note text was provided._",
+    "",
+    "### Location",
+    "",
+    `- Page: \`${note.pageUrl}\``,
+    `- Captured: \`${note.createdAt}\``,
+  ];
+
+  if (includeImageReferences) {
+    const path = `./${shotPath(index, noteCount)}`;
+    lines.push(`- Screenshot: [\`${path}\`](${path})`);
+  }
+
+  lines.push(
+    `- Region: \`x=${note.region.box.x}, y=${note.region.box.y}, ` +
+      `width=${note.region.box.width}, height=${note.region.box.height}\``,
+    `- Viewport: \`${note.region.viewport.width} × ${note.region.viewport.height}\``,
+    `- Capture clipped: ${note.region.truncated ? "yes" : "no"}`,
+    "",
+    "### Evidence",
+    "",
+  );
+
+  if (note.elements.length === 0) {
+    lines.push("No element metadata was captured for this region.");
+    return lines.join("\n");
+  }
+
+  note.elements.forEach((element, elementIndex) => {
+    if (elementIndex > 0) lines.push("");
+    lines.push(
+      `#### Element ${elementIndex + 1}`,
+      "",
+      "Selector bundle:",
+      "",
+      jsonEvidence(element.selectors),
+    );
+    if (element.componentHint !== undefined) {
+      lines.push("", "Framework hint:", "", jsonEvidence(element.componentHint));
+    }
+    lines.push(
+      "",
+      element.styleDigest === null
+        ? "Computed style evidence was unavailable."
+        : `Computed style evidence:\n\n${jsonEvidence(element.styleDigest)}`,
+    );
+  });
+
+  return lines.join("\n");
+}
+
+/**
+ * Projects a session into an agent-readable Markdown plan.
+ *
+ * @param session Validated session record.
+ * @param options Note selection and whether screenshot references should be present.
+ * @returns Markdown that leads with each problem, then its location and structured evidence.
+ */
+export function toMarkdown(session: Session, options: SerializeOptions = {}): string {
+  const projected = projectSession(session, options);
+  const noteCount = projected.notes.length;
+  const includeImageReferences = options.includeImageReferences ?? true;
+  const header = [
+    `# ${singleLine(projected.name, "Point & Shoot session")}`,
+    "",
+    `${noteCount} ${noteCount === 1 ? "note" : "notes"} captured.`,
+    "",
+    includeImageReferences
+      ? "`session.json` is the canonical record. This Markdown file is a convenience projection."
+      : "This image-free prompt is a convenience projection. Download the bundle for the " +
+        "canonical `session.json` record and screenshots.",
+  ];
+  const notes = projected.notes.map((note, index) =>
+    noteMarkdown(note, index, noteCount, includeImageReferences)
+  );
+  return `${[header.join("\n"), ...notes].join("\n\n")}\n`;
+}

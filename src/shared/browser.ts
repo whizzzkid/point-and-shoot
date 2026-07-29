@@ -215,6 +215,8 @@ export interface FirefoxGlobalShape {
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
   readonly runtime: {
+    /** Firefox-only engine identity method, used to distinguish namespace aliases safely. */
+    getBrowserInfo(): Promise<{ readonly name: string }>;
     getURL(path: string): string;
     sendMessage(message: unknown): Promise<unknown>;
     readonly onMessage: { addListener(listener: MessageListener): void };
@@ -441,9 +443,10 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
 
 /**
  * Detects which WebExtensions global is present in `scope` and returns a {@link BrowserShim}
- * normalized to promises. Firefox is checked first because Firefox 109+ also exposes a
- * Chrome-compatible `chrome.*` alias for migration convenience — checking `chrome` first would
- * misdetect Firefox as Chrome and skip the promise-native path.
+ * normalized to promises. Firefox is identified by its `runtime.getBrowserInfo` method because
+ * both engines may expose both namespace names: Firefox 109+ has a Chrome-compatible `chrome.*`
+ * alias, while Chromium may expose a partial `browser.*` alias. The runtime method remains
+ * available in content scripts where privileged tab methods do not.
  *
  * @param scope The global object to inspect. Defaults to the real `globalThis`; tests pass a
  *   fake shaped like {@link ExtensionGlobalScope} instead of monkey-patching real globals.
@@ -456,7 +459,7 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
 export function createBrowserShim(
   scope: ExtensionGlobalScope = globalThis as ExtensionGlobalScope,
 ): BrowserShim {
-  if (scope.browser) {
+  if (typeof scope.browser?.runtime?.getBrowserInfo === "function") {
     return createFirefoxShim(scope.browser);
   }
   if (scope.chrome) {
