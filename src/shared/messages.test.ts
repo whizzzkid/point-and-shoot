@@ -2,10 +2,13 @@ import { assertEquals } from "@std/assert";
 import {
   ADD_NOTE_MESSAGE,
   CAPTURE_REGION_MESSAGE,
+  FRAMEWORK_PROBE_MESSAGE,
   isAddNoteRequest,
   isAddNoteResponse,
   isCaptureRegionRequest,
   isCaptureRegionResponse,
+  isFrameworkProbeRequest,
+  isFrameworkProbeResponse,
   isOverlayStateResponse,
   isToggleActiveTabResponse,
 } from "./messages.ts";
@@ -184,4 +187,43 @@ Deno.test("overlay response guards accept exact success and failure shapes", () 
     isToggleActiveTabResponse({ mounted: "yes", ok: true, result: "toggled" }),
     false,
   );
+});
+
+Deno.test("framework probe guards preserve aligned optional source metadata", () => {
+  const request = {
+    cssPaths: [["#checkout"], ["#summary", "button"]],
+    type: FRAMEWORK_PROBE_MESSAGE,
+  };
+  const response = {
+    hints: [
+      {
+        file: "/workspace/src/CheckoutButton.tsx",
+        framework: "react",
+        line: 17,
+        name: "CheckoutButton",
+      },
+      null,
+    ],
+  };
+
+  assertEquals(isFrameworkProbeRequest(request), true);
+  assertEquals(isFrameworkProbeResponse(response, 2), true);
+  assertEquals(isFrameworkProbeRequest({ ...request, cssPaths: [] }), false);
+  assertEquals(
+    isFrameworkProbeRequest({ ...request, cssPaths: Array.from({ length: 26 }, () => ["main"]) }),
+    false,
+  );
+  assertEquals(
+    isFrameworkProbeResponse({
+      hints: [{ ...response.hints[0], line: 0 }],
+    }, 1),
+    false,
+  );
+  assertEquals(
+    isFrameworkProbeResponse({
+      hints: [{ framework: "react", name: "x".repeat(1_025) }],
+    }, 1),
+    false,
+  );
+  assertEquals(isFrameworkProbeResponse({ hints: [null] }, 2), false);
 });

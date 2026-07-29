@@ -1,5 +1,11 @@
-import type { NoteElement, RegionCapture } from "./schema.ts";
+import {
+  type ComponentHint,
+  MAX_COMPONENT_HINT_TEXT_LENGTH,
+  type NoteElement,
+  type RegionCapture,
+} from "./schema.ts";
 import type { SelectorBundle } from "./selectors.ts";
+import { MAXIMUM_NOTE_ELEMENTS } from "./session.ts";
 import { MAX_SIBLINGS } from "./style-digest.ts";
 
 /** Runtime message sent from the background to toggle the current page's overlay. */
@@ -16,6 +22,9 @@ export const CAPTURE_REGION_MESSAGE = "point-and-shoot:capture-region";
 
 /** Runtime message sent after a capture to append its serializable note evidence. */
 export const ADD_NOTE_MESSAGE = "point-and-shoot:add-note";
+
+/** Runtime message requesting opt-in component hints from the page's main execution world. */
+export const FRAMEWORK_PROBE_MESSAGE = "point-and-shoot:framework-probe";
 
 /** Runtime message sent by a direct content-UI gesture to open the notes workspace. */
 export const OPEN_NOTES_PANEL_MESSAGE = "point-and-shoot:open-notes-panel";
@@ -52,6 +61,17 @@ export type AddNoteResponse =
     readonly sessionId: string;
   }
   | { readonly ok: false; readonly error: { readonly message: string } };
+
+/** Reachable selector paths to probe together in the sender's frame. */
+export interface FrameworkProbeRequest {
+  readonly type: typeof FRAMEWORK_PROBE_MESSAGE;
+  readonly cssPaths: readonly (readonly string[])[];
+}
+
+/** Hints aligned one-for-one with a {@link FrameworkProbeRequest}'s paths. */
+export interface FrameworkProbeResponse {
+  readonly hints: readonly (ComponentHint | null)[];
+}
 
 /** Serializable capture request measured in the inspected page's CSS-pixel coordinate space. */
 export interface CaptureRegionRequest {
@@ -139,6 +159,23 @@ function hasOnlyKeys(candidate: Record<string, unknown>, allowed: readonly strin
 
 function isStringArray(candidate: unknown): candidate is readonly string[] {
   return Array.isArray(candidate) && candidate.every((value) => typeof value === "string");
+}
+
+function isComponentHint(candidate: unknown): candidate is ComponentHint {
+  return isRecord(candidate) &&
+    hasOnlyKeys(candidate, ["file", "framework", "line", "name"]) &&
+    ["react", "vue", "svelte", "angular"].includes(candidate.framework as string) &&
+    typeof candidate.name === "string" &&
+    candidate.name.trim() !== "" &&
+    candidate.name.length <= MAX_COMPONENT_HINT_TEXT_LENGTH &&
+    (candidate.file === undefined ||
+      (typeof candidate.file === "string" &&
+        candidate.file.trim() !== "" &&
+        candidate.file.length <= MAX_COMPONENT_HINT_TEXT_LENGTH)) &&
+    (candidate.line === undefined ||
+      (typeof candidate.line === "number" &&
+        Number.isInteger(candidate.line) &&
+        candidate.line > 0));
 }
 
 function isRegionCapture(candidate: unknown): candidate is RegionCapture {
@@ -313,10 +350,45 @@ function isNoteElement(candidate: unknown): candidate is NoteElement {
     return candidate.styleDigest === null && candidate.componentHint === undefined;
   }
   if (candidate.componentHint === undefined) return true;
-  return isRecord(candidate.componentHint) &&
-    hasOnlyKeys(candidate.componentHint, ["framework", "name"]) &&
-    ["react", "vue", "svelte", "angular"].includes(candidate.componentHint.framework as string) &&
-    typeof candidate.componentHint.name === "string";
+  return isComponentHint(candidate.componentHint);
+}
+
+/**
+ * Narrows an untrusted runtime value to a bounded framework probe request.
+ *
+ * @param message Value received from a content realm.
+ * @returns Whether it contains one to the settled maximum number of non-empty selector paths.
+ */
+export function isFrameworkProbeRequest(message: unknown): message is FrameworkProbeRequest {
+  return isRecord(message) &&
+    hasOnlyKeys(message, ["cssPaths", "type"]) &&
+    message.type === FRAMEWORK_PROBE_MESSAGE &&
+    Array.isArray(message.cssPaths) &&
+    message.cssPaths.length > 0 &&
+    message.cssPaths.length <= MAXIMUM_NOTE_ELEMENTS &&
+    message.cssPaths.every((path) =>
+      Array.isArray(path) &&
+      path.length > 0 &&
+      path.every((segment) => typeof segment === "string" && segment !== "")
+    );
+}
+
+/**
+ * Narrows an untrusted page-world result to aligned component hints.
+ *
+ * @param message Value returned by the background probe handler.
+ * @param expectedCount Number of selector paths in the corresponding request.
+ * @returns Whether the result has exactly one valid hint or `null` per requested path.
+ */
+export function isFrameworkProbeResponse(
+  message: unknown,
+  expectedCount: number,
+): message is FrameworkProbeResponse {
+  return isRecord(message) &&
+    hasOnlyKeys(message, ["hints"]) &&
+    Array.isArray(message.hints) &&
+    message.hints.length === expectedCount &&
+    message.hints.every((hint) => hint === null || isComponentHint(hint));
 }
 
 /**

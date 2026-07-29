@@ -20,7 +20,7 @@ export function Tooltip({ label, children }: TooltipProps): JSX.Element {
   const tooltipId = useId();
   return (
     <span
-      aria-describedby={tooltipId}
+      aria-describedby={visible ? tooltipId : undefined}
       className="ps-tooltip"
       onBlurCapture={() => setVisible(false)}
       onFocusCapture={() => setVisible(true)}

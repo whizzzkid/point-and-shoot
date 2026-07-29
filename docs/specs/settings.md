@@ -58,7 +58,9 @@ per-note choice.
 
 `frameworkHints` defaults off because framework probes read non-standard properties from the
 inspected page. The probe must not inspect those properties unless this setting is true. Turning the
-setting off degrades cleanly to an absent `componentHint`; selector and style evidence remain.
+setting off degrades cleanly to an absent `componentHint`; selector and style evidence remain. The
+exact opt-in, execution-world, version, and failure contract is defined by the
+[framework component hints spec](framework-component-hints.md).
 
 ## Browser-owned shortcuts
 

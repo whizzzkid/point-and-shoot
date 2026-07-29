@@ -51,6 +51,7 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task ci`            | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
 | `deno task fixture`       | Serves the browser fixture app, printing both origins                  | W1.8      |
 | `deno task shots`         | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
+| `deno task shots:wave3`   | Captures every shipped extension surface in both forced themes         | W3.12     |
 | `deno task tokens`        | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
 | `deno task tokens:check`  | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
 | `deno task lint:design`   | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
@@ -216,6 +217,11 @@ Actions pin to the official action's semver major, which is this project's one d
 | `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
 | `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
 | preact             | `10.29.7` | `deno.json` imports                                                                            |
+| react              | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| react-dom          | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| scheduler          | `0.23.2`  | `deno.json` imports; React fixture dependency resolver                                         |
+| loose-envify       | `1.4.0`   | `deno.json` imports; React fixture dependency resolver                                         |
+| vue                | `3.5.40`  | `deno.json` imports; W3.11 development probe fixture only                                      |
 | esbuild            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
 | web-ext            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
 | `actions/checkout` | `v7`      | CI workflows                                                                                   |

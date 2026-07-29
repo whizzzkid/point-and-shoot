@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import type { BrowserShim, StorageChangedListener, StorageItems } from "../shared/browser.ts";
 import { DEFAULT_SETTINGS, saveSettings, SETTINGS_STORAGE_KEY } from "../shared/settings.ts";
-import { watchThemeOverride } from "./settings-theme.ts";
+import { watchSettings } from "./settings-watcher.ts";
 
 function createStorage(): BrowserShim["storage"] & {
   emit(areaName?: string): void;
@@ -44,18 +44,23 @@ function createStorage(): BrowserShim["storage"] & {
   };
 }
 
-Deno.test("theme settings watcher loads, refreshes, and stops cleanly", async () => {
+Deno.test("content settings watcher loads, refreshes, and stops cleanly", async () => {
   const storage = createStorage();
   await saveSettings(storage.local, {
     ...DEFAULT_SETTINGS,
     themeOverride: "dark",
   });
-  const observed: string[] = [];
+  const observed: { readonly frameworkHints: boolean; readonly theme: string }[] = [];
 
-  const stop = watchThemeOverride(storage, (theme) => observed.push(theme));
+  const stop = watchSettings(storage, (settings) =>
+    observed.push({
+      frameworkHints: settings.frameworkHints,
+      theme: settings.themeOverride,
+    }));
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
   await saveSettings(storage.local, {
     ...DEFAULT_SETTINGS,
+    frameworkHints: true,
     themeOverride: "light",
   });
   storage.emit();
@@ -67,5 +72,8 @@ Deno.test("theme settings watcher loads, refreshes, and stops cleanly", async ()
   storage.emit();
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-  assertEquals(observed, ["dark", "light"]);
+  assertEquals(observed, [
+    { frameworkHints: false, theme: "dark" },
+    { frameworkHints: true, theme: "light" },
+  ]);
 });

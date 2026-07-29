@@ -12,6 +12,9 @@ import type { StyleDigestBundle } from "./style-digest.ts";
 /** Current schema version. Bump on any breaking field change and add a migration in `store.ts`. */
 export const SCHEMA_VERSION = 1;
 
+/** Maximum stored length of a framework component name or source path. */
+export const MAX_COMPONENT_HINT_TEXT_LENGTH = 1_024;
+
 /** A captured screen region: the annotated screenshot plus where on the page it was taken. */
 export interface RegionCapture {
   /** WebP using the selected quality and longest-edge cap, as a base64 data URI. */
@@ -30,15 +33,19 @@ export interface RegionCapture {
 /** An opt-in hint at the framework component that likely owns an element, when detectable. */
 export interface ComponentHint {
   readonly framework: "react" | "vue" | "svelte" | "angular";
-  /** Best-effort file path or component name; framework build config decides how precise this is. */
+  /** Best-effort source path when the development build exposes one. */
+  readonly file?: string;
+  /** One-based source line when the development build exposes one. */
+  readonly line?: number;
+  /** Best-effort component name; framework build config decides how precise this is. */
   readonly name: string;
 }
 
 /** One annotated element within a note: its identity bundle, live style digest, and component hint. */
 export interface NoteElement {
   readonly selectors: SelectorBundle;
-  readonly styleDigest: StyleDigestBundle | null;
   /** `null` when {@link selectors} is unreachable — there is nothing to compute a digest against. */
+  readonly styleDigest: StyleDigestBundle | null;
   readonly componentHint?: ComponentHint;
 }
 
@@ -205,12 +212,46 @@ function validateNoteElementShape(candidate: unknown): string | null {
   if (element.styleDigest !== null && typeof element.styleDigest !== "object") {
     return "field styleDigest must be an object or null";
   }
-  if (
-    element.componentHint !== undefined &&
-    (typeof element.componentHint !== "object" || element.componentHint === null)
-  ) {
+  const componentHintError = validateComponentHintShape(element.componentHint);
+  if (componentHintError !== null) return componentHintError;
+
+  return null;
+}
+
+/** Returns `null` when an optional value matches {@link ComponentHint}, else a reason. */
+function validateComponentHintShape(candidate: unknown): string | null {
+  if (candidate === undefined) return null;
+  if (typeof candidate !== "object" || candidate === null) {
     return "field componentHint must be an object when present";
   }
-
+  const hint = candidate as Record<string, unknown>;
+  const allowedKeys = ["file", "framework", "line", "name"];
+  if (Object.keys(hint).some((key) => !allowedKeys.includes(key))) {
+    return "field componentHint contains an unknown field";
+  }
+  if (!["react", "vue", "svelte", "angular"].includes(hint.framework as string)) {
+    return "field componentHint.framework is unsupported";
+  }
+  if (
+    typeof hint.name !== "string" ||
+    hint.name.trim() === "" ||
+    hint.name.length > MAX_COMPONENT_HINT_TEXT_LENGTH
+  ) {
+    return "field componentHint.name must be a non-empty string";
+  }
+  if (
+    hint.file !== undefined &&
+    (typeof hint.file !== "string" ||
+      hint.file.trim() === "" ||
+      hint.file.length > MAX_COMPONENT_HINT_TEXT_LENGTH)
+  ) {
+    return "field componentHint.file must be a non-empty string when present";
+  }
+  if (
+    hint.line !== undefined &&
+    (typeof hint.line !== "number" || !Number.isInteger(hint.line) || hint.line <= 0)
+  ) {
+    return "field componentHint.line must be a positive integer when present";
+  }
   return null;
 }

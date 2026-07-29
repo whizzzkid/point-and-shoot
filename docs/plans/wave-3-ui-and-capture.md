@@ -79,7 +79,7 @@ critical path for the whole project — for a field that is usually absent.
 
 ## W3.0 — `web_accessible_resources` fingerprinting decision
 
-- [ ] `build/manifest.ts` + `docs/adr/0012-*.md` — SHA: _pending_
+- [x] `build/manifest.ts` + `docs/adr/0012-*.md` — SHA: `962af1a`
 
 **parallel-safe.** Carried in from wave 2, which deferred this decision here on purpose rather than
 overlooking it — see [wave 2's carried list](wave-2-core-libraries.md#carried-into-wave-3).
@@ -118,7 +118,7 @@ URL rotates.
 
 ## W3.1 — Preact component library
 
-- [ ] `src/ui/components/` + gallery page — SHA: _pending_
+- [x] `src/ui/components/` + gallery page — SHA: `b5a15f2`
 
 **parallel-safe.** Nothing inside wave 3 blocks this, but five other items block on it — W3.3, W3.6,
 W3.7, W3.8, and W3.9 all consume the component library, so start this first.
@@ -164,7 +164,7 @@ the design cards and fix discrepancies before committing.
 
 ## W3.2 — Shadow host and theme resolution
 
-- [ ] `src/content/host.ts`, `src/shared/theme.ts` + tests — SHA: _pending_
+- [x] `src/content/host.ts`, `src/shared/theme.ts` + tests — SHA: `d548340`
 
 **parallel-safe.**
 
@@ -214,7 +214,7 @@ Chromium-only result — the whole point of the check is the engine difference.
 
 ## W3.3 — Toolbar overlay
 
-- [ ] `src/content/toolbar/` — SHA: _pending_
+- [x] `src/content/toolbar/` — SHA: `89d2fd2`
 
 **Depends on:** W3.1, W3.2, W3.10.
 
@@ -239,7 +239,7 @@ not by eye — this is exactly the constraint that regresses silently.
 
 ## W3.4 — Element picker and drag box
 
-- [ ] `src/content/picker/` — SHA: _pending_
+- [x] `src/content/picker/` — SHA: `dadd66a`
 
 **Depends on:** W3.3.
 
@@ -273,7 +273,7 @@ traversal covered. Escape leaves zero overlay nodes.
 
 ## W3.5 — Screenshot capture
 
-- [ ] `src/background/capture.ts` + tests — SHA: _pending_
+- [x] `src/background/capture.ts` + tests — SHA: `1465e43`
 
 **Depends on:** W3.4.
 
@@ -316,7 +316,7 @@ capture; real-Gecko capture coverage begins in W4.3.
 
 ## W3.6 — Notes panel
 
-- [ ] `src/sidepanel/` — SHA: _pending_
+- [x] `src/sidepanel/` — SHA: `c4f0040`
 
 **Depends on:** W3.1, W3.5.
 
@@ -351,7 +351,7 @@ both forced themes.
 
 ## W3.7 — Plan view and export
 
-- [ ] `src/sidepanel/plan/`, `src/shared/serialize/` — SHA: _pending_
+- [x] `src/sidepanel/plan/`, `src/shared/serialize/` — SHA: `2e08e88`
 
 **Depends on:** W3.1 (the plan view UI is built from the component library), W3.6. **Not W3.11** —
 see the note under the dependency graph; render `componentHint` when the record carries one and omit
@@ -405,7 +405,7 @@ to end in Playwright.
 
 ## W3.8 — Extension popup
 
-- [ ] `src/popup/` — SHA: _pending_
+- [x] `src/popup/` — SHA: `de04f65`
 
 **Depends on:** W3.1. **parallel-safe** with W3.9.
 
@@ -425,7 +425,7 @@ themes.
 
 ## W3.9 — Options page
 
-- [ ] `src/options/` — SHA: _pending_
+- [x] `src/options/` — SHA: `4dae656`
 
 **Depends on:** W3.1. **parallel-safe** with W3.8.
 
@@ -450,7 +450,7 @@ overlay's theme on a live page; the framework toggle genuinely gates the W3.11 p
 
 ## W3.10 — Activation and shortcuts
 
-- [ ] `src/background/activation.ts` — SHA: _pending_
+- [x] `src/background/activation.ts` — SHA: `7a49b63`
 
 **parallel-safe.**
 
@@ -479,7 +479,7 @@ the content script's presence in the page after activation, not just that the cl
 
 ## W3.11 — Framework component hints
 
-- [ ] `src/content/framework-probe.ts` + tests — SHA: _pending_
+- [x] `src/content/framework-probe.ts` + tests — SHA: `63b0363`
 
 **parallel-safe.**
 
@@ -503,7 +503,7 @@ assert a page with no framework produces no hint and no console noise.
 
 ## W3.12 — Pull request
 
-- [ ] PR opened — record the number here
+- [x] PR opened — [#8](https://github.com/whizzzkid/point-and-shoot/pull/8)
 
 **Depends on:** W3.1–W3.11, CI green.
 

@@ -12,6 +12,9 @@ const HOST_COUNT_TIMEOUT_MILLISECONDS = 5_000;
 const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
 const LISTENER_READY_TIMEOUT_MILLISECONDS = 2_500;
 const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
+const AGENT_TRIAL_NOTE =
+  "This button looks like unstyled browser chrome. Give it a clear light-theme background, " +
+  "border, and hover treatment.";
 
 interface ActionState {
   readonly badgeText: string;
@@ -259,6 +262,93 @@ async function waitForCapturedNote(
   });
 }
 
+async function waitForComponentHints(
+  serviceWorker: Worker,
+  expectedNoteCount: number,
+): Promise<readonly unknown[]> {
+  return await serviceWorker.evaluate(
+    async ({ expectedCount, pollMilliseconds, timeoutMilliseconds }) => {
+      const extensionGlobal = globalThis as unknown as {
+        readonly chrome: {
+          readonly storage: {
+            readonly local: {
+              get(key: string): Promise<Record<string, unknown>>;
+            };
+          };
+        };
+      };
+      const deadline = Date.now() + timeoutMilliseconds;
+      do {
+        const stored = await extensionGlobal.chrome.storage.local.get("activeSessionId");
+        const sessionId = stored.activeSessionId;
+        if (typeof sessionId === "string") {
+          const database = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open("point-and-shoot");
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          try {
+            const session = await new Promise<unknown>((resolve, reject) => {
+              const request = database.transaction("sessions", "readonly")
+                .objectStore("sessions")
+                .get(sessionId);
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => reject(request.error);
+            });
+            if (typeof session === "object" && session !== null && "notes" in session) {
+              const notes = session.notes as unknown[];
+              if (notes.length >= expectedCount) {
+                return notes.map((note) => {
+                  if (typeof note !== "object" || note === null || !("elements" in note)) {
+                    return null;
+                  }
+                  const element = (note.elements as unknown[])[0];
+                  return typeof element === "object" &&
+                      element !== null &&
+                      "componentHint" in element
+                    ? element.componentHint
+                    : null;
+                });
+              }
+            }
+          } finally {
+            database.close();
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollMilliseconds));
+      } while (Date.now() < deadline);
+      throw new Error(`expected ${expectedCount} captured notes before timeout`);
+    },
+    {
+      expectedCount: expectedNoteCount,
+      pollMilliseconds: LISTENER_POLL_INTERVAL_MILLISECONDS,
+      timeoutMilliseconds: ACTION_STATE_TIMEOUT_MILLISECONDS,
+    },
+  );
+}
+
+async function installReactProbeMarker(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const element = document.querySelector('[data-testid="light-action"]');
+    if (element === null) throw new Error("light action fixture is missing");
+    const ReactCheckoutButton = function ReactCheckoutButton(): void {};
+    Object.defineProperty(element, "__reactFiber$e2e", {
+      configurable: true,
+      value: {
+        _debugSource: {
+          fileName: "/workspace/src/checkout/ReactCheckoutButton.tsx",
+          lineNumber: 17,
+        },
+        return: {
+          elementType: ReactCheckoutButton,
+          return: null,
+        },
+        type: "button",
+      },
+    });
+  });
+}
+
 Deno.test("toolbar popup toggles one host and remounts cleanly after navigation", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
@@ -293,11 +383,21 @@ Deno.test("toolbar popup toggles one host and remounts cleanly after navigation"
       );
     }
     const overlay = popup.getByRole("switch", { name: "Overlay on this tab" });
+    await popup.waitForFunction(() =>
+      document.querySelector(".ps-popup-overlay-toggle .ps-switch")?.getAttribute(
+        "aria-checked",
+      ) === "true"
+    );
     await page.bringToFront();
     await overlay.evaluate((element) => {
       (element as HTMLButtonElement).click();
     });
     await waitForHostCount(page, 0);
+    await popup.waitForFunction(() =>
+      document.querySelector(".ps-popup-overlay-toggle .ps-switch")?.getAttribute(
+        "aria-checked",
+      ) === "false"
+    );
     await page.bringToFront();
     await overlay.evaluate((element) => {
       (element as HTMLButtonElement).click();
@@ -323,6 +423,59 @@ Deno.test("toolbar popup toggles one host and remounts cleanly after navigation"
       "dark",
     );
     assertEquals(pageErrors, [], "activation logged a console or page error");
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
+Deno.test("framework hint setting gates real main-world capture evidence", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId, serviceWorker } = await launchExtension();
+
+  try {
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html?probe=off`);
+    await installReactProbeMarker(page);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    await page.getByTestId("light-action").click();
+    assertEquals(await waitForComponentHints(serviceWorker, 1), [null]);
+    await popup.close();
+
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.getByRole("heading", { name: "Settings" }).waitFor();
+    await options.getByRole("switch", { name: "Framework component hints" }).click();
+    await options.getByText("Saved.").waitFor();
+    await options.close();
+
+    await page.goto(`${fixture.base}/light.html?probe=on`);
+    await installReactProbeMarker(page);
+    const resumedPopup = await openExtensionPopup(context, page, extensionId);
+    await resumedPopup.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await page.bringToFront();
+    await resumedPopup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    await page.getByTestId("light-action").click();
+
+    assertEquals(await waitForComponentHints(serviceWorker, 2), [
+      null,
+      {
+        file: "/workspace/src/checkout/ReactCheckoutButton.tsx",
+        framework: "react",
+        line: 17,
+        name: "ReactCheckoutButton",
+      },
+    ]);
   } finally {
     await fixture.close();
     await context.close();
@@ -383,18 +536,18 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     );
 
     await note.getByRole("button", { name: "Edit" }).click();
-    await panel.getByRole("textbox", { name: "Note text" }).fill("Captured from the real overlay.");
+    await panel.getByRole("textbox", { name: "Note text" }).fill(AGENT_TRIAL_NOTE);
     await panel.getByRole("button", { name: "Save changes" }).click();
-    await panel.getByText("Captured from the real overlay.").waitFor();
+    await panel.getByText(AGENT_TRIAL_NOTE).waitFor();
     await panel.close();
 
     const reopenedPanel = await context.newPage();
     await reopenedPanel.goto(panelUrl);
-    await reopenedPanel.getByText("Captured from the real overlay.").waitFor();
+    await reopenedPanel.getByText(AGENT_TRIAL_NOTE).waitFor();
     await reopenedPanel.getByRole("button", { name: "Compile plan" }).click();
     await reopenedPanel.getByRole("heading", { name: "Compile plan" }).waitFor();
     const markdownPreview = await reopenedPanel.locator("[data-markdown-preview]").textContent();
-    assertStringIncludes(markdownPreview ?? "", "Captured from the real overlay.");
+    assertStringIncludes(markdownPreview ?? "", AGENT_TRIAL_NOTE);
     assertEquals(markdownPreview?.includes("access_token"), false);
 
     const downloadStarted = reopenedPanel.waitForEvent("download");
@@ -455,6 +608,11 @@ Deno.test("popup extension page starts a session and controls a granted tab", as
       (element as HTMLButtonElement).click();
     });
     await waitForHostCount(page, 0);
+    await popup.waitForFunction(() =>
+      document.querySelector(".ps-popup-overlay-toggle .ps-switch")?.getAttribute(
+        "aria-checked",
+      ) === "false"
+    );
     assertEquals(await overlay.getAttribute("aria-checked"), "false");
 
     const optionsOpened = context.waitForEvent("page");
