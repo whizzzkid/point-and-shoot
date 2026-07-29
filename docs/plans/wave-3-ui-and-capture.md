@@ -531,8 +531,9 @@ compare the two and report any divergence rather than re-deriving the answer.
 
 This reconciliation performs the post-implementation plan sync from
 [rule 7](README.md#rules-for-working-any-wave). After the reconciliation PR merges, update the
-[tracking issue](https://github.com/whizzzkid/point-and-shoot/issues/3) so it shows Wave 3 done,
-includes W3.0, and opens Wave 4.
+[tracking issue](https://github.com/whizzzkid/point-and-shoot/issues/3) to include W3.0, record PRs
+#9–#13 as delivered, and name component-gallery completeness as the remaining Wave 3 blocker. Mark
+Wave 3 done and open Wave 4 there only after the gallery follow-up merges.
 
 ---
 
