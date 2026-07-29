@@ -63,9 +63,10 @@ export interface ActionTitleDetails {
 /** Injection target and payload for {@link BrowserShim.scripting}'s `executeScript`. */
 export interface ExecuteScriptInjection {
   readonly target: { readonly tabId: number; readonly frameIds?: readonly number[] };
-  readonly func?: () => unknown;
+  readonly func?: (firstArg?: unknown, secondArg?: unknown) => unknown;
   readonly args?: readonly unknown[];
   readonly files?: readonly string[];
+  readonly world?: "ISOLATED" | "MAIN";
 }
 
 /** Result entry produced by `executeScript`, one per matched frame. */
@@ -85,6 +86,7 @@ export interface DownloadOptions {
 export interface MessageSender {
   readonly tab?: TabInfo;
   readonly id?: string;
+  readonly frameId?: number;
 }
 
 /** Listener signature for `runtime.onMessage`. Returning `true` keeps the channel open. */

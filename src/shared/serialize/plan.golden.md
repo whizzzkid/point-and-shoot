@@ -53,7 +53,9 @@ Framework hint:
 
 ```json
 {
+  "file": "/workspace/src/checkout/CheckoutButton.tsx",
   "framework": "react",
+  "line": 17,
   "name": "CheckoutButton"
 }
 ```

@@ -76,7 +76,12 @@ export const EXPORT_FIXTURE_SESSION: Session = {
             parent: null,
             siblings: [],
           },
-          componentHint: { framework: "react", name: "CheckoutButton" },
+          componentHint: {
+            file: "/workspace/src/checkout/CheckoutButton.tsx",
+            framework: "react",
+            line: 17,
+            name: "CheckoutButton",
+          },
         },
       ],
       text: "The primary action is pushed against the card edge.",

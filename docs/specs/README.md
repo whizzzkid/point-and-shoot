@@ -24,3 +24,5 @@ than being chosen locally, so two specs cannot disagree about the same limit.
   concurrency, and failure behavior.
 - [Extension settings](settings.md) — versioned defaults, runtime consumers, browser shortcuts,
   validation, and destructive clearing.
+- [Framework component hints](framework-component-hints.md) — opt-in page-world probing, supported
+  development builds, evidence shape, trust boundary, and graceful degradation.

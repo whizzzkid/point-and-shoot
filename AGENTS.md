@@ -216,6 +216,11 @@ Actions pin to the official action's semver major, which is this project's one d
 | `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
 | `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
 | preact             | `10.29.7` | `deno.json` imports                                                                            |
+| react              | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| react-dom          | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| scheduler          | `0.23.2`  | `deno.json` imports; React fixture dependency resolver                                         |
+| loose-envify       | `1.4.0`   | `deno.json` imports; React fixture dependency resolver                                         |
+| vue                | `3.5.40`  | `deno.json` imports; W3.11 development probe fixture only                                      |
 | esbuild            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
 | web-ext            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
 | `actions/checkout` | `v7`      | CI workflows                                                                                   |

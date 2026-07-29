@@ -230,7 +230,7 @@ export function Options({ autoTheme, repository }: OptionsProps): JSX.Element {
                     />
                   </SettingRow>
                   <SettingRow
-                    help="Opt in to reading framework-specific page internals for component names."
+                    help="Opt in to page internals for component names and source locations."
                     label="Framework component hints"
                   >
                     <Switch

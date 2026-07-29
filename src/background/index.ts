@@ -3,6 +3,7 @@
 import { registerActivationHandlers } from "./activation.ts";
 import { browser } from "../shared/browser.ts";
 import { registerCaptureHandler } from "./capture.ts";
+import { registerFrameworkProbeHandler } from "./framework-probe.ts";
 import { registerNoteHandler } from "./notes.ts";
 
 /**
@@ -14,4 +15,5 @@ console.log("point-and-shoot: background ready");
 
 registerActivationHandlers(browser);
 registerCaptureHandler(browser);
+registerFrameworkProbeHandler(browser);
 registerNoteHandler(browser);

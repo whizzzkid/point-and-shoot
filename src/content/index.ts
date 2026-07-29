@@ -22,15 +22,15 @@ import {
   OPEN_NOTES_PANEL_MESSAGE,
   TOGGLE_OVERLAY_MESSAGE,
 } from "../shared/messages.ts";
-import { DEFAULT_SETTINGS, loadSettings } from "../shared/settings.ts";
+import { DEFAULT_SETTINGS, type ExtensionSettings, loadSettings } from "../shared/settings.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
-import type { ThemeOverride } from "../shared/theme.ts";
 import { CaptureOverlay } from "./CaptureOverlay.tsx";
 import { captureSelectedRegion } from "./capture.ts";
+import { addFrameworkComponentHints } from "./framework-hints.ts";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
 import { saveCapturedSelection } from "./notes.ts";
-import { watchThemeOverride } from "./settings-theme.ts";
+import { watchSettings } from "./settings-watcher.ts";
 import pickerStyles from "./picker/picker.css" with { type: "text" };
 import toolbarStyles from "./toolbar/toolbar.css" with { type: "text" };
 
@@ -61,14 +61,14 @@ interface MountedOverlay {
   readonly refreshTheme: () => void;
 }
 
-function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
+function mountOverlay(readSettings: () => ExtensionSettings): MountedOverlay {
   const sample = () =>
     sampleBackdrop(
       document,
       prospectiveToolbarBounds(ownerWindow),
       document.querySelector("[data-point-and-shoot-host]") ?? undefined,
     );
-  const initialTheme = resolveTheme({ override: readThemeOverride(), sample });
+  const initialTheme = resolveTheme({ override: readSettings().themeOverride, sample });
   const shadowHost = createShadowHost({
     inlineIconSprite: iconSprite,
     resourceUrl: (path) => browser.runtime.getURL(path),
@@ -83,16 +83,23 @@ function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
         iconSpriteUrl: "",
         onSelection: (selection) => {
           void (async () => {
-            const capture = await captureSelectedRegion(
-              browser.runtime,
-              shadowHost.element,
-              ownerWindow,
-              selection.region,
-            );
+            const [capture, enrichedSelection] = await Promise.all([
+              captureSelectedRegion(
+                browser.runtime,
+                shadowHost.element,
+                ownerWindow,
+                selection.region,
+              ),
+              addFrameworkComponentHints(
+                browser.runtime,
+                selection,
+                readSettings().frameworkHints,
+              ),
+            ]);
             const saved = await saveCapturedSelection(
               browser.runtime,
               capture,
-              selection,
+              enrichedSelection,
               { title: document.title, url: ownerWindow.location.href },
             );
             noteCount = saved.noteCount;
@@ -116,7 +123,7 @@ function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
     onChange: (theme) => {
       shadowHost.element.dataset.theme = theme;
     },
-    override: readThemeOverride,
+    override: () => readSettings().themeOverride,
     ownerWindow,
     sample,
   });
@@ -130,7 +137,7 @@ function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
     refreshTheme() {
       if (isMounted) {
         shadowHost.element.dataset.theme = resolveTheme({
-          override: readThemeOverride(),
+          override: readSettings().themeOverride,
           sample,
         });
       }
@@ -138,11 +145,11 @@ function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
   };
 }
 
-function initializeContent(initialThemeOverride: ThemeOverride): void {
-  let themeOverride = initialThemeOverride;
+function initializeContent(initialSettings: ExtensionSettings): void {
+  let settings = initialSettings;
   let refreshMountedTheme: (() => void) | undefined;
   const lifecycle = createOverlayLifecycle(() => {
-    const mounted = mountOverlay(() => themeOverride);
+    const mounted = mountOverlay(() => settings);
     refreshMountedTheme = mounted.refreshTheme;
     return () => {
       if (refreshMountedTheme === mounted.refreshTheme) refreshMountedTheme = undefined;
@@ -150,8 +157,8 @@ function initializeContent(initialThemeOverride: ThemeOverride): void {
     };
   });
   lifecycle.toggle();
-  watchThemeOverride(browser.storage, (override) => {
-    themeOverride = override;
+  watchSettings(browser.storage, (nextSettings) => {
+    settings = nextSettings;
     refreshMountedTheme?.();
   });
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -173,10 +180,10 @@ if (contentState === "true" || contentState === "initializing") {
   document.documentElement.dataset.pointAndShootContentReady = "initializing";
   void loadSettings(browser.storage.local)
     .catch((error: unknown) => {
-      console.error("point-and-shoot: initial theme settings could not load", error);
+      console.error("point-and-shoot: initial content settings could not load", error);
       return DEFAULT_SETTINGS;
     })
-    .then((settings) => initializeContent(settings.themeOverride))
+    .then(initializeContent)
     .catch((error: unknown) => {
       delete document.documentElement.dataset.pointAndShootContentReady;
       console.error("point-and-shoot: content script failed to initialize", error);

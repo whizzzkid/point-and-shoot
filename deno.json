@@ -7,7 +7,8 @@
   //
   // `.review-playground/` holds gitignored review scratch — deliberately broken
   // copies of real modules. Without this, `deno check` and `deno test` discover it
-  // and the authoritative gate fails on files that exist to fail.
+  // and the authoritative gate fails on files that exist to fail. React and Vue are pinned only
+  // for W3.11's real development-build framework fixtures; extension surfaces still use Preact.
   "exclude": [".claude-design/", ".review-playground/"],
   "lint": {
     "include": ["src/", "tests/", "build/", "scripts/"],
@@ -39,7 +40,12 @@
     "@std/path": "jsr:@std/path@1.1.6",
     "playwright": "npm:playwright@1.62.0",
     "fake-indexeddb": "npm:fake-indexeddb@6.2.5",
-    "preact": "npm:preact@10.29.7"
+    "preact": "npm:preact@10.29.7",
+    "react": "npm:react@18.3.1",
+    "react-dom/client": "npm:react-dom@18.3.1/client",
+    "scheduler": "npm:scheduler@0.23.2",
+    "loose-envify": "npm:loose-envify@1.4.0",
+    "vue": "npm:vue@3.5.40/dist/vue.esm-browser.js"
   },
   // `ci` is the one command both GitHub Actions and the lefthook pre-push gate
   // call, so local and remote cannot diverge. Tasks for e2e and smoke:firefox

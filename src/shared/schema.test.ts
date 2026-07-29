@@ -130,6 +130,45 @@ Deno.test("validateSession - accepts a fully populated element", () => {
   assert(result.valid, `expected valid, got ${JSON.stringify(result)}`);
 });
 
+Deno.test("validateSession - validates optional framework source metadata", () => {
+  const session = makeSession();
+  const note = session.notes[0];
+  assert(note !== undefined);
+  const element = {
+    selectors: { reachable: true, testIds: [] },
+    styleDigest: null,
+  };
+  const withHint = (componentHint: unknown) => ({
+    ...session,
+    notes: [{
+      ...note,
+      elements: [{ ...element, componentHint }],
+    }],
+  });
+
+  assertEquals(
+    validateSession(withHint({
+      file: "/workspace/src/CheckoutButton.tsx",
+      framework: "react",
+      line: 17,
+      name: "CheckoutButton",
+    })).valid,
+    true,
+  );
+  assertEquals(
+    validateSession(withHint({ framework: "jquery", name: "CheckoutButton" })).valid,
+    false,
+  );
+  assertEquals(
+    validateSession(withHint({ framework: "react", line: 0, name: "CheckoutButton" })).valid,
+    false,
+  );
+  assertEquals(
+    validateSession(withHint({ framework: "react", name: "x".repeat(1_025) })).valid,
+    false,
+  );
+});
+
 Deno.test("validateSession - accepts endedAt as either a string or null", () => {
   assert(validateSession(makeSession({ endedAt: null })).valid);
   assert(validateSession(makeSession({ endedAt: "2026-07-27T01:00:00.000Z" })).valid);
