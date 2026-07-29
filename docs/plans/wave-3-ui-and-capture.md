@@ -3,7 +3,8 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 3 assumes
 [wave 2](wave-2-core-libraries.md) is complete.
 
-- **Status:** complete — delivered across PRs #9–#13; exit criteria re-verified at `da321a5`
+- **Status:** exit reconciliation open — implementation delivered across PRs #9–#13; component
+  gallery completeness remains
 - **Goal:** the product. Every surface from the design bundle, built in Preact against the generated
   tokens, plus the capture pipeline and the export that turns notes into an agent prompt.
 
@@ -501,7 +502,7 @@ assert a page with no framework produces no hint and no console noise.
 
 ---
 
-## W3.12 — Pull requests
+## W3.12 — Pull request
 
 - [x] Delivery stack opened — [#9](https://github.com/whizzzkid/point-and-shoot/pull/9) →
       [#10](https://github.com/whizzzkid/point-and-shoot/pull/10) →
@@ -537,7 +538,7 @@ includes W3.0, and opens Wave 4.
 
 ## Wave 3 exit criteria
 
-- W3.0–W3.12 checked with real commit SHAs (W3.12 records a PR number rather than a SHA).
+- W3.0–W3.12 checked with real commit SHAs (W3.12 records delivery PR numbers rather than a SHA).
 - The `web_accessible_resources` fingerprinting surface is resolved either way, with an ADR saying
   which way and why.
 - The gesture-driven injection path is exercised end to end by at least one Playwright check, not
@@ -571,9 +572,16 @@ inferred from the delivery plan. This reconciliation is stacked on PR #13, so it
 | Component styles use generated tokens    | ✅      | design-token checks pass; the only raw pixel value found is the side-panel viewport breakpoint                         |
 | Captures exclude extension UI            | ✅      | `src/content/capture.browser.test.ts` asserts overlay and highlight pixels are absent during capture                   |
 | Export disclosure and query privacy      | ✅      | plan-view and built-flow tests assert the disclosure copy and strip `access_token` values                              |
-| Component gallery is complete            | ✅      | `src/ui/gallery/server.test.ts` renders every review state in both themes                                              |
+| Component gallery is complete            | ⚠️      | the gallery covers every component and every state separately, not every component-in-state combination                |
 
 The keyboard row is a stated qualification, not an implied pass. W3.1 supplies keyboard-operable
 native controls and the picker has a dedicated keyboard-only browser path, but the notes and plan
 browser suites use pointer activation. W4.4 owns the systematic keyboard and screen-reader audit, so
 it must close that evidence gap before release.
+
+The gallery row is an implementation gap, not only an evidence gap. `src/ui/gallery/server.test.ts`
+checks the 15 component specimens and eight review-state examples independently, while
+`src/ui/gallery/index.tsx` renders the state strip with only Button, Input, and Card. Wave 3 remains
+open—and therefore keeps the Wave 4 barrier closed—until the gallery renders and asserts every
+applicable component-in-state combination in both themes. This reconciliation does not weaken the
+original exit criterion to fit the delivered implementation.
