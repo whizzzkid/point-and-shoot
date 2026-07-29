@@ -1,0 +1,56 @@
+.ps-picker-highlight,
+.ps-picker-drag-box,
+.ps-picker-frame-shield {
+  background: var(--accent-subtle);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  pointer-events: none;
+  position: absolute;
+}
+
+.ps-picker-frame-shield {
+  background: transparent;
+  border: 0;
+  pointer-events: auto;
+}
+
+.ps-picker-highlight {
+  border: calc(var(--space-1) / 2) solid var(--accent);
+  box-shadow: var(--glow-accent);
+}
+
+.ps-picker-highlight::after {
+  animation: ps-picker-pulse var(--duration-slow) var(--ease-standard) infinite alternate;
+  border: calc(var(--space-1) / 4) solid var(--accent);
+  border-radius: inherit;
+  content: "";
+  inset: calc(var(--space-1) * -1);
+  pointer-events: none;
+  position: absolute;
+}
+
+.ps-picker-highlight[data-kind="pinned"]::after,
+.ps-picker-highlight[data-kind="unreachable"]::after {
+  animation: none;
+}
+
+.ps-picker-drag-box {
+  border: calc(var(--space-1) / 2) dashed var(--accent);
+  box-shadow: var(--glow-accent);
+}
+
+@keyframes ps-picker-pulse {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-picker-highlight::after {
+    animation: none;
+  }
+}

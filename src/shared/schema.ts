@@ -23,7 +23,7 @@ export interface RegionCapture {
     readonly width: number;
     readonly height: number;
   };
-  /** `true` when the region exceeded the 1024px cap and was downscaled to fit it. */
+  /** `true` when the region exceeded the viewport/bitmap or was downscaled to the 1024px cap. */
   readonly truncated: boolean;
 }
 

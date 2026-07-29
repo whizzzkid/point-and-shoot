@@ -103,3 +103,112 @@ Deno.test("shadow host isolates component styles from an aggressive page stylesh
     await fixture.close();
   }
 });
+
+Deno.test("shadow host follows the fullscreen element and restores its viewport parent", async () => {
+  const fixture = startFixtureServer();
+  const browser = await chromium.launch();
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    await page.addScriptTag({ content: await bundleHostHarness() });
+
+    const state = await page.evaluate(() => {
+      const test = (globalThis as unknown as {
+        pointShootHostTest: {
+          destroy(): void;
+          host: HTMLElement;
+        };
+      }).pointShootHostTest;
+      const fullscreenSurface = document.createElement("div");
+      document.body.append(fullscreenSurface);
+      Object.defineProperty(document, "fullscreenElement", {
+        configurable: true,
+        value: fullscreenSurface,
+      });
+      document.dispatchEvent(new Event("fullscreenchange"));
+      const fullscreen = {
+        parented: test.host.parentElement === fullscreenSurface,
+        position: test.host.style.getPropertyValue("position"),
+      };
+
+      Object.defineProperty(document, "fullscreenElement", {
+        configurable: true,
+        value: null,
+      });
+      document.dispatchEvent(new Event("fullscreenchange"));
+      const restored = {
+        parented: test.host.parentElement === document.documentElement,
+        position: test.host.style.getPropertyValue("position"),
+      };
+      test.destroy();
+      return { fullscreen, restored };
+    });
+
+    assertEquals(state, {
+      fullscreen: { parented: true, position: "absolute" },
+      restored: { parented: true, position: "fixed" },
+    });
+  } finally {
+    await browser.close();
+    await fixture.close();
+  }
+});
+
+Deno.test("shadow host rejects an invalid inline icon sprite without leaking page state", async () => {
+  const fixture = startFixtureServer();
+  const browser = await chromium.launch();
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    await page.addScriptTag({ content: await bundleHostHarness() });
+
+    const result = await page.evaluate(() => {
+      const test = (globalThis as unknown as {
+        pointShootHostTest: {
+          invalidSpriteResult(): {
+            readonly hostCount: number;
+            readonly message: string;
+            readonly sheetCount: number;
+          };
+        };
+      }).pointShootHostTest;
+      return test.invalidSpriteResult();
+    });
+
+    assertEquals(result, {
+      hostCount: 0,
+      message: "shadow host received an invalid icon sprite",
+      sheetCount: 0,
+    });
+  } finally {
+    await browser.close();
+    await fixture.close();
+  }
+});
+
+Deno.test("shadow host rejects sprite parsing in a document without a window", async () => {
+  const fixture = startFixtureServer();
+  const browser = await chromium.launch();
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    await page.addScriptTag({ content: await bundleHostHarness() });
+
+    const message = await page.evaluate(() => {
+      const test = (globalThis as unknown as {
+        pointShootHostTest: {
+          detachedDocumentSpriteResult(): string;
+        };
+      }).pointShootHostTest;
+      return test.detachedDocumentSpriteResult();
+    });
+
+    assertEquals(message, "shadow host cannot parse the icon sprite");
+  } finally {
+    await browser.close();
+    await fixture.close();
+  }
+});

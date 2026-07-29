@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import type { ComponentChildren, JSX } from "preact";
-import { useEffect, useId, useRef } from "preact/hooks";
+import { useId, useLayoutEffect, useRef } from "preact/hooks";
 
 /** Props accepted by {@link Dialog}. */
 export interface DialogProps {
@@ -38,7 +38,7 @@ export function Dialog(
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || dialogRef.current === null) return;
 
     const previousFocus = document.activeElement instanceof HTMLElement
