@@ -34,6 +34,10 @@ function createFakeChrome(): FakeChrome {
       getURL(path) {
         return `chrome-extension://dynamic-id/${path}`;
       },
+      openOptionsPage(callback) {
+        calls.push("runtime.openOptionsPage");
+        queueMicrotask(callback);
+      },
       sendMessage(message, callback) {
         calls.push("runtime.sendMessage");
         queueMicrotask(() => callback({ echo: message }));
@@ -147,6 +151,10 @@ function createFakeFirefox(): FakeFirefox {
       },
       getURL(path) {
         return `moz-extension://random-uuid/${path}`;
+      },
+      openOptionsPage() {
+        calls.push("runtime.openOptionsPage");
+        return Promise.resolve();
       },
       sendMessage(message) {
         calls.push("runtime.sendMessage");
@@ -364,6 +372,17 @@ Deno.test("browser shim - messages and executeScript results agree across engine
   assertEquals(await firefoxShim.scripting.executeScript(injection), [
     { frameId: 0, result: "hi" },
   ]);
+});
+
+Deno.test("browser shim - options opening agrees across engines", async () => {
+  const { chromeGlobal, calls: chromeCalls } = createFakeChrome();
+  const { firefoxGlobal, calls: firefoxCalls } = createFakeFirefox();
+
+  await createBrowserShim({ chrome: chromeGlobal }).runtime.openOptionsPage();
+  await createBrowserShim({ browser: firefoxGlobal }).runtime.openOptionsPage();
+
+  assertEquals(chromeCalls, ["runtime.openOptionsPage"]);
+  assertEquals(firefoxCalls, ["runtime.openOptionsPage"]);
 });
 
 Deno.test("browser shim - browser action state agrees across engines", async () => {

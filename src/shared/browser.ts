@@ -124,6 +124,7 @@ export interface BrowserShim {
      *   protected by `use_dynamic_url`; Firefox returns its random extension-origin UUID.
      */
     getURL(path: string): string;
+    openOptionsPage(): Promise<void>;
     sendMessage(message: unknown): Promise<unknown>;
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
@@ -173,6 +174,7 @@ export interface ChromeGlobalShape {
   };
   readonly runtime: {
     getURL(path: string): string;
+    openOptionsPage(callback: () => void): void;
     sendMessage(message: unknown, callback: (response: unknown) => void): void;
     readonly onMessage: { addListener(listener: MessageListener): void };
     readonly lastError: { readonly message?: string } | undefined;
@@ -218,6 +220,7 @@ export interface FirefoxGlobalShape {
     /** Firefox-only engine identity method, used to distinguish namespace aliases safely. */
     getBrowserInfo(): Promise<{ readonly name: string }>;
     getURL(path: string): string;
+    openOptionsPage(): Promise<void>;
     sendMessage(message: unknown): Promise<unknown>;
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
@@ -302,6 +305,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
     runtime: {
       getURL(path) {
         return chromeGlobal.runtime.getURL(path);
+      },
+      openOptionsPage() {
+        return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.runtime.openOptionsPage(cb));
       },
       sendMessage(message) {
         return promisifyWithResult(
@@ -390,6 +396,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
     runtime: {
       getURL(path) {
         return firefoxGlobal.runtime.getURL(path);
+      },
+      openOptionsPage() {
+        return firefoxGlobal.runtime.openOptionsPage();
       },
       sendMessage(message) {
         return firefoxGlobal.runtime.sendMessage(message);

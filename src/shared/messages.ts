@@ -5,6 +5,12 @@ import { MAX_SIBLINGS } from "./style-digest.ts";
 /** Runtime message sent from the background to toggle the current page's overlay. */
 export const TOGGLE_OVERLAY_MESSAGE = "point-and-shoot:toggle-overlay";
 
+/** Runtime message sent from extension UI to toggle the active tab through the shared controller. */
+export const TOGGLE_ACTIVE_TAB_MESSAGE = "point-and-shoot:toggle-active-tab";
+
+/** Tab message sent from extension UI to read the current content realm's mounted state. */
+export const GET_OVERLAY_STATE_MESSAGE = "point-and-shoot:get-overlay-state";
+
 /** Runtime message sent from the content picker to capture one visible viewport region. */
 export const CAPTURE_REGION_MESSAGE = "point-and-shoot:capture-region";
 
@@ -13,6 +19,20 @@ export const ADD_NOTE_MESSAGE = "point-and-shoot:add-note";
 
 /** Runtime message sent by a direct content-UI gesture to open the notes workspace. */
 export const OPEN_NOTES_PANEL_MESSAGE = "point-and-shoot:open-notes-panel";
+
+/** State returned by the content realm after an overlay state query or toggle. */
+export interface OverlayStateResponse {
+  readonly mounted: boolean;
+}
+
+/** Result returned by the background after a popup-triggered active-tab activation. */
+export type ToggleActiveTabResponse =
+  | {
+    readonly ok: true;
+    readonly mounted: boolean;
+    readonly result: "injected" | "toggled" | "unavailable";
+  }
+  | { readonly ok: false; readonly error: { readonly message: string } };
 
 /** Captured note payload sent from the inspected page to extension-owned persistence. */
 export interface AddNoteRequest {
@@ -72,6 +92,37 @@ export type CaptureRegionResponse =
 
 function isRecord(candidate: unknown): candidate is Record<string, unknown> {
   return typeof candidate === "object" && candidate !== null;
+}
+
+/**
+ * Narrows a content-script reply to its current overlay state.
+ *
+ * @param message Value returned by a tab message.
+ * @returns Whether the reply contains only a boolean mounted state.
+ */
+export function isOverlayStateResponse(message: unknown): message is OverlayStateResponse {
+  return isRecord(message) &&
+    hasOnlyKeys(message, ["mounted"]) &&
+    typeof message.mounted === "boolean";
+}
+
+/**
+ * Narrows a background reply to a popup-triggered activation result.
+ *
+ * @param message Value returned by the runtime message channel.
+ * @returns Whether the reply is a valid success or typed failure.
+ */
+export function isToggleActiveTabResponse(message: unknown): message is ToggleActiveTabResponse {
+  if (!isRecord(message) || typeof message.ok !== "boolean") return false;
+  if (!message.ok) {
+    return hasOnlyKeys(message, ["error", "ok"]) &&
+      isRecord(message.error) &&
+      hasOnlyKeys(message.error, ["message"]) &&
+      typeof message.error.message === "string";
+  }
+  return hasOnlyKeys(message, ["mounted", "ok", "result"]) &&
+    typeof message.mounted === "boolean" &&
+    ["injected", "toggled", "unavailable"].includes(message.result as string);
 }
 
 function hasFiniteNumbers(candidate: unknown, fields: readonly string[]): boolean {

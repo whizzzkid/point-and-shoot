@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
-import type { ActionClickedListener, CommandListener, TabInfo } from "../shared/browser.ts";
+import type { CommandListener, MessageListener } from "../shared/browser.ts";
+import { TOGGLE_ACTIVE_TAB_MESSAGE } from "../shared/messages.ts";
 import {
   type ActivationBrowser,
   createActivationController,
@@ -9,20 +10,27 @@ import {
 interface FakeActivationBrowser {
   readonly browser: ActivationBrowser;
   readonly calls: string[];
-  actionListener(): ActionClickedListener | undefined;
   commandListener(): CommandListener | undefined;
+  runtimeListener(): MessageListener | undefined;
   rejectInjection(error: Error): void;
   resolveMessage(): void;
 }
 
 function createFakeActivationBrowser(): FakeActivationBrowser {
   const calls: string[] = [];
-  let actionListener: ActionClickedListener | undefined;
   let commandListener: CommandListener | undefined;
+  let runtimeListener: MessageListener | undefined;
   let injectionError: Error | undefined;
   let messageError: Error | undefined = new Error("no receiving end");
 
   const browser: ActivationBrowser = {
+    runtime: {
+      onMessage: {
+        addListener(listener) {
+          runtimeListener = listener;
+        },
+      },
+    },
     tabs: {
       query() {
         calls.push("tabs.query");
@@ -44,11 +52,6 @@ function createFakeActivationBrowser(): FakeActivationBrowser {
       },
     },
     action: {
-      onClicked: {
-        addListener(listener) {
-          actionListener = listener;
-        },
-      },
       setBadgeText({ tabId, text }) {
         calls.push(`action.setBadgeText:${tabId}:${text}`);
         return Promise.resolve();
@@ -70,8 +73,8 @@ function createFakeActivationBrowser(): FakeActivationBrowser {
   return {
     browser,
     calls,
-    actionListener: () => actionListener,
     commandListener: () => commandListener,
+    runtimeListener: () => runtimeListener,
     rejectInjection(error) {
       injectionError = error;
     },
@@ -87,7 +90,7 @@ Deno.test("activation - toggles an existing content realm without reinjecting", 
 
   const result = await createActivationController(fake.browser).toggle(7);
 
-  assertEquals(result, "toggled");
+  assertEquals(result, { mounted: false, result: "toggled" });
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
     "action.setBadgeText:7:",
@@ -100,7 +103,7 @@ Deno.test("activation - injects once when the tab has no content listener", asyn
 
   const result = await createActivationController(fake.browser).toggle(7);
 
-  assertEquals(result, "injected");
+  assertEquals(result, { mounted: true, result: "injected" });
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
     "scripting.executeScript:7:content/content.js",
@@ -115,7 +118,7 @@ Deno.test("activation - exposes restricted-page failures in the browser action",
 
   const result = await createActivationController(fake.browser).toggle(7);
 
-  assertEquals(result, "unavailable");
+  assertEquals(result, { mounted: false, result: "unavailable" });
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
     "scripting.executeScript:7:content/content.js",
@@ -156,28 +159,43 @@ Deno.test("activation - concurrent requests share one injection", async () => {
   assertEquals(calls, ["tabs.sendMessage:7"]);
   releaseMessage?.();
 
-  assertEquals(await Promise.all([first, second]), ["injected", "injected"]);
+  assertEquals(await Promise.all([first, second]), [
+    { mounted: true, result: "injected" },
+    { mounted: true, result: "injected" },
+  ]);
   assertEquals(calls, ["tabs.sendMessage:7", "scripting.executeScript:7"]);
 });
 
-Deno.test("activation - action and shortcut listeners work without a popup", async () => {
+Deno.test("activation - popup messages toggle the queried active tab and return its state", async () => {
   const fake = createFakeActivationBrowser();
   fake.resolveMessage();
   registerActivationHandlers(fake.browser);
-  const actionListener = fake.actionListener();
+  const response = new Promise<unknown>((resolve) => {
+    const retained = fake.runtimeListener()?.(TOGGLE_ACTIVE_TAB_MESSAGE, {}, resolve);
+    assertEquals(retained, true);
+  });
+
+  assertEquals(await response, { mounted: false, ok: true, result: "toggled" });
+  assertEquals(fake.calls, [
+    "tabs.query",
+    "tabs.sendMessage:9",
+    "action.setBadgeText:9:",
+    "action.setTitle:9:Point and Shoot",
+  ]);
+});
+
+Deno.test("activation - toolbar click stays manifest-owned and the shortcut works without a popup", async () => {
+  const fake = createFakeActivationBrowser();
+  fake.resolveMessage();
+  registerActivationHandlers(fake.browser);
   const commandListener = fake.commandListener();
 
-  actionListener?.({} satisfies TabInfo);
   commandListener?.("unrelated-command");
-  actionListener?.({ id: 7 } satisfies TabInfo);
   commandListener?.("toggle-capture");
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   assertEquals(fake.calls, [
-    "tabs.sendMessage:7",
     "tabs.query",
-    "action.setBadgeText:7:",
-    "action.setTitle:7:Point and Shoot",
     "tabs.sendMessage:9",
     "action.setBadgeText:9:",
     "action.setTitle:9:Point and Shoot",

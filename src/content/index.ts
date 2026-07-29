@@ -17,7 +17,11 @@
 import { h, render } from "preact";
 import { browser } from "../shared/browser.ts";
 import iconSprite from "../shared/design/icons.svg" with { type: "text" };
-import { OPEN_NOTES_PANEL_MESSAGE, TOGGLE_OVERLAY_MESSAGE } from "../shared/messages.ts";
+import {
+  GET_OVERLAY_STATE_MESSAGE,
+  OPEN_NOTES_PANEL_MESSAGE,
+  TOGGLE_OVERLAY_MESSAGE,
+} from "../shared/messages.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
 import { CaptureOverlay } from "./CaptureOverlay.tsx";
 import { captureSelectedRegion } from "./capture.ts";
@@ -121,6 +125,10 @@ if (document.documentElement.dataset.pointAndShootContentReady === "true") {
   const lifecycle = createOverlayLifecycle(mountOverlay);
   lifecycle.toggle();
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message === GET_OVERLAY_STATE_MESSAGE) {
+      sendResponse({ mounted: lifecycle.isMounted() });
+      return;
+    }
     if (message !== TOGGLE_OVERLAY_MESSAGE) return;
     sendResponse({ mounted: lifecycle.toggle() });
   });

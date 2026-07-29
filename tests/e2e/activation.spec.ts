@@ -57,23 +57,24 @@ async function launchExtension(): Promise<{
   });
   const serviceWorker = context.serviceWorkers()[0] ??
     await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
-  // CDP exposes the worker before its module has necessarily registered listeners. Triggering the
-  // action in that window is a no-op, so synchronize on the exact readiness condition under test.
+  // CDP exposes the worker before its module has necessarily registered listeners. Opening the
+  // popup in that window can race its first message, so synchronize on the background channels it
+  // uses.
   const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
   while (Date.now() < readinessDeadline) {
     const listenersReady = await serviceWorker.evaluate(() => {
       const extensionGlobal = globalThis as unknown as {
         readonly chrome: {
-          readonly action: {
-            readonly onClicked: { hasListeners(): boolean };
-          };
           readonly commands: {
             readonly onCommand: { hasListeners(): boolean };
           };
+          readonly runtime: {
+            readonly onMessage: { hasListeners(): boolean };
+          };
         };
       };
-      return extensionGlobal.chrome.action.onClicked.hasListeners() &&
-        extensionGlobal.chrome.commands.onCommand.hasListeners();
+      return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
+        extensionGlobal.chrome.runtime.onMessage.hasListeners();
     });
     if (listenersReady) {
       return {
@@ -120,6 +121,17 @@ async function triggerExtensionAction(
   } finally {
     await browserSession.detach();
   }
+}
+
+async function openExtensionPopup(
+  context: BrowserContext,
+  page: Page,
+  extensionId: string,
+): Promise<Page> {
+  await triggerExtensionAction(context, page, extensionId);
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
+  return popup;
 }
 
 async function waitForHostCount(page: Page, expectedCount: number): Promise<void> {
@@ -247,7 +259,7 @@ async function waitForCapturedNote(
   });
 }
 
-Deno.test("browser action toggles one host and remounts cleanly after navigation", async () => {
+Deno.test("toolbar popup toggles one host and remounts cleanly after navigation", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId, serviceWorker } = await launchExtension();
@@ -261,7 +273,12 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.goto(`${fixture.base}/light.html`);
 
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     try {
       await waitForHostCount(page, 1);
     } catch (error) {
@@ -275,10 +292,18 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
         { cause: error },
       );
     }
-    await triggerExtensionAction(context, page, extensionId);
+    const overlay = popup.getByRole("switch", { name: "Overlay on this tab" });
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 0);
-    await triggerExtensionAction(context, page, extensionId);
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
+    await popup.close();
 
     await page.goto(`${fixture.base}/dark.html`);
     assertEquals(
@@ -286,7 +311,12 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
       0,
       "navigation left an orphaned host in the new document",
     );
-    await triggerExtensionAction(context, page, extensionId);
+    const reopenedPopup = await openExtensionPopup(context, page, extensionId);
+    await reopenedPopup.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await page.bringToFront();
+    await reopenedPopup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
     assertEquals(
       await page.locator("[data-point-and-shoot-host]").getAttribute("data-theme"),
@@ -318,7 +348,12 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     const page = await context.newPage();
     const recordedUrl = `${fixture.base}/light.html?access_token=e2e-secret`;
     await page.goto(recordedUrl);
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
     await page.getByTestId("light-action").click();
 
@@ -389,6 +424,54 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
   }
 });
 
+Deno.test("popup extension page starts a session and controls a granted tab", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId } = await launchExtension();
+
+  try {
+    const runtimeErrors: string[] = [];
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    popup.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(message.text());
+    });
+    popup.on("pageerror", (error) => runtimeErrors.push(error.message));
+    assertEquals(popup.url(), `chrome-extension://${extensionId}/popup/popup.html`);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    await popup.getByRole("heading", { name: "Untitled session" }).waitFor();
+    const overlay = popup.getByRole("switch", { name: "Overlay on this tab" });
+    assertEquals(await overlay.getAttribute("aria-checked"), "true");
+
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 0);
+    assertEquals(await overlay.getAttribute("aria-checked"), "false");
+
+    const optionsOpened = context.waitForEvent("page");
+    await popup.getByRole("button", { name: "Open options" }).click();
+    const options = await optionsOpened;
+    await options.waitForLoadState();
+    assertEquals(
+      options.url(),
+      `chrome-extension://${extensionId}/options/options.html`,
+    );
+    assertEquals(runtimeErrors, [], "popup runtime logged an error");
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
 Deno.test("restricted-page activation exposes a clear browser-action message", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const { context, extensionId, serviceWorker } = await launchExtension();
@@ -396,7 +479,15 @@ Deno.test("restricted-page activation exposes a clear browser-action message", a
   try {
     const page = await context.newPage();
     await page.goto("chrome://extensions/");
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await popup.getByRole("alert").getByText(
+      "Point & Shoot is unavailable on this page.",
+    ).waitFor();
 
     const actionState = await readActiveActionState(serviceWorker, { waitForBadge: true });
 

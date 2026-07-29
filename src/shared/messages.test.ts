@@ -6,6 +6,8 @@ import {
   isAddNoteResponse,
   isCaptureRegionRequest,
   isCaptureRegionResponse,
+  isOverlayStateResponse,
+  isToggleActiveTabResponse,
 } from "./messages.ts";
 
 const VALID_REQUEST = {
@@ -163,6 +165,23 @@ Deno.test("isAddNoteResponse accepts durable results and typed errors", () => {
       ok: true,
       sessionId: "session-1",
     }),
+    false,
+  );
+});
+
+Deno.test("overlay response guards accept exact success and failure shapes", () => {
+  assertEquals(isOverlayStateResponse({ mounted: true }), true);
+  assertEquals(isOverlayStateResponse({ mounted: false, extra: true }), false);
+  assertEquals(
+    isToggleActiveTabResponse({ mounted: true, ok: true, result: "injected" }),
+    true,
+  );
+  assertEquals(
+    isToggleActiveTabResponse({ error: { message: "Unavailable" }, ok: false }),
+    true,
+  );
+  assertEquals(
+    isToggleActiveTabResponse({ mounted: "yes", ok: true, result: "toggled" }),
     false,
   );
 });
