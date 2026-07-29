@@ -287,9 +287,10 @@ deviate. Each has a corresponding ADR under `docs/adr/`.
 
 - IndexedDB inside the extension. Versioned JSON is the canonical record; Markdown and clipboard
   output are projections rendered from it, never the source of truth.
-- Screenshots: WebP, quality 0.7, capped at 1024px longest edge. Base64 data URI inline in the JSON
-  record; the Markdown wrapper references extracted `./shots/note-NN.webp` files instead, because
-  agents read image files far more reliably than multi-hundred-KB inline data URIs.
+- Screenshots: WebP, default quality 0.7, capped at a default 1024px longest edge; W3.9 exposes
+  fixed, validated alternatives for both values. Base64 data URI inline in the JSON record; the
+  Markdown wrapper references extracted `./shots/note-NN.webp` files instead, because agents read
+  image files far more reliably than multi-hundred-KB inline data URIs.
 - Element identity is a **bundle**, not one selector: XPath, unique CSS path, test ids, ARIA role +
   accessible name, tag + class list, and a text snippet — plus an opt-in framework probe (React
   fiber `_debugSource`, Vue `__vueParentComponent`, Svelte/Angular markers) naming the likely

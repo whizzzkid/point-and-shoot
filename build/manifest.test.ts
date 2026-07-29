@@ -16,6 +16,15 @@ Deno.test("manifest - both targets declare manifest_version 3", () => {
   assertEquals(forFirefox().manifest_version, 3);
 });
 
+Deno.test("manifest - the toolbar action opens the session launcher popup", () => {
+  const expected = {
+    default_popup: "popup/popup.html",
+    default_title: "Point and Shoot",
+  };
+  assertEquals(forChrome().action, expected);
+  assertEquals(forFirefox().action, expected);
+});
+
 Deno.test("manifest - permissions are exactly the settled six, no more", () => {
   assertEquals(manifestBase.permissions, [
     "activeTab",
@@ -79,6 +88,12 @@ Deno.test("manifest - chrome uses a module service worker and side_panel, no bac
     "sidepanel/sidepanel.html",
   );
   assertFalse("sidebar_action" in chrome);
+});
+
+Deno.test("manifest - both targets expose the built options page in a full tab", () => {
+  const expected = { open_in_tab: true, page: "options/options.html" };
+  assertEquals(forChrome().options_ui, expected);
+  assertEquals(forFirefox().options_ui, expected);
 });
 
 Deno.test("manifest - firefox uses background.scripts and sidebar_action, no service worker", () => {

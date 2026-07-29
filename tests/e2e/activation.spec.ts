@@ -57,23 +57,24 @@ async function launchExtension(): Promise<{
   });
   const serviceWorker = context.serviceWorkers()[0] ??
     await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
-  // CDP exposes the worker before its module has necessarily registered listeners. Triggering the
-  // action in that window is a no-op, so synchronize on the exact readiness condition under test.
+  // CDP exposes the worker before its module has necessarily registered listeners. Opening the
+  // popup in that window can race its first message, so synchronize on the background channels it
+  // uses.
   const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
   while (Date.now() < readinessDeadline) {
     const listenersReady = await serviceWorker.evaluate(() => {
       const extensionGlobal = globalThis as unknown as {
         readonly chrome: {
-          readonly action: {
-            readonly onClicked: { hasListeners(): boolean };
-          };
           readonly commands: {
             readonly onCommand: { hasListeners(): boolean };
           };
+          readonly runtime: {
+            readonly onMessage: { hasListeners(): boolean };
+          };
         };
       };
-      return extensionGlobal.chrome.action.onClicked.hasListeners() &&
-        extensionGlobal.chrome.commands.onCommand.hasListeners();
+      return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
+        extensionGlobal.chrome.runtime.onMessage.hasListeners();
     });
     if (listenersReady) {
       return {
@@ -120,6 +121,17 @@ async function triggerExtensionAction(
   } finally {
     await browserSession.detach();
   }
+}
+
+async function openExtensionPopup(
+  context: BrowserContext,
+  page: Page,
+  extensionId: string,
+): Promise<Page> {
+  await triggerExtensionAction(context, page, extensionId);
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
+  return popup;
 }
 
 async function waitForHostCount(page: Page, expectedCount: number): Promise<void> {
@@ -247,7 +259,7 @@ async function waitForCapturedNote(
   });
 }
 
-Deno.test("browser action toggles one host and remounts cleanly after navigation", async () => {
+Deno.test("toolbar popup toggles one host and remounts cleanly after navigation", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId, serviceWorker } = await launchExtension();
@@ -261,7 +273,12 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.goto(`${fixture.base}/light.html`);
 
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     try {
       await waitForHostCount(page, 1);
     } catch (error) {
@@ -275,10 +292,18 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
         { cause: error },
       );
     }
-    await triggerExtensionAction(context, page, extensionId);
+    const overlay = popup.getByRole("switch", { name: "Overlay on this tab" });
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 0);
-    await triggerExtensionAction(context, page, extensionId);
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
+    await popup.close();
 
     await page.goto(`${fixture.base}/dark.html`);
     assertEquals(
@@ -286,7 +311,12 @@ Deno.test("browser action toggles one host and remounts cleanly after navigation
       0,
       "navigation left an orphaned host in the new document",
     );
-    await triggerExtensionAction(context, page, extensionId);
+    const reopenedPopup = await openExtensionPopup(context, page, extensionId);
+    await reopenedPopup.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await page.bringToFront();
+    await reopenedPopup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
     assertEquals(
       await page.locator("[data-point-and-shoot-host]").getAttribute("data-theme"),
@@ -318,7 +348,12 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     const page = await context.newPage();
     const recordedUrl = `${fixture.base}/light.html?access_token=e2e-secret`;
     await page.goto(recordedUrl);
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
     await waitForHostCount(page, 1);
     await page.getByTestId("light-action").click();
 
@@ -389,6 +424,168 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
   }
 });
 
+Deno.test("popup extension page starts a session and controls a granted tab", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId } = await launchExtension();
+
+  try {
+    const runtimeErrors: string[] = [];
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    popup.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(message.text());
+    });
+    popup.on("pageerror", (error) => runtimeErrors.push(error.message));
+    assertEquals(popup.url(), `chrome-extension://${extensionId}/popup/popup.html`);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    await popup.getByRole("heading", { name: "Untitled session" }).waitFor();
+    const overlay = popup.getByRole("switch", { name: "Overlay on this tab" });
+    assertEquals(await overlay.getAttribute("aria-checked"), "true");
+
+    await page.bringToFront();
+    await overlay.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 0);
+    assertEquals(await overlay.getAttribute("aria-checked"), "false");
+
+    const optionsOpened = context.waitForEvent("page");
+    await popup.getByRole("button", { name: "Open options" }).click();
+    const options = await optionsOpened;
+    await options.waitForLoadState();
+    assertEquals(
+      options.url(),
+      `chrome-extension://${extensionId}/options/options.html`,
+    );
+    assertEquals(runtimeErrors, [], "popup runtime logged an error");
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
+Deno.test("options persist every setting and update a mounted overlay theme", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId } = await launchExtension();
+
+  try {
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.getByRole("heading", { name: "Settings" }).waitFor();
+    await options.getByLabel("Theme").selectOption("dark");
+    await options.getByText("Saved.").waitFor();
+
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    await page.evaluate(() => {
+      const state = globalThis as unknown as { firstPointShootTheme?: string };
+      const observer = new MutationObserver(() => {
+        const host = document.querySelector<HTMLElement>("[data-point-and-shoot-host]");
+        if (host === null || state.firstPointShootTheme !== undefined) return;
+        const theme = host.dataset.theme;
+        if (theme === undefined) return;
+        state.firstPointShootTheme = theme;
+        observer.disconnect();
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    });
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    assertEquals(
+      await page.locator("[data-point-and-shoot-host]").getAttribute("data-theme"),
+      "dark",
+    );
+    assertEquals(
+      await page.evaluate(() =>
+        (globalThis as unknown as { firstPointShootTheme?: string }).firstPointShootTheme
+      ),
+      "dark",
+    );
+
+    await options.bringToFront();
+    await options.getByLabel("Theme").selectOption("light");
+    await options.getByText("Saved.").waitFor();
+    await page.waitForFunction(() =>
+      document.querySelector("[data-point-and-shoot-host]")?.getAttribute("data-theme") === "light"
+    );
+    await options.getByRole("switch", { name: "Framework component hints" }).click();
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("tab", { name: "Capture" }).click();
+    await options.getByLabel("Screenshot quality").selectOption("0.85");
+    await options.getByText("Saved.").waitFor();
+    await options.getByLabel("Maximum screenshot dimension").selectOption("2048");
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("tab", { name: "Export & privacy" }).click();
+    await options.getByLabel("Export size budget").selectOption("8000000");
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("switch", { name: "Strip sensitive query strings" }).click();
+    await options.getByText("Saved.").waitFor();
+
+    await options.reload();
+    await options.getByRole("heading", { name: "Settings" }).waitFor();
+    await options.waitForFunction(() =>
+      (document.querySelector("select") as HTMLSelectElement | null)?.value === "light"
+    );
+    assertEquals(await options.getByLabel("Theme").inputValue(), "light");
+    assertEquals(
+      await options.getByRole("switch", { name: "Framework component hints" }).getAttribute(
+        "aria-checked",
+      ),
+      "true",
+    );
+    await options.getByRole("tab", { name: "Capture" }).click();
+    assertEquals(await options.getByLabel("Screenshot quality").inputValue(), "0.85");
+    assertEquals(await options.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
+    await options.getByRole("tab", { name: "Export & privacy" }).click();
+    assertEquals(await options.getByLabel("Export size budget").inputValue(), "8000000");
+    assertEquals(
+      await options.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
+        "aria-checked",
+      ),
+      "false",
+    );
+    await options.getByRole("tab", { name: "Shortcuts" }).click();
+    const shortcut = options.locator(".ps-options-shortcut");
+    await shortcut.waitFor();
+    assertEquals((await shortcut.textContent())?.trim() === "Not assigned", false);
+    const shortcutSettingsOpened = context.waitForEvent("page");
+    await options.getByRole("button", { name: "Manage browser shortcuts" }).click();
+    const shortcutSettings = await shortcutSettingsOpened;
+    await shortcutSettings.waitForLoadState();
+    assertEquals(shortcutSettings.url(), "chrome://extensions/shortcuts");
+
+    const panel = await context.newPage();
+    await panel.goto(`chrome-extension://${extensionId}/sidepanel/sidepanel.html`);
+    await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await panel.getByText(/of 8\.00 MB/).waitFor();
+
+    await options.bringToFront();
+    await options.getByRole("tab", { name: "Data" }).click();
+    await options.getByRole("button", { name: "Clear all sessions" }).click();
+    await options.getByRole("dialog").getByRole("button", { name: "Clear all sessions" }).click();
+    await options.getByText("All sessions cleared.").waitFor();
+    await panel.reload();
+    await panel.getByRole("heading", { name: "No notes yet" }).waitFor();
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
 Deno.test("restricted-page activation exposes a clear browser-action message", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const { context, extensionId, serviceWorker } = await launchExtension();
@@ -396,7 +593,15 @@ Deno.test("restricted-page activation exposes a clear browser-action message", a
   try {
     const page = await context.newPage();
     await page.goto("chrome://extensions/");
-    await triggerExtensionAction(context, page, extensionId);
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await popup.getByRole("alert").getByText(
+      "Point & Shoot is unavailable on this page.",
+    ).waitFor();
 
     const actionState = await readActiveActionState(serviceWorker, { waitForBadge: true });
 

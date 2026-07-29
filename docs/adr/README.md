@@ -25,6 +25,7 @@ have one behind them.
 | [0011](0011-generated-design-tokens-with-drift-check.md)        | Generate design tokens from the bundle, fail CI on drift         | Accepted 2026-07-24 |
 | [0012](0012-dynamic-web-accessible-resource-urls.md)            | Rotate Chrome web-accessible resource URLs per session           | Accepted 2026-07-28 |
 | [0013](0013-export-bundles-contain-page-data.md)                | Disclose page data before export                                 | Accepted 2026-07-28 |
+| [0014](0014-toolbar-action-opens-popup.md)                      | Let the toolbar action open the launcher popup                   | Accepted 2026-07-28 |
 
 Five of these are load-bearing constraints rather than preferences, and reversing one by accident is
 easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no

@@ -1,9 +1,16 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { type ChromeGlobalShape, createBrowserShim, type FirefoxGlobalShape } from "./browser.ts";
+import {
+  type ChromeGlobalShape,
+  type CommandInfo,
+  createBrowserShim,
+  type FirefoxGlobalShape,
+  type StorageChangedListener,
+} from "./browser.ts";
 
 interface FakeChrome {
   chromeGlobal: ChromeGlobalShape;
   calls: string[];
+  emitStorageChange(changes: Parameters<StorageChangedListener>[0]): void;
   setLastError(message: string | undefined): void;
 }
 
@@ -11,6 +18,7 @@ interface FakeChrome {
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
+  const storageListeners = new Set<StorageChangedListener>();
   let lastErrorMessage: string | undefined;
 
   const chromeGlobal: ChromeGlobalShape = {
@@ -25,6 +33,10 @@ function createFakeChrome(): FakeChrome {
         calls.push("tabs.query");
         queueMicrotask(() => callback([{ id: 1, windowId: 1, active: true }]));
       },
+      create(properties, callback) {
+        calls.push(`tabs.create:${properties.url}`);
+        queueMicrotask(() => callback({ id: 2, windowId: 1, active: true }));
+      },
       sendMessage(tabId, message, callback) {
         calls.push(`tabs.sendMessage:${tabId}`);
         queueMicrotask(() => callback({ echo: message }));
@@ -33,6 +45,10 @@ function createFakeChrome(): FakeChrome {
     runtime: {
       getURL(path) {
         return `chrome-extension://dynamic-id/${path}`;
+      },
+      openOptionsPage(callback) {
+        calls.push("runtime.openOptionsPage");
+        queueMicrotask(callback);
       },
       sendMessage(message, callback) {
         calls.push("runtime.sendMessage");
@@ -44,6 +60,14 @@ function createFakeChrome(): FakeChrome {
       },
     },
     storage: {
+      onChanged: {
+        addListener(listener) {
+          storageListeners.add(listener);
+        },
+        removeListener(listener) {
+          storageListeners.delete(listener);
+        },
+      },
       local: {
         get(keys, callback) {
           calls.push("storage.local.get");
@@ -81,7 +105,19 @@ function createFakeChrome(): FakeChrome {
         queueMicrotask(() => callback([{ frameId: 0, result: injection.args?.[0] }]));
       },
     },
-    commands: { onCommand: { addListener() {} } },
+    commands: {
+      getAll(callback) {
+        calls.push("commands.getAll");
+        queueMicrotask(() =>
+          callback([{
+            description: "Toggle capture",
+            name: "toggle-capture",
+            shortcut: "Command+Shift+P",
+          }])
+        );
+      },
+      onCommand: { addListener() {} },
+    },
     downloads: {
       download(_options, callback) {
         calls.push("downloads.download");
@@ -110,6 +146,9 @@ function createFakeChrome(): FakeChrome {
   return {
     chromeGlobal,
     calls,
+    emitStorageChange(changes) {
+      for (const listener of storageListeners) listener(changes, "local");
+    },
     setLastError(message) {
       lastErrorMessage = message;
     },
@@ -119,12 +158,14 @@ function createFakeChrome(): FakeChrome {
 interface FakeFirefox {
   firefoxGlobal: FirefoxGlobalShape;
   calls: string[];
+  emitStorageChange(changes: Parameters<StorageChangedListener>[0]): void;
 }
 
 /** Firefox-shaped fake: promise-native for asynchronous calls, modeled on the real MV3 signatures. */
 function createFakeFirefox(): FakeFirefox {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
+  const storageListeners = new Set<StorageChangedListener>();
 
   const firefoxGlobal: FirefoxGlobalShape = {
     tabs: {
@@ -135,6 +176,10 @@ function createFakeFirefox(): FakeFirefox {
       query(_queryInfo) {
         calls.push("tabs.query");
         return Promise.resolve([{ id: 1, windowId: 1, active: true }]);
+      },
+      create(properties) {
+        calls.push(`tabs.create:${properties.url}`);
+        return Promise.resolve({ id: 2, windowId: 1, active: true });
       },
       sendMessage(tabId, message) {
         calls.push(`tabs.sendMessage:${tabId}`);
@@ -148,6 +193,10 @@ function createFakeFirefox(): FakeFirefox {
       getURL(path) {
         return `moz-extension://random-uuid/${path}`;
       },
+      openOptionsPage() {
+        calls.push("runtime.openOptionsPage");
+        return Promise.resolve();
+      },
       sendMessage(message) {
         calls.push("runtime.sendMessage");
         return Promise.resolve({ echo: message });
@@ -155,6 +204,14 @@ function createFakeFirefox(): FakeFirefox {
       onMessage: { addListener() {} },
     },
     storage: {
+      onChanged: {
+        addListener(listener) {
+          storageListeners.add(listener);
+        },
+        removeListener(listener) {
+          storageListeners.delete(listener);
+        },
+      },
       local: {
         get(keys) {
           calls.push("storage.local.get");
@@ -183,7 +240,17 @@ function createFakeFirefox(): FakeFirefox {
         return Promise.resolve([{ frameId: 0, result: injection.args?.[0] }]);
       },
     },
-    commands: { onCommand: { addListener() {} } },
+    commands: {
+      getAll() {
+        calls.push("commands.getAll");
+        return Promise.resolve([{
+          description: "Toggle capture",
+          name: "toggle-capture",
+          shortcut: "Command+Shift+P",
+        }]);
+      },
+      onCommand: { addListener() {} },
+    },
     downloads: {
       download() {
         calls.push("downloads.download");
@@ -209,7 +276,13 @@ function createFakeFirefox(): FakeFirefox {
     },
   };
 
-  return { firefoxGlobal, calls };
+  return {
+    firefoxGlobal,
+    calls,
+    emitStorageChange(changes) {
+      for (const listener of storageListeners) listener(changes, "local");
+    },
+  };
 }
 
 Deno.test("browser shim - runtimeInfo reports the detected engine", () => {
@@ -363,6 +436,66 @@ Deno.test("browser shim - messages and executeScript results agree across engine
   ]);
   assertEquals(await firefoxShim.scripting.executeScript(injection), [
     { frameId: 0, result: "hi" },
+  ]);
+});
+
+Deno.test("browser shim - options opening agrees across engines", async () => {
+  const { chromeGlobal, calls: chromeCalls } = createFakeChrome();
+  const { firefoxGlobal, calls: firefoxCalls } = createFakeFirefox();
+
+  await createBrowserShim({ chrome: chromeGlobal }).runtime.openOptionsPage();
+  await createBrowserShim({ browser: firefoxGlobal }).runtime.openOptionsPage();
+
+  assertEquals(chromeCalls, ["runtime.openOptionsPage"]);
+  assertEquals(firefoxCalls, ["runtime.openOptionsPage"]);
+});
+
+Deno.test("browser shim - options navigation and storage changes agree across engines", async () => {
+  const chromeFake = createFakeChrome();
+  const firefoxFake = createFakeFirefox();
+  const chromeShim = createBrowserShim({ chrome: chromeFake.chromeGlobal });
+  const firefoxShim = createBrowserShim({ browser: firefoxFake.firefoxGlobal });
+  const expectedCommands: CommandInfo[] = [{
+    description: "Toggle capture",
+    name: "toggle-capture",
+    shortcut: "Command+Shift+P",
+  }];
+
+  assertEquals(
+    await chromeShim.tabs.create({ url: "chrome://extensions/shortcuts" }),
+    { active: true, id: 2, windowId: 1 },
+  );
+  assertEquals(
+    await firefoxShim.tabs.create({ url: "about:addons" }),
+    { active: true, id: 2, windowId: 1 },
+  );
+  assertEquals(await chromeShim.commands.getAll(), expectedCommands);
+  assertEquals(await firefoxShim.commands.getAll(), expectedCommands);
+
+  const observed: string[] = [];
+  const chromeListener: StorageChangedListener = (_changes, areaName) => {
+    observed.push(`chrome:${areaName}`);
+  };
+  const firefoxListener: StorageChangedListener = (_changes, areaName) => {
+    observed.push(`firefox:${areaName}`);
+  };
+  chromeShim.storage.onChanged.addListener(chromeListener);
+  firefoxShim.storage.onChanged.addListener(firefoxListener);
+  chromeFake.emitStorageChange({ settings: { newValue: { themeOverride: "dark" } } });
+  firefoxFake.emitStorageChange({ settings: { newValue: { themeOverride: "light" } } });
+  chromeShim.storage.onChanged.removeListener(chromeListener);
+  firefoxShim.storage.onChanged.removeListener(firefoxListener);
+  chromeFake.emitStorageChange({});
+  firefoxFake.emitStorageChange({});
+
+  assertEquals(observed, ["chrome:local", "firefox:local"]);
+  assertEquals(chromeFake.calls.slice(-2), [
+    "tabs.create:chrome://extensions/shortcuts",
+    "commands.getAll",
+  ]);
+  assertEquals(firefoxFake.calls.slice(-2), [
+    "tabs.create:about:addons",
+    "commands.getAll",
   ]);
 });
 

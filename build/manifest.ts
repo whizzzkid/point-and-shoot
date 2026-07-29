@@ -53,7 +53,12 @@ interface ManifestBase {
   readonly icons: Readonly<Record<string, string>>;
   readonly permissions: readonly string[];
   readonly action: {
+    readonly default_popup: string;
     readonly default_title: string;
+  };
+  readonly options_ui: {
+    readonly open_in_tab: true;
+    readonly page: string;
   };
   readonly commands: Readonly<
     Record<string, {
@@ -84,7 +89,12 @@ export const manifestBase: ManifestBase = {
   },
   permissions: PERMISSIONS,
   action: {
+    default_popup: "popup/popup.html",
     default_title: "Point and Shoot",
+  },
+  options_ui: {
+    open_in_tab: true,
+    page: "options/options.html",
   },
   commands: {
     "toggle-capture": {

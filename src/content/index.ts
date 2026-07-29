@@ -17,13 +17,20 @@
 import { h, render } from "preact";
 import { browser } from "../shared/browser.ts";
 import iconSprite from "../shared/design/icons.svg" with { type: "text" };
-import { OPEN_NOTES_PANEL_MESSAGE, TOGGLE_OVERLAY_MESSAGE } from "../shared/messages.ts";
+import {
+  GET_OVERLAY_STATE_MESSAGE,
+  OPEN_NOTES_PANEL_MESSAGE,
+  TOGGLE_OVERLAY_MESSAGE,
+} from "../shared/messages.ts";
+import { DEFAULT_SETTINGS, loadSettings } from "../shared/settings.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
+import type { ThemeOverride } from "../shared/theme.ts";
 import { CaptureOverlay } from "./CaptureOverlay.tsx";
 import { captureSelectedRegion } from "./capture.ts";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
 import { saveCapturedSelection } from "./notes.ts";
+import { watchThemeOverride } from "./settings-theme.ts";
 import pickerStyles from "./picker/picker.css" with { type: "text" };
 import toolbarStyles from "./toolbar/toolbar.css" with { type: "text" };
 
@@ -49,14 +56,19 @@ function prospectiveToolbarBounds(ownerWindow: Window): DOMRect {
   );
 }
 
-function mountOverlay(): () => void {
+interface MountedOverlay {
+  readonly destroy: () => void;
+  readonly refreshTheme: () => void;
+}
+
+function mountOverlay(readThemeOverride: () => ThemeOverride): MountedOverlay {
   const sample = () =>
     sampleBackdrop(
       document,
       prospectiveToolbarBounds(ownerWindow),
       document.querySelector("[data-point-and-shoot-host]") ?? undefined,
     );
-  const initialTheme = resolveTheme({ sample });
+  const initialTheme = resolveTheme({ override: readThemeOverride(), sample });
   const shadowHost = createShadowHost({
     inlineIconSprite: iconSprite,
     resourceUrl: (path) => browser.runtime.getURL(path),
@@ -104,26 +116,69 @@ function mountOverlay(): () => void {
     onChange: (theme) => {
       shadowHost.element.dataset.theme = theme;
     },
+    override: readThemeOverride,
     ownerWindow,
     sample,
   });
 
-  return () => {
-    isMounted = false;
-    stopTheme();
-    shadowHost.destroy();
+  return {
+    destroy() {
+      isMounted = false;
+      stopTheme();
+      shadowHost.destroy();
+    },
+    refreshTheme() {
+      if (isMounted) {
+        shadowHost.element.dataset.theme = resolveTheme({
+          override: readThemeOverride(),
+          sample,
+        });
+      }
+    },
   };
 }
 
-if (document.documentElement.dataset.pointAndShootContentReady === "true") {
-  console.log("point-and-shoot: content script already present, skipping re-init");
-} else {
-  const lifecycle = createOverlayLifecycle(mountOverlay);
+function initializeContent(initialThemeOverride: ThemeOverride): void {
+  let themeOverride = initialThemeOverride;
+  let refreshMountedTheme: (() => void) | undefined;
+  const lifecycle = createOverlayLifecycle(() => {
+    const mounted = mountOverlay(() => themeOverride);
+    refreshMountedTheme = mounted.refreshTheme;
+    return () => {
+      if (refreshMountedTheme === mounted.refreshTheme) refreshMountedTheme = undefined;
+      mounted.destroy();
+    };
+  });
   lifecycle.toggle();
+  watchThemeOverride(browser.storage, (override) => {
+    themeOverride = override;
+    refreshMountedTheme?.();
+  });
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message === GET_OVERLAY_STATE_MESSAGE) {
+      sendResponse({ mounted: lifecycle.isMounted() });
+      return;
+    }
     if (message !== TOGGLE_OVERLAY_MESSAGE) return;
     sendResponse({ mounted: lifecycle.toggle() });
   });
   document.documentElement.dataset.pointAndShootContentReady = "true";
   console.log("point-and-shoot: content script ready");
+}
+
+const contentState = document.documentElement.dataset.pointAndShootContentReady;
+if (contentState === "true" || contentState === "initializing") {
+  console.log("point-and-shoot: content script already present, skipping re-init");
+} else {
+  document.documentElement.dataset.pointAndShootContentReady = "initializing";
+  void loadSettings(browser.storage.local)
+    .catch((error: unknown) => {
+      console.error("point-and-shoot: initial theme settings could not load", error);
+      return DEFAULT_SETTINGS;
+    })
+    .then((settings) => initializeContent(settings.themeOverride))
+    .catch((error: unknown) => {
+      delete document.documentElement.dataset.pointAndShootContentReady;
+      console.error("point-and-shoot: content script failed to initialize", error);
+    });
 }

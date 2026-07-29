@@ -74,7 +74,20 @@ async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<vo
       },
       scripting: { executeScript: noOp },
       sidePanel: { open: noOp },
-      storage: { local: { get: noOp, remove: noOp, set: noOp } },
+      storage: {
+        local: {
+          get(_keys: unknown, callback: (items: Record<string, unknown>) => void) {
+            callback({});
+          },
+          remove(_keys: unknown, callback: () => void) {
+            callback();
+          },
+          set(_items: unknown, callback: () => void) {
+            callback();
+          },
+        },
+        onChanged: { addListener: noOp, removeListener: noOp },
+      },
       tabs: { captureVisibleTab: noOp, query: noOp },
     });
   }, resourceUrls);
@@ -131,6 +144,9 @@ Deno.test("built chrome extension - boots and executes without error", async () 
     // without that gesture correctly lacks the `activeTab` grant. Page-inject the built bundle
     // with a narrow runtime shim that returns the real extension's session-scoped asset URLs.
     await injectBuiltContent(page, serviceWorker);
+    await page.waitForFunction(
+      () => document.documentElement.dataset.pointAndShootContentReady !== "initializing",
+    );
     const contentReady = await page.evaluate(() =>
       document.documentElement.dataset.pointAndShootContentReady
     );

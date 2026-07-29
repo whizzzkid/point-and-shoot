@@ -279,7 +279,8 @@ traversal covered. Escape leaves zero overlay nodes.
 
 The pipeline from the README: content script sends region rect plus `devicePixelRatio` → background
 calls the shim's capture method → crop and encode with `createImageBitmap` +
-`OffscreenCanvas.convertToBlob({type:'image/webp', quality:0.7})`, capped at 1024px longest edge.
+`OffscreenCanvas.convertToBlob({type:'image/webp', quality:0.7})`, capped at 1024px longest edge by
+default. W3.9 exposes fixed, validated alternatives while keeping these settled defaults.
 
 **`chrome.offscreen` is forbidden** (ADR 0001). If you find yourself wanting it, the answer is
 `OffscreenCanvas` in the background context.
@@ -410,9 +411,10 @@ to end in Playwright.
 
 Read `.claude-design/point-and-shoot/ui_kits/extension-popup/index.html`.
 
-Opened from the toolbar icon: start or resume a session, show the current session name and note
-count, toggle the overlay on this tab, open the notes panel, and reach options. Keep it small — the
-popup is a launcher, not a workspace; the panel is the workspace.
+Opened from the toolbar icon per [ADR-0014](../adr/0014-toolbar-action-opens-popup.md): start or
+resume a session, show the current session name and note count, toggle the overlay on this tab, open
+the notes panel, and reach options. Keep it small — the popup is a launcher, not a workspace; the
+panel is the workspace.
 
 **Verify:** Playwright opens the popup by extension URL and asserts each action's effect. Both
 themes.
@@ -452,9 +454,11 @@ overlay's theme on a live page; the framework toggle genuinely gates the W3.11 p
 
 **parallel-safe.**
 
-Toolbar icon click and the `commands` keyboard shortcut both toggle the overlay on the active tab.
-Inject the content script on demand via `scripting.executeScript` under the `activeTab` grant —
-there is no `<all_urls>` (ADR 0002), so injection is gesture-driven by design.
+The `commands` keyboard shortcut toggles the overlay directly on the active tab. The toolbar icon
+opens the launcher popup, whose start, resume, and switch controls delegate to the same activation
+controller; see [ADR-0014](../adr/0014-toolbar-action-opens-popup.md). Inject the content script on
+demand via `scripting.executeScript` under the `activeTab` grant — there is no `<all_urls>` (ADR
+0002), so injection is gesture-driven by design.
 
 Handle: double activation must not inject twice or mount two hosts; pages where injection is
 impossible (`chrome://`, the Chrome Web Store, `about:`, PDF viewer, `view-source:`) must fail with
