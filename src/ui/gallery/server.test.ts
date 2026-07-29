@@ -22,6 +22,55 @@ const COMPONENT_NAMES = [
   "Tooltip",
 ] as const;
 
+const STATE_COMPONENTS = {
+  default: [
+    "Badge",
+    "Button",
+    "CaptureMinimap",
+    "Card",
+    "Checkbox",
+    "Dialog",
+    "Icon",
+    "IconButton",
+    "Input",
+    "Select",
+    "Switch",
+    "Tabs",
+    "Tag",
+    "Toast",
+    "Tooltip",
+  ],
+  hover: [
+    "Button",
+    "CaptureMinimap",
+    "Checkbox",
+    "IconButton",
+    "Input",
+    "Select",
+    "Switch",
+    "Tabs",
+    "Tag",
+    "Tooltip",
+  ],
+  focus: [
+    "Button",
+    "CaptureMinimap",
+    "Checkbox",
+    "IconButton",
+    "Input",
+    "Select",
+    "Switch",
+    "Tabs",
+    "Tag",
+    "Tooltip",
+  ],
+  active: ["Button", "Checkbox", "IconButton", "Switch", "Tabs"],
+  disabled: ["Button", "Checkbox"],
+  error: ["Badge", "Input", "Toast"],
+  loading: ["Button", "CaptureMinimap"],
+  empty: ["Card"],
+} as const;
+
 Deno.test("gallery server - serves the Point and Shoot component gallery", async () => {
   const gallery = await startGalleryServer();
 
@@ -149,7 +198,9 @@ Deno.test("Toast auto-dismisses and reports one close", async () => {
     page.setDefaultTimeout(7_000);
     await page.goto(gallery.url);
     const harness = page.locator(".gallery-harness");
-    const staticToast = page.locator('[data-theme="dark"] [data-component="Toast"]')
+    const staticToast = page.locator(
+      '[data-theme="dark"] .gallery-grid [data-component="Toast"]',
+    )
       .getByRole("status");
 
     await harness.getByRole("button", { name: "Show toast" }).click();
@@ -173,9 +224,10 @@ Deno.test("Tabs move selection and focus with arrow keys", async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(2_000);
     await page.goto(gallery.url);
-    const notesTab = page.getByRole("tab", { name: "Notes" });
-    const planTab = page.getByRole("tab", { name: "Plan" });
-    const settingsTab = page.getByRole("tab", { name: "Settings" });
+    const harness = page.locator(".gallery-harness");
+    const notesTab = harness.getByRole("tab", { name: "Notes" });
+    const planTab = harness.getByRole("tab", { name: "Plan" });
+    const settingsTab = harness.getByRole("tab", { name: "Settings" });
 
     await notesTab.focus();
     await page.keyboard.press("ArrowRight");
@@ -192,7 +244,7 @@ Deno.test("Tabs move selection and focus with arrow keys", async () => {
   }
 });
 
-Deno.test("gallery renders every component and review state in both themes", async () => {
+Deno.test("gallery renders every component in both themes", async () => {
   const gallery = await startGalleryServer();
   const browser = await chromium.launch();
 
@@ -206,28 +258,70 @@ Deno.test("gallery renders every component and review state in both themes", asy
       for (const component of COMPONENT_NAMES) {
         assertEquals(
           await page.locator(
-            `[data-theme="${theme}"] [data-component="${component}"]`,
+            `[data-theme="${theme}"] .gallery-grid [data-component="${component}"]`,
           ).count(),
           1,
           `${component} is missing from the ${theme} gallery`,
         );
       }
-      for (
-        const state of [
-          "default",
-          "hover",
-          "focus",
-          "active",
-          "disabled",
-          "error",
-          "loading",
-          "empty",
-        ]
-      ) {
+    }
+  } finally {
+    await browser.close();
+    await gallery.close();
+  }
+});
+
+Deno.test("gallery renders every applicable component-state combination", async () => {
+  const gallery = await startGalleryServer();
+  const browser = await chromium.launch();
+
+  try {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(2_000);
+    await page.goto(gallery.url);
+
+    for (const theme of ["dark", "light"]) {
+      for (const [state, expectedComponents] of Object.entries(STATE_COMPONENTS)) {
+        const stateGroup = page.locator(
+          `[data-theme="${theme}"] [data-state="${state}"]`,
+        );
+        const renderedComponents = await stateGroup.locator("[data-component]")
+          .evaluateAll((elements) =>
+            elements.map((element) => element.getAttribute("data-component")).sort()
+          );
+
         assertEquals(
-          await page.locator(`[data-theme="${theme}"] [data-state="${state}"]`).count(),
+          renderedComponents,
+          [...expectedComponents].sort(),
+          `${state} has an incomplete component matrix in the ${theme} gallery`,
+        );
+      }
+    }
+  } finally {
+    await browser.close();
+    await gallery.close();
+  }
+});
+
+Deno.test("gallery keeps review-state Toast specimens visible", async () => {
+  const gallery = await startGalleryServer();
+  const browser = await chromium.launch();
+
+  try {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(7_000);
+    await page.goto(gallery.url);
+    await page.waitForTimeout(5_500);
+
+    for (const theme of ["dark", "light"]) {
+      for (const state of ["default", "error"]) {
+        const toast = page.locator(
+          `[data-theme="${theme}"] [data-state="${state}"] [data-component="Toast"]`,
+        );
+        assertEquals(
+          await toast.getByRole(state === "error" ? "alert" : "status").count(),
           1,
-          `${state} is missing from the ${theme} gallery`,
+          `${state} Toast disappeared from the ${theme} gallery`,
         );
       }
     }
@@ -295,20 +389,24 @@ Deno.test("Tag removal and Tooltip keyboard visibility are observable", async ()
     page.setDefaultTimeout(2_000);
     await page.goto(gallery.url);
     const darkTheme = page.locator('[data-theme="dark"]');
+    const specimenGrid = darkTheme.locator(".gallery-grid");
 
-    await darkTheme.locator('[data-component="Tag"]').getByRole("button", {
+    await specimenGrid.locator('[data-component="Tag"]').getByRole("button", {
       name: "Remove tag",
     }).click();
     assertStringIncludes(
-      (await darkTheme.locator('[data-component="Tag"]').textContent()) ?? "",
+      (await specimenGrid.locator('[data-component="Tag"]').textContent()) ?? "",
       "Tag removed",
     );
 
-    const tooltipWrapper = darkTheme.locator(".ps-tooltip");
-    const tooltipTrigger = darkTheme.getByRole("button", { name: "dark tooltip trigger" });
+    const tooltipSpecimen = specimenGrid.locator('[data-component="Tooltip"]');
+    const tooltipWrapper = tooltipSpecimen.locator(".ps-tooltip");
+    const tooltipTrigger = tooltipSpecimen.getByRole("button", {
+      name: "dark tooltip trigger",
+    });
     assertEquals(await tooltipWrapper.getAttribute("aria-describedby"), null);
     await tooltipTrigger.focus();
-    const tooltip = darkTheme.locator('[role="tooltip"]');
+    const tooltip = tooltipSpecimen.locator('[role="tooltip"]');
     assertEquals(await tooltip.getAttribute("aria-hidden"), "false");
     assertEquals(
       await tooltipWrapper.getAttribute("aria-describedby"),

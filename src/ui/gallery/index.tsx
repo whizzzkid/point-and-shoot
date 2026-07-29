@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import { type ComponentChildren, type JSX, render } from "preact";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import {
   Badge,
   Button,
@@ -21,6 +21,9 @@ import {
 } from "../components/index.ts";
 
 const THEMES = ["dark", "light"] as const;
+const GALLERY_TOAST_REFRESH_MS = 4_000;
+type ThemeName = (typeof THEMES)[number];
+type InteractiveState = "hover" | "focus";
 
 function Story(
   { name, children }: { readonly name: string; readonly children: ComponentChildren },
@@ -33,41 +36,223 @@ function Story(
   );
 }
 
-function StateGallery(): JSX.Element {
+function StateSpecimen(
+  { name, children }: { readonly name: string; readonly children: ComponentChildren },
+): JSX.Element {
+  return (
+    <div className="gallery-state-specimen" data-component={name}>
+      <span>{name}</span>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function StateGroup(
+  { name, children }: { readonly name: string; readonly children: ComponentChildren },
+): JSX.Element {
+  return (
+    <section className="gallery-state" data-state={name}>
+      <h4>{name}</h4>
+      <div className="gallery-state__specimens">{children}</div>
+    </section>
+  );
+}
+
+function PersistentToast(
+  {
+    children,
+    tone = "neutral",
+  }: {
+    readonly children: ComponentChildren;
+    readonly tone?: "neutral" | "success" | "danger";
+  },
+): JSX.Element {
+  const [generation, setGeneration] = useState(0);
+
+  useEffect(() => {
+    const interval = globalThis.setInterval(
+      () => setGeneration((currentGeneration) => currentGeneration + 1),
+      GALLERY_TOAST_REFRESH_MS,
+    );
+    return () => globalThis.clearInterval(interval);
+  }, []);
+
+  return <Toast key={generation} tone={tone}>{children}</Toast>;
+}
+
+function DefaultStateSpecimens({ theme }: { readonly theme: ThemeName }): JSX.Element {
+  return (
+    <>
+      <StateSpecimen name="Badge">
+        <Badge>3 notes</Badge>
+      </StateSpecimen>
+      <StateSpecimen name="Button">
+        <Button variant="secondary">Review</Button>
+      </StateSpecimen>
+      <StateSpecimen name="CaptureMinimap">
+        <CaptureMinimap label={`${theme} default capture`} screenshot="/gallery-capture.png" />
+      </StateSpecimen>
+      <StateSpecimen name="Card">
+        <Card>Captured note</Card>
+      </StateSpecimen>
+      <StateSpecimen name="Checkbox">
+        <Checkbox label={`${theme} default checkbox`} />
+      </StateSpecimen>
+      <StateSpecimen name="Dialog">
+        <span>Closed until invoked</span>
+        <Dialog open={false} title="Default dialog" />
+      </StateSpecimen>
+      <StateSpecimen name="Icon">
+        <Icon name="camera" />
+      </StateSpecimen>
+      <StateSpecimen name="IconButton">
+        <IconButton icon={<Icon name="camera" />} label={`${theme} default icon button`} />
+      </StateSpecimen>
+      <StateSpecimen name="Input">
+        <Input placeholder="Default input" />
+      </StateSpecimen>
+      <StateSpecimen name="Select">
+        <Select options={["Local agent", "Cursor agent"]} value="Local agent" />
+      </StateSpecimen>
+      <StateSpecimen name="Switch">
+        <Switch />
+      </StateSpecimen>
+      <StateSpecimen name="Tabs">
+        <Tabs active="Notes" tabs={["Notes", "Plan"]} />
+      </StateSpecimen>
+      <StateSpecimen name="Tag">
+        <Tag>button.cta</Tag>
+      </StateSpecimen>
+      <StateSpecimen name="Toast">
+        <PersistentToast>Ready to capture.</PersistentToast>
+      </StateSpecimen>
+      <StateSpecimen name="Tooltip">
+        <Tooltip label="Default tooltip">
+          <IconButton icon={<Icon name="crosshair" />} label={`${theme} default tooltip`} />
+        </Tooltip>
+      </StateSpecimen>
+    </>
+  );
+}
+
+function InteractiveStateSpecimens(
+  { state, theme }: { readonly state: InteractiveState; readonly theme: ThemeName },
+): JSX.Element {
+  return (
+    <>
+      <StateSpecimen name="Button">
+        <Button variant="secondary">{state}</Button>
+      </StateSpecimen>
+      <StateSpecimen name="CaptureMinimap">
+        <CaptureMinimap
+          label={`${theme} ${state} capture`}
+          onClick={() => undefined}
+          screenshot="/gallery-capture.png"
+        />
+      </StateSpecimen>
+      <StateSpecimen name="Checkbox">
+        <Checkbox label={`${theme} ${state} checkbox`} />
+      </StateSpecimen>
+      <StateSpecimen name="IconButton">
+        <IconButton icon={<Icon name="camera" />} label={`${theme} ${state} icon button`} />
+      </StateSpecimen>
+      <StateSpecimen name="Input">
+        <Input placeholder={`${state} input`} />
+      </StateSpecimen>
+      <StateSpecimen name="Select">
+        <Select options={["Local agent", "Cursor agent"]} value="Local agent" />
+      </StateSpecimen>
+      <StateSpecimen name="Switch">
+        <Switch />
+      </StateSpecimen>
+      <StateSpecimen name="Tabs">
+        <Tabs active="Notes" tabs={["Notes", "Plan"]} />
+      </StateSpecimen>
+      <StateSpecimen name="Tag">
+        <Tag onRemove={() => undefined}>button.cta</Tag>
+      </StateSpecimen>
+      <StateSpecimen name="Tooltip">
+        <Tooltip label={`${state} tooltip`}>
+          <IconButton icon={<Icon name="crosshair" />} label={`${theme} ${state} tooltip`} />
+        </Tooltip>
+      </StateSpecimen>
+    </>
+  );
+}
+
+function StateGallery({ theme }: { readonly theme: ThemeName }): JSX.Element {
   return (
     <section className="gallery-states" aria-label="Review states">
       <h3>Review states</h3>
       <div className="gallery-states__grid">
-        <div data-state="default">
-          <Button variant="secondary">Default</Button>
-        </div>
-        <div data-state="hover">
-          <Button variant="secondary">Hover</Button>
-        </div>
-        <div data-state="focus">
-          <Button variant="secondary">Focus</Button>
-        </div>
-        <div data-state="active">
-          <Button variant="secondary">Active</Button>
-        </div>
-        <div data-state="disabled">
-          <Button disabled>Disabled</Button>
-        </div>
-        <div data-state="error">
-          <Input placeholder="Couldn't save — try again." />
-        </div>
-        <div data-state="loading">
-          <Button disabled>Sending…</Button>
-        </div>
-        <div data-state="empty">
-          <Card>No notes yet.</Card>
-        </div>
+        <StateGroup name="default">
+          <DefaultStateSpecimens theme={theme} />
+        </StateGroup>
+        <StateGroup name="hover">
+          <InteractiveStateSpecimens state="hover" theme={theme} />
+        </StateGroup>
+        <StateGroup name="focus">
+          <InteractiveStateSpecimens state="focus" theme={theme} />
+        </StateGroup>
+        <StateGroup name="active">
+          <StateSpecimen name="Button">
+            <Button variant="secondary">Active</Button>
+          </StateSpecimen>
+          <StateSpecimen name="Checkbox">
+            <Checkbox checked label={`${theme} active checkbox`} />
+          </StateSpecimen>
+          <StateSpecimen name="IconButton">
+            <IconButton
+              active
+              icon={<Icon name="crosshair" />}
+              label={`${theme} active icon button`}
+            />
+          </StateSpecimen>
+          <StateSpecimen name="Switch">
+            <Switch checked />
+          </StateSpecimen>
+          <StateSpecimen name="Tabs">
+            <Tabs active="Plan" tabs={["Notes", "Plan"]} />
+          </StateSpecimen>
+        </StateGroup>
+        <StateGroup name="disabled">
+          <StateSpecimen name="Button">
+            <Button disabled>Disabled</Button>
+          </StateSpecimen>
+          <StateSpecimen name="Checkbox">
+            <Checkbox disabled label={`${theme} disabled checkbox`} />
+          </StateSpecimen>
+        </StateGroup>
+        <StateGroup name="error">
+          <StateSpecimen name="Badge">
+            <Badge tone="danger">failed</Badge>
+          </StateSpecimen>
+          <StateSpecimen name="Input">
+            <Input placeholder="Couldn't save — try again." />
+          </StateSpecimen>
+          <StateSpecimen name="Toast">
+            <PersistentToast tone="danger">Capture failed.</PersistentToast>
+          </StateSpecimen>
+        </StateGroup>
+        <StateGroup name="loading">
+          <StateSpecimen name="Button">
+            <Button disabled>Sending…</Button>
+          </StateSpecimen>
+          <StateSpecimen name="CaptureMinimap">
+            <CaptureMinimap label={`${theme} loading capture`} />
+          </StateSpecimen>
+        </StateGroup>
+        <StateGroup name="empty">
+          <StateSpecimen name="Card">
+            <Card>No notes yet.</Card>
+          </StateSpecimen>
+        </StateGroup>
       </div>
     </section>
   );
 }
 
-function ThemeGallery({ theme }: { readonly theme: (typeof THEMES)[number] }): JSX.Element {
+function ThemeGallery({ theme }: { readonly theme: ThemeName }): JSX.Element {
   const [checked, setChecked] = useState(true);
   const [selected, setSelected] = useState("local");
   const [activeTab, setActiveTab] = useState("Overview");
@@ -189,7 +374,7 @@ function ThemeGallery({ theme }: { readonly theme: (typeof THEMES)[number] }): J
           />
         </Story>
       </div>
-      <StateGallery />
+      <StateGallery theme={theme} />
     </section>
   );
 }
