@@ -149,12 +149,15 @@ Deno.test("Toast auto-dismisses and reports one close", async () => {
     page.setDefaultTimeout(7_000);
     await page.goto(gallery.url);
     const harness = page.locator(".gallery-harness");
+    const staticToast = page.locator('[data-theme="dark"] [data-component="Toast"]')
+      .getByRole("status");
 
     await harness.getByRole("button", { name: "Show toast" }).click();
 
     const toast = harness.getByRole("status").filter({ hasText: "Note saved with screenshot" });
     assertStringIncludes((await toast.textContent()) ?? "", "Note saved with screenshot");
     await toast.waitFor({ state: "hidden" });
+    await staticToast.waitFor({ state: "hidden" });
     assertEquals(await page.getByTestId("toast-close-count").textContent(), "1");
   } finally {
     await browser.close();
@@ -301,13 +304,20 @@ Deno.test("Tag removal and Tooltip keyboard visibility are observable", async ()
       "Tag removed",
     );
 
+    const tooltipWrapper = darkTheme.locator(".ps-tooltip");
     const tooltipTrigger = darkTheme.getByRole("button", { name: "dark tooltip trigger" });
+    assertEquals(await tooltipWrapper.getAttribute("aria-describedby"), null);
     await tooltipTrigger.focus();
     const tooltip = darkTheme.locator('[role="tooltip"]');
     assertEquals(await tooltip.getAttribute("aria-hidden"), "false");
+    assertEquals(
+      await tooltipWrapper.getAttribute("aria-describedby"),
+      await tooltip.getAttribute("id"),
+    );
     assertEquals(await tooltip.textContent(), "Capture region");
     await page.keyboard.press("Escape");
     assertEquals(await tooltip.getAttribute("aria-hidden"), "true");
+    assertEquals(await tooltipWrapper.getAttribute("aria-describedby"), null);
   } finally {
     await browser.close();
     await gallery.close();

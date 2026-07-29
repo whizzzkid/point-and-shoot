@@ -33,7 +33,6 @@ export function Toast(
   }, [onClose]);
 
   useEffect(() => {
-    if (onClose === undefined) return;
     dismissed.current = false;
     setVisible(true);
     const timeout = globalThis.setTimeout(dismiss, TOAST_DISMISS_DELAY_MS);
