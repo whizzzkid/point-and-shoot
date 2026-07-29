@@ -68,7 +68,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ps-floating-toolbar {
+  .ps-floating-toolbar[data-motion] {
     animation: none;
   }
 }
