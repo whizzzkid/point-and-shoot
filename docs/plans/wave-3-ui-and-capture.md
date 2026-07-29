@@ -4,7 +4,7 @@
 [wave 2](wave-2-core-libraries.md) is complete.
 
 - **Status:** exit reconciliation open — implementation delivered across PRs #9–#13; component
-  gallery completeness remains
+  gallery follow-up pending merge
 - **Goal:** the product. Every surface from the design bundle, built in Preact against the generated
   tokens, plus the capture pipeline and the export that turns notes into an agent prompt.
 
@@ -573,16 +573,15 @@ inferred from the delivery plan. This reconciliation is stacked on PR #13, so it
 | Component styles use generated tokens    | ✅      | design-token checks pass; the only raw pixel value found is the side-panel viewport breakpoint                         |
 | Captures exclude extension UI            | ✅      | `src/content/capture.browser.test.ts` asserts overlay and highlight pixels are absent during capture                   |
 | Export disclosure and query privacy      | ✅      | plan-view and built-flow tests assert the disclosure copy and strip `access_token` values                              |
-| Component gallery is complete            | ⚠️      | the gallery covers every component and every state separately, not every component-in-state combination                |
+| Component gallery is complete            | ✅      | the gallery renders and asserts every applicable component-state combination in both themes                            |
 
 The keyboard row is a stated qualification, not an implied pass. W3.1 supplies keyboard-operable
 native controls and the picker has a dedicated keyboard-only browser path, but the notes and plan
 browser suites use pointer activation. W4.4 owns the systematic keyboard and screen-reader audit, so
 it must close that evidence gap before release.
 
-The gallery row is an implementation gap, not only an evidence gap. `src/ui/gallery/server.test.ts`
-checks the 15 component specimens and eight review-state examples independently, while
-`src/ui/gallery/index.tsx` renders the state strip with only Button, Input, and Card. Wave 3 remains
-open—and therefore keeps the Wave 4 barrier closed—until the gallery renders and asserts every
-applicable component-in-state combination in both themes. This reconciliation does not weaken the
-original exit criterion to fit the delivered implementation.
+The gallery follow-up closes the implementation and evidence gap with an explicit state matrix.
+`src/ui/gallery/server.test.ts` asserts every applicable component-state combination in both themes
+and keeps transient Toast examples visible for visual review. Wave 3 remains open—and therefore
+keeps the Wave 4 barrier closed—until this follow-up merges. The post-merge plan sync then records
+its SHA.
