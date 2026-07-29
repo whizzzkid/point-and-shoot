@@ -12,6 +12,9 @@ const HOST_COUNT_TIMEOUT_MILLISECONDS = 5_000;
 const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
 const LISTENER_READY_TIMEOUT_MILLISECONDS = 2_500;
 const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
+const AGENT_TRIAL_NOTE =
+  "This button looks like unstyled browser chrome. Give it a clear light-theme background, " +
+  "border, and hover treatment.";
 
 interface ActionState {
   readonly badgeText: string;
@@ -533,18 +536,18 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     );
 
     await note.getByRole("button", { name: "Edit" }).click();
-    await panel.getByRole("textbox", { name: "Note text" }).fill("Captured from the real overlay.");
+    await panel.getByRole("textbox", { name: "Note text" }).fill(AGENT_TRIAL_NOTE);
     await panel.getByRole("button", { name: "Save changes" }).click();
-    await panel.getByText("Captured from the real overlay.").waitFor();
+    await panel.getByText(AGENT_TRIAL_NOTE).waitFor();
     await panel.close();
 
     const reopenedPanel = await context.newPage();
     await reopenedPanel.goto(panelUrl);
-    await reopenedPanel.getByText("Captured from the real overlay.").waitFor();
+    await reopenedPanel.getByText(AGENT_TRIAL_NOTE).waitFor();
     await reopenedPanel.getByRole("button", { name: "Compile plan" }).click();
     await reopenedPanel.getByRole("heading", { name: "Compile plan" }).waitFor();
     const markdownPreview = await reopenedPanel.locator("[data-markdown-preview]").textContent();
-    assertStringIncludes(markdownPreview ?? "", "Captured from the real overlay.");
+    assertStringIncludes(markdownPreview ?? "", AGENT_TRIAL_NOTE);
     assertEquals(markdownPreview?.includes("access_token"), false);
 
     const downloadStarted = reopenedPanel.waitForEvent("download");

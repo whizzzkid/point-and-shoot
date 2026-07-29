@@ -51,6 +51,7 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task ci`            | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
 | `deno task fixture`       | Serves the browser fixture app, printing both origins                  | W1.8      |
 | `deno task shots`         | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
+| `deno task shots:wave3`   | Captures every shipped extension surface in both forced themes         | W3.12     |
 | `deno task tokens`        | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
 | `deno task tokens:check`  | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
 | `deno task lint:design`   | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
