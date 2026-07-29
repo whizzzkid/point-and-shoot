@@ -12,6 +12,7 @@ import {
 } from "./capture.ts";
 import type { BrowserShim, MessageListener } from "../shared/browser.ts";
 import { CAPTURE_REGION_MESSAGE } from "../shared/messages.ts";
+import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY } from "../shared/settings.ts";
 
 const BASE_INPUT: CaptureRegionInput = {
   devicePixelRatio: 2,
@@ -80,6 +81,7 @@ function successfulBrowser() {
 function registeredCaptureListener(
   tabs: CaptureBrowser,
   runtime: CaptureImageRuntime,
+  storedSettings: unknown = DEFAULT_SETTINGS,
 ): MessageListener {
   let listener: MessageListener | undefined;
   const extensionBrowser = {
@@ -88,6 +90,11 @@ function registeredCaptureListener(
         addListener(nextListener: MessageListener) {
           listener = nextListener;
         },
+      },
+    },
+    storage: {
+      local: {
+        get: () => Promise.resolve({ [SETTINGS_STORAGE_KEY]: storedSettings }),
       },
     },
     tabs,
@@ -147,6 +154,24 @@ Deno.test("captureRegion clamps to the viewport and caps the longest encoded edg
   assertEquals(runtime.canvasSizes, [{ height: 768, width: 1_024 }]);
   assertEquals(result.box, { height: 600, width: 800, x: 0, y: 0 });
   assertEquals(result.truncated, true);
+});
+
+Deno.test("captureRegion applies persisted quality and longest-edge choices", async () => {
+  const runtime = createFakeImageRuntime();
+
+  await captureRegion(
+    successfulBrowser(),
+    {
+      devicePixelRatio: 2,
+      region: { height: 600, width: 800, x: 0, y: 0 },
+      viewport: { height: 600, width: 800 },
+    },
+    runtime,
+    { maximumDimension: 512, quality: 0.85 },
+  );
+
+  assertEquals(runtime.canvasSizes, [{ height: 384, width: 512 }]);
+  assertEquals(runtime.encodeOptions, [{ quality: 0.85, type: "image/webp" }]);
 });
 
 Deno.test(
@@ -304,6 +329,33 @@ Deno.test(
   },
 );
 
+Deno.test("registerCaptureHandler reads persisted screenshot settings for each request", async () => {
+  const runtime = createFakeImageRuntime();
+  const listener = registeredCaptureListener(successfulBrowser(), runtime, {
+    ...DEFAULT_SETTINGS,
+    screenshotMaxDimension: 512,
+    screenshotQuality: 0.85,
+  });
+
+  assertEquals(
+    listener(
+      {
+        devicePixelRatio: 2,
+        region: { height: 600, width: 800, x: 0, y: 0 },
+        type: CAPTURE_REGION_MESSAGE,
+        viewport: { height: 600, width: 800 },
+      },
+      {},
+      () => undefined,
+    ),
+    true,
+  );
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assertEquals(runtime.canvasSizes, [{ height: 384, width: 512 }]);
+  assertEquals(runtime.encodeOptions, [{ quality: 0.85, type: "image/webp" }]);
+});
+
 Deno.test("registerCaptureHandler returns typed permission and invalid-region errors", async () => {
   const denied = registeredCaptureListener(
     { captureVisibleTab: () => Promise.reject(new Error("activeTab missing")) },
@@ -334,7 +386,7 @@ Deno.test("registerCaptureHandler returns typed permission and invalid-region er
   );
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-  assertEquals(responses, [
+  const expected = [
     {
       error: {
         code: "invalid-region",
@@ -349,5 +401,8 @@ Deno.test("registerCaptureHandler returns typed permission and invalid-region er
       },
       ok: false,
     },
-  ]);
+  ];
+  const byJson = (left: unknown, right: unknown): number =>
+    JSON.stringify(left).localeCompare(JSON.stringify(right));
+  assertEquals(responses.sort(byJson), expected.sort(byJson));
 });

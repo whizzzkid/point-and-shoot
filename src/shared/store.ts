@@ -140,5 +140,12 @@ export async function deleteSession(db: IDBDatabase, id: string): Promise<void> 
   await promisifyTransaction(tx);
 }
 
+/** Deletes every session in one transaction. Settings and other extension storage are untouched. */
+export async function clearSessions(db: IDBDatabase): Promise<void> {
+  const tx = db.transaction(SESSIONS_STORE, "readwrite");
+  tx.objectStore(SESSIONS_STORE).clear();
+  await promisifyTransaction(tx);
+}
+
 /** Reads a session for export. Alias of {@link getSession} — export uses the same validated read. */
 export const exportSession: typeof getSession = getSession;

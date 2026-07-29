@@ -43,6 +43,11 @@ export interface TabQueryInfo {
   readonly currentWindow?: boolean;
 }
 
+/** Properties accepted when opening one browser-owned tab. */
+export interface TabCreateProperties {
+  readonly url: string;
+}
+
 /** Tab-scoped browser-action badge text. An empty string clears the badge. */
 export interface ActionBadgeTextDetails {
   readonly tabId?: number;
@@ -92,11 +97,30 @@ export type MessageListener = (
 /** Listener signature for `commands.onCommand`. */
 export type CommandListener = (command: string) => void;
 
+/** One manifest command and its current user-configured shortcut. */
+export interface CommandInfo {
+  readonly description?: string;
+  readonly name?: string;
+  readonly shortcut?: string;
+}
+
 /** Listener signature for `action.onClicked`. */
 export type ActionClickedListener = (tab: TabInfo) => void;
 
 /** Storage values keyed by name; the shape this project reads and writes are always objects. */
 export type StorageItems = Record<string, unknown>;
+
+/** One extension-storage key's values before and after a change. */
+export interface StorageChange {
+  readonly newValue?: unknown;
+  readonly oldValue?: unknown;
+}
+
+/** Extension-storage changes keyed by storage key. */
+export type StorageChanges = Readonly<Record<string, StorageChange>>;
+
+/** Listener signature for extension-storage changes. */
+export type StorageChangedListener = (changes: StorageChanges, areaName: string) => void;
 
 /**
  * The normalized, promise-based surface every other module in this codebase imports instead of
@@ -112,6 +136,7 @@ export interface BrowserShim {
      * {@link TabQueryInfo}) — the one genuine capture-API divergence between the two engines.
      */
     captureVisibleTab(options?: CaptureOptions): Promise<string>;
+    create(properties: TabCreateProperties): Promise<TabInfo>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
@@ -129,6 +154,10 @@ export interface BrowserShim {
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
   readonly storage: {
+    readonly onChanged: {
+      addListener(listener: StorageChangedListener): void;
+      removeListener(listener: StorageChangedListener): void;
+    };
     readonly local: {
       get(keys?: string | readonly string[] | null): Promise<StorageItems>;
       set(items: StorageItems): Promise<void>;
@@ -139,6 +168,7 @@ export interface BrowserShim {
     executeScript(injection: ExecuteScriptInjection): Promise<ExecuteScriptResult[]>;
   };
   readonly commands: {
+    getAll(): Promise<CommandInfo[]>;
     readonly onCommand: { addListener(listener: CommandListener): void };
   };
   readonly downloads: {
@@ -165,6 +195,7 @@ export interface ChromeGlobalShape {
       options: CaptureOptions | undefined,
       callback: (dataUrl: string) => void,
     ): void;
+    create(properties: TabCreateProperties, callback: (tab: TabInfo) => void): void;
     query(queryInfo: TabQueryInfo, callback: (tabs: TabInfo[]) => void): void;
     sendMessage(
       tabId: number,
@@ -180,6 +211,10 @@ export interface ChromeGlobalShape {
     readonly lastError: { readonly message?: string } | undefined;
   };
   readonly storage: {
+    readonly onChanged: {
+      addListener(listener: StorageChangedListener): void;
+      removeListener(listener: StorageChangedListener): void;
+    };
     readonly local: {
       get(
         keys: string | readonly string[] | null | undefined,
@@ -195,7 +230,10 @@ export interface ChromeGlobalShape {
       callback: (results: ExecuteScriptResult[]) => void,
     ): void;
   };
-  readonly commands: { readonly onCommand: { addListener(listener: CommandListener): void } };
+  readonly commands: {
+    getAll(callback: (commands: CommandInfo[]) => void): void;
+    readonly onCommand: { addListener(listener: CommandListener): void };
+  };
   readonly downloads: {
     download(options: DownloadOptions, callback: (downloadId: number) => void): void;
   };
@@ -213,6 +251,7 @@ export interface ChromeGlobalShape {
 export interface FirefoxGlobalShape {
   readonly tabs: {
     captureTab(tabId: number | undefined, options?: CaptureOptions): Promise<string>;
+    create(properties: TabCreateProperties): Promise<TabInfo>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
@@ -225,6 +264,10 @@ export interface FirefoxGlobalShape {
     readonly onMessage: { addListener(listener: MessageListener): void };
   };
   readonly storage: {
+    readonly onChanged: {
+      addListener(listener: StorageChangedListener): void;
+      removeListener(listener: StorageChangedListener): void;
+    };
     readonly local: {
       get(keys?: string | readonly string[] | null): Promise<StorageItems>;
       set(items: StorageItems): Promise<void>;
@@ -234,7 +277,10 @@ export interface FirefoxGlobalShape {
   readonly scripting: {
     executeScript(injection: ExecuteScriptInjection): Promise<ExecuteScriptResult[]>;
   };
-  readonly commands: { readonly onCommand: { addListener(listener: CommandListener): void } };
+  readonly commands: {
+    getAll(): Promise<CommandInfo[]>;
+    readonly onCommand: { addListener(listener: CommandListener): void };
+  };
   readonly downloads: { download(options: DownloadOptions): Promise<number> };
   readonly action: {
     readonly onClicked: { addListener(listener: ActionClickedListener): void };
@@ -292,6 +338,12 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
           (cb) => chromeGlobal.tabs.captureVisibleTab(undefined, options, cb),
         );
       },
+      create(properties) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.tabs.create(properties, cb),
+        );
+      },
       query(queryInfo) {
         return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.tabs.query(queryInfo, cb));
       },
@@ -318,6 +370,7 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       onMessage: chromeGlobal.runtime.onMessage,
     },
     storage: {
+      onChanged: chromeGlobal.storage.onChanged,
       local: {
         get(keys) {
           return promisifyWithResult(
@@ -342,6 +395,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       },
     },
     commands: {
+      getAll() {
+        return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.commands.getAll(cb));
+      },
       get onCommand() {
         return chromeGlobal.commands.onCommand;
       },
@@ -386,6 +442,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
         });
         return firefoxGlobal.tabs.captureTab(activeTab?.id, options);
       },
+      create(properties) {
+        return firefoxGlobal.tabs.create(properties);
+      },
       query(queryInfo) {
         return firefoxGlobal.tabs.query(queryInfo);
       },
@@ -406,6 +465,7 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       onMessage: firefoxGlobal.runtime.onMessage,
     },
     storage: {
+      onChanged: firefoxGlobal.storage.onChanged,
       local: {
         get(keys) {
           return firefoxGlobal.storage.local.get(keys);
@@ -424,6 +484,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       },
     },
     commands: {
+      getAll() {
+        return firefoxGlobal.commands.getAll();
+      },
       get onCommand() {
         return firefoxGlobal.commands.onCommand;
       },

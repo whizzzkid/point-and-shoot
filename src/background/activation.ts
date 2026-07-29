@@ -16,7 +16,7 @@ export interface ActivationBrowser {
   readonly tabs: Pick<BrowserShim["tabs"], "query" | "sendMessage">;
   readonly scripting: BrowserShim["scripting"];
   readonly action: Pick<BrowserShim["action"], "setBadgeText" | "setTitle">;
-  readonly commands: BrowserShim["commands"];
+  readonly commands: Pick<BrowserShim["commands"], "onCommand">;
 }
 
 /** Observable result of one tab activation request. */

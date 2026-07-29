@@ -472,6 +472,120 @@ Deno.test("popup extension page starts a session and controls a granted tab", as
   }
 });
 
+Deno.test("options persist every setting and update a mounted overlay theme", async () => {
+  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
+  const fixture = startFixtureServer();
+  const { context, extensionId } = await launchExtension();
+
+  try {
+    const options = await context.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options/options.html`);
+    await options.getByRole("heading", { name: "Settings" }).waitFor();
+    await options.getByLabel("Theme").selectOption("dark");
+    await options.getByText("Saved.").waitFor();
+
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+    await page.evaluate(() => {
+      const state = globalThis as unknown as { firstPointShootTheme?: string };
+      const observer = new MutationObserver(() => {
+        const host = document.querySelector<HTMLElement>("[data-point-and-shoot-host]");
+        if (host === null || state.firstPointShootTheme !== undefined) return;
+        const theme = host.dataset.theme;
+        if (theme === undefined) return;
+        state.firstPointShootTheme = theme;
+        observer.disconnect();
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    });
+    const popup = await openExtensionPopup(context, page, extensionId);
+    await popup.getByRole("heading", { name: "No active session" }).waitFor();
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Start session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    assertEquals(
+      await page.locator("[data-point-and-shoot-host]").getAttribute("data-theme"),
+      "dark",
+    );
+    assertEquals(
+      await page.evaluate(() =>
+        (globalThis as unknown as { firstPointShootTheme?: string }).firstPointShootTheme
+      ),
+      "dark",
+    );
+
+    await options.bringToFront();
+    await options.getByLabel("Theme").selectOption("light");
+    await options.getByText("Saved.").waitFor();
+    await page.waitForFunction(() =>
+      document.querySelector("[data-point-and-shoot-host]")?.getAttribute("data-theme") === "light"
+    );
+    await options.getByRole("switch", { name: "Framework component hints" }).click();
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("tab", { name: "Capture" }).click();
+    await options.getByLabel("Screenshot quality").selectOption("0.85");
+    await options.getByText("Saved.").waitFor();
+    await options.getByLabel("Maximum screenshot dimension").selectOption("2048");
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("tab", { name: "Export & privacy" }).click();
+    await options.getByLabel("Export size budget").selectOption("8000000");
+    await options.getByText("Saved.").waitFor();
+    await options.getByRole("switch", { name: "Strip sensitive query strings" }).click();
+    await options.getByText("Saved.").waitFor();
+
+    await options.reload();
+    await options.getByRole("heading", { name: "Settings" }).waitFor();
+    await options.waitForFunction(() =>
+      (document.querySelector("select") as HTMLSelectElement | null)?.value === "light"
+    );
+    assertEquals(await options.getByLabel("Theme").inputValue(), "light");
+    assertEquals(
+      await options.getByRole("switch", { name: "Framework component hints" }).getAttribute(
+        "aria-checked",
+      ),
+      "true",
+    );
+    await options.getByRole("tab", { name: "Capture" }).click();
+    assertEquals(await options.getByLabel("Screenshot quality").inputValue(), "0.85");
+    assertEquals(await options.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
+    await options.getByRole("tab", { name: "Export & privacy" }).click();
+    assertEquals(await options.getByLabel("Export size budget").inputValue(), "8000000");
+    assertEquals(
+      await options.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
+        "aria-checked",
+      ),
+      "false",
+    );
+    await options.getByRole("tab", { name: "Shortcuts" }).click();
+    const shortcut = options.locator(".ps-options-shortcut");
+    await shortcut.waitFor();
+    assertEquals((await shortcut.textContent())?.trim() === "Not assigned", false);
+    const shortcutSettingsOpened = context.waitForEvent("page");
+    await options.getByRole("button", { name: "Manage browser shortcuts" }).click();
+    const shortcutSettings = await shortcutSettingsOpened;
+    await shortcutSettings.waitForLoadState();
+    assertEquals(shortcutSettings.url(), "chrome://extensions/shortcuts");
+
+    const panel = await context.newPage();
+    await panel.goto(`chrome-extension://${extensionId}/sidepanel/sidepanel.html`);
+    await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await panel.getByText(/of 8\.00 MB/).waitFor();
+
+    await options.bringToFront();
+    await options.getByRole("tab", { name: "Data" }).click();
+    await options.getByRole("button", { name: "Clear all sessions" }).click();
+    await options.getByRole("dialog").getByRole("button", { name: "Clear all sessions" }).click();
+    await options.getByText("All sessions cleared.").waitFor();
+    await panel.reload();
+    await panel.getByRole("heading", { name: "No notes yet" }).waitFor();
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
 Deno.test("restricted-page activation exposes a clear browser-action message", async () => {
   await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const { context, extensionId, serviceWorker } = await launchExtension();

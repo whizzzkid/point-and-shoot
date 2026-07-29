@@ -3,9 +3,12 @@
 import type { RegionCapture } from "../shared/schema.ts";
 import type { BrowserShim, CaptureOptions } from "../shared/browser.ts";
 import { type CaptureRegionResponse, isCaptureRegionRequest } from "../shared/messages.ts";
-
-const MAXIMUM_SCREENSHOT_EDGE = 1_024;
-const WEBP_QUALITY = 0.7;
+import {
+  DEFAULT_SETTINGS,
+  loadSettings,
+  type ScreenshotMaxDimension,
+  type ScreenshotQuality,
+} from "../shared/settings.ts";
 
 /** CSS-pixel rectangle requested by the content script. */
 export interface CaptureRegionRect {
@@ -20,6 +23,12 @@ export interface CaptureRegionInput {
   readonly devicePixelRatio: number;
   readonly region: CaptureRegionRect;
   readonly viewport: { readonly width: number; readonly height: number };
+}
+
+/** WebP encoder settings selected in the options page. */
+export interface CaptureEncodingSettings {
+  readonly maximumDimension: ScreenshotMaxDimension;
+  readonly quality: ScreenshotQuality;
 }
 
 /** Minimal visible-tab method consumed by {@link captureRegion}. */
@@ -200,6 +209,7 @@ const webImageRuntime: CaptureImageRuntime = {
  * @param browser Promise-based visible-tab capture seam.
  * @param input CSS geometry and device-pixel ratio measured by the content script.
  * @param imageRuntime Image primitives; tests inject fakes.
+ * @param encoding Persisted WebP quality and longest-edge limit.
  * @returns The canonical region record stored with a note.
  * @throws {@link CapturePermissionError} when visible-tab capture is unavailable.
  * @throws {TypeError|RangeError|CaptureProcessingError} for invalid geometry or image processing.
@@ -208,6 +218,10 @@ export async function captureRegion(
   browser: CaptureBrowser,
   input: CaptureRegionInput,
   imageRuntime: CaptureImageRuntime = webImageRuntime,
+  encoding: CaptureEncodingSettings = {
+    maximumDimension: DEFAULT_SETTINGS.screenshotMaxDimension,
+    quality: DEFAULT_SETTINGS.screenshotQuality,
+  },
 ): Promise<RegionCapture> {
   const plan = capturePlan(input);
   let dataUrl: string;
@@ -231,7 +245,7 @@ export async function captureRegion(
     }
     const scale = Math.min(
       1,
-      MAXIMUM_SCREENSHOT_EDGE / Math.max(sourceWidth, sourceHeight),
+      encoding.maximumDimension / Math.max(sourceWidth, sourceHeight),
     );
     const outputWidth = Math.max(1, Math.round(sourceWidth * scale));
     const outputHeight = Math.max(1, Math.round(sourceHeight * scale));
@@ -254,7 +268,7 @@ export async function captureRegion(
       outputHeight,
     );
     const blob = await canvas.convertToBlob({
-      quality: WEBP_QUALITY,
+      quality: encoding.quality,
       type: "image/webp",
     });
     if (blob.type !== "image/webp" || blob.size === 0) {
@@ -313,7 +327,13 @@ export function registerCaptureHandler(
       region: message.region,
       viewport: message.viewport,
     };
-    void captureRegion(extensionBrowser.tabs, input, imageRuntime)
+    void loadSettings(extensionBrowser.storage.local)
+      .then((settings) =>
+        captureRegion(extensionBrowser.tabs, input, imageRuntime, {
+          maximumDimension: settings.screenshotMaxDimension,
+          quality: settings.screenshotQuality,
+        })
+      )
       .then((capture) => sendResponse({ capture, ok: true } satisfies CaptureRegionResponse))
       .catch((error: unknown) => sendResponse(captureErrorResponse(error)));
     return true;

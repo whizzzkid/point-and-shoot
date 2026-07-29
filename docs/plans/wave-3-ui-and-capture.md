@@ -279,7 +279,8 @@ traversal covered. Escape leaves zero overlay nodes.
 
 The pipeline from the README: content script sends region rect plus `devicePixelRatio` → background
 calls the shim's capture method → crop and encode with `createImageBitmap` +
-`OffscreenCanvas.convertToBlob({type:'image/webp', quality:0.7})`, capped at 1024px longest edge.
+`OffscreenCanvas.convertToBlob({type:'image/webp', quality:0.7})`, capped at 1024px longest edge by
+default. W3.9 exposes fixed, validated alternatives while keeping these settled defaults.
 
 **`chrome.offscreen` is forbidden** (ADR 0001). If you find yourself wanting it, the answer is
 `OffscreenCanvas` in the background context.

@@ -75,9 +75,11 @@ An object URL exists only for the download call and is revoked whether that call
 ## Size budget and errors
 
 The default limit is `2,000,000` bytes, taken from the
-[settled-numbers table](../plans/README.md#settled-numbers). The plan view measures the exact ZIP
-bytes for the current selection. When the archive exceeds the limit, both copy and download are
-disabled until the user excludes notes. The view shows the selected size, the limit, and an alert.
+[settled-numbers table](../plans/README.md#settled-numbers). The options page can select a fixed
+`1,000,000`, `2,000,000`, `4,000,000`, or `8,000,000` byte limit. The plan view measures the exact
+ZIP bytes for the current selection. When the archive exceeds the configured limit, both copy and
+download are disabled until the user excludes notes. The view shows the selected size, the limit,
+and an alert.
 
 A serialization, clipboard, or download failure remains on the plan view and is announced as an
 alert. No failed action clears the session or changes note selection.

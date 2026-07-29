@@ -14,7 +14,7 @@ export const SCHEMA_VERSION = 1;
 
 /** A captured screen region: the annotated screenshot plus where on the page it was taken. */
 export interface RegionCapture {
-  /** WebP, quality 0.7, longest edge capped at 1024px, as a `data:image/webp;base64,...` URI. */
+  /** WebP using the selected quality and longest-edge cap, as a base64 data URI. */
   readonly screenshot: string;
   readonly viewport: { readonly width: number; readonly height: number };
   readonly box: {
@@ -23,7 +23,7 @@ export interface RegionCapture {
     readonly width: number;
     readonly height: number;
   };
-  /** `true` when the region exceeded the viewport/bitmap or was downscaled to the 1024px cap. */
+  /** `true` when the region exceeded the viewport/bitmap or the configured longest-edge cap. */
   readonly truncated: boolean;
 }
 

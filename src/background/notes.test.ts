@@ -9,6 +9,7 @@ import {
   type AddNoteRequest,
   OPEN_NOTES_PANEL_MESSAGE,
 } from "../shared/messages.ts";
+import { DEFAULT_SETTINGS, saveSettings } from "../shared/settings.ts";
 import { ACTIVE_SESSION_ID_STORAGE_KEY, MAXIMUM_NOTE_ELEMENTS } from "../shared/session.ts";
 import { DB_NAME, getSession, openStore } from "../shared/store.ts";
 import {
@@ -118,6 +119,27 @@ Deno.test("captured note service replaces a stale active-session pointer", async
     "session-2",
   );
   await resetDatabase();
+});
+
+Deno.test("captured note service honors the global sensitive-query default", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  await saveSettings(storage, {
+    ...DEFAULT_SETTINGS,
+    stripSensitiveQueries: false,
+  });
+  const service = deterministicService(storage, ["session-query", "note-query"]);
+
+  await service.append(REQUEST);
+
+  const database = await openStore();
+  try {
+    const session = await getSession(database, "session-query");
+    assertEquals(session?.notes[0]?.stripQuery, false);
+  } finally {
+    database.close();
+    await resetDatabase();
+  }
 });
 
 Deno.test("captured note service serializes concurrent appends without losing a note", async () => {

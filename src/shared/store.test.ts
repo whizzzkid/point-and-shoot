@@ -10,6 +10,7 @@ import "fake-indexeddb/auto";
 import { assertEquals, assertRejects } from "@std/assert";
 import { SCHEMA_VERSION, type Session } from "./schema.ts";
 import {
+  clearSessions,
   DB_NAME,
   DB_VERSION,
   deleteSession,
@@ -164,6 +165,22 @@ Deno.test("deleteSession - removes a session; a repeat delete is a no-op", async
     await deleteSession(db, "session-1");
   } finally {
     db.close();
+  }
+});
+
+Deno.test("clearSessions - removes every session in one transaction", async () => {
+  await resetDb();
+  const db = await openStore();
+  try {
+    await putSession(db, makeSession("first"));
+    await putSession(db, makeSession("second"));
+
+    await clearSessions(db);
+
+    assertEquals(await listSessions(db), []);
+  } finally {
+    db.close();
+    await resetDb();
   }
 });
 

@@ -8,6 +8,7 @@ import {
   OPEN_NOTES_PANEL_MESSAGE,
 } from "../shared/messages.ts";
 import { SCHEMA_VERSION, type Session } from "../shared/schema.ts";
+import { loadSettings } from "../shared/settings.ts";
 import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
   MAXIMUM_NOTE_ELEMENTS,
@@ -73,6 +74,7 @@ async function appendCapturedNote(
   if (request.elements.length > MAXIMUM_NOTE_ELEMENTS) {
     throw new RangeError(`A note cannot contain more than ${MAXIMUM_NOTE_ELEMENTS} elements.`);
   }
+  const settings = await loadSettings(storage);
   const database = await dependencies.openDatabase();
   try {
     const createdAt = dependencies.now().toISOString();
@@ -92,7 +94,8 @@ async function appendCapturedNote(
         pageTitle: request.pageTitle,
         pageUrl: request.pageUrl,
         region: request.capture,
-        stripQuery: shouldStripQueryByDefault(request.pageUrl),
+        stripQuery: settings.stripSensitiveQueries &&
+          shouldStripQueryByDefault(request.pageUrl),
         text: "",
       }],
     };

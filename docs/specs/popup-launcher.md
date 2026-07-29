@@ -61,5 +61,5 @@ User-triggered failures appear in an alert within the popup:
 For a restricted page, the alert reads `Point & Shoot is unavailable on this page.` and the toolbar
 action receives the same `!` badge and unavailable title used by keyboard activation.
 
-The default production theme is dark until the shared theme setting lands. The launcher component
-supports explicit dark and light themes, and browser coverage exercises both.
+The popup production surface remains dark; the backdrop override applies to the injected overlay.
+The launcher component supports explicit dark and light themes, and browser coverage exercises both.
