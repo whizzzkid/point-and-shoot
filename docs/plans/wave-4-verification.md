@@ -3,7 +3,7 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 4 assumes
 [wave 3](wave-3-ui-and-capture.md) is complete.
 
-- **Status:** blocked on wave 3
+- **Status:** blocked on Wave 3's component-gallery exit criterion
 - **Goal:** prove the thing works, on both browsers, for keyboard and screen-reader users, and
   package it for install.
 

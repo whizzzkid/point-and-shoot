@@ -3,7 +3,8 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 3 assumes
 [wave 2](wave-2-core-libraries.md) is complete.
 
-- **Status:** open — wave 2 merged as `6b732e2`
+- **Status:** exit reconciliation open — implementation delivered across PRs #9–#13; component
+  gallery completeness remains
 - **Goal:** the product. Every surface from the design bundle, built in Preact against the generated
   tokens, plus the capture pipeline and the export that turns notes into an agent prompt.
 
@@ -503,12 +504,18 @@ assert a page with no framework produces no hint and no console noise.
 
 ## W3.12 — Pull request
 
-- [x] PR opened — [#8](https://github.com/whizzzkid/point-and-shoot/pull/8)
+- [x] Delivery stack opened — [#9](https://github.com/whizzzkid/point-and-shoot/pull/9) →
+      [#10](https://github.com/whizzzkid/point-and-shoot/pull/10) →
+      [#11](https://github.com/whizzzkid/point-and-shoot/pull/11) →
+      [#12](https://github.com/whizzzkid/point-and-shoot/pull/12) →
+      [#13](https://github.com/whizzzkid/point-and-shoot/pull/13)
 
 **Depends on:** W3.1–W3.11, CI green.
 
-Wave 3 is the wave that produces something a person can actually use, so this PR body carries the
-most weight of any in the project.
+Wave 3 is the wave that produces something a person can actually use, so its pull-request evidence
+carries the most weight of any in the project. The original integration review remains preserved as
+draft [#8](https://github.com/whizzzkid/point-and-shoot/pull/8); the five-part delivery stack keeps
+the implementation reviewable without losing the full-wave diff.
 
 Body must include: what the wave delivers, surface by surface; a checklist with commit SHAs; **a
 screenshot of every surface in both forced themes**, embedded with `?raw=1` blob URLs per the W1.9
@@ -522,15 +529,17 @@ and saying what happened. W2.11's spike did this with a hand-written bundle befo
 existed; this run is the confirmation that the built pipeline produces what the spike validated, so
 compare the two and report any divergence rather than re-deriving the answer.
 
-**After it merges:** run the post-merge plan sync — [rule 7](README.md#rules-for-working-any-wave).
-Tick every W3.x item with its merged SHA, flip this wave's **Status** to complete, and update the
-**tracking issue** so it shows wave 3 done and wave 4 open.
+This reconciliation performs the post-implementation plan sync from
+[rule 7](README.md#rules-for-working-any-wave). After the reconciliation PR merges, update the
+[tracking issue](https://github.com/whizzzkid/point-and-shoot/issues/3) to include W3.0, record PRs
+#9–#13 as delivered, and name component-gallery completeness as the remaining Wave 3 blocker. Mark
+Wave 3 done and open Wave 4 there only after the gallery follow-up merges.
 
 ---
 
 ## Wave 3 exit criteria
 
-- W3.0–W3.12 checked with real commit SHAs (W3.12 records a PR number rather than a SHA).
+- W3.0–W3.12 checked with real commit SHAs (W3.12 records delivery PR numbers rather than a SHA).
 - The `web_accessible_resources` fingerprinting surface is resolved either way, with an ADR saying
   which way and why.
 - The gesture-driven injection path is exercised end to end by at least one Playwright check, not
@@ -545,3 +554,35 @@ Tick every W3.x item with its merged SHA, flip this wave's **Status** to complet
 - The export UI states what the bundle contains before it is produced, and a token-bearing query
   string is stripped by default.
 - `deno task gallery` renders every component in every state in both themes.
+
+### Exit verdict — re-run before the reconciliation, 2026-07-29
+
+Every criterion above was re-checked against the final implementation head `da321a5` rather than
+inferred from the delivery plan. This reconciliation is stacked on PR #13, so it cannot land on
+`main` without the complete implementation beneath it.
+
+| Criterion                                | Verdict | Evidence                                                                                                               |
+| ---------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| W3.0–W3.12 carry real references         | ✅      | every implementation SHA resolves from `da321a5`; W3.12 links the five delivery PRs                                    |
+| Resource fingerprinting is resolved      | ✅      | `build/manifest.ts` rotates Chrome URLs; ADR-0012 records the cross-browser decision                                   |
+| Gesture-driven injection runs end to end | ✅      | `tests/e2e/activation.spec.ts` drives the built action path and observes one injected host                             |
+| Chromium capture-to-export flow works    | ✅      | the built flow persists a WebP note and downloads JSON, Markdown, and the referenced screenshot                        |
+| Toolbar avoids the selection             | ✅      | `toolbar-bounds.json` records four non-overlapping quadrants; browser tests assert collision-free placement            |
+| Keyboard-only operation                  | ⚠️      | picker traversal is explicit; panel and export use native controls, but their browser suites still drive them by click |
+| Both themes render deterministically     | ✅      | `shots:wave3` produced ten committed screenshots after forcing each surface theme                                      |
+| Component styles use generated tokens    | ✅      | design-token checks pass; the only raw pixel value found is the side-panel viewport breakpoint                         |
+| Captures exclude extension UI            | ✅      | `src/content/capture.browser.test.ts` asserts overlay and highlight pixels are absent during capture                   |
+| Export disclosure and query privacy      | ✅      | plan-view and built-flow tests assert the disclosure copy and strip `access_token` values                              |
+| Component gallery is complete            | ⚠️      | the gallery covers every component and every state separately, not every component-in-state combination                |
+
+The keyboard row is a stated qualification, not an implied pass. W3.1 supplies keyboard-operable
+native controls and the picker has a dedicated keyboard-only browser path, but the notes and plan
+browser suites use pointer activation. W4.4 owns the systematic keyboard and screen-reader audit, so
+it must close that evidence gap before release.
+
+The gallery row is an implementation gap, not only an evidence gap. `src/ui/gallery/server.test.ts`
+checks the 15 component specimens and eight review-state examples independently, while
+`src/ui/gallery/index.tsx` renders the state strip with only Button, Input, and Card. Wave 3 remains
+open—and therefore keeps the Wave 4 barrier closed—until the gallery renders and asserts every
+applicable component-in-state combination in both themes. This reconciliation does not weaken the
+original exit criterion to fit the delivered implementation.
