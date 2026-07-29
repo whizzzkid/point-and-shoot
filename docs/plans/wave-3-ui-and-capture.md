@@ -503,7 +503,7 @@ assert a page with no framework produces no hint and no console noise.
 
 ## W3.12 — Pull request
 
-- [ ] PR opened — record the number here
+- [x] PR opened — [#8](https://github.com/whizzzkid/point-and-shoot/pull/8)
 
 **Depends on:** W3.1–W3.11, CI green.
 
