@@ -1,17 +1,21 @@
 /// <reference lib="dom" />
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { fromFileUrl, join } from "@std/path";
-import { type BrowserContext, chromium, type Page, type Worker } from "playwright";
+import { join } from "@std/path";
+import { type Page, type Worker } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
+import {
+  EXTENSION_DIR,
+  launchExtension,
+  openExtensionPage,
+  readStoredZipEntries,
+  triggerExtensionAction,
+  waitForHostCount,
+} from "./extension-fixture.ts";
 
-const EXTENSION_DIR = fromFileUrl(new URL("../../dist/chrome/", import.meta.url));
 const ACTION_STATE_POLL_INTERVAL_MILLISECONDS = 100;
 const ACTION_STATE_TIMEOUT_MILLISECONDS = 5_000;
-const HOST_COUNT_TIMEOUT_MILLISECONDS = 5_000;
 const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
-const LISTENER_READY_TIMEOUT_MILLISECONDS = 2_500;
-const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
 const AGENT_TRIAL_NOTE =
   "This button looks like unstyled browser chrome. Give it a clear light-theme background, " +
   "border, and hover treatment.";
@@ -25,124 +29,13 @@ interface ReadActionStateOptions {
   readonly waitForBadge?: boolean;
 }
 
-function readStoredZipEntries(archive: Uint8Array): Map<string, Uint8Array> {
-  const view = new DataView(archive.buffer, archive.byteOffset, archive.byteLength);
-  const entries = new Map<string, Uint8Array>();
-  const decoder = new TextDecoder();
-  let offset = 0;
-
-  while (view.getUint32(offset, true) === 0x04034b50) {
-    const compressedSize = view.getUint32(offset + 18, true);
-    const nameLength = view.getUint16(offset + 26, true);
-    const extraLength = view.getUint16(offset + 28, true);
-    const nameStart = offset + 30;
-    const dataStart = nameStart + nameLength + extraLength;
-    const name = decoder.decode(archive.subarray(nameStart, nameStart + nameLength));
-    entries.set(name, archive.slice(dataStart, dataStart + compressedSize));
-    offset = dataStart + compressedSize;
-  }
-
-  return entries;
-}
-
-async function launchExtension(): Promise<{
-  readonly context: Awaited<ReturnType<typeof chromium.launchPersistentContext>>;
-  readonly extensionId: string;
-  readonly serviceWorker: Worker;
-}> {
-  const context = await chromium.launchPersistentContext("", {
-    acceptDownloads: true,
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${EXTENSION_DIR}`,
-      `--load-extension=${EXTENSION_DIR}`,
-    ],
-  });
-  const serviceWorker = context.serviceWorkers()[0] ??
-    await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
-  // CDP exposes the worker before its module has necessarily registered listeners. Opening the
-  // popup in that window can race its first message, so synchronize on the background channels it
-  // uses.
-  const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
-  while (Date.now() < readinessDeadline) {
-    const listenersReady = await serviceWorker.evaluate(() => {
-      const extensionGlobal = globalThis as unknown as {
-        readonly chrome: {
-          readonly commands: {
-            readonly onCommand: { hasListeners(): boolean };
-          };
-          readonly runtime: {
-            readonly onMessage: { hasListeners(): boolean };
-          };
-        };
-      };
-      return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
-        extensionGlobal.chrome.runtime.onMessage.hasListeners();
-    });
-    if (listenersReady) {
-      return {
-        context,
-        extensionId: new URL(serviceWorker.url()).host,
-        serviceWorker,
-      };
-    }
-    await new Promise((resolve) => setTimeout(resolve, LISTENER_POLL_INTERVAL_MILLISECONDS));
-  }
-  await context.close();
-  throw new Error(
-    `extension activation listeners were not ready within ${LISTENER_READY_TIMEOUT_MILLISECONDS}ms`,
-  );
-}
-
-async function triggerExtensionAction(
-  context: BrowserContext,
-  page: Page,
-  extensionId: string,
-): Promise<void> {
-  await page.bringToFront();
-  const browser = context.browser();
-  if (browser === null) throw new Error("persistent Chromium context has no browser");
-  const browserSession = await browser.newBrowserCDPSession();
-  try {
-    const { targetInfos } = await browserSession.send("Target.getTargets", {
-      filter: [{ type: "tab" }],
-    });
-    const tabTarget = targetInfos.find((target) =>
-      target.type === "tab" && target.url === page.url()
-    );
-    if (tabTarget === undefined) {
-      throw new Error(
-        `no tab target found for ${page.url()}: ${
-          JSON.stringify(targetInfos.map(({ targetId, type, url }) => ({ targetId, type, url })))
-        }`,
-      );
-    }
-    await browserSession.send("Extensions.triggerAction", {
-      id: extensionId,
-      targetId: tabTarget.targetId,
-    });
-  } finally {
-    await browserSession.detach();
-  }
-}
-
 async function openExtensionPopup(
-  context: BrowserContext,
+  context: Awaited<ReturnType<typeof launchExtension>>["context"],
   page: Page,
   extensionId: string,
 ): Promise<Page> {
   await triggerExtensionAction(context, page, extensionId);
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
-  return popup;
-}
-
-async function waitForHostCount(page: Page, expectedCount: number): Promise<void> {
-  await page.waitForFunction(
-    (count) => document.querySelectorAll("[data-point-and-shoot-host]").length === count,
-    expectedCount,
-    { timeout: HOST_COUNT_TIMEOUT_MILLISECONDS },
-  );
+  return await openExtensionPage(context, extensionId, "popup/popup.html");
 }
 
 async function readActiveActionState(
