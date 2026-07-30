@@ -1,11 +1,9 @@
 /// <reference lib="dom" />
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { type BrowserContext, type Page, type Worker } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
-  EXTENSION_DIR,
   launchExtension,
   openExtensionPage,
   readStoredZipEntries,
@@ -243,7 +241,6 @@ async function installReactProbeMarker(page: Page): Promise<void> {
 }
 
 Deno.test("toolbar popup toggles one host and remounts cleanly after navigation", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId, serviceWorker } = await launchExtension();
 
@@ -323,7 +320,6 @@ Deno.test("toolbar popup toggles one host and remounts cleanly after navigation"
 });
 
 Deno.test("framework hint setting gates real main-world capture evidence", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId, serviceWorker } = await launchExtension();
 
@@ -376,7 +372,6 @@ Deno.test("framework hint setting gates real main-world capture evidence", async
 });
 
 Deno.test("capture persists into the notes panel across a close and reopen", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId, serviceWorker } = await launchExtension();
 
@@ -471,7 +466,6 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
 });
 
 Deno.test("popup extension page starts a session and controls a granted tab", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId } = await launchExtension();
 
@@ -524,7 +518,6 @@ Deno.test("popup extension page starts a session and controls a granted tab", as
 });
 
 Deno.test("options persist every setting and update a mounted overlay theme", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const fixture = startFixtureServer();
   const { context, extensionId } = await launchExtension();
 
@@ -638,7 +631,6 @@ Deno.test("options persist every setting and update a mounted overlay theme", as
 });
 
 Deno.test("restricted-page activation exposes a clear browser-action message", async () => {
-  await Deno.stat(join(EXTENSION_DIR, "manifest.json"));
   const { context, extensionId, serviceWorker } = await launchExtension();
 
   try {
