@@ -13,7 +13,7 @@ import { type BrowserContext, chromium, type Page, type Worker } from "playwrigh
 export const EXTENSION_DIR = fromFileUrl(new URL("../../dist/chrome/", import.meta.url));
 
 const TRACE_DIRECTORY = fromFileUrl(new URL("../../playwright-report/", import.meta.url));
-const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
+const POLL_INTERVAL_MILLISECONDS = 25;
 const LISTENER_READY_TIMEOUT_MILLISECONDS = 2_500;
 const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
 const STATE_TIMEOUT_MILLISECONDS = 5_000;
@@ -79,7 +79,7 @@ export async function launchExtension(userDataDir = ""): Promise<ExtensionLaunch
         serviceWorker,
       };
     }
-    await new Promise((resolve) => setTimeout(resolve, LISTENER_POLL_INTERVAL_MILLISECONDS));
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MILLISECONDS));
   }
 
   await context.close();
@@ -264,7 +264,7 @@ export async function waitForStoredSession(
     },
     {
       expectedNoteCount,
-      pollInterval: LISTENER_POLL_INTERVAL_MILLISECONDS,
+      pollInterval: POLL_INTERVAL_MILLISECONDS,
       requestedId: sessionId,
       timeout: STATE_TIMEOUT_MILLISECONDS,
     },
@@ -339,7 +339,7 @@ export async function waitForActionState(
     return observed;
   }, {
     expected,
-    pollInterval: LISTENER_POLL_INTERVAL_MILLISECONDS,
+    pollInterval: POLL_INTERVAL_MILLISECONDS,
     tabId,
     timeout: STATE_TIMEOUT_MILLISECONDS,
   });
