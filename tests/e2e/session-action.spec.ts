@@ -189,6 +189,7 @@ Deno.test("browser toolbar starts, counts, ends, and starts a fresh session", as
     const extensionId = new URL(serviceWorker.url()).host;
     const page = await context.newPage();
     await page.goto(`${fixture.base}/light.html`);
+    await page.bringToFront();
     const tabId = await activeTabId(serviceWorker);
 
     await triggerExtensionAction(context, page, extensionId);
@@ -268,6 +269,7 @@ Deno.test("browser toolbar refuses to start a session on a restricted page", asy
   try {
     const page = await context.newPage();
     await page.goto("chrome://extensions/");
+    await page.bringToFront();
     const tabId = await activeTabId(serviceWorker);
 
     await triggerExtensionAction(context, page, extensionId);
