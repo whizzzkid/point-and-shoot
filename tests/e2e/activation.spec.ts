@@ -2,7 +2,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { type Page, type Worker } from "playwright";
+import { type BrowserContext, type Page, type Worker } from "playwright";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
   EXTENSION_DIR,
@@ -30,7 +30,7 @@ interface ReadActionStateOptions {
 }
 
 async function openExtensionPopup(
-  context: Awaited<ReturnType<typeof launchExtension>>["context"],
+  context: BrowserContext,
   page: Page,
   extensionId: string,
 ): Promise<Page> {
