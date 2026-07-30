@@ -5,7 +5,7 @@
  * proves the product-level session toggle and badge/tooltip contract before W4.1 expands the same
  * flow into multi-page capture and export coverage.
  *
- * Run with `deno task build && deno task e2e:session`.
+ * Run with `deno task e2e:session`.
  *
  * @module
  */
