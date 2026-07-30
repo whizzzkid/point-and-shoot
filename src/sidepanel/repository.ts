@@ -17,9 +17,9 @@ export interface NotesRepository {
 }
 
 /**
- * Creates a repository that resolves the active session through extension storage and IndexedDB.
+ * Creates a repository that prefers the displayed session and falls back to the active session.
  *
- * @param storage Extension-local active-session pointer.
+ * @param storage Extension-local storage containing the displayed and active session pointers.
  * @param onChanged Optional extension-storage listener registry for live panel updates.
  * @returns Fresh-connection session load and save operations.
  */
