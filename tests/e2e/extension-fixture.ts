@@ -336,7 +336,11 @@ export async function waitForActionState(
       }
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } while (Date.now() < deadline);
-    return observed;
+    throw new Error(
+      `action state did not match within ${timeout}ms: ${
+        JSON.stringify({ expected, observed, tabId })
+      }`,
+    );
   }, {
     expected,
     pollInterval: POLL_INTERVAL_MILLISECONDS,

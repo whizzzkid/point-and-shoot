@@ -13,7 +13,6 @@ import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@st
 import type { BrowserContext, Locator, Page, Worker } from "playwright";
 import { CAPTURE_REGION_MESSAGE, isCaptureRegionResponse } from "../../src/shared/messages.ts";
 import { type Session, validateSession } from "../../src/shared/schema.ts";
-import { createExportArchive } from "../../src/shared/serialize/zip.ts";
 import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY } from "../../src/shared/settings.ts";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
@@ -141,13 +140,17 @@ async function downloadEntries(panel: Page): Promise<Map<string, Uint8Array>> {
 function assertMarkdownImagesResolve(
   markdown: string,
   entries: ReadonlyMap<string, Uint8Array>,
+  expectedReferenceCount: number,
 ): void {
-  const references = [
-    ...markdown.matchAll(/\((?<target>\.\/shots\/[^)]+\.webp)\)/g),
-  ].map((match) => match.groups?.target);
-  assert(references.length > 0, "exported Markdown did not contain image references");
+  const references = [...markdown.matchAll(/\[[^\]]*\]\((?<target>[^)]+)\)/g)]
+    .map((match) => match.groups?.target)
+    .filter((target): target is string => target?.startsWith("./") === true);
+  assertEquals(
+    references.length,
+    expectedReferenceCount,
+    "Markdown screenshot reference count did not match exported notes",
+  );
   for (const reference of references) {
-    if (reference === undefined) throw new Error("Markdown image match had no named target");
     const archivePath = reference.replace(/^\.\//, "");
     assert(entries.has(archivePath), `Markdown references missing ZIP entry: ${archivePath}`);
   }
@@ -280,7 +283,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       const markdown = decoder.decode(entries.get("plan.md"));
       assertStringIncludes(markdown, FIRST_NOTE);
       assertStringIncludes(markdown, SECOND_NOTE);
-      assertMarkdownImagesResolve(markdown, entries);
+      assertMarkdownImagesResolve(markdown, entries, exported.notes.length);
     });
   } finally {
     await fixture.close();
@@ -345,7 +348,9 @@ Deno.test("session survives a real Chromium restart before end and fresh start",
           "sidepanel/sidepanel.html",
         );
         await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
-        await panel.locator("[data-note-id]").waitFor();
+        const notes = panel.locator("[data-note-id]");
+        await notes.first().waitFor();
+        assertEquals(await notes.count(), 1);
         await panel.close();
 
         await endSession(
@@ -470,21 +475,6 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       assertEquals(await emptyPanel.getByRole("button", { name: "Download for agent" }).count(), 0);
       await emptyPanel.close();
 
-      const zeroNoteSession = validatedSession(
-        await waitForStoredSession(serviceWorker, 0, sessionId),
-      );
-      const zeroNoteEntries = readStoredZipEntries(createExportArchive(zeroNoteSession));
-      assertEquals([...zeroNoteEntries.keys()], ["session.json", "plan.md"]);
-      const zeroNoteDecoder = new TextDecoder();
-      const zeroNoteExport = validatedSession(
-        JSON.parse(zeroNoteDecoder.decode(zeroNoteEntries.get("session.json"))),
-      );
-      assertEquals(zeroNoteExport.notes, []);
-      assertStringIncludes(
-        zeroNoteDecoder.decode(zeroNoteEntries.get("plan.md")),
-        "0 notes captured.",
-      );
-
       await serviceWorker.evaluate(() => {
         const state = globalThis as unknown as {
           pointAndShootOriginalPut?: typeof IDBObjectStore.prototype.put;
@@ -532,6 +522,17 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
         await panel.locator("[data-markdown-preview]").textContent() ?? "",
         "_No note text was provided._",
       );
+      await panel.getByRole("button", { name: "Exclude all" }).click();
+      assertStringIncludes(
+        await panel.locator("[data-markdown-preview]").textContent() ?? "",
+        "0 notes captured.",
+      );
+      assertEquals(await panel.getByRole("button", { name: "Copy prompt" }).isDisabled(), true);
+      assertEquals(
+        await panel.getByRole("button", { name: "Download for agent" }).isDisabled(),
+        true,
+      );
+      await panel.getByRole("button", { name: "Include all" }).click();
       const entries = await downloadEntries(panel);
       const exported = validatedSession(
         JSON.parse(new TextDecoder().decode(entries.get("session.json"))),
