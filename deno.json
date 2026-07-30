@@ -67,6 +67,7 @@
     "build:release": "deno run -A build/build.ts --release",
     "lint:firefox": "deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox",
     "e2e:smoke": "deno test -A tests/e2e/load.spec.ts",
+    "e2e:session": "deno test -A tests/e2e/session-action.spec.ts",
     "boot:firefox": "deno run -A scripts/boot-firefox.ts",
     "gallery": "deno run -A src/ui/gallery/server.ts",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
