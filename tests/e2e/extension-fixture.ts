@@ -133,7 +133,7 @@ export async function triggerExtensionAction(
 }
 
 /**
- * Opens an extension-owned page without changing the active inspected tab.
+ * Opens an extension-owned page in the persistent Chromium context.
  *
  * @param context Chromium context containing the extension.
  * @param extensionId Loaded extension id.
