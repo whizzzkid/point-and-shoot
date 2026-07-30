@@ -3,7 +3,7 @@
 import { render } from "preact";
 import { NotesPanel } from "../../src/sidepanel/NotesPanel.tsx";
 import { createNotesRepository, type NotesRepository } from "../../src/sidepanel/repository.ts";
-import type { StorageItems } from "../../src/shared/browser.ts";
+import type { StorageChangedListener, StorageItems } from "../../src/shared/browser.ts";
 import type { Session } from "../../src/shared/schema.ts";
 import iconSprite from "../../src/shared/design/icons.svg" with { type: "text" };
 import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../../src/shared/session.ts";
@@ -22,6 +22,7 @@ mount.id = "app";
 document.body.append(mount);
 
 const values: StorageItems = {};
+const storageListeners = new Set<StorageChangedListener>();
 const storage = {
   get(keys?: string | readonly string[] | null) {
     if (keys == null) return Promise.resolve({ ...values });
@@ -35,11 +36,25 @@ const storage = {
     return Promise.resolve();
   },
   set(items: StorageItems) {
+    const changes = Object.fromEntries(
+      Object.entries(items).map(([key, newValue]) => [
+        key,
+        { newValue, oldValue: values[key] },
+      ]),
+    );
     Object.assign(values, items);
+    for (const listener of storageListeners) listener(changes, "local");
     return Promise.resolve();
   },
 };
-const repository = createNotesRepository(storage);
+const repository = createNotesRepository(storage, {
+  addListener(listener) {
+    storageListeners.add(listener);
+  },
+  removeListener(listener) {
+    storageListeners.delete(listener);
+  },
+});
 
 function fixtureScreenshot(index: number): string {
   const canvas = document.createElement("canvas");
@@ -88,12 +103,14 @@ const harness = {
     renderPanel(theme, {
       load: () => Promise.reject(new Error(message)),
       save: () => Promise.resolve(),
+      watch: () => () => undefined,
     });
   },
   mountWithSaveError(theme: "dark" | "light", message: string) {
     renderPanel(theme, {
       load: () => repository.load(),
       save: () => Promise.reject(new Error(message)),
+      watch: () => () => undefined,
     });
   },
   async seed(session: Session) {

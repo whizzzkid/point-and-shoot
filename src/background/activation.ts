@@ -1,5 +1,6 @@
 import type { BrowserShim } from "../shared/browser.ts";
 import {
+  GET_OVERLAY_STATE_MESSAGE,
   isOverlayStateResponse,
   TOGGLE_ACTIVE_TAB_MESSAGE,
   TOGGLE_OVERLAY_MESSAGE,
@@ -7,7 +8,7 @@ import {
 } from "../shared/messages.ts";
 
 const CONTENT_BUNDLE = "content/content.js";
-const DEFAULT_ACTION_TITLE = "Point and Shoot";
+const DEFAULT_ACTION_TITLE = "Point and Shoot — Start session";
 const UNAVAILABLE_ACTION_TITLE = "Point and Shoot — unavailable on this page";
 
 /** Browser capabilities required to register and execute overlay activation. */
@@ -37,19 +38,33 @@ export interface ActivationController {
    * @returns Whether activation toggled an existing realm, injected a new one, or was unavailable.
    */
   toggle(tabId: number): Promise<ActivationOutcome>;
+  /**
+   * Ensures the overlay is mounted, injecting its content realm when needed.
+   *
+   * @param tabId Browser tab receiving the overlay.
+   * @returns The observed mounted state and activation mechanism.
+   */
+  mount(tabId: number): Promise<ActivationOutcome>;
+  /**
+   * Ensures the overlay is unmounted without injecting a missing content realm.
+   *
+   * @param tabId Browser tab whose overlay should be removed.
+   * @returns The observed unmounted state.
+   */
+  unmount(tabId: number): Promise<ActivationOutcome>;
 }
 
-async function clearUnavailableState(browser: ActivationBrowser, tabId: number): Promise<void> {
+async function clearUnavailableState(browser: ActivationBrowser): Promise<void> {
   await Promise.all([
-    browser.action.setBadgeText({ tabId, text: "" }),
-    browser.action.setTitle({ tabId, title: DEFAULT_ACTION_TITLE }),
+    browser.action.setBadgeText({ text: "" }),
+    browser.action.setTitle({ title: DEFAULT_ACTION_TITLE }),
   ]);
 }
 
-async function showUnavailableState(browser: ActivationBrowser, tabId: number): Promise<void> {
+async function showUnavailableState(browser: ActivationBrowser): Promise<void> {
   await Promise.all([
-    browser.action.setBadgeText({ tabId, text: "!" }),
-    browser.action.setTitle({ tabId, title: UNAVAILABLE_ACTION_TITLE }),
+    browser.action.setBadgeText({ text: "!" }),
+    browser.action.setTitle({ title: UNAVAILABLE_ACTION_TITLE }),
   ]);
 }
 
@@ -63,11 +78,11 @@ async function injectOnce(
       files: [CONTENT_BUNDLE],
     });
   } catch {
-    await showUnavailableState(browser, tabId);
+    await showUnavailableState(browser);
     return { mounted: false, result: "unavailable" };
   }
 
-  await clearUnavailableState(browser, tabId);
+  await clearUnavailableState(browser);
   return { mounted: true, result: "injected" };
 }
 
@@ -83,8 +98,46 @@ async function activateOnce(browser: ActivationBrowser, tabId: number): Promise<
   if (!isOverlayStateResponse(response)) {
     throw new Error("content script returned an invalid overlay state");
   }
-  await clearUnavailableState(browser, tabId);
+  await clearUnavailableState(browser);
   return { mounted: response.mounted, result: "toggled" };
+}
+
+async function readOverlayState(
+  browser: ActivationBrowser,
+  tabId: number,
+): Promise<boolean | null> {
+  let response: unknown;
+  try {
+    response = await browser.tabs.sendMessage(tabId, GET_OVERLAY_STATE_MESSAGE);
+  } catch {
+    return null;
+  }
+  if (!isOverlayStateResponse(response)) {
+    throw new Error("content script returned an invalid overlay state");
+  }
+  return response.mounted;
+}
+
+async function mountOnce(
+  browser: ActivationBrowser,
+  tabId: number,
+): Promise<ActivationOutcome> {
+  const mounted = await readOverlayState(browser, tabId);
+  if (mounted === null) return await injectOnce(browser, tabId);
+  if (!mounted) return await activateOnce(browser, tabId);
+  await clearUnavailableState(browser);
+  return { mounted: true, result: "toggled" };
+}
+
+async function unmountOnce(
+  browser: ActivationBrowser,
+  tabId: number,
+): Promise<ActivationOutcome> {
+  const mounted = await readOverlayState(browser, tabId);
+  if (mounted === null) return { mounted: false, result: "toggled" };
+  if (mounted) return await activateOnce(browser, tabId);
+  await clearUnavailableState(browser);
+  return { mounted: false, result: "toggled" };
 }
 
 /**
@@ -94,20 +147,41 @@ async function activateOnce(browser: ActivationBrowser, tabId: number): Promise<
  * @returns A controller that prevents overlapping requests from double-injecting one tab.
  */
 export function createActivationController(browser: ActivationBrowser): ActivationController {
-  const inFlight = new Map<number, Promise<ActivationOutcome>>();
+  type RequestKind = "mount" | "toggle" | "unmount";
+  interface PendingRequest {
+    readonly kind: RequestKind;
+    readonly promise: Promise<ActivationOutcome>;
+  }
+  const inFlight = new Map<number, PendingRequest>();
+
+  const request = (
+    tabId: number,
+    kind: RequestKind,
+    operation: () => Promise<ActivationOutcome>,
+  ): Promise<ActivationOutcome> => {
+    const existing = inFlight.get(tabId);
+    if (existing?.kind === kind) return existing.promise;
+    const activation = existing === undefined
+      ? operation()
+      : existing.promise.then(operation, operation);
+    const pending = { kind, promise: activation };
+    inFlight.set(tabId, pending);
+    const clearInFlight = (): void => {
+      if (inFlight.get(tabId) === pending) inFlight.delete(tabId);
+    };
+    void activation.then(clearInFlight, clearInFlight);
+    return activation;
+  };
 
   return {
+    mount(tabId): Promise<ActivationOutcome> {
+      return request(tabId, "mount", () => mountOnce(browser, tabId));
+    },
     toggle(tabId): Promise<ActivationOutcome> {
-      const existing = inFlight.get(tabId);
-      if (existing !== undefined) return existing;
-
-      const activation = activateOnce(browser, tabId);
-      const clearInFlight = (): void => {
-        if (inFlight.get(tabId) === activation) inFlight.delete(tabId);
-      };
-      inFlight.set(tabId, activation);
-      void activation.then(clearInFlight, clearInFlight);
-      return activation;
+      return request(tabId, "toggle", () => activateOnce(browser, tabId));
+    },
+    unmount(tabId): Promise<ActivationOutcome> {
+      return request(tabId, "unmount", () => unmountOnce(browser, tabId));
     },
   };
 }
@@ -117,6 +191,8 @@ export function createActivationController(browser: ActivationBrowser): Activati
  *
  * @param browser Browser capabilities and listener registries used by the background entry point.
  * @param reportError Receives unexpected API failures that cannot be shown through action state.
+ * @param controller Shared activation controller used by toolbar and command entry points.
+ * @param restoreActionState Restores session badge and tooltip state after successful activation.
  * @returns The shared controller retained by the registered listener closures.
  */
 export function registerActivationHandlers(
@@ -124,17 +200,20 @@ export function registerActivationHandlers(
   reportError: (error: unknown) => void = (error) => {
     console.error("point-and-shoot: activation failed:", error);
   },
+  controller: ActivationController = createActivationController(browser),
+  restoreActionState: () => Promise<void> = () => Promise.resolve(),
 ): ActivationController {
-  const controller = createActivationController(browser);
-  const toggle = (tabId: number): void => {
-    void controller.toggle(tabId).catch(reportError);
+  const toggle = async (tabId: number): Promise<ActivationOutcome> => {
+    const outcome = await controller.toggle(tabId);
+    if (outcome.result !== "unavailable") await restoreActionState();
+    return outcome;
   };
 
   browser.commands.onCommand.addListener((command) => {
     if (command !== "toggle-capture") return;
     void browser.tabs.query({ active: true, currentWindow: true })
       .then(([tab]) => {
-        if (tab?.id !== undefined) toggle(tab.id);
+        if (tab?.id !== undefined) void toggle(tab.id).catch(reportError);
       })
       .catch(reportError);
   });
@@ -144,7 +223,7 @@ export function registerActivationHandlers(
     void browser.tabs.query({ active: true, currentWindow: true })
       .then(([tab]) => {
         if (tab?.id === undefined) throw new Error("No active browser tab is available.");
-        return controller.toggle(tab.id);
+        return toggle(tab.id);
       })
       .then((outcome) => sendResponse({ ...outcome, ok: true } satisfies ToggleActiveTabResponse))
       .catch((error: unknown) =>

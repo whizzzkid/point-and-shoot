@@ -30,7 +30,7 @@ void loadSettings(browser.storage.local)
           revokeObjectURL: (url) => URL.revokeObjectURL(url),
         }}
         iconSpriteUrl="/src/shared/design/icons.svg"
-        repository={createNotesRepository(browser.storage.local)}
+        repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
         sizeBudgetBytes={settings.exportSizeBudgetBytes}
       />,
       root,

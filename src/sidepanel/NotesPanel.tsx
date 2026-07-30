@@ -172,18 +172,30 @@ export function NotesPanel(
 
   useEffect(() => {
     let active = true;
-    void repository.load()
-      .then((loaded) => {
-        if (active) setSession(loaded);
-      })
-      .catch((cause: unknown) => {
-        if (active) {
-          setError(cause instanceof Error ? cause.message : "The current session could not load.");
-          setSession(null);
-        }
-      });
+    let requestId = 0;
+    const reload = (): void => {
+      const currentRequest = ++requestId;
+      void repository.load()
+        .then((loaded) => {
+          if (active && currentRequest === requestId) {
+            setError(undefined);
+            setSession(loaded);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (active && currentRequest === requestId) {
+            setError(
+              cause instanceof Error ? cause.message : "The current session could not load.",
+            );
+            setSession(null);
+          }
+        });
+    };
+    const stopWatching = repository.watch(reload);
+    reload();
     return () => {
       active = false;
+      stopWatching();
     };
   }, [repository]);
 
@@ -254,7 +266,13 @@ export function NotesPanel(
       <main className="ps-notes-panel">
         <aside className="ps-notes-sidebar">
           <div>
-            <p className="ps-eyebrow">Current session</p>
+            <p className="ps-eyebrow">
+              {session === null
+                ? "Session"
+                : session.endedAt === null
+                ? "Current session"
+                : "Completed session"}
+            </p>
             <h1>{session?.name ?? "Notes"}</h1>
           </div>
           <nav aria-label="Captured pages" className="ps-page-list">

@@ -10,7 +10,12 @@ import {
   OPEN_NOTES_PANEL_MESSAGE,
 } from "../shared/messages.ts";
 import { DEFAULT_SETTINGS, saveSettings } from "../shared/settings.ts";
-import { ACTIVE_SESSION_ID_STORAGE_KEY, MAXIMUM_NOTE_ELEMENTS } from "../shared/session.ts";
+import {
+  ACTIVE_SESSION_ID_STORAGE_KEY,
+  DISPLAY_SESSION_ID_STORAGE_KEY,
+  MAXIMUM_NOTE_ELEMENTS,
+  SESSION_REVISION_STORAGE_KEY,
+} from "../shared/session.ts";
 import { DB_NAME, getSession, openStore } from "../shared/store.ts";
 import {
   type CapturedNoteService,
@@ -91,12 +96,18 @@ Deno.test("captured note service creates an active session and preserves full UR
   const service = deterministicService(storage, ["session-1", "note-1"]);
 
   const result = await service.append(REQUEST);
-  const active = await storage.get(ACTIVE_SESSION_ID_STORAGE_KEY);
+  const pointers = await storage.get([
+    ACTIVE_SESSION_ID_STORAGE_KEY,
+    DISPLAY_SESSION_ID_STORAGE_KEY,
+    SESSION_REVISION_STORAGE_KEY,
+  ]);
   const database = await openStore();
   try {
     const session = await getSession(database, "session-1");
     assertEquals(result, { noteCount: 1, noteId: "note-1", sessionId: "session-1" });
-    assertEquals(active[ACTIVE_SESSION_ID_STORAGE_KEY], "session-1");
+    assertEquals(pointers[ACTIVE_SESSION_ID_STORAGE_KEY], "session-1");
+    assertEquals(pointers[DISPLAY_SESSION_ID_STORAGE_KEY], "session-1");
+    assertEquals(pointers[SESSION_REVISION_STORAGE_KEY], 1);
     assertEquals(session?.notes[0]?.pageUrl, REQUEST.pageUrl);
     assertEquals(session?.notes[0]?.stripQuery, true);
     assertEquals(session?.notes[0]?.elements, REQUEST.elements);
@@ -194,7 +205,11 @@ Deno.test("registerNoteHandler ignores foreign messages and returns typed result
   const service: CapturedNoteService = {
     append: () => Promise.resolve({ noteCount: 1, noteId: "note-1", sessionId: "session-1" }),
   };
-  registerNoteHandler(browser, service);
+  let synchronized = 0;
+  registerNoteHandler(browser, service, () => {
+    synchronized += 1;
+    return Promise.resolve();
+  });
   if (listener === undefined) throw new Error("note handler did not register");
   const responses: unknown[] = [];
 
@@ -216,6 +231,7 @@ Deno.test("registerNoteHandler ignores foreign messages and returns typed result
     ok: true,
     sessionId: "session-1",
   }, { ok: true }]);
+  assertEquals(synchronized, 1);
 });
 
 Deno.test("registerNoteHandler returns typed storage and panel errors", async () => {

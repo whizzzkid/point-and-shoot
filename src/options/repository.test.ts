@@ -6,7 +6,11 @@ import { assertEquals } from "@std/assert";
 import type { BrowserShim, Engine, StorageItems } from "../shared/browser.ts";
 import { SCHEMA_VERSION } from "../shared/schema.ts";
 import { DEFAULT_SETTINGS, saveSettings, SETTINGS_STORAGE_KEY } from "../shared/settings.ts";
-import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../shared/session.ts";
+import {
+  ACTIVE_SESSION_ID_STORAGE_KEY,
+  DISPLAY_SESSION_ID_STORAGE_KEY,
+  SESSION_REVISION_STORAGE_KEY,
+} from "../shared/session.ts";
 import { DB_NAME, listSessions, openStore, putSession } from "../shared/store.ts";
 import { createOptionsRepository, type OptionsBrowser } from "./repository.ts";
 
@@ -116,6 +120,8 @@ Deno.test("options repository clears sessions and the active pointer without del
   const fake = createBrowser("chrome");
   await saveSettings(fake.storage, DEFAULT_SETTINGS);
   fake.storage.values[ACTIVE_SESSION_ID_STORAGE_KEY] = "session-options";
+  fake.storage.values[DISPLAY_SESSION_ID_STORAGE_KEY] = "session-options";
+  fake.storage.values[SESSION_REVISION_STORAGE_KEY] = 4;
   const database = await openStore();
   await putSession(database, {
     createdAt: "2026-07-28T20:00:00.000Z",
@@ -133,6 +139,8 @@ Deno.test("options repository clears sessions and the active pointer without del
   assertEquals(await listSessions(reopened), []);
   reopened.close();
   assertEquals(fake.storage.values[ACTIVE_SESSION_ID_STORAGE_KEY], undefined);
+  assertEquals(fake.storage.values[DISPLAY_SESSION_ID_STORAGE_KEY], undefined);
+  assertEquals(fake.storage.values[SESSION_REVISION_STORAGE_KEY], undefined);
   assertEquals(fake.storage.values[SETTINGS_STORAGE_KEY], DEFAULT_SETTINGS);
   await resetDatabase();
 });

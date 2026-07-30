@@ -3,7 +3,11 @@
 import type { BrowserShim } from "../shared/browser.ts";
 import type { ExtensionSettings } from "../shared/settings.ts";
 import { loadSettings, saveSettings } from "../shared/settings.ts";
-import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../shared/session.ts";
+import {
+  ACTIVE_SESSION_ID_STORAGE_KEY,
+  DISPLAY_SESSION_ID_STORAGE_KEY,
+  SESSION_REVISION_STORAGE_KEY,
+} from "../shared/session.ts";
 import { clearSessions, openStore } from "../shared/store.ts";
 
 /** Browser capabilities used by the options page. */
@@ -35,7 +39,11 @@ async function clearStoredSessions(browser: OptionsBrowser): Promise<void> {
   } finally {
     database.close();
   }
-  await browser.storage.local.remove(ACTIVE_SESSION_ID_STORAGE_KEY);
+  await browser.storage.local.remove([
+    ACTIVE_SESSION_ID_STORAGE_KEY,
+    DISPLAY_SESSION_ID_STORAGE_KEY,
+    SESSION_REVISION_STORAGE_KEY,
+  ]);
 }
 
 /**

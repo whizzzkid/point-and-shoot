@@ -234,3 +234,33 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     await fixture.close();
   }
 });
+
+Deno.test("notes panel reloads when a session becomes available while it is open", async () => {
+  const browser = await chromium.launch();
+  const fixture = startFixtureServer();
+  try {
+    const page = await browser.newPage({ viewport: { height: 600, width: 900 } });
+    await page.goto(`${fixture.base}/notes-panel-test.html`);
+    await page.addScriptTag({ content: await bundleNotesPanelHarness() });
+    await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootNotesPanelTest: NotesPanelHarness;
+      }).pointShootNotesPanelTest;
+      harness.mount("dark");
+    });
+    await page.getByRole("heading", { exact: true, name: "Notes" }).waitFor();
+
+    await page.evaluate(async (session) => {
+      const harness = (globalThis as unknown as {
+        pointShootNotesPanelTest: NotesPanelHarness;
+      }).pointShootNotesPanelTest;
+      await harness.seed(session);
+    }, SESSION);
+
+    await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    assertEquals(await page.getByText("Current session").count(), 1);
+  } finally {
+    await fixture.close();
+    await browser.close();
+  }
+});

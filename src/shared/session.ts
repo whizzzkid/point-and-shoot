@@ -6,6 +6,12 @@ export const DEFAULT_EXPORT_SIZE_BUDGET_BYTES = 2_000_000;
 /** `storage.local` key pointing extension surfaces at the current IndexedDB session. */
 export const ACTIVE_SESSION_ID_STORAGE_KEY = "activeSessionId";
 
+/** `storage.local` key pointing the side panel at the active or most recently ended session. */
+export const DISPLAY_SESSION_ID_STORAGE_KEY = "displaySessionId";
+
+/** Monotonic storage value notifying open extension surfaces that session data changed. */
+export const SESSION_REVISION_STORAGE_KEY = "sessionRevision";
+
 /** Settled maximum number of serialized elements retained by one note. */
 export const MAXIMUM_NOTE_ELEMENTS = 25;
 

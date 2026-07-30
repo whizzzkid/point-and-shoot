@@ -3,9 +3,13 @@
 import "fake-indexeddb/auto";
 
 import { assertEquals } from "@std/assert";
-import type { BrowserShim, StorageItems } from "../shared/browser.ts";
+import type { BrowserShim, StorageChangedListener, StorageItems } from "../shared/browser.ts";
 import { SCHEMA_VERSION, type Session } from "../shared/schema.ts";
-import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../shared/session.ts";
+import {
+  ACTIVE_SESSION_ID_STORAGE_KEY,
+  DISPLAY_SESSION_ID_STORAGE_KEY,
+  SESSION_REVISION_STORAGE_KEY,
+} from "../shared/session.ts";
 import { DB_NAME, openStore, putSession } from "../shared/store.ts";
 import { createNotesRepository } from "./repository.ts";
 
@@ -18,10 +22,13 @@ const SESSION: Session = {
   schemaVersion: SCHEMA_VERSION,
 };
 
-function createStorage(activeId?: string): BrowserShim["storage"]["local"] {
-  const values: StorageItems = activeId === undefined
-    ? {}
-    : { [ACTIVE_SESSION_ID_STORAGE_KEY]: activeId };
+function createStorage(
+  activeId?: string,
+  displayId?: string,
+): BrowserShim["storage"]["local"] {
+  const values: StorageItems = {};
+  if (activeId !== undefined) values[ACTIVE_SESSION_ID_STORAGE_KEY] = activeId;
+  if (displayId !== undefined) values[DISPLAY_SESSION_ID_STORAGE_KEY] = displayId;
   return {
     get(keys) {
       if (keys == null) return Promise.resolve({ ...values });
@@ -75,4 +82,50 @@ Deno.test("notes repository returns null without a valid active-session pointer"
   }
   assertEquals(await createNotesRepository(createStorage("session-1")).load(), SESSION);
   await resetDatabase();
+});
+
+Deno.test("notes repository keeps loading the displayed session after it ends", async () => {
+  await resetDatabase();
+  const completed = {
+    ...SESSION,
+    endedAt: "2026-07-28T12:30:00.000Z",
+  };
+  const database = await openStore();
+  try {
+    await putSession(database, completed);
+  } finally {
+    database.close();
+  }
+
+  assertEquals(
+    await createNotesRepository(createStorage(undefined, "session-1")).load(),
+    completed,
+  );
+  await resetDatabase();
+});
+
+Deno.test("notes repository watches session pointer and revision changes", () => {
+  let listener: StorageChangedListener | undefined;
+  let removed: StorageChangedListener | undefined;
+  const repository = createNotesRepository(createStorage(), {
+    addListener(next) {
+      listener = next;
+    },
+    removeListener(previous) {
+      removed = previous;
+    },
+  });
+  let changes = 0;
+  const stop = repository.watch(() => {
+    changes += 1;
+  });
+
+  listener?.({ unrelated: { newValue: true } }, "local");
+  listener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 1 } }, "sync");
+  listener?.({ [DISPLAY_SESSION_ID_STORAGE_KEY]: { newValue: "session-1" } }, "local");
+  listener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 2 } }, "local");
+  stop();
+
+  assertEquals(changes, 2);
+  assertEquals(removed, listener);
 });

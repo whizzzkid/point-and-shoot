@@ -1,6 +1,6 @@
 # ADR-0014 — Let the toolbar action open the launcher popup
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0016
 - **Date:** 2026-07-28
 
 ## Context
