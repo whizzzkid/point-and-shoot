@@ -21,4 +21,8 @@ Deno.test("wave 3 screenshots cover every extension surface in both forced theme
       "docs/assets/wave-3/options-light.png",
     ],
   );
+  assertEquals(
+    shotOutputPath("toolbar", "dark", "playwright-report/visual/actual"),
+    "playwright-report/visual/actual/toolbar-dark.png",
+  );
 });

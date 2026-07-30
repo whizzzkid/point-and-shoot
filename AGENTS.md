@@ -59,6 +59,8 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
 | `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
 | `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
+| `deno task visual`        | Compares every surface and forced theme with its Linux baseline        | W4.2      |
+| `deno task visual:update` | Replaces visual baselines intentionally on the CI platform             | W4.2      |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
@@ -216,6 +218,9 @@ Actions pin to the official action's semver major, which is this project's one d
 | playwright         | `1.62.0`  | `deno.json` imports                                                                            |
 | `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
 | `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
+| `@types/pngjs`     | `6.0.5`   | `deno.json` imports; visual comparison type declarations (W4.2)                                |
+| pixelmatch         | `7.2.0`   | `deno.json` imports; visual pixel comparison (W4.2)                                            |
+| pngjs              | `7.0.0`   | `deno.json` imports; visual PNG decoding and diff artifacts (W4.2)                             |
 | preact             | `10.29.7` | `deno.json` imports                                                                            |
 | react              | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
 | react-dom          | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |

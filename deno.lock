@@ -5,11 +5,14 @@
     "jsr:@std/internal@^1.0.10": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1.1.6": "1.1.6",
+    "npm:@types/pngjs@6.0.5": "6.0.5",
     "npm:esbuild@0.28.1": "0.28.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
     "npm:loose-envify@1.4.0": "1.4.0",
     "npm:oxlint@1.76.0": "1.76.0",
+    "npm:pixelmatch@7.2.0": "7.2.0",
     "npm:playwright@1.62.0": "1.62.0",
+    "npm:pngjs@7.0.0": "7.0.0",
     "npm:preact@10.29.7": "10.29.7",
     "npm:react-dom@18.3.1": "18.3.1_react@18.3.1",
     "npm:react@18.3.1": "18.3.1",
@@ -436,6 +439,12 @@
       "integrity": "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==",
       "dependencies": [
         "undici-types"
+      ]
+    },
+    "@types/pngjs@6.0.5": {
+      "integrity": "sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==",
+      "dependencies": [
+        "@types/node"
       ]
     },
     "@vue/compiler-core@3.5.40": {
@@ -1667,6 +1676,13 @@
       ],
       "bin": true
     },
+    "pixelmatch@7.2.0": {
+      "integrity": "sha512-xhcb4yHu9sM/G7foGzoLtXYcC0zHEaOXXjRKhGup0fw78Nf2Tkiapv4EQyMzrbcmQPsllAI7DbFY2UT7PlI9Pg==",
+      "dependencies": [
+        "pngjs"
+      ],
+      "bin": true
+    },
     "playwright-core@1.62.0": {
       "integrity": "sha512-nsNRyq0r2zsG8AcRHWknc9QRA5XCueC7gWMrs+Gx2tlZn9hcl8zudfh00lhJPY1DE7NmZ6bDsT9g2yey8mXljA==",
       "bin": true
@@ -1680,6 +1696,9 @@
         "fsevents"
       ],
       "bin": true
+    },
+    "pngjs@7.0.0": {
+      "integrity": "sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow=="
     },
     "postcss@8.5.23": {
       "integrity": "sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==",
@@ -2177,9 +2196,12 @@
     "dependencies": [
       "jsr:@std/assert@1.0.14",
       "jsr:@std/path@1.1.6",
+      "npm:@types/pngjs@6.0.5",
       "npm:fake-indexeddb@6.2.5",
       "npm:loose-envify@1.4.0",
+      "npm:pixelmatch@7.2.0",
       "npm:playwright@1.62.0",
+      "npm:pngjs@7.0.0",
       "npm:preact@10.29.7",
       "npm:react-dom@18.3.1",
       "npm:react@18.3.1",
