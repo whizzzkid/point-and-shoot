@@ -93,8 +93,8 @@ Deno.test("activation - toggles an existing content realm without reinjecting", 
   assertEquals(result, { mounted: false, result: "toggled" });
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
-    "action.setBadgeText:7:",
-    "action.setTitle:7:Point and Shoot",
+    "action.setBadgeText:undefined:",
+    "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
 });
 
@@ -107,8 +107,8 @@ Deno.test("activation - injects once when the tab has no content listener", asyn
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
     "scripting.executeScript:7:content/content.js",
-    "action.setBadgeText:7:",
-    "action.setTitle:7:Point and Shoot",
+    "action.setBadgeText:undefined:",
+    "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
 });
 
@@ -122,9 +122,45 @@ Deno.test("activation - exposes restricted-page failures in the browser action",
   assertEquals(fake.calls, [
     "tabs.sendMessage:7",
     "scripting.executeScript:7:content/content.js",
-    "action.setBadgeText:7:!",
-    "action.setTitle:7:Point and Shoot — unavailable on this page",
+    "action.setBadgeText:undefined:!",
+    "action.setTitle:undefined:Point and Shoot — unavailable on this page",
   ]);
+});
+
+Deno.test("activation - mount and unmount converge without blind toggles", async () => {
+  const fake = createFakeActivationBrowser();
+  let mounted = false;
+  const browser: ActivationBrowser = {
+    ...fake.browser,
+    tabs: {
+      ...fake.browser.tabs,
+      sendMessage(tabId, message) {
+        fake.calls.push(`tabs.sendMessage:${tabId}:${String(message)}`);
+        if (message === "point-and-shoot:toggle-overlay") mounted = !mounted;
+        return Promise.resolve({ mounted });
+      },
+    },
+  };
+  const controller = createActivationController(browser);
+
+  assertEquals(await controller.mount(7), { mounted: true, result: "toggled" });
+  assertEquals(await controller.mount(7), { mounted: true, result: "toggled" });
+  assertEquals(await controller.unmount(7), { mounted: false, result: "toggled" });
+  assertEquals(await controller.unmount(7), { mounted: false, result: "toggled" });
+  assertEquals(
+    fake.calls.filter((call) => call.includes("toggle-overlay")).length,
+    2,
+  );
+});
+
+Deno.test("activation - unmount does not inject a missing content realm", async () => {
+  const fake = createFakeActivationBrowser();
+
+  assertEquals(
+    await createActivationController(fake.browser).unmount(7),
+    { mounted: false, result: "toggled" },
+  );
+  assertEquals(fake.calls, ["tabs.sendMessage:7"]);
 });
 
 Deno.test("activation - concurrent requests share one injection", async () => {
@@ -166,7 +202,7 @@ Deno.test("activation - concurrent requests share one injection", async () => {
   assertEquals(calls, ["tabs.sendMessage:7", "scripting.executeScript:7"]);
 });
 
-Deno.test("activation - popup messages toggle the queried active tab and return its state", async () => {
+Deno.test("activation - runtime messages toggle the queried active tab and return its state", async () => {
   const fake = createFakeActivationBrowser();
   fake.resolveMessage();
   registerActivationHandlers(fake.browser);
@@ -179,15 +215,24 @@ Deno.test("activation - popup messages toggle the queried active tab and return 
   assertEquals(fake.calls, [
     "tabs.query",
     "tabs.sendMessage:9",
-    "action.setBadgeText:9:",
-    "action.setTitle:9:Point and Shoot",
+    "action.setBadgeText:undefined:",
+    "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
 });
 
-Deno.test("activation - toolbar click stays manifest-owned and the shortcut works without a popup", async () => {
+Deno.test("activation - the keyboard shortcut toggles capture through the shared controller", async () => {
   const fake = createFakeActivationBrowser();
   fake.resolveMessage();
-  registerActivationHandlers(fake.browser);
+  let restored = 0;
+  registerActivationHandlers(
+    fake.browser,
+    () => undefined,
+    createActivationController(fake.browser),
+    () => {
+      restored += 1;
+      return Promise.resolve();
+    },
+  );
   const commandListener = fake.commandListener();
 
   commandListener?.("unrelated-command");
@@ -197,7 +242,8 @@ Deno.test("activation - toolbar click stays manifest-owned and the shortcut work
   assertEquals(fake.calls, [
     "tabs.query",
     "tabs.sendMessage:9",
-    "action.setBadgeText:9:",
-    "action.setTitle:9:Point and Shoot",
+    "action.setBadgeText:undefined:",
+    "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
+  assertEquals(restored, 1);
 });

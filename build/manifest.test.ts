@@ -16,10 +16,9 @@ Deno.test("manifest - both targets declare manifest_version 3", () => {
   assertEquals(forFirefox().manifest_version, 3);
 });
 
-Deno.test("manifest - the toolbar action opens the session launcher popup", () => {
+Deno.test("manifest - the toolbar action dispatches a click to start or end a session", () => {
   const expected = {
-    default_popup: "popup/popup.html",
-    default_title: "Point and Shoot",
+    default_title: "Point and Shoot — Start session",
   };
   assertEquals(forChrome().action, expected);
   assertEquals(forFirefox().action, expected);

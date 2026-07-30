@@ -205,7 +205,11 @@ Deno.test("registerNoteHandler ignores foreign messages and returns typed result
   const service: CapturedNoteService = {
     append: () => Promise.resolve({ noteCount: 1, noteId: "note-1", sessionId: "session-1" }),
   };
-  registerNoteHandler(browser, service);
+  let synchronized = 0;
+  registerNoteHandler(browser, service, () => {
+    synchronized += 1;
+    return Promise.resolve();
+  });
   if (listener === undefined) throw new Error("note handler did not register");
   const responses: unknown[] = [];
 
@@ -227,6 +231,7 @@ Deno.test("registerNoteHandler ignores foreign messages and returns typed result
     ok: true,
     sessionId: "session-1",
   }, { ok: true }]);
+  assertEquals(synchronized, 1);
 });
 
 Deno.test("registerNoteHandler returns typed storage and panel errors", async () => {

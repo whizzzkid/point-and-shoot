@@ -417,6 +417,10 @@ resume a session, show the current session name and note count, toggle the overl
 the notes panel, and reach options. Keep it small — the popup is a launcher, not a workspace; the
 panel is the workspace.
 
+**Superseded after Wave 3:** [ADR-0016](../adr/0016-toolbar-action-controls-session.md) makes the
+toolbar click control the session directly. The popup remains buildable for regression coverage but
+is no longer the normal toolbar entry point.
+
 **Verify:** Playwright opens the popup by extension URL and asserts each action's effect. Both
 themes.
 
@@ -460,6 +464,10 @@ opens the launcher popup, whose start, resume, and switch controls delegate to t
 controller; see [ADR-0014](../adr/0014-toolbar-action-opens-popup.md). Inject the content script on
 demand via `scripting.executeScript` under the `activeTab` grant — there is no `<all_urls>` (ADR
 0002), so injection is gesture-driven by design.
+
+The toolbar portion of this completed item was later superseded by
+[ADR-0016](../adr/0016-toolbar-action-controls-session.md); the keyboard and injection guarantees
+remain unchanged.
 
 Handle: double activation must not inject twice or mount two hosts; pages where injection is
 impossible (`chrome://`, the Chrome Web Store, `about:`, PDF viewer, `view-source:`) must fail with

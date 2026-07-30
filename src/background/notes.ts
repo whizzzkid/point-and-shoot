@@ -34,10 +34,12 @@ export function createCapturedNoteService(
  *
  * @param extensionBrowser Browser shim supplying the message channel.
  * @param service Serialized captured-note service.
+ * @param onSaved Refreshes browser action and extension-page state after a successful write.
  */
 export function registerNoteHandler(
   extensionBrowser: BrowserShim,
   service: CapturedNoteService = createCapturedNoteService(extensionBrowser.storage.local),
+  onSaved: () => Promise<void> = () => Promise.resolve(),
 ): void {
   extensionBrowser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message === OPEN_NOTES_PANEL_MESSAGE) {
@@ -55,7 +57,12 @@ export function registerNoteHandler(
     }
     if (!isAddNoteRequest(message)) return;
     void service.append(message)
-      .then((result) => sendResponse({ ...result, ok: true } satisfies AddNoteResponse))
+      .then((result) => {
+        sendResponse({ ...result, ok: true } satisfies AddNoteResponse);
+        void onSaved().catch((error: unknown) => {
+          console.error("point-and-shoot: note action state could not refresh:", error);
+        });
+      })
       .catch((error: unknown) =>
         sendResponse(
           {

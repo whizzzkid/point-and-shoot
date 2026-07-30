@@ -20,8 +20,8 @@ than being chosen locally, so two specs cannot disagree about the same limit.
   ZIP layout, size enforcement, and delivery failures.
 - [Export-format spike](export-format-spike.md) — the measured agent trial that settled the v1
   bundle shape and `2 MB` default limit.
-- [Popup launcher](popup-launcher.md) — toolbar and keyboard entry points, session states, controls,
-  concurrency, and failure behavior.
+- [Toolbar session control](toolbar-session-control.md) — toolbar and keyboard entry points,
+  lifecycle, badge and tooltip state, concurrency, and failure behavior.
 - [Extension settings](settings.md) — versioned defaults, runtime consumers, browser shortcuts,
   validation, and destructive clearing.
 - [Framework component hints](framework-component-hints.md) — opt-in page-world probing, supported
