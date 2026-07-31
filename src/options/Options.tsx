@@ -93,7 +93,7 @@ function selectedMaximumDimension(value: string): ScreenshotMaxDimension {
 /**
  * Renders the extension settings surface with auto-saved, validated controls.
  *
- * @param props Settings repository and the extension-page theme used for follow-backdrop mode.
+ * @param props Settings repository, extension-page theme, and displayed version.
  * @returns Loading, error, and complete options-page states.
  */
 export function Options({ autoTheme, repository, version }: OptionsProps): JSX.Element {

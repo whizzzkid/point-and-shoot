@@ -28,7 +28,7 @@ type PopupAction = "notes" | "options" | "overlay" | "session";
 /**
  * Renders the compact session launcher shown in extension chrome.
  *
- * @param props Session repository, platform actions, and forced theme.
+ * @param props Session repository, platform actions, forced theme, and displayed version.
  * @returns The popup loading, launcher, and error states.
  */
 export function Popup({ actions, repository, theme, version }: PopupProps): JSX.Element {
