@@ -99,6 +99,7 @@ function renderPanel(
       iconSpriteUrl=""
       notePreview={notePreview}
       repository={selectedRepository}
+      version="0.1.0"
       {...(sizeBudgetBytes === undefined ? {} : { sizeBudgetBytes })}
     />,
     mount,

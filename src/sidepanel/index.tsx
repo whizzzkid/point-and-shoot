@@ -34,6 +34,7 @@ void loadSettings(browser.storage.local)
         notePreview={browserNotePreviewController(browser)}
         repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
         sizeBudgetBytes={settings.exportSizeBudgetBytes}
+        version={browser.runtime.getManifest().version}
       />,
       root,
     )

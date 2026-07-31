@@ -47,15 +47,23 @@ const WEB_ACCESSIBLE_RESOURCES = [
 ] as const;
 
 async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<void> {
-  const resourceUrls = await serviceWorker.evaluate((resources) => {
+  const extensionRuntime = await serviceWorker.evaluate((resources) => {
     const extensionGlobal = globalThis as unknown as {
-      readonly chrome: { readonly runtime: { getURL(path: string): string } };
+      readonly chrome: {
+        readonly runtime: {
+          getManifest(): { readonly version: string };
+          getURL(path: string): string;
+        };
+      };
     };
-    return Object.fromEntries(
-      resources.map((resource) => [resource, extensionGlobal.chrome.runtime.getURL(resource)]),
-    );
+    return {
+      resourceUrls: Object.fromEntries(
+        resources.map((resource) => [resource, extensionGlobal.chrome.runtime.getURL(resource)]),
+      ),
+      version: extensionGlobal.chrome.runtime.getManifest().version,
+    };
   }, WEB_ACCESSIBLE_RESOURCES);
-  await page.evaluate((urls) => {
+  await page.evaluate(({ resourceUrls, version }) => {
     const noOp = () => {};
     const chromeGlobal = (globalThis as unknown as { chrome: Record<string, unknown> }).chrome;
     Object.assign(chromeGlobal, {
@@ -63,8 +71,11 @@ async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<vo
       commands: { onCommand: { addListener: noOp } },
       downloads: { download: noOp },
       runtime: {
+        getManifest() {
+          return { version };
+        },
         getURL(path: string) {
-          const url = urls[path];
+          const url = resourceUrls[path];
           if (url === undefined) throw new Error(`unmapped extension resource: ${path}`);
           return url;
         },
@@ -90,7 +101,7 @@ async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<vo
       },
       tabs: { captureVisibleTab: noOp, query: noOp },
     });
-  }, resourceUrls);
+  }, extensionRuntime);
   await page.addScriptTag({ path: `${EXTENSION_DIR}content/content.js` });
 }
 

@@ -56,6 +56,8 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     });
 
     await page.getByRole("heading", { name: "Settings" }).waitFor();
+    await page.getByLabel("Version 0.1.0").waitFor();
+    assertEquals(await page.getByLabel("Version 0.1.0").textContent(), "v0.1.0");
     const darkBackground = await page.evaluate(() =>
       getComputedStyle(document.querySelector("main")!).backgroundColor
     );

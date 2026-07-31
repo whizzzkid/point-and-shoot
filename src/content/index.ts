@@ -125,6 +125,7 @@ function mountOverlay(
           pending = { capture, selection: enrichedSelection };
         },
         noteCount,
+        version: browser.runtime.getManifest().version,
         onSend: () => {
           void browser.runtime.sendMessage(OPEN_NOTES_PANEL_MESSAGE).catch((error: unknown) => {
             console.error("point-and-shoot: notes panel failed to open", error);

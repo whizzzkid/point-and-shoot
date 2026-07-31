@@ -3,7 +3,7 @@
 import type { JSX } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Session } from "../shared/schema.ts";
-import { Badge, Button, Icon, Switch } from "../ui/components/index.ts";
+import { Badge, Button, Icon, Switch, VersionLabel } from "../ui/components/index.ts";
 import type { PopupActions } from "./actions.ts";
 import type { PopupSessionRepository } from "./repository.ts";
 
@@ -15,6 +15,7 @@ export interface PopupProps {
   readonly actions: PopupActions;
   readonly repository: PopupSessionRepository;
   readonly theme: "dark" | "light";
+  readonly version: string;
 }
 
 type PopupStatus =
@@ -27,10 +28,10 @@ type PopupAction = "notes" | "options" | "overlay" | "session";
 /**
  * Renders the compact session launcher shown in extension chrome.
  *
- * @param props Session repository, platform actions, and forced theme.
+ * @param props Session repository, platform actions, forced theme, and displayed version.
  * @returns The popup loading, launcher, and error states.
  */
-export function Popup({ actions, repository, theme }: PopupProps): JSX.Element {
+export function Popup({ actions, repository, theme, version }: PopupProps): JSX.Element {
   const [session, setSession] = useState<Session | null>();
   const [overlayOn, setOverlayOn] = useState<boolean>();
   const [busy, setBusy] = useState<PopupAction>();
@@ -189,6 +190,7 @@ export function Popup({ actions, repository, theme }: PopupProps): JSX.Element {
       {status.state === "error"
         ? <p className="ps-popup-error" role="alert">{status.message}</p>
         : null}
+      <VersionLabel version={version} />
     </main>
   );
 }

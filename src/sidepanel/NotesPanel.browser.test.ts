@@ -158,6 +158,8 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         .isDisabled(),
       true,
     );
+    await page.getByLabel("Version 0.1.0").waitFor();
+    assertEquals(await page.getByLabel("Version 0.1.0").textContent(), "v0.1.0");
     assertEquals(await page.locator("[data-page-key]").count(), 2);
     assertEquals(
       await page.locator("[data-note-id]").evaluateAll((notes) =>
@@ -190,6 +192,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     );
     await page.getByRole("button", { name: "Compile plan" }).click();
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();
+    await page.getByLabel("Version 0.1.0").waitFor();
     await page.getByRole("button", { name: "Back to notes" }).click();
     await page.getByRole("heading", { name: "Checkout polish" }).waitFor();
 

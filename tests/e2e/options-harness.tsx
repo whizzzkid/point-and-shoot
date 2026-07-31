@@ -51,7 +51,7 @@ function mountOptions(autoTheme: "dark" | "light"): void {
   };
   render(
     <IconSpriteProvider url="">
-      <Options autoTheme={autoTheme} repository={repository} />
+      <Options autoTheme={autoTheme} repository={repository} version="0.1.0" />
     </IconSpriteProvider>,
     mount,
   );

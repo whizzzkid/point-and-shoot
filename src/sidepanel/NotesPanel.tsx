@@ -14,6 +14,7 @@ import {
   IconSpriteProvider,
   Input,
   Switch,
+  VersionLabel,
 } from "../ui/components/index.ts";
 import {
   deleteNote,
@@ -41,6 +42,7 @@ export interface NotesPanelProps {
   readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
   readonly sizeBudgetBytes?: number;
+  readonly version: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -192,6 +194,7 @@ export function NotesPanel(
     notePreview,
     repository,
     sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
+    version,
   }: NotesPanelProps,
 ): JSX.Element {
   const [session, setSession] = useState<Session | null>();
@@ -276,7 +279,12 @@ export function NotesPanel(
   };
 
   if (session === undefined) {
-    return <main className="ps-notes-panel ps-notes-panel--center">Loading notes…</main>;
+    return (
+      <main className="ps-notes-panel ps-notes-panel--center">
+        Loading notes…
+        <VersionLabel version={version} />
+      </main>
+    );
   }
 
   const noteCount = session?.notes.length ?? 0;
@@ -303,6 +311,7 @@ export function NotesPanel(
           session={session}
           sizeBudgetBytes={sizeBudgetBytes}
         />
+        <VersionLabel version={version} />
       </IconSpriteProvider>
     );
   }
@@ -516,6 +525,7 @@ export function NotesPanel(
         >
           Deleting this note permanently removes its screenshot. This cannot be undone.
         </Dialog>
+        <VersionLabel version={version} />
       </main>
     </IconSpriteProvider>
   );

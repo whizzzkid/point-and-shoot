@@ -10,6 +10,9 @@ The extension records the selected screenshot, page URL, DOM text, selector fall
 styles, and capture metadata. It uses `activeTab`, so it reads a page only after you invoke it
 there. Chrome and Firefox builds come from the same source.
 
+Every extension surface shows its packaged version in a tiny bottom-right marker, making a
+release-candidate install easy to identify while testing.
+
 ## Build from source
 
 You need [Git](https://git-scm.com/) and [mise](https://mise.jdx.dev/). The project installs exact
@@ -102,4 +105,5 @@ mise exec -- deno task ci
 
 The [Playwright companion guide](docs/tutorials/playwright-companion.md) shows how to load the
 unpacked extension beside a local app. Architecture, behavior specs, and the delivery plan live in
-the [documentation index](docs/README.md).
+the [documentation index](docs/README.md). Maintainers can follow the
+[release guide](docs/tutorials/releasing.md) to test and publish the browser packages.

@@ -1,0 +1,184 @@
+name: Release
+
+# Release Please uses the repository token, so its pull-request and release events do not start
+# other workflows. This workflow therefore builds both the testable PR packages and final release
+# assets in the same run that creates them.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release_please:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      pr_created: ${{ steps.release.outputs.prs_created }}
+      pr: ${{ steps.release.outputs.pr }}
+      release_created: ${{ steps.release.outputs.release_created }}
+      release_sha: ${{ steps.release.outputs.sha }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      - name: Compute the next UTC calendar version
+        id: version
+        shell: bash
+        run: |
+          current="$(deno task release:current)"
+          next="$(deno task release:next "${current}")"
+          echo "next=${next}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create or update the release pull request
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          release-as: ${{ steps.version.outputs.next }}
+
+      # GITHUB_TOKEN-created PRs otherwise leave CI waiting for manual approval. A workflow
+      # dispatch is GitHub's explicit recursion-safe exception and attaches checks to this head.
+      - name: Dispatch CI for the release pull request
+        if: steps.release.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
+        shell: bash
+        run: |
+          head_branch="$(jq -er '.headBranchName' <<< "${PR_JSON}")"
+          gh workflow run ci.yml --ref "${head_branch}"
+
+  preview:
+    if: needs.release_please.outputs.pr_created == 'true'
+    needs: release_please
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      artifact_url: ${{ steps.upload.outputs.artifact-url }}
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      # The action's PullRequest output carries the exact head SHA after Release Please updates it.
+      # A branch checkout here could race a second update and attach unreviewed bytes to the PR.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ fromJSON(needs.release_please.outputs.pr).sha }}
+      - uses: jdx/mise-action@v4
+
+      - name: Build and validate release pull request packages
+        id: package
+        shell: bash
+        run: |
+          deno task build:release
+          deno task release:validate
+          echo "version=$(deno task release:current)" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload testable browser packages
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: point-and-shoot-${{ steps.package.outputs.version }}-release-pr
+          path: |
+            dist/chrome.zip
+            dist/firefox.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  preview_comment:
+    if: needs.preview.result == 'success'
+    needs: [release_please, preview]
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Link the testable packages from the release pull request
+        uses: actions/github-script@v9
+        env:
+          ARTIFACT_URL: ${{ needs.preview.outputs.artifact_url }}
+          PR_NUMBER: ${{ fromJSON(needs.release_please.outputs.pr).number }}
+          PR_SHA: ${{ fromJSON(needs.release_please.outputs.pr).sha }}
+          VERSION: ${{ needs.preview.outputs.version }}
+        with:
+          script: |
+            const marker = "<!-- point-and-shoot-release-preview -->";
+            const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+            const body = [
+              marker,
+              `Testable Chrome and Firefox packages for \`v${process.env.VERSION}\``,
+              `were built from \`${process.env.PR_SHA}\`.`,
+              "",
+              `[Download the release PR artifacts](${process.env.ARTIFACT_URL}).`,
+              "",
+              "---",
+              `<sup>Generated using [wk-skills](https://github.com/whizzzkid/skills/tree/main@%7B${timestamp}%7D) and multiple agents/models. DM me your feedback.</sup>`,
+            ].join("\n");
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = Number(process.env.PR_NUMBER);
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+            });
+            const existing = comments.find((comment) =>
+              comment.user?.type === "Bot" && comment.body?.includes(marker)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+  release_assets:
+    if: needs.release_please.outputs.release_created == 'true'
+    needs: release_please
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # Rebuild from the commit Release Please tagged, not from the workflow's triggering SHA.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.release_please.outputs.release_sha }}
+      - uses: jdx/mise-action@v4
+
+      - name: Build and validate final browser packages
+        env:
+          TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
+        run: |
+          deno task build:release
+          deno task release:validate "${TAG_NAME}"
+
+      - name: Attach Chrome and Firefox packages to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
+        run: gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip --clobber
+
+      - name: Verify both release assets exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
+        shell: bash
+        run: |
+          assets="$(gh release view "${TAG_NAME}" --json assets --jq '.assets[].name')"
+          grep -qx "chrome.zip" <<< "${assets}"
+          grep -qx "firefox.zip" <<< "${assets}"
