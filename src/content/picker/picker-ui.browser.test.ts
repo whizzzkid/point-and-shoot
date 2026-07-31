@@ -12,8 +12,17 @@ const PICKER_UI_HARNESS = new URL("tests/e2e/picker-ui-harness.tsx", ROOT);
 
 interface PickerUiSummary {
   readonly activeLabel: string | null | undefined;
+  readonly composerRect:
+    | {
+      readonly height: number;
+      readonly left: number;
+      readonly top: number;
+      readonly width: number;
+    }
+    | undefined;
   readonly composerOpen: boolean;
   readonly error: string | null | undefined;
+  readonly focusedLabel: string | null | undefined;
   readonly latestCount: number;
   readonly latestKind: string | undefined;
   readonly latestReason: string | undefined;
@@ -35,6 +44,7 @@ interface PickerUiSummary {
 interface PickerUiHarness {
   cancelComposer(): Promise<void>;
   failCapture(): void;
+  focusDocumentElement(): void;
   reenter(): Promise<void>;
   reset(): void;
   saveNote(text: string, fail?: boolean): Promise<void>;
@@ -87,11 +97,37 @@ Deno.test("note composer saves text and preserves it after persistence failure",
     assertEquals(failed.composerOpen, true);
     assertEquals(failed.error, "IndexedDB unavailable.");
     assertEquals(failed.savedNotes, ["The button is clipped."]);
+    assertEquals(failed.composerRect?.height, 216);
+    assertGreater(failed.composerRect?.top ?? -1, 0);
+    assertGreater(900, (failed.composerRect?.top ?? 900) + (failed.composerRect?.height ?? 0));
     await page.evaluate(async () => {
       const harness = (globalThis as unknown as {
         pointShootPickerUiTest: PickerUiHarness;
       }).pointShootPickerUiTest;
       await harness.cancelComposer();
+      harness.focusDocumentElement();
+    });
+    const nonFocusableTarget = page.locator("#ambiguous-classes .card").first();
+    await nonFocusableTarget.hover();
+    await nonFocusableTarget.click();
+    await page.waitForTimeout(30);
+    await page.evaluate(async () => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      await harness.cancelComposer();
+    });
+    const cancelled = await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      return harness.summary();
+    });
+    assertEquals(cancelled.focusedLabel, "Select");
+    await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
       harness.failCapture();
     });
     await target.hover();

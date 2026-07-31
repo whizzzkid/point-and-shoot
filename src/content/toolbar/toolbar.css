@@ -18,11 +18,13 @@
 .ps-note-composer {
   backdrop-filter: blur(var(--blur-panel));
   background: var(--bg-overlay);
+  block-size: 216px;
   border: calc(var(--space-1) / 4) solid var(--border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   box-sizing: border-box;
   inline-size: 320px;
+  overflow-y: auto;
   padding: var(--space-3);
   pointer-events: auto;
   position: absolute;

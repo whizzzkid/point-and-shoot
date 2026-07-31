@@ -58,9 +58,18 @@ function summary() {
     ".ps-picker-highlight, .ps-picker-drag-box, .ps-picker-frame-shield",
   );
   const latest = selections.at(-1);
+  const composerRect = shadowHost.root.querySelector<HTMLElement>(".ps-note-composer")
+    ?.getBoundingClientRect();
   return {
     activeLabel: shadowHost.root.querySelector<HTMLButtonElement>('[aria-pressed="true"]')
       ?.ariaLabel,
+    composerRect: composerRect === undefined ? undefined : {
+      height: composerRect.height,
+      left: composerRect.left,
+      top: composerRect.top,
+      width: composerRect.width,
+    },
+    focusedLabel: shadowHost.root.activeElement?.getAttribute("aria-label"),
     latestCount: latest?.kind === "elements" ? latest.elements.length : 0,
     latestKind: latest?.kind,
     latestReason: latest?.kind === "unreachable" ? latest.reason : undefined,
@@ -99,6 +108,10 @@ const harness = {
   },
   failCapture() {
     failNextCapture = true;
+  },
+  focusDocumentElement() {
+    document.documentElement.tabIndex = -1;
+    document.documentElement.focus();
   },
   async saveNote(text: string, fail = false) {
     const input = shadowHost.root.querySelector<HTMLTextAreaElement>('textarea[aria-label="Note"]');

@@ -84,6 +84,7 @@ export function CaptureOverlay(
     const activeElement = ownerDocument.activeElement;
     previousFocus.current = activeElement instanceof HTMLElement &&
         activeElement !== ownerDocument.body &&
+        activeElement !== ownerDocument.documentElement &&
         !activeElement.matches("[data-point-and-shoot-host]")
       ? activeElement
       : undefined;
