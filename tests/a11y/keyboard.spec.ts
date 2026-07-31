@@ -62,7 +62,7 @@ Deno.test("keyboard-only flow activates, captures, annotates, reviews, and expor
     await trackPointerInput(panel);
     await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
 
-    const edit = panel.getByRole("button", { name: "Edit" });
+    const edit = panel.locator("[data-note-id]").getByRole("button", { name: "Edit" });
     await tabTo(panel, edit);
     await assertVisibleKeyboardFocus(panel);
     await panel.keyboard.press("Enter");
