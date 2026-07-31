@@ -1,10 +1,17 @@
+@import "../../../src/shared/design/tokens.css";
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
 body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
+  margin: var(--space-0);
 }
 
 main {
@@ -12,10 +19,18 @@ main {
   min-height: 100vh;
   place-content: center;
   justify-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 h1,
 p {
-  margin: 0;
+  margin: var(--space-0);
+}
+
+h1 {
+  font-family: var(--font-display);
+}
+
+p {
+  color: var(--text-secondary);
 }
