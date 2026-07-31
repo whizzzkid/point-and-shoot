@@ -2,13 +2,14 @@
 
 Release Please maintains one release pull request from conventional commits merged into `main`. That
 pull request updates the changelog, `version.txt`, the Release Please version manifest, and the
-browser-manifest source together. Merging it creates the matching `vYYYY.MMDD.N` tag and GitHub
+browser-manifest source together. Merging it creates the matching `v`-prefixed CalVer tag and GitHub
 release. The same workflow attaches ready-to-install Chrome and Firefox packages.
 
 The version uses the UTC release date:
 
 - `YYYY` is the year.
-- `MMDD` is `month * 100 + day`, without a leading zero.
+- The middle component, conventionally called `MMDD`, is the variable-width numeric encoding
+  `month * 100 + day`, without a leading zero.
 - `N` starts at `0` and increments for another release on the same UTC day.
 
 For example, January 11 and November 1, 2026 become `2026.111.0` and `2026.1101.0`. They cannot
@@ -71,9 +72,9 @@ Confirm that the release pull request updates these version sources to the same 
 - the new `CHANGELOG.md` heading
 
 Merge the release pull request. The next `main` run recognizes the merged release commit, creates
-the `vYYYY.MMDD.N` tag and GitHub release, checks out the exact tagged SHA, rebuilds both packages,
-and validates the tag against their manifests. It then attaches `chrome.zip` and `firefox.zip` to
-the release.
+the matching `v`-prefixed CalVer tag and GitHub release, checks out the exact tagged SHA, rebuilds
+both packages, and validates the tag against their manifests. It then attaches `chrome.zip` and
+`firefox.zip` to the release.
 
 Do not create or push the tag by hand. Release Please's `autorelease: pending` and
 `autorelease: tagged` labels track whether the pull request is waiting to merge or has been
