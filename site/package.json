@@ -41,6 +41,9 @@
     "prettier-plugin-astro": "0.14.1",
     "typescript": "6.0.3"
   },
+  "overrides": {
+    "playwright-core": "1.62.0"
+  },
   "allowScripts": {
     "esbuild@0.28.1": true
   }
