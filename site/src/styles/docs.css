@@ -115,7 +115,6 @@ a:focus-visible {
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
 }
 
 .docs-sidebar ul {
@@ -381,6 +380,6 @@ article img,
   }
 
   .skip-link {
-    transition-duration: var(--space-0);
+    transition-duration: calc(var(--duration-fast) * 0);
   }
 }
