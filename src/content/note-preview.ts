@@ -97,8 +97,13 @@ function uniqueMatch(
   elements: readonly Element[],
   predicate: (element: Element) => boolean,
 ): Element | null {
-  const matches = elements.filter(predicate);
-  return matches.length === 1 ? matches[0] ?? null : null;
+  let match: Element | null = null;
+  for (const element of elements) {
+    if (!predicate(element)) continue;
+    if (match !== null) return null;
+    match = element;
+  }
+  return match;
 }
 
 function resolveStableIdentity(
@@ -269,6 +274,32 @@ export function createNotePreviewLayer(
       if (targets.length === 0) return false;
       ensureHost();
       return renderTargets();
+    },
+  };
+}
+
+/**
+ * Defers preview-layer page listeners and polling until a current show request needs them.
+ *
+ * @param createLayer Factory for the page-owning preview layer.
+ * @returns A generation-aware preview layer that is inert before its first show request.
+ */
+export function createLazyNotePreviewLayer(
+  createLayer: () => NotePreviewLayer,
+): NotePreviewLayer {
+  let newestGeneration = -1;
+  let layer: NotePreviewLayer | undefined;
+  return {
+    destroy() {
+      layer?.destroy();
+    },
+    handle(request) {
+      if (layer !== undefined) return layer.handle(request);
+      if (request.generation < newestGeneration) return false;
+      newestGeneration = request.generation;
+      if (request.action === "clear") return false;
+      layer = createLayer();
+      return layer.handle(request);
     },
   };
 }

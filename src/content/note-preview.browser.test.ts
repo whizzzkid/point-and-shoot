@@ -74,6 +74,13 @@ Deno.test("note preview resolves trust-order fallbacks and cleans up stale or na
         testIds: [{ attribute: "data-testid", value: "light-action" }],
         xpath: ["/html/body/missing"],
       });
+      const duplicate = action.cloneNode(true) as HTMLElement;
+      document.body.append(duplicate);
+      const ambiguousStable = harness.show({
+        ...base,
+        testIds: [{ attribute: "data-testid", value: "light-action" }],
+      });
+      duplicate.remove();
       const closedRoot = document.querySelector("[data-point-and-shoot-preview-host]")?.shadowRoot;
       const stalePreserved = harness.staleClear();
       const aria = harness.show({
@@ -94,6 +101,7 @@ Deno.test("note preview resolves trust-order fallbacks and cleans up stale or na
       });
       const unchangedStyle = action.getAttribute("style");
       return {
+        ambiguousStable,
         aria,
         closedRoot,
         css,
@@ -107,6 +115,7 @@ Deno.test("note preview resolves trust-order fallbacks and cleans up stale or na
       };
     });
     assertEquals(result, {
+      ambiguousStable: true,
       aria: true,
       closedRoot: null,
       css: true,

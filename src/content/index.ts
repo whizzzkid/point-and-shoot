@@ -31,7 +31,7 @@ import { addFrameworkComponentHints } from "./framework-hints.ts";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
 import { saveCapturedSelection } from "./notes.ts";
-import { createNotePreviewLayer } from "./note-preview.ts";
+import { createLazyNotePreviewLayer, createNotePreviewLayer } from "./note-preview.ts";
 import type { PickerSelection } from "./picker/ElementPicker.tsx";
 import type { RegionCapture } from "../shared/schema.ts";
 import { watchSessionSummary } from "./session-summary.ts";
@@ -169,7 +169,9 @@ function mountOverlay(
 function initializeContent(initialSettings: ExtensionSettings): void {
   let settings = initialSettings;
   let refreshMountedTheme: (() => void) | undefined;
-  const notePreview = createNotePreviewLayer(document, ownerWindow);
+  const notePreview = createLazyNotePreviewLayer(() =>
+    createNotePreviewLayer(document, ownerWindow)
+  );
   const lifecycle = createOverlayLifecycle(() => {
     const mounted = mountOverlay(() => settings, () => lifecycle.destroy());
     refreshMountedTheme = mounted.refreshTheme;
