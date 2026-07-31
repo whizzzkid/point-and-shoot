@@ -417,6 +417,13 @@ h3 {
   color: var(--text-secondary);
 }
 
+.closing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
 footer {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -467,6 +474,11 @@ footer p {
 
   .hero-actions {
     display: grid;
+  }
+
+  .closing-actions {
+    display: grid;
+    width: 100%;
   }
 
   .product-stage {
