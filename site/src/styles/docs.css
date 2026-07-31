@@ -111,7 +111,7 @@ a:focus-visible {
 
 .docs-sidebar h2 {
   margin: var(--space-0);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-wider);
@@ -325,7 +325,7 @@ article img,
   margin-top: var(--space-16);
   padding-top: var(--space-6);
   border-top: 1px solid var(--border-subtle);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--text-xs);
 }
 

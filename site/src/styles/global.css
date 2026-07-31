@@ -36,6 +36,7 @@ a:focus-visible {
 img {
   display: block;
   max-width: 100%;
+  height: auto;
 }
 
 .site-header,
@@ -178,7 +179,7 @@ h3 {
 .button-primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: var(--black);
 }
 
 .button-primary:hover {
@@ -231,7 +232,7 @@ h3 {
 .browser-bar code {
   overflow: hidden;
   margin-left: var(--space-3);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   text-overflow: ellipsis;
@@ -281,7 +282,7 @@ h3 {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: var(--black);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   white-space: nowrap;
@@ -353,12 +354,12 @@ h3 {
 
 .workflow-grid .step-number {
   margin-bottom: var(--space-4);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .workflow-grid li > p:last-child {
   margin-bottom: var(--space-0);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: var(--text-sm);
   line-height: var(--leading-relaxed);
 }

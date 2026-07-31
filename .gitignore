@@ -28,6 +28,7 @@ playwright-report/
 # ephemeral: committed design tokens and fonts remain under src/shared/design/.
 site/.astro/
 site/.generated/
+site/.lighthouse/
 
 # Extension packages produced by web-ext (wave 4 release packaging)
 web-ext-artifacts/

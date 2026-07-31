@@ -1,4 +1,5 @@
 .astro/
 .generated/
+.lighthouse/
 dist/
 node_modules/
