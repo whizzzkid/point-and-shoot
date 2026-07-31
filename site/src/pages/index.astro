@@ -2,7 +2,7 @@
 import Icon from "../components/Icon.astro";
 import "../styles/global.css";
 
-const base = import.meta.env.BASE_URL;
+const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/`;
 const repositoryUrl = "https://github.com/whizzzkid/point-and-shoot";
 const sourceInstallUrl = `${repositoryUrl}#build-from-source`;
 ---
