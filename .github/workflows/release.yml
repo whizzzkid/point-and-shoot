@@ -41,7 +41,7 @@ jobs:
           echo "next=${next}" >> "${GITHUB_OUTPUT}"
 
       # The action's manifest path does not forward its release-as input. Keep the action for
-      # release outputs and use the same pinned engine's CLI for the calendar-versioned PR.
+      # release outputs and use the pinned CLI for the calendar-versioned PR.
       - name: Create a GitHub release from a merged release pull request
         id: release
         uses: googleapis/release-please-action@v5
