@@ -23,8 +23,8 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      pr_created: ${{ steps.release.outputs.prs_created }}
-      pr: ${{ steps.release.outputs.pr }}
+      pr_created: ${{ steps.release_pr.outputs.prs_created }}
+      pr: ${{ steps.release_pr.outputs.pr }}
       release_created: ${{ steps.release.outputs.release_created }}
       release_sha: ${{ steps.release.outputs.sha }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -40,21 +40,68 @@ jobs:
           next="$(deno task release:next "${current}")"
           echo "next=${next}" >> "${GITHUB_OUTPUT}"
 
-      - name: Create or update the release pull request
+      # The action's manifest path does not forward its release-as input. Keep the action for
+      # release outputs and use the same pinned engine's CLI for the calendar-versioned PR.
+      - name: Create a GitHub release from a merged release pull request
         id: release
         uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          release-as: ${{ steps.version.outputs.next }}
+          skip-github-pull-request: true
+
+      - name: Create or update the release pull request
+        id: release_pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT_VERSION: ${{ steps.version.outputs.next }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_pr_json() {
+            local branch_prefix="release-please--branches--${GITHUB_REF_NAME}"
+            local pulls_url="repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${GITHUB_REF_NAME}&per_page=100"
+            gh api "${pulls_url}" | jq -c --arg prefix "${branch_prefix}" '
+              [.[] | select(.head.ref | startswith($prefix))][0]
+              | if . == null then null else {
+                  number: .number,
+                  headBranchName: .head.ref,
+                  sha: .head.sha
+                } end
+            '
+          }
+
+          before_pr="$(release_pr_json)"
+          before_sha="$(jq -r '.sha // empty' <<< "${before_pr}")"
+          token_file="$(mktemp "${RUNNER_TEMP}/release-please-token.XXXXXX")"
+          trap 'rm -f "${token_file}"' EXIT INT TERM
+          printf '%s' "${GH_TOKEN}" > "${token_file}"
+
+          deno task release:pr \
+            --token="${token_file}" \
+            --repo-url="${GITHUB_REPOSITORY}" \
+            --target-branch="${GITHUB_REF_NAME}" \
+            --config-file=release-please-config.json \
+            --manifest-file=.release-please-manifest.json \
+            --release-as="${NEXT_VERSION}"
+
+          pr_json="$(release_pr_json)"
+          after_sha="$(jq -r '.sha // empty' <<< "${pr_json}")"
+          if [[ -z "${after_sha}" || "${after_sha}" == "${before_sha}" ]]; then
+            echo "prs_created=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          echo "prs_created=true" >> "${GITHUB_OUTPUT}"
+          echo "pr=${pr_json}" >> "${GITHUB_OUTPUT}"
 
       # GITHUB_TOKEN-created PRs otherwise leave CI waiting for manual approval. A workflow
       # dispatch is GitHub's explicit recursion-safe exception and attaches checks to this head.
       - name: Dispatch CI for the release pull request
-        if: steps.release.outputs.prs_created == 'true'
+        if: steps.release_pr.outputs.prs_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_JSON: ${{ steps.release.outputs.pr }}
+          PR_JSON: ${{ steps.release_pr.outputs.pr }}
         shell: bash
         run: |
           head_branch="$(jq -er '.headBranchName' <<< "${PR_JSON}")"
@@ -70,7 +117,7 @@ jobs:
       artifact_url: ${{ steps.upload.outputs.artifact-url }}
       version: ${{ steps.package.outputs.version }}
     steps:
-      # The action's PullRequest output carries the exact head SHA after Release Please updates it.
+      # The queried pull request output carries the exact head SHA after Release Please updates it.
       # A branch checkout here could race a second update and attach unreviewed bytes to the PR.
       - uses: actions/checkout@v7
         with:
