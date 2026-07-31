@@ -1,5 +1,11 @@
 import { assertEquals, assertFalse } from "@std/assert";
-import { forChrome, forFirefox, manifestBase, SUPPORTED } from "./manifest.ts";
+import {
+  FIREFOX_EXTENSION_ID,
+  forChrome,
+  forFirefox,
+  manifestBase,
+  SUPPORTED,
+} from "./manifest.ts";
 
 const EXPECTED_WEB_ACCESSIBLE_RESOURCES = [
   {
@@ -105,6 +111,30 @@ Deno.test("manifest - firefox uses background.scripts and sidebar_action, no ser
     (firefox.sidebar_action as Record<string, unknown>).default_panel,
     "sidepanel/sidepanel.html",
   );
+});
+
+Deno.test("manifest - firefox uses a stable organization-neutral extension id", () => {
+  const firefox = forFirefox();
+  const geckoSettings = firefox.browser_specific_settings as {
+    gecko: { id: string };
+  };
+  assertEquals(
+    geckoSettings.gecko.id,
+    "pointandshoot@whizzzkid.dev",
+  );
+  assertEquals(geckoSettings.gecko.id, FIREFOX_EXTENSION_ID);
+});
+
+Deno.test("manifest - firefox declares that the extension transmits no data", () => {
+  const firefox = forFirefox();
+  const geckoSettings = firefox.browser_specific_settings as {
+    gecko: {
+      data_collection_permissions: {
+        required: string[];
+      };
+    };
+  };
+  assertEquals(geckoSettings.gecko.data_collection_permissions.required, ["none"]);
 });
 
 Deno.test("manifest - declared floors match the SUPPORTED constant, not hand-edited literals", () => {

@@ -59,6 +59,7 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
 | `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
 | `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
+| `deno task smoke:firefox` | Drives one Firefox capture through Marionette and validates its note   | W4.3      |
 | `deno task visual`        | Compares every surface and forced theme with its Linux baseline        | W4.2      |
 | `deno task visual:update` | Replaces visual baselines intentionally on the CI platform             | W4.2      |
 
@@ -182,7 +183,8 @@ Three tiers, each responsible for something the others cannot cover:
    the `browser.*` shim seam.
 2. **Playwright end-to-end, Chromium only** — the real extension loaded into a real browser, driven
    against the fixture app in `tests/fixtures/app/`.
-3. **`web-ext` smoke check for Firefox** — proves the extension boots under Gecko.
+3. **`web-ext` smoke check for Firefox** — proves the extension boots and completes one
+   representative capture under Gecko.
 
 **Playwright cannot load extensions in Firefox.** There is no `--load-extension` equivalent, which
 is why tier 3 exists and why tier 1 carries the divergence coverage. Never describe this suite as

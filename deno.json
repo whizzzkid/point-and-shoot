@@ -75,6 +75,7 @@
     "visual": "deno task build && deno run -A tests/visual/run.ts",
     "visual:update": "deno task build && deno run -A tests/visual/run.ts --update",
     "boot:firefox": "deno run -A scripts/boot-firefox.ts",
+    "smoke:firefox": "deno task build && deno run -A tests/firefox/smoke.ts",
     "gallery": "deno run -A src/ui/gallery/server.ts",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }

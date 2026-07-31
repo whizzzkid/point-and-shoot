@@ -297,19 +297,19 @@ Handle explicitly:
   scroll-and-stitch in v1 — it fights sticky headers and lazy loading. It's a tracked follow-up.
 - Capture requires an active-tab grant from a user gesture. A capture attempt without one must
   produce a typed error the UI can explain, not a silent empty image.
-- Firefox's capture API differs in name and in some options; it goes through the W2.1 shim, and the
-  divergence is unit-tested there. **Unit-tested against a fake is the only Firefox coverage capture
-  gets until W4.3** — W2.12 boots the Firefox build but does not exercise capture. Say so in the
-  item's Limitations rather than implying the divergence is verified against a real Gecko.
+- Firefox's promise-based capture API goes through the W2.1 shim, while Chrome's callback API is
+  normalized to the same project method. **Unit-tested against a fake is the only Firefox coverage
+  capture gets until W4.3** — W2.12 boots the Firefox build but does not exercise capture. Say so in
+  the item's Limitations rather than implying the divergence is verified against a real Gecko.
 
 **Verify:** Playwright captures on each fixture page in Chromium; assert output dimensions honour
 the 1024px cap and the device-pixel-ratio maths; assert `truncated` is set on `tall.html`; assert
 the extension's own UI is absent from the captured image; assert the WebP encodes under a sane byte
 budget.
 
-**Limitations:** Firefox's divergent capture method and options are covered at the browser-shim seam
-with fakes. The Firefox boot check proves the built extension starts in Gecko, but does not exercise
-capture; real-Gecko capture coverage begins in W4.3.
+**Limitations:** Firefox's promise-based capture method is covered at the browser-shim seam with
+fakes. The Firefox boot check proves the built extension starts in Gecko, but does not exercise
+capture; W4.3 adds the real-Gecko capture smoke check.
 
 **Commit:** `feat(background): add region screenshot capture, crop, and webp encoding`
 

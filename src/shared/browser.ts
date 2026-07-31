@@ -133,9 +133,10 @@ export interface BrowserShim {
   readonly runtimeInfo: RuntimeInfo;
   readonly tabs: {
     /**
-     * Captures the currently visible tab. Normalizes over Chrome's `tabs.captureVisibleTab`
-     * (visible-tab-only) and Firefox's `tabs.captureTab` (specific-tab, looked up via
-     * {@link TabQueryInfo}) — the one genuine capture-API divergence between the two engines.
+     * Captures the currently visible tab. Both engines expose `tabs.captureVisibleTab`; the shim
+     * normalizes Chrome's callback form and Firefox's promise form. Firefox's separate
+     * `tabs.captureTab` is deliberately not used because it requires broad host permission in MV3
+     * and therefore cannot honor this extension's `activeTab`-only privacy model.
      */
     captureVisibleTab(options?: CaptureOptions): Promise<string>;
     create(properties: TabCreateProperties): Promise<TabInfo>;
@@ -252,7 +253,10 @@ export interface ChromeGlobalShape {
 /** Shape of Firefox's MV3 global this module depends on — promise-native for asynchronous calls. */
 export interface FirefoxGlobalShape {
   readonly tabs: {
-    captureTab(tabId: number | undefined, options?: CaptureOptions): Promise<string>;
+    captureVisibleTab(
+      windowId: number | undefined,
+      options?: CaptureOptions,
+    ): Promise<string>;
     create(properties: TabCreateProperties): Promise<TabInfo>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
@@ -437,12 +441,8 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
   return {
     runtimeInfo: { engine: "firefox" },
     tabs: {
-      async captureVisibleTab(options) {
-        const [activeTab] = await firefoxGlobal.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        return firefoxGlobal.tabs.captureTab(activeTab?.id, options);
+      captureVisibleTab(options) {
+        return firefoxGlobal.tabs.captureVisibleTab(undefined, options);
       },
       create(properties) {
         return firefoxGlobal.tabs.create(properties);

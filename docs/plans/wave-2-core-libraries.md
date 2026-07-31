@@ -65,16 +65,19 @@ browser-agnostic.
 
 **Write `src/shared/browser.ts`:**
 
-- Export a typed `browser` object wrapping only the APIs this project uses: `tabs.captureVisibleTab`
-  / `tabs.captureTab`, `tabs.query`, `runtime.sendMessage`, `runtime.onMessage`, `storage.local`,
-  `scripting.executeScript`, `commands.onCommand`, `downloads.download`, `action.onClicked`, and the
-  side-panel/sidebar opener. Do not wrap APIs speculatively — an unused wrapper is untested surface.
+- Export a typed `browser` object wrapping only the APIs this project uses:
+  `tabs.captureVisibleTab`, `tabs.query`, `runtime.sendMessage`, `runtime.onMessage`,
+  `storage.local`, `scripting.executeScript`, `commands.onCommand`, `downloads.download`,
+  `action.onClicked`, and the side-panel/sidebar opener. Do not wrap APIs speculatively — an unused
+  wrapper is untested surface.
 - Firefox exposes `browser.*` returning promises; Chrome exposes `chrome.*`, which in MV3 also
   returns promises for most APIs but **not uniformly**. Detect the global once at module load and
   normalize; never branch per call site.
-- Normalize the genuinely divergent names behind one method each: capture (`captureVisibleTab` vs
-  `captureTab`), and panel opening (`chrome.sidePanel` vs `browser.sidebarAction`). The rest of the
-  codebase must not know which browser it's on.
+- Normalize callback-based Chrome and promise-based Firefox capture behind one `captureVisibleTab`
+  method, and normalize the divergent panel names (`chrome.sidePanel` vs `browser.sidebarAction`).
+  W4.3's real-Gecko smoke check replaced the original Firefox `captureTab` adapter: that API
+  requires broad host access in MV3 and conflicts with this project's `activeTab`-only privacy
+  model.
 - Export a `runtimeInfo` describing the detected engine, for logging and for tests to assert
   against.
 - TSDoc every export, and document _which_ browsers each method's behaviour differs on. That comment
@@ -617,7 +620,7 @@ Firefox manifest, confirm the check fails, and revert. An unproven gate is not a
 
 > **Passes in CI; fails on this developer's machine.** `deno task boot:firefox` locally dies at
 > install —
-> `installTemporaryAddon: Add-on point-and-shoot@gusto.com is not compatible with
+> `installTemporaryAddon: Add-on pointandshoot@whizzzkid.dev is not compatible with
 > application version. add-on minVersion: 109.0.`
 > — and that reproduces with a bare four-line MV3 manifest, so it is the local Firefox 153.0 /
 > web-ext 10.5.0 pairing, not anything this repo declares. On GitHub's runner the same command
