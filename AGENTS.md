@@ -41,28 +41,31 @@ Deno-first. Deno owns source, lint, formatting, type-checking, and unit tests.
 Tasks land with the item that implements them. A stub task that silently passes is worse than a
 missing one, because it turns an unimplemented gate into a green check.
 
-| Task                      | What it does                                                           | Landed in |
-| ------------------------- | ---------------------------------------------------------------------- | --------- |
-| `deno task fmt`           | Formats the tree                                                       | W1.2      |
-| `deno task fmt:check`     | Fails on any unformatted file                                          | W1.2      |
-| `deno task lint`          | `recommended` rules plus `no-slow-types`                               | W1.2      |
-| `deno task check`         | Type-checks the project                                                | W1.2      |
-| `deno task test`          | Deno unit tests                                                        | W1.2      |
-| `deno task ci`            | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
-| `deno task fixture`       | Serves the browser fixture app, printing both origins                  | W1.8      |
-| `deno task shots`         | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
-| `deno task shots:wave3`   | Captures every shipped extension surface in both forced themes         | W3.12     |
-| `deno task tokens`        | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
-| `deno task tokens:check`  | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
-| `deno task lint:design`   | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
-| `deno task build`         | esbuild dev build → `dist/chrome/`, `dist/firefox/`                    | W2.3      |
-| `deno task build:release` | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
-| `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
-| `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
-| `deno task smoke:firefox` | Drives one Firefox capture through Marionette and validates its note   | W4.3      |
-| `deno task a11y`          | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks | W4.4      |
-| `deno task visual`        | Compares every surface and forced theme with its Linux baseline        | W4.2      |
-| `deno task visual:update` | Replaces visual baselines intentionally on the CI platform             | W4.2      |
+| Task                         | What it does                                                           | Landed in |
+| ---------------------------- | ---------------------------------------------------------------------- | --------- |
+| `deno task fmt`              | Formats the tree                                                       | W1.2      |
+| `deno task fmt:check`        | Fails on any unformatted file                                          | W1.2      |
+| `deno task lint`             | `recommended` rules plus `no-slow-types`                               | W1.2      |
+| `deno task check`            | Type-checks the project                                                | W1.2      |
+| `deno task test`             | Deno unit tests                                                        | W1.2      |
+| `deno task ci`               | `fmt:check` → `lint` → `check` → `test`, in sequence                   | W1.2      |
+| `deno task fixture`          | Serves the browser fixture app, printing both origins                  | W1.8      |
+| `deno task shots`            | Captures fixture screenshots into `docs/assets/`                       | W1.9      |
+| `deno task shots:wave3`      | Captures every shipped extension surface in both forced themes         | W3.12     |
+| `deno task tokens`           | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle | W2.4      |
+| `deno task tokens:check`     | Regenerates into a temp dir and diffs against the committed output     | W2.4      |
+| `deno task lint:design`      | Lints `src/` against the design bundle's own oxlint config             | W2.4      |
+| `deno task build`            | esbuild dev build → `dist/chrome/`, `dist/firefox/`                    | W2.3      |
+| `deno task build:release`    | Minified, sourcemap-free build, zipped to `dist/<target>.zip`          | W2.3      |
+| `deno task release:current`  | Prints the version packaged into both browser manifests                | W4.7      |
+| `deno task release:next`     | Computes the next UTC `YYYY.MMDD.N` release version                    | W4.7      |
+| `deno task release:validate` | Validates both release zips and optional matching tag                  | W4.7      |
+| `deno task lint:firefox`     | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
+| `deno task boot:firefox`     | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
+| `deno task smoke:firefox`    | Drives one Firefox capture through Marionette and validates its note   | W4.3      |
+| `deno task a11y`             | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks | W4.4      |
+| `deno task visual`           | Compares every surface and forced theme with its Linux baseline        | W4.2      |
+| `deno task visual:update`    | Replaces visual baselines intentionally on the CI platform             | W4.2      |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.

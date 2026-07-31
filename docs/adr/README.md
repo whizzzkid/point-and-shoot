@@ -28,6 +28,7 @@ have one behind them.
 | [0014](0014-toolbar-action-opens-popup.md)                      | Let the toolbar action open the launcher popup                   | Superseded by 0016  |
 | [0015](0015-main-world-framework-probes.md)                     | Run opt-in framework probes in a constrained main-world call     | Accepted 2026-07-28 |
 | [0016](0016-toolbar-action-controls-session.md)                 | Let the toolbar action control the session                       | Accepted 2026-07-30 |
+| [0017](0017-release-please-with-calendar-versions.md)           | Use Release Please with calendar versions                        | Accepted 2026-07-31 |
 
 Six of these are load-bearing constraints rather than preferences, and reversing one by accident is
 easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no

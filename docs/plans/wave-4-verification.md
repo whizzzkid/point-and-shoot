@@ -159,25 +159,44 @@ required-check list now names every job in the workflow.
 
 ---
 
-## W4.7 — Release packaging
+## W4.7 — Release packaging and automation
 
-- [ ] `build/release.ts`, `.github/workflows/release.yml` — SHA: _pending_
+- [ ] `build/release.ts`, Release Please configuration, `.github/workflows/release.yml` — SHA:
+      _pending_
 
 **parallel-safe.**
 
 `deno task build:release` already emits both zips (W2.3). Add:
 
-- A version-consistency check: the version in `build/manifest.ts` must match the git tag being
-  released, failing loudly on mismatch.
+- UTC CalVer in the `YYYY.MMDD.N` form from
+  [ADR-0017](../adr/0017-release-please-with-calendar-versions.md), replacing the bootstrap `0.1.0`
+  version in the first release pull request.
+- A version-consistency check: the version in `build/manifest.ts` must match the `v<version>` Git
+  tag being released, failing loudly on mismatch.
 - A pre-flight validating each zip: required manifest keys present, no remote URLs anywhere in the
   bundle, no sourcemaps, no `dist/` path leakage, and a reported total package size.
-- `release.yml` triggered on tag push: build, validate, and attach both zips to a GitHub release
-  with generated notes.
+- Release Please in manifest mode on pushes to `main`. It maintains one release pull request that
+  collects every merged conventional commit, updates the changelog and all current-version
+  references, then creates the tag and GitHub release when that pull request merges.
+- Testable Chrome and Firefox zips uploaded from the release pull request head whenever Release
+  Please creates or updates it.
+- Final Chrome and Firefox zips rebuilt from the released SHA, validated against the tag, and
+  attached to the GitHub release.
 
 No store submission automation in v1 — Chrome Web Store and AMO both need account credentials and a
 review flow, and that's a deliberate follow-up rather than something to half-wire now.
 
-**Commit:** `ci: add release packaging with manifest validation`
+Deliver this item as a small stack rather than one large pull request:
+
+1. CalVer calculation, release-package validation, tests, and ADR.
+2. Release Please configuration, preview/final artifact workflow, and operator documentation.
+3. The packaged manifest version shown on the side panel, popup, and options surfaces.
+
+**Commits:**
+
+- `ci: add CalVer release packaging validation`
+- `ci: automate release pull requests and browser artifacts`
+- `feat(ui): show the packaged version on extension surfaces`
 
 ---
 
