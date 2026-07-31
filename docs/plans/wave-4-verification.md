@@ -3,13 +3,12 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 4 assumes
 [wave 3](wave-3-ui-and-capture.md) is complete.
 
-- **Status:** in progress — W4.1–W4.3 merged; W4.4 is next
+- **Status:** in progress — W4.1–W4.7 merged; W4.8 is next
 - **Goal:** prove the thing works, on both browsers, for keyboard and screen-reader users, and
   package it for install.
 
 Wave 4 items are almost entirely **parallel-safe** — they touch disjoint test and packaging files.
-W4.6 (CI) depends on the jobs it wires up and is now blocked only on W4.4; W4.8 (PR) depends on
-everything.
+W4.1–W4.7 are merged; W4.8 (PR) depends on their final verification remaining green.
 
 ---
 
@@ -84,7 +83,7 @@ later mistakes it for E2E parity.
 
 ## W4.4 — Accessibility checks
 
-- [ ] `tests/a11y/` — SHA: _pending_
+- [x] `tests/a11y/` — SHA: `e79a793`
 
 **parallel-safe.**
 
@@ -107,7 +106,7 @@ This is a tool for reporting UI/UX bugs; shipping it with UI/UX bugs of its own 
 
 ## W4.5 — README and tutorial docs
 
-- [ ] `README.md`, `docs/tutorials/` — SHA: _pending_
+- [x] `README.md`, `docs/tutorials/` — SHA: `555d88c`
 
 **parallel-safe.**
 
@@ -135,7 +134,7 @@ README.
 
 ## W4.6 — CI completion
 
-- [ ] `.github/workflows/ci.yml` — SHA: _pending_
+- [x] `.github/workflows/ci.yml` — SHA: `087573e`
 
 **Depends on:** W4.1–W4.4.
 
@@ -161,8 +160,8 @@ required-check list now names every job in the workflow.
 
 ## W4.7 — Release packaging and automation
 
-- [ ] `build/release.ts`, Release Please configuration, `.github/workflows/release.yml` — SHA:
-      _pending_
+- [x] `build/release.ts`, Release Please configuration, `.github/workflows/release.yml` — SHAs:
+      `cdc1e47`, `e885a7a`, `07dd118` (PRs #42, #43, #44)
 
 **parallel-safe.**
 
