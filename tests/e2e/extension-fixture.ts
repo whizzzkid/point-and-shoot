@@ -25,6 +25,12 @@ export interface ExtensionLaunch {
   readonly serviceWorker: Worker;
 }
 
+/** Durable session pointers stored outside IndexedDB by the extension. */
+export interface SessionPointers {
+  readonly activeId: string | undefined;
+  readonly displayId: string | undefined;
+}
+
 /** Toolbar badge and tooltip state for one browser tab. */
 export interface ActionState {
   readonly badgeText: string;
@@ -167,6 +173,116 @@ export async function waitForHostCount(page: Page, expectedCount: number): Promi
     (count) => document.querySelectorAll("[data-point-and-shoot-host]").length === count,
     expectedCount,
     { timeout: STATE_TIMEOUT_MILLISECONDS },
+  );
+}
+
+/**
+ * Reads the current durable session pointers from extension-local storage.
+ *
+ * @param serviceWorker Real extension service worker.
+ * @returns Active and displayed session ids when present.
+ */
+export async function readSessionPointers(serviceWorker: Worker): Promise<SessionPointers> {
+  return await serviceWorker.evaluate(async () => {
+    const extensionGlobal = globalThis as unknown as {
+      readonly chrome: {
+        readonly storage: {
+          readonly local: {
+            get(keys: readonly string[]): Promise<Record<string, unknown>>;
+          };
+        };
+      };
+    };
+    const stored = await extensionGlobal.chrome.storage.local.get([
+      "activeSessionId",
+      "displaySessionId",
+    ]);
+    return {
+      activeId: typeof stored.activeSessionId === "string" ? stored.activeSessionId : undefined,
+      displayId: typeof stored.displaySessionId === "string" ? stored.displaySessionId : undefined,
+    };
+  });
+}
+
+/**
+ * Waits for and reads one raw session record from the extension's IndexedDB store.
+ *
+ * @param serviceWorker Real extension service worker.
+ * @param expectedNoteCount Required note count before returning.
+ * @param sessionId Optional explicit record id; defaults to the active or displayed pointer.
+ * @returns The unknown stored value for production validation by the caller.
+ */
+export async function waitForStoredSession(
+  serviceWorker: Worker,
+  expectedNoteCount: number,
+  sessionId?: string,
+): Promise<unknown> {
+  return await serviceWorker.evaluate(
+    async ({ expectedNoteCount, pollInterval, requestedId, timeout }) => {
+      const extensionGlobal = globalThis as unknown as {
+        readonly chrome: {
+          readonly storage: {
+            readonly local: {
+              get(keys: readonly string[]): Promise<Record<string, unknown>>;
+            };
+          };
+        };
+      };
+      const deadline = Date.now() + timeout;
+      do {
+        const stored = await extensionGlobal.chrome.storage.local.get([
+          "activeSessionId",
+          "displaySessionId",
+        ]);
+        const selectedId = requestedId ??
+          (typeof stored.activeSessionId === "string"
+            ? stored.activeSessionId
+            : typeof stored.displaySessionId === "string"
+            ? stored.displaySessionId
+            : undefined);
+        const databaseExists = (await indexedDB.databases())
+          .some((database) => database.name === "point-and-shoot");
+        if (selectedId !== undefined && databaseExists) {
+          const database = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open("point-and-shoot");
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          try {
+            if (database.objectStoreNames.contains("sessions")) {
+              const record = await new Promise<unknown>((resolve, reject) => {
+                const request = database.transaction("sessions", "readonly")
+                  .objectStore("sessions")
+                  .get(selectedId);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              if (
+                typeof record === "object" &&
+                record !== null &&
+                "notes" in record &&
+                Array.isArray(record.notes) &&
+                record.notes.length === expectedNoteCount
+              ) {
+                return record;
+              }
+            }
+          } finally {
+            database.close();
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      } while (Date.now() < deadline);
+      throw new Error(
+        `session did not reach ${expectedNoteCount} notes within ${timeout}ms`,
+      );
+    },
+    {
+      expectedNoteCount,
+      pollInterval: POLL_INTERVAL_MILLISECONDS,
+      requestedId: sessionId,
+      timeout: STATE_TIMEOUT_MILLISECONDS,
+    },
   );
 }
 
