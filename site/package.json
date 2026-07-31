@@ -9,9 +9,9 @@
     "npm": "11.17.0"
   },
   "scripts": {
-    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
-    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "dev": "node scripts/run-astro.mjs dev",
+    "build": "node scripts/run-astro.mjs build",
+    "check": "node scripts/run-astro.mjs check",
     "lint": "prettier --check .",
     "format": "prettier --write ."
   },

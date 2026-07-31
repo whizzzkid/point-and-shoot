@@ -1,4 +1,4 @@
-@import "../../../src/shared/design/tokens.css";
+@import "../../.generated/design/tokens.css";
 
 * {
   box-sizing: border-box;

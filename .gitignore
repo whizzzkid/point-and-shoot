@@ -24,8 +24,10 @@ node_modules/
 .playwright/
 playwright-report/
 
-# The Astro site owns an isolated Node toolchain.
+# The Astro site owns an isolated Node toolchain. Its generated design bridge is
+# ephemeral: committed design tokens and fonts remain under src/shared/design/.
 site/.astro/
+site/.generated/
 
 # Extension packages produced by web-ext (wave 4 release packaging)
 web-ext-artifacts/
