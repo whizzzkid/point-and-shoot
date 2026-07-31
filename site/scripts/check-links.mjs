@@ -31,6 +31,13 @@ function attributes(node) {
   return new Map((node.attrs ?? []).map((attribute) => [attribute.name, attribute.value]));
 }
 
+function cssResourceLinks(css) {
+  return [...css.matchAll(/url\(\s*(['"]?)(https?:\/\/[^'")\s]+)\1\s*\)/giu)].map((match) => ({
+    kind: "asset",
+    url: match[2],
+  }));
+}
+
 function inspectHtml(html) {
   const document = parse(html);
   const ids = new Set();
@@ -46,10 +53,23 @@ function inspectHtml(html) {
     if (attrs.get("class")?.split(/\s+/).includes("mermaid-diagram")) {
       mermaidCount += 1;
     }
+    if (attrs.has("style")) {
+      links.push(...cssResourceLinks(attrs.get("style")));
+    }
+    if (node.tagName === "style") {
+      for (const child of node.childNodes ?? []) {
+        if (child.nodeName === "#text") {
+          links.push(...cssResourceLinks(child.value));
+        }
+      }
+    }
 
     if (node.tagName === "a" && attrs.has("href")) {
       links.push({ kind: "page", url: attrs.get("href") });
-    } else if (node.tagName === "img" && attrs.has("src")) {
+    } else if (
+      ["audio", "iframe", "img", "script", "source", "video"].includes(node.tagName) &&
+      attrs.has("src")
+    ) {
       links.push({ kind: "asset", url: attrs.get("src") });
     } else if (node.tagName === "link" && attrs.get("rel") !== "canonical" && attrs.has("href")) {
       links.push({ kind: "asset", url: attrs.get("href") });
@@ -157,6 +177,8 @@ export async function checkSite({
       if (url.origin !== localOrigin) {
         if (link.kind === "page" && /^https?:$/.test(url.protocol)) {
           externalUrls.add(url.href);
+        } else {
+          problems.push(`${route}: remote resource is not allowed: ${link.url}`);
         }
         continue;
       }

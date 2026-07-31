@@ -52,7 +52,7 @@ if (lightThemeBlocks.length === 0) {
 }
 
 await writeFile(
-  resolve(generatedDesignRoot, "tokens-docs.css"),
+  resolve(generatedDesignRoot, "tokens-site.css"),
   `${tokens}\n@media (prefers-color-scheme: light) {\n${lightThemeBlocks}\n}\n`,
 );
 

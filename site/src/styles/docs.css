@@ -1,4 +1,4 @@
-@import "../../.generated/design/tokens-docs.css";
+@import "../../.generated/design/tokens-site.css";
 
 * {
   box-sizing: border-box;
@@ -313,7 +313,7 @@ article img,
   opacity: 0;
 }
 
-:is(h2, h3, h4):hover .heading-anchor,
+:is(h1, h2, h3, h4):hover .heading-anchor,
 .heading-anchor:focus {
   opacity: 1;
 }

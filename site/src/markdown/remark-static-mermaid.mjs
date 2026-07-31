@@ -26,10 +26,9 @@ export function remarkStaticMermaid() {
       }
 
       try {
-        const svg = renderMermaidSVG(node.value, diagramTheme).replace(
-          "<svg ",
-          '<svg role="img" aria-label="State diagram" ',
-        );
+        const svg = renderMermaidSVG(node.value, diagramTheme)
+          .replace(/\s*@import\s+url\((?:"[^"]*"|'[^']*'|[^)]*)\);?/giu, "")
+          .replace("<svg ", '<svg role="img" aria-label="State diagram" ');
         parent.children[index] = {
           type: "html",
           value: `<figure class="mermaid-diagram">${svg}</figure>`,
