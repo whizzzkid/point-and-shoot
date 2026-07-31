@@ -13,7 +13,10 @@
     "build": "node scripts/run-astro.mjs build",
     "check": "node scripts/run-astro.mjs check",
     "lint": "prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "node --test scripts/*.test.mjs",
+    "links": "node scripts/check-links.mjs --external",
+    "links:internal": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "7.2.2",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "parse5": "8.0.1",
     "prettier": "3.9.6",
     "prettier-plugin-astro": "0.14.1",
     "typescript": "6.0.3"

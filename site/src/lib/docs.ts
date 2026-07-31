@@ -1,17 +1,10 @@
 import type { CollectionEntry } from "astro:content";
 
-const markdownExtension = /\.md$/;
-const readmeSuffix = /(^|\/)readme$/i;
+import { docsRoute } from "./docs-manifest";
 
-/**
- * Converts a documentation collection ID into its public route below `/docs/`.
- *
- * @param id - The collection entry ID, with or without a Markdown extension.
- * @returns The route segment without a leading or trailing slash.
- */
-export function docsRoute(id: string): string {
-  return id.replace(markdownExtension, "").replace(readmeSuffix, "$1").replace(/\/$/, "");
-}
+export { docsRoute };
+
+const markdownExtension = /\.md$/;
 
 /**
  * Reads the first Markdown H1 without requiring duplicated frontmatter.

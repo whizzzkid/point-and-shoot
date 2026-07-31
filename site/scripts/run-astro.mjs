@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
+const astroCacheRoot = resolve(siteRoot, ".astro");
+const astroContentCacheRoot = resolve(siteRoot, "node_modules/.astro");
 const generatedRoot = resolve(siteRoot, ".generated");
 const generatedDesignRoot = resolve(generatedRoot, "design");
 const sourceDesignRoot = resolve(repositoryRoot, "src/shared/design");
@@ -18,7 +20,11 @@ if (!supportedCommands.has(command)) {
   throw new Error("Usage: node scripts/run-astro.mjs <build|check|dev>");
 }
 
-await rm(generatedRoot, { force: true, recursive: true });
+await Promise.all([
+  rm(astroCacheRoot, { force: true, recursive: true }),
+  rm(astroContentCacheRoot, { force: true, recursive: true }),
+  rm(generatedRoot, { force: true, recursive: true }),
+]);
 await mkdir(resolve(generatedDesignRoot, "fonts"), { recursive: true });
 await mkdir(resolve(generatedRoot, "public/brand"), { recursive: true });
 await mkdir(resolve(generatedRoot, "public/docs"), { recursive: true });

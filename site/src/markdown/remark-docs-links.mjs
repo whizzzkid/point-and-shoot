@@ -32,7 +32,13 @@ function rewriteRelativeUrl(url, sourcePath, docsRoot) {
   const relativePath = relative(docsRoot, targetPath).split(sep).join("/");
 
   if (relativePath.startsWith("../")) {
-    return url;
+    const repositoryRoot = dirname(docsRoot);
+    const repositoryPath = relative(repositoryRoot, targetPath).split(sep).join("/");
+    if (repositoryPath.startsWith("../")) {
+      return url;
+    }
+    const view = extname(repositoryPath) === "" ? "tree" : "blob";
+    return `${repositoryUrl}/${view}/main/${repositoryPath}${suffix}`;
   }
 
   const root = relativePath.split("/")[0];
