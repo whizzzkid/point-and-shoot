@@ -434,7 +434,10 @@ async function runSmoke(): Promise<void> {
       throw new Error(`Firefox persisted an invalid session: ${JSON.stringify(validation.error)}`);
     }
     assertEquals(validation.session.notes.length, 1);
-    assertStringIncludes(validation.session.notes[0]?.pageTitle ?? "", "Firefox boot check");
+    assertStringIncludes(
+      validation.session.notes[0]?.pageTitle ?? "",
+      "deliberate W4.6 CI failure probe",
+    );
 
     const assets = await executeAsyncScript(
       client,

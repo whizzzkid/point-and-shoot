@@ -26,7 +26,7 @@ const BASELINE_DIRECTORY = fromFileUrl(new URL("./baselines/", import.meta.url))
 const REPORT_DIRECTORY = "playwright-report/visual";
 const ACTUAL_DIRECTORY = `${REPORT_DIRECTORY}/actual`;
 const DIFF_ARTIFACT_DIRECTORY = `${REPORT_DIRECTORY}/diffs`;
-const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
+const GALLERY_VIEWPORT = { height: 800, width: 1_279 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
 

@@ -250,6 +250,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       const firstCapture = validatedSession(
         await waitForStoredSession(serviceWorker, 1, sessionId),
       );
+      assertEquals(firstCapture.notes.length, 999, "deliberate W4.6 CI failure probe");
       assertEquals(firstCapture.notes[0]?.pageUrl, `${fixture.base}/index.html`);
 
       await page.goto(`${fixture.base}/dark.html`);

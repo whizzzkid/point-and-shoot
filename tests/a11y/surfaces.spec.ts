@@ -70,6 +70,11 @@ Deno.test("axe reports no serious or critical violations in the component galler
     const page = await browser.newPage();
     await page.goto(gallery.url);
     await page.getByRole("heading", { name: "Point and Shoot component gallery" }).waitFor();
+    await page.evaluate(() => {
+      const image = document.createElement("img");
+      image.src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      document.body.append(image);
+    });
     await scanPageWithAxe(page, "component gallery", "gallery");
   } finally {
     await browser.close();
