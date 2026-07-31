@@ -156,7 +156,7 @@ placeholder or `#` href remains.
 
 ## W5.6 — Deploy and quality gates
 
-- [x] `.github/workflows/site.yml` — SHA: `a40ed29`
+- [x] `.github/workflows/site.yml` — SHA: `e45a63d`
 
 **Depends on:** W5.2, W5.5, W5.8.
 
@@ -179,7 +179,7 @@ violation and confirm the a11y job fails, then revert it — an unproven gate is
 
 ## W5.7 — Render the docs markdown
 
-- [x] `site/src/content/docs/`, `site/src/pages/docs/` — SHA: `9eda88f`
+- [x] `site/src/content/docs/`, `site/src/pages/docs/` — SHA: `f804f51`
 
 **Depends on:** W5.1, W5.3, W5.4.
 
@@ -214,7 +214,7 @@ third-party origin in the output.
 
 ## W5.8 — Docs navigation, diagrams, and link integrity
 
-- [x] `site/src/components/docs/`, link-check task — SHA: `6ea8fb5`
+- [x] `site/src/components/docs/`, link-check task — SHA: `0619887`
 
 **Depends on:** W5.7.
 
