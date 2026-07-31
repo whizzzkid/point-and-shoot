@@ -30,6 +30,9 @@ import { addFrameworkComponentHints } from "./framework-hints.ts";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
 import { saveCapturedSelection } from "./notes.ts";
+import type { PickerSelection } from "./picker/ElementPicker.tsx";
+import type { RegionCapture } from "../shared/schema.ts";
+import { watchSessionSummary } from "./session-summary.ts";
 import { watchSettings } from "./settings-watcher.ts";
 import pickerStyles from "./picker/picker.css" with { type: "text" };
 import toolbarStyles from "./toolbar/toolbar.css" with { type: "text" };
@@ -61,7 +64,10 @@ interface MountedOverlay {
   readonly refreshTheme: () => void;
 }
 
-function mountOverlay(readSettings: () => ExtensionSettings): MountedOverlay {
+function mountOverlay(
+  readSettings: () => ExtensionSettings,
+  onDismiss: () => void,
+): MountedOverlay {
   const sample = () =>
     sampleBackdrop(
       document,
@@ -77,36 +83,44 @@ function mountOverlay(readSettings: () => ExtensionSettings): MountedOverlay {
   });
   let isMounted = true;
   let noteCount = 0;
+  let pending:
+    | { readonly capture: RegionCapture; readonly selection: PickerSelection }
+    | undefined;
   const renderOverlay = (): void => {
     render(
       h(CaptureOverlay, {
         iconSpriteUrl: "",
-        onSelection: (selection) => {
-          void (async () => {
-            const [capture, enrichedSelection] = await Promise.all([
-              captureSelectedRegion(
-                browser.runtime,
-                shadowHost.element,
-                ownerWindow,
-                selection.region,
-              ),
-              addFrameworkComponentHints(
-                browser.runtime,
-                selection,
-                readSettings().frameworkHints,
-              ),
-            ]);
-            const saved = await saveCapturedSelection(
+        onCancel: () => {
+          pending = undefined;
+        },
+        onDismiss,
+        onSave: async (text) => {
+          if (pending === undefined) throw new Error("The pending capture is no longer available.");
+          await saveCapturedSelection(
+            browser.runtime,
+            pending.capture,
+            pending.selection,
+            text,
+            { title: document.title, url: ownerWindow.location.href },
+          );
+          pending = undefined;
+        },
+        onSelection: async (selection) => {
+          const [capture, enrichedSelection] = await Promise.all([
+            captureSelectedRegion(
               browser.runtime,
-              capture,
-              enrichedSelection,
-              { title: document.title, url: ownerWindow.location.href },
-            );
-            noteCount = saved.noteCount;
-            if (isMounted) renderOverlay();
-          })().catch((error: unknown) => {
-            console.error("point-and-shoot: note capture failed", error);
-          });
+              shadowHost.element,
+              ownerWindow,
+              selection.region,
+            ),
+            addFrameworkComponentHints(
+              browser.runtime,
+              selection,
+              readSettings().frameworkHints,
+            ),
+          ]);
+          if (!isMounted) throw new Error("The capture overlay was dismissed.");
+          pending = { capture, selection: enrichedSelection };
         },
         noteCount,
         onSend: () => {
@@ -119,6 +133,10 @@ function mountOverlay(readSettings: () => ExtensionSettings): MountedOverlay {
     );
   };
   renderOverlay();
+  const stopSessionSummary = watchSessionSummary(browser, (summary) => {
+    noteCount = summary.active ? summary.noteCount : 0;
+    if (isMounted) renderOverlay();
+  });
   const stopTheme = watchTheme({
     onChange: (theme) => {
       shadowHost.element.dataset.theme = theme;
@@ -131,6 +149,7 @@ function mountOverlay(readSettings: () => ExtensionSettings): MountedOverlay {
   return {
     destroy() {
       isMounted = false;
+      stopSessionSummary();
       stopTheme();
       shadowHost.destroy();
     },
@@ -149,7 +168,7 @@ function initializeContent(initialSettings: ExtensionSettings): void {
   let settings = initialSettings;
   let refreshMountedTheme: (() => void) | undefined;
   const lifecycle = createOverlayLifecycle(() => {
-    const mounted = mountOverlay(() => settings);
+    const mounted = mountOverlay(() => settings, () => lifecycle.destroy());
     refreshMountedTheme = mounted.refreshTheme;
     return () => {
       if (refreshMountedTheme === mounted.refreshTheme) refreshMountedTheme = undefined;

@@ -159,7 +159,7 @@ async function appendCapturedNote(
         region: request.capture,
         stripQuery: settings.stripSensitiveQueries &&
           shouldStripQueryByDefault(request.pageUrl),
-        text: "",
+        text: request.text,
       }],
     };
     await putSession(database, next);

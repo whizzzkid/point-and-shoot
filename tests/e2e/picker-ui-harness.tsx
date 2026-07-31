@@ -9,6 +9,9 @@ import iconSprite from "../../src/shared/design/icons.svg" with { type: "text" }
 import toolbarStyles from "../../src/content/toolbar/toolbar.css" with { type: "text" };
 
 let selections: PickerSelection[] = [];
+let savedNotes: string[] = [];
+let failNextSave = false;
+let failNextCapture = false;
 let preview: {
   readonly left: number;
   readonly top: number;
@@ -31,7 +34,19 @@ function renderPicker(): void {
         preview = nextPreview;
       }}
       onSelection={(selection) => {
+        if (failNextCapture) {
+          failNextCapture = false;
+          return Promise.reject(new Error("Screenshot capture failed."));
+        }
         selections = [...selections, selection];
+      }}
+      onSave={(text) => {
+        if (failNextSave) {
+          failNextSave = false;
+          return Promise.reject(new Error("IndexedDB unavailable."));
+        }
+        savedNotes = [...savedNotes, text];
+        return Promise.resolve();
       }}
     />,
     shadowHost.mount,
@@ -49,11 +64,16 @@ function summary() {
     latestCount: latest?.kind === "elements" ? latest.elements.length : 0,
     latestKind: latest?.kind,
     latestReason: latest?.kind === "unreachable" ? latest.reason : undefined,
+    error: shadowHost.root.querySelector('[role="alert"]')?.textContent,
     overlayCount: overlays.length,
+    composerOpen: shadowHost.root.querySelector('[role="dialog"]') !== null,
+    toolbarPresent: shadowHost.root.querySelector('[role="toolbar"]') !== null,
     preview,
     primaryCount: latest?.kind === "elements"
       ? latest.elements.filter((element) => element.primary).length
       : 0,
+    savedNotes,
+    selectionCount: selections.length,
   };
 }
 
@@ -61,15 +81,39 @@ renderPicker();
 
 const harness = {
   async reenter() {
-    const select = shadowHost.root.querySelector<HTMLButtonElement>(
-      'button[aria-label="Select"]',
-    );
-    if (select === null) throw new Error("picker UI harness has no Select control");
-    select.click();
+    render(null, shadowHost.mount);
+    renderPicker();
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   },
   reset() {
     selections = [];
+    savedNotes = [];
+  },
+  async cancelComposer() {
+    const button = [...shadowHost.root.querySelectorAll<HTMLButtonElement>("button")].find(
+      (candidate) => candidate.textContent === "Cancel",
+    );
+    if (button === undefined) throw new Error("picker UI harness has no composer cancel action");
+    button.click();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  },
+  failCapture() {
+    failNextCapture = true;
+  },
+  async saveNote(text: string, fail = false) {
+    const input = shadowHost.root.querySelector<HTMLTextAreaElement>('textarea[aria-label="Note"]');
+    const button = [...shadowHost.root.querySelectorAll<HTMLButtonElement>("button")].find(
+      (candidate) => candidate.textContent === "Save note",
+    );
+    if (input === null || button === undefined) {
+      throw new Error("picker UI harness has no open note composer");
+    }
+    input.value = text;
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    failNextSave = fail;
+    button.click();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   },
   setTheme(theme: "dark" | "light") {
     shadowHost.element.dataset.theme = theme;

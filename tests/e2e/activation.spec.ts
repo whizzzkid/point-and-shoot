@@ -6,6 +6,7 @@ import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
   launchExtension,
   openExtensionPage,
+  readSessionPointers,
   readStoredZipEntries,
   triggerExtensionAction,
   waitForHostCount,
@@ -17,6 +18,35 @@ const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
 const AGENT_TRIAL_NOTE =
   "This button looks like unstyled browser chrome. Give it a clear light-theme background, " +
   "border, and hover treatment.";
+
+Deno.test("Escape dismisses capture UI while preserving the active session for resume", async () => {
+  const fixture = startFixtureServer();
+  const { context, extensionId, serviceWorker } = await launchExtension();
+  try {
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/index.html`);
+    await triggerExtensionAction(context, page, extensionId);
+    await waitForHostCount(page, 1);
+    const before = await readSessionPointers(serviceWorker);
+    if (before.activeId === undefined) throw new Error("session did not start");
+
+    await page.keyboard.press("Escape");
+    await waitForHostCount(page, 0);
+    assertEquals((await readSessionPointers(serviceWorker)).activeId, before.activeId);
+
+    const popup = await openExtensionPage(context, extensionId, "popup/popup.html");
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    assertEquals((await readSessionPointers(serviceWorker)).activeId, before.activeId);
+    await popup.close();
+  } finally {
+    await context.close();
+    await fixture.close();
+  }
+});
 
 interface ActionState {
   readonly badgeText: string;

@@ -23,6 +23,9 @@ export const CAPTURE_REGION_MESSAGE = "point-and-shoot:capture-region";
 /** Runtime message sent after a capture to append its serializable note evidence. */
 export const ADD_NOTE_MESSAGE = "point-and-shoot:add-note";
 
+/** Runtime message requesting the canonical active-session note count. */
+export const GET_ACTIVE_SESSION_SUMMARY_MESSAGE = "point-and-shoot:get-active-session-summary";
+
 /** Runtime message requesting opt-in component hints from the page's main execution world. */
 export const FRAMEWORK_PROBE_MESSAGE = "point-and-shoot:framework-probe";
 
@@ -50,7 +53,13 @@ export interface AddNoteRequest {
   readonly elements: readonly NoteElement[];
   readonly pageTitle: string;
   readonly pageUrl: string;
+  readonly text: string;
 }
+
+/** Canonical active-session state returned to injected UI. */
+export type ActiveSessionSummary =
+  | { readonly active: false }
+  | { readonly active: true; readonly noteCount: number; readonly sessionId: string };
 
 /** Result returned after one captured note is durably appended. */
 export type AddNoteResponse =
@@ -437,9 +446,26 @@ export function isAddNoteRequest(message: unknown): message is AddNoteRequest {
     message.type === ADD_NOTE_MESSAGE &&
     typeof message.pageTitle === "string" &&
     typeof message.pageUrl === "string" &&
+    typeof message.text === "string" &&
     isRegionCapture(message.capture) &&
     Array.isArray(message.elements) &&
     message.elements.every(isNoteElement);
+}
+
+/**
+ * Narrows an untrusted runtime reply to {@link ActiveSessionSummary}.
+ *
+ * @param message Value returned by the background session-summary handler.
+ * @returns Whether the reply is an exact inactive or active summary.
+ */
+export function isActiveSessionSummary(message: unknown): message is ActiveSessionSummary {
+  if (!isRecord(message) || typeof message.active !== "boolean") return false;
+  if (!message.active) return hasOnlyKeys(message, ["active"]);
+  return hasOnlyKeys(message, ["active", "noteCount", "sessionId"]) &&
+    typeof message.noteCount === "number" &&
+    Number.isInteger(message.noteCount) &&
+    message.noteCount >= 0 &&
+    typeof message.sessionId === "string";
 }
 
 /**

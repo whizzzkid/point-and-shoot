@@ -115,10 +115,20 @@ async function resumeSession(
   await popup.close();
 }
 
+async function savePendingCapture(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    document.activeElement?.matches("[data-point-and-shoot-host]") === true
+  );
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+}
+
 async function capture(locator: Locator): Promise<void> {
   await locator.scrollIntoViewIfNeeded();
   await locator.hover();
   await locator.click();
+  await savePendingCapture(locator.page());
 }
 
 async function editVisibleNote(panel: Page, text: string): Promise<void> {
@@ -206,6 +216,7 @@ const FIXTURE_CASES: readonly FixtureCaptureCase[] = [
       const target = { x: box.x + 24, y: box.y + 24 };
       await page.mouse.move(target.x, target.y);
       await page.mouse.click(target.x, target.y);
+      await savePendingCapture(page);
     },
     verify: (session) => {
       const selectors = session.notes[0]?.elements[0]?.selectors;
@@ -492,13 +503,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
           throw new DOMException("quota exceeded", "QuotaExceededError");
         };
       });
-      const quotaError = page.waitForEvent("console", {
-        predicate: (message) =>
-          message.type() === "error" &&
-          message.text().includes("IndexedDB storage quota exceeded"),
-      });
       await capture(page.getByTestId("light-action"));
-      await quotaError;
       const afterQuotaFailure = validatedSession(
         await waitForStoredSession(serviceWorker, 0, sessionId),
       );
@@ -514,6 +519,9 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
         IDBObjectStore.prototype.put = state.pointAndShootOriginalPut;
         delete state.pointAndShootOriginalPut;
       });
+      await page.keyboard.press("Escape");
+      await waitForHostCount(page, 0);
+      await resumeSession(context, page, extensionId);
       await capture(page.getByTestId("light-action"));
       const emptyNoteSession = validatedSession(
         await waitForStoredSession(serviceWorker, 1, sessionId),

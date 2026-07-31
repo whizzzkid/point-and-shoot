@@ -43,6 +43,7 @@ const REQUEST: AddNoteRequest = {
   }],
   pageTitle: "Checkout",
   pageUrl: "https://example.com/checkout?access_token=secret",
+  text: "The save button overlaps the total.",
   type: ADD_NOTE_MESSAGE,
 };
 
@@ -111,7 +112,7 @@ Deno.test("captured note service creates an active session and preserves full UR
     assertEquals(session?.notes[0]?.pageUrl, REQUEST.pageUrl);
     assertEquals(session?.notes[0]?.stripQuery, true);
     assertEquals(session?.notes[0]?.elements, REQUEST.elements);
-    assertEquals(session?.notes[0]?.text, "");
+    assertEquals(session?.notes[0]?.text, REQUEST.text);
   } finally {
     database.close();
     await resetDatabase();

@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import type { JSX } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { Badge, Button, Icon, IconButton, IconSpriteProvider } from "../../ui/components/index.ts";
 import {
   type PlacementRect,
@@ -16,7 +16,7 @@ const TOOLBAR_COLLISION_GAP_TOKEN = "--space-3";
 const TOOLBAR_EDGE_GAP_TOKEN = "--space-6";
 
 /** Tool selected from the floating capture toolbar. */
-export type ToolbarTool = "select" | "screenshot" | "note";
+export type ToolbarTool = "select";
 
 /** Props accepted by {@link FloatingToolbar}. */
 export interface FloatingToolbarProps {
@@ -24,6 +24,7 @@ export interface FloatingToolbarProps {
   readonly iconSpriteUrl: string;
   readonly selection?: PlacementRect;
   readonly composer?: PlacementRect;
+  readonly focusSelect?: boolean;
   readonly noteCount?: number;
   readonly onSend?: () => void;
   readonly onToolChange?: (tool: ToolbarTool) => void;
@@ -238,6 +239,7 @@ export function FloatingToolbar(
   {
     activeTool,
     composer,
+    focusSelect = false,
     iconSpriteUrl,
     noteCount = 0,
     onSend,
@@ -248,6 +250,10 @@ export function FloatingToolbar(
   }: FloatingToolbarProps,
 ): JSX.Element {
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const selectRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusSelect) selectRef.current?.focus();
+  }, [focusSelect]);
   const positioned = useToolbarPlacement(
     toolbarRef,
     selection,
@@ -280,21 +286,12 @@ export function FloatingToolbar(
       >
         <IconButton
           active={selectedTool === "select"}
+          elementRef={(element) => {
+            selectRef.current = element;
+          }}
           icon={<Icon name="crosshair" />}
           label="Select"
           onClick={() => chooseTool("select")}
-        />
-        <IconButton
-          active={selectedTool === "screenshot"}
-          icon={<Icon name="camera" />}
-          label="Screenshot"
-          onClick={() => chooseTool("screenshot")}
-        />
-        <IconButton
-          active={selectedTool === "note"}
-          icon={<Icon name="message-square-plus" />}
-          label="Note"
-          onClick={() => chooseTool("note")}
         />
         <span aria-hidden="true" className="ps-toolbar-divider" />
         <Badge>{notesLabel(noteCount)}</Badge>

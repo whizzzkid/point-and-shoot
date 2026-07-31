@@ -47,6 +47,7 @@ Deno.test("saveCapturedSelection sends only serializable element evidence", asyn
     },
     CAPTURE,
     REACHABLE_SELECTION,
+    "The save button overlaps the total.",
     { title: "Checkout", url: "https://example.com/checkout" },
   );
 
@@ -59,6 +60,7 @@ Deno.test("saveCapturedSelection sends only serializable element evidence", asyn
     }],
     pageTitle: "Checkout",
     pageUrl: "https://example.com/checkout",
+    text: "The save button overlaps the total.",
     type: "point-and-shoot:add-note",
   });
 });
@@ -83,6 +85,7 @@ Deno.test("saveCapturedSelection records an explicit cross-origin boundary", asy
       reason: "cross-origin-iframe",
       region: { height: 200, left: 50, top: 100, width: 300 },
     },
+    "",
     { title: "Frames", url: "https://example.com/frames" },
   );
 
@@ -108,6 +111,7 @@ Deno.test("saveCapturedSelection translates storage and malformed replies", asyn
         },
         CAPTURE,
         REACHABLE_SELECTION,
+        "",
         { title: "Checkout", url: "https://example.com/checkout" },
       ),
     NoteSaveError,
@@ -121,6 +125,7 @@ Deno.test("saveCapturedSelection translates storage and malformed replies", asyn
         { sendMessage: () => Promise.resolve({ ok: true }) },
         CAPTURE,
         REACHABLE_SELECTION,
+        "",
         { title: "Checkout", url: "https://example.com/checkout" },
       ),
     NoteSaveError,
@@ -133,6 +138,7 @@ Deno.test("saveCapturedSelection translates storage and malformed replies", asyn
         { sendMessage: () => Promise.reject(new Error("service worker stopped")) },
         CAPTURE,
         REACHABLE_SELECTION,
+        "",
         { title: "Checkout", url: "https://example.com/checkout" },
       ),
     NoteSaveError,

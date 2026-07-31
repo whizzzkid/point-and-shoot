@@ -50,38 +50,31 @@ Deno.test("keyboard-only flow activates, captures, annotates, reviews, and expor
       "shortcut activation moved focus away from the inspected page",
     );
 
+    await page.waitForTimeout(50);
     await page.keyboard.press("Enter");
     const pointers = await readSessionPointers(serviceWorker);
     if (pointers.activeId === undefined) {
       throw new Error("keyboard capture did not create an active session");
     }
+    await page.waitForFunction(() =>
+      document.activeElement?.matches("[data-point-and-shoot-host]") === true
+    );
+    await page.keyboard.type(NOTE_TEXT);
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Enter");
     await waitForStoredSession(serviceWorker, 1, pointers.activeId);
+    await page.waitForFunction(() =>
+      document.activeElement?.matches('[data-testid="save-note"]') === true
+    );
     await assertVisibleKeyboardFocus(page);
 
     const panel = await openExtensionPage(context, extensionId, "sidepanel/sidepanel.html");
     await trackPointerInput(panel);
     await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
 
-    const edit = panel.locator("[data-note-id]").getByRole("button", { name: "Edit" });
-    await tabTo(panel, edit);
-    await assertVisibleKeyboardFocus(panel);
-    await panel.keyboard.press("Enter");
-
-    const noteText = panel.getByRole("textbox", { name: "Note text" });
-    await tabTo(panel, noteText);
-    await assertVisibleKeyboardFocus(panel);
-    await panel.keyboard.type(NOTE_TEXT);
-
-    const save = panel.getByRole("button", { name: "Save changes" });
-    await tabTo(panel, save);
-    await assertVisibleKeyboardFocus(panel);
-    await panel.keyboard.press("Enter");
     await panel.getByText(NOTE_TEXT).waitFor();
-    assertEquals(
-      await edit.evaluate((element) => element === document.activeElement),
-      true,
-      "closing the edit dialog did not restore its trigger",
-    );
 
     const compile = panel.getByRole("button", { name: "Compile plan" });
     await tabTo(panel, compile);

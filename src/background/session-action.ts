@@ -1,6 +1,11 @@
 import type { BrowserShim } from "../shared/browser.ts";
 import type { ActivationController } from "./activation.ts";
 import type { SessionService } from "./session.ts";
+import {
+  type ActiveSessionSummary,
+  GET_ACTIVE_SESSION_SUMMARY_MESSAGE,
+} from "../shared/messages.ts";
+import { SESSION_REVISION_STORAGE_KEY } from "../shared/session.ts";
 
 const INACTIVE_ACTION_TITLE = "Point and Shoot — Start session";
 const UNAVAILABLE_ACTION_TITLE = "Point and Shoot — unavailable on this page";
@@ -35,6 +40,14 @@ export interface SessionActionController {
   toggle(tabId: number): Promise<SessionActionResult>;
   /** Rehydrates the global badge and tooltip from durable active-session state. */
   synchronize(): Promise<void>;
+  /** Reads the canonical active session state for injected UI. */
+  summary(): Promise<ActiveSessionSummary>;
+}
+
+/** Runtime and storage events that invalidate session state outside the background context. */
+export interface SessionStateBrowser {
+  readonly runtime: Pick<BrowserShim["runtime"], "onMessage">;
+  readonly storage: Pick<BrowserShim["storage"], "onChanged">;
 }
 
 function badgeText(noteCount: number): string {
@@ -107,6 +120,13 @@ export function createSessionActionController(
   };
 
   return {
+    summary: () =>
+      enqueue(async () => {
+        const active = await sessions.loadActive();
+        return active === null
+          ? { active: false }
+          : { active: true, noteCount: active.notes.length, sessionId: active.id };
+      }),
     synchronize: () =>
       enqueue(async () => {
         const active = await sessions.loadActive();
@@ -156,6 +176,31 @@ export function createSessionActionController(
         }
       }),
   };
+}
+
+/**
+ * Registers canonical summary reads and revision-driven action refreshes.
+ *
+ * @param browser Runtime and storage invalidation events.
+ * @param controller Serialized session-state owner.
+ * @param reportError Receives storage or action refresh failures.
+ */
+export function registerSessionStateHandlers(
+  browser: SessionStateBrowser,
+  controller: SessionActionController,
+  reportError: (error: unknown) => void = (error) => {
+    console.error("point-and-shoot: session state failed:", error);
+  },
+): void {
+  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message !== GET_ACTIVE_SESSION_SUMMARY_MESSAGE) return;
+    void controller.summary().then(sendResponse).catch(reportError);
+    return true;
+  });
+  browser.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || changes[SESSION_REVISION_STORAGE_KEY] === undefined) return;
+    void controller.synchronize().catch(reportError);
+  });
 }
 
 /**

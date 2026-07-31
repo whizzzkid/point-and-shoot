@@ -5,7 +5,11 @@ import { browser } from "../shared/browser.ts";
 import { registerCaptureHandler } from "./capture.ts";
 import { registerFrameworkProbeHandler } from "./framework-probe.ts";
 import { registerNoteHandler } from "./notes.ts";
-import { createSessionActionController, registerSessionActionHandler } from "./session-action.ts";
+import {
+  createSessionActionController,
+  registerSessionActionHandler,
+  registerSessionStateHandlers,
+} from "./session-action.ts";
 import { createSessionService } from "./session.ts";
 
 /**
@@ -20,6 +24,7 @@ const activation = createActivationController(browser);
 const sessionAction = createSessionActionController(browser, activation, sessions);
 
 registerSessionActionHandler(browser, sessionAction);
+registerSessionStateHandlers(browser, sessionAction);
 registerActivationHandlers(
   browser,
   (error) => {
@@ -30,4 +35,4 @@ registerActivationHandlers(
 );
 registerCaptureHandler(browser);
 registerFrameworkProbeHandler(browser);
-registerNoteHandler(browser, sessions, () => sessionAction.synchronize());
+registerNoteHandler(browser, sessions);

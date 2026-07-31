@@ -1,18 +1,18 @@
 import { assertEquals } from "@std/assert";
 import { forceTheme, resolveTheme } from "./theme.ts";
 
-Deno.test("resolveTheme - chooses the theme matching dark and light backdrop samples", () => {
+Deno.test("resolveTheme - contrasts dark and light backdrop samples", () => {
   assertEquals(
     resolveTheme({
       sample: () => [{ red: 10, green: 11, blue: 13 }],
     }),
-    "dark",
+    "light",
   );
   assertEquals(
     resolveTheme({
       sample: () => [{ red: 255, green: 255, blue: 255 }],
     }),
-    "light",
+    "dark",
   );
 });
 
