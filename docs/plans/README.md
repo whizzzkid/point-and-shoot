@@ -283,10 +283,10 @@ deviate. Each has a corresponding ADR under `docs/adr/`.
 - **Never use `chrome.offscreen`** — Firefox has no equivalent. Image cropping uses
   `createImageBitmap` + `OffscreenCanvas.convertToBlob`, which works in both background contexts.
 - All extension APIs go through a promise-based `browser.*` shim, never bare `chrome.*` callbacks.
-- Permissions are minimal: `activeTab`, `storage`, `scripting`, `commands`, `downloads`,
-  `clipboardWrite`, plus `sidePanel` (Chrome) / `sidebar_action` (Firefox). **No `<all_urls>`.**
-  `activeTab` is granted only on explicit user gesture, so the extension can never read a page the
-  user didn't point it at. This is a user-facing privacy guarantee, not a convenience.
+- Permissions are minimal: `activeTab`, `storage`, `scripting`, `downloads`, `clipboardWrite`, plus
+  `sidePanel` (Chrome) / `sidebar_action` (Firefox). **No `<all_urls>`.** `activeTab` is granted
+  only on explicit user gesture, so the extension can never read a page the user didn't point it at.
+  This is a user-facing privacy guarantee, not a convenience.
 
 **Data**
 

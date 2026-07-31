@@ -102,9 +102,9 @@ Chrome and Firefox are both first-class. Safari is compatible-by-construction wi
 - **All extension APIs go through the promise-based `browser.*` shim**, never bare `chrome.*`
   callbacks.
 - **Permissions are minimal and `activeTab`-only: no `<all_urls>`, ever.** The permission set is
-  `activeTab`, `storage`, `scripting`, `commands`, `downloads`, `clipboardWrite`, plus `sidePanel`
-  (Chrome) / `sidebar_action` (Firefox). `activeTab` is granted only on an explicit user gesture, so
-  the extension cannot read a page the user did not point it at. This is a **user-facing privacy
+  `activeTab`, `storage`, `scripting`, `downloads`, `clipboardWrite`, plus `sidePanel` (Chrome) /
+  `sidebar_action` (Firefox). `activeTab` is granted only on an explicit user gesture, so the
+  extension cannot read a page the user did not point it at. This is a **user-facing privacy
   guarantee**, not a convenience — a feature that needs broader host permissions is a decision to
   revisit [ADR-0002](docs/adr/0002-activetab-only-permission-model.md), not a config change.
 - Browser-API divergence is covered by unit tests against fakes at the shim seam, not by a second

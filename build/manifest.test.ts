@@ -16,6 +16,12 @@ const EXPECTED_WEB_ACCESSIBLE_RESOURCES = [
     matches: ["<all_urls>"],
   },
 ];
+const EXPECTED_EXTENSION_ICONS = {
+  "16": "icons/icon-16.png",
+  "32": "icons/icon-32.png",
+  "48": "icons/icon-48.png",
+  "128": "icons/icon-128.png",
+};
 
 Deno.test("manifest - both targets declare manifest_version 3", () => {
   assertEquals(forChrome().manifest_version, 3);
@@ -23,22 +29,36 @@ Deno.test("manifest - both targets declare manifest_version 3", () => {
 });
 
 Deno.test("manifest - the toolbar action dispatches a click to start or end a session", () => {
-  const expected = {
-    default_title: "Point and Shoot — Start session",
-  };
-  assertEquals(forChrome().action, expected);
-  assertEquals(forFirefox().action, expected);
+  assertEquals(
+    (forChrome().action as Record<string, unknown>).default_title,
+    "Point and Shoot — Start session",
+  );
+  assertEquals(
+    (forFirefox().action as Record<string, unknown>).default_title,
+    "Point and Shoot — Start session",
+  );
 });
 
-Deno.test("manifest - permissions are exactly the settled six, no more", () => {
+Deno.test("manifest - the browser toolbar action uses the branded extension icons", () => {
+  assertEquals(
+    (forChrome().action as Record<string, unknown>).default_icon,
+    EXPECTED_EXTENSION_ICONS,
+  );
+  assertEquals(
+    (forFirefox().action as Record<string, unknown>).default_icon,
+    EXPECTED_EXTENSION_ICONS,
+  );
+});
+
+Deno.test("manifest - permissions contain only browser capabilities that require a grant", () => {
   assertEquals(manifestBase.permissions, [
     "activeTab",
     "storage",
     "scripting",
-    "commands",
     "downloads",
     "clipboardWrite",
   ]);
+  assertEquals(Object.keys(manifestBase.commands), ["toggle-capture"]);
 });
 
 Deno.test("manifest - neither target declares host_permissions", () => {

@@ -126,7 +126,7 @@ events and failed writes from drifting either toolbar count.
    viewfinder corners, center dot, dimensions, and PNG structure.
 3. Remove `commands` from `permissions` while retaining the top-level `commands` declaration and
    shortcut behavior in both targets.
-4. Update manifest tests and permission documentation that still claims six permissions.
+4. Update manifest tests and permission documentation that still includes `commands`.
 
 **Verification:**
 

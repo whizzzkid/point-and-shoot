@@ -34,12 +34,11 @@ export const SUPPORTED = {
  */
 export const FIREFOX_EXTENSION_ID = "pointandshoot@whizzzkid.dev";
 
-/** The extension's six permissions, exactly as settled in `docs/plans/README.md`. No more. */
+/** The extension's five permission grants, exactly as settled in `docs/plans/README.md`. No more. */
 const PERMISSIONS = [
   "activeTab",
   "storage",
   "scripting",
-  "commands",
   "downloads",
   "clipboardWrite",
 ] as const;
@@ -52,6 +51,12 @@ const WEB_ACCESSIBLE_RESOURCES = [
   "src/shared/design/fonts/*.woff2",
   "src/shared/design/icons.svg",
 ];
+const EXTENSION_ICONS = {
+  "16": "icons/icon-16.png",
+  "32": "icons/icon-32.png",
+  "48": "icons/icon-48.png",
+  "128": "icons/icon-128.png",
+} as const;
 
 /** Fields shared verbatim between the Chrome and Firefox manifests. */
 interface ManifestBase {
@@ -62,6 +67,7 @@ interface ManifestBase {
   readonly icons: Readonly<Record<string, string>>;
   readonly permissions: readonly string[];
   readonly action: {
+    readonly default_icon: Readonly<Record<string, string>>;
     readonly default_title: string;
   };
   readonly options_ui: {
@@ -89,14 +95,10 @@ export const manifestBase: ManifestBase = {
   name: "Point and Shoot",
   version: "0.1.0",
   description: "Point at or drag a box around a broken element, add a note, export a fix prompt.",
-  icons: {
-    "16": "icons/icon-16.png",
-    "32": "icons/icon-32.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png",
-  },
+  icons: EXTENSION_ICONS,
   permissions: PERMISSIONS,
   action: {
+    default_icon: EXTENSION_ICONS,
     default_title: "Point and Shoot — Start session",
   },
   options_ui: {
