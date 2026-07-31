@@ -9,6 +9,14 @@ import {
 } from "../shared/session.ts";
 import { getSession, openStore, putSession } from "../shared/store.ts";
 
+async function nextRevision(storage: BrowserShim["storage"]["local"]): Promise<number> {
+  const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
+  const revision = stored[SESSION_REVISION_STORAGE_KEY];
+  return typeof revision === "number" && Number.isSafeInteger(revision) && revision >= 0
+    ? revision + 1
+    : 1;
+}
+
 /** Persistence boundary consumed by the notes-panel component. */
 export interface NotesRepository {
   load(): Promise<Session | null>;
@@ -55,6 +63,9 @@ export function createNotesRepository(
       } finally {
         database.close();
       }
+      await storage.set({
+        [SESSION_REVISION_STORAGE_KEY]: await nextRevision(storage),
+      });
     },
     watch(onChange) {
       if (onChanged === undefined) return () => undefined;

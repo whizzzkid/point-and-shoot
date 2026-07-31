@@ -6,6 +6,7 @@ export interface IconButtonProps {
   readonly label: string;
   readonly size?: number;
   readonly active?: boolean;
+  readonly disabled?: boolean;
   readonly onClick?: () => void;
 }
 
@@ -16,7 +17,7 @@ export interface IconButtonProps {
  * @returns The icon button.
  */
 export function IconButton(
-  { icon, label, size = 20, active = false, onClick }: IconButtonProps,
+  { icon, label, size = 20, active = false, disabled = false, onClick }: IconButtonProps,
 ): JSX.Element {
   const style = {
     "--ps-icon-button-size": `calc(${size}px + var(--space-4))`,
@@ -26,6 +27,7 @@ export function IconButton(
       aria-label={label}
       aria-pressed={active}
       className="ps-icon-button"
+      disabled={disabled}
       onClick={onClick}
       style={style}
       title={label}

@@ -113,6 +113,29 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     }, SESSION);
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    await page.getByRole("button", { name: "Edit session name" }).click();
+    const sessionName = page.getByRole("textbox", { name: "Session name" });
+    await sessionName.fill("  Checkout polish  ");
+    await page.getByRole("button", { name: "Save session name" }).click();
+    await page.getByRole("heading", { name: "Checkout polish" }).waitFor();
+
+    const firstCardActions = page.locator('[data-note-id="note-1"] .ps-note-card__actions');
+    assertEquals(
+      await firstCardActions.getByRole("button").evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute("aria-label"))
+      ),
+      ["Edit", "Move up", "Move down", "Delete"],
+    );
+    assertEquals(
+      await firstCardActions.getByRole("button", { name: "Move up" }).isDisabled(),
+      true,
+    );
+    assertEquals(
+      await page.locator('[data-note-id="note-3"]')
+        .getByRole("button", { name: "Move down" })
+        .isDisabled(),
+      true,
+    );
     assertEquals(await page.locator("[data-page-key]").count(), 2);
     assertEquals(
       await page.locator("[data-note-id]").evaluateAll((notes) =>
@@ -146,7 +169,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     await page.getByRole("button", { name: "Compile plan" }).click();
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();
     await page.getByRole("button", { name: "Back to notes" }).click();
-    await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    await page.getByRole("heading", { name: "Checkout polish" }).waitFor();
 
     const darkBackground = await page.evaluate(() =>
       getComputedStyle(document.body).backgroundColor
@@ -176,6 +199,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
       harness.mount("light");
     });
     await page.getByText("Button needs eight pixels more inset.").waitFor();
+    await page.getByRole("heading", { name: "Checkout polish" }).waitFor();
 
     await page.locator('[data-note-id="note-3"]').getByRole("button", { name: "Move up" }).click();
     await page.waitForFunction(() =>
@@ -224,6 +248,17 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
       harness.mountWithSaveError("light", "Storage quota is full.");
     }, SESSION);
     await page.getByText("Button is misaligned.").waitFor();
+    await page.getByRole("button", { name: "Edit session name" }).click();
+    const failedSessionName = page.getByRole("textbox", { name: "Session name" });
+    await failedSessionName.fill("   ");
+    assertEquals(await page.getByRole("button", { name: "Save session name" }).isDisabled(), true);
+    await failedSessionName.fill("Name that must not persist");
+    await page.getByRole("button", { name: "Save session name" }).click();
+    await page.getByRole("alert").getByText("Storage quota is full.").waitFor();
+    assertEquals(await failedSessionName.inputValue(), "Name that must not persist");
+    await page.getByRole("button", { name: "Cancel session name editing" }).click();
+    await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+
     await page.locator('[data-note-id="note-1"]').getByRole("button", { name: "Edit" }).click();
     await page.getByRole("textbox", { name: "Note text" }).fill("This change must not persist.");
     await page.getByRole("button", { name: "Save changes" }).click();

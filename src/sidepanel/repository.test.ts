@@ -69,6 +69,40 @@ Deno.test("notes repository persists edits across fresh connections", async () =
   await resetDatabase();
 });
 
+Deno.test("notes repository advances the shared revision after every save", async () => {
+  await resetDatabase();
+  const storage = createStorage("session-1");
+  await storage.set({ [SESSION_REVISION_STORAGE_KEY]: 4 });
+  const repository = createNotesRepository(storage);
+
+  await repository.save(SESSION);
+  assertEquals(
+    (await storage.get(SESSION_REVISION_STORAGE_KEY))[SESSION_REVISION_STORAGE_KEY],
+    5,
+  );
+
+  await repository.save({ ...SESSION, name: "Renamed" });
+  assertEquals(
+    (await storage.get(SESSION_REVISION_STORAGE_KEY))[SESSION_REVISION_STORAGE_KEY],
+    6,
+  );
+  await resetDatabase();
+});
+
+Deno.test("notes repository resets an invalid shared revision when saving", async () => {
+  await resetDatabase();
+  const storage = createStorage("session-1");
+  await storage.set({ [SESSION_REVISION_STORAGE_KEY]: "stale" });
+
+  await createNotesRepository(storage).save(SESSION);
+
+  assertEquals(
+    (await storage.get(SESSION_REVISION_STORAGE_KEY))[SESSION_REVISION_STORAGE_KEY],
+    1,
+  );
+  await resetDatabase();
+});
+
 Deno.test("notes repository returns null without a valid active-session pointer", async () => {
   await resetDatabase();
   assertEquals(await createNotesRepository(createStorage()).load(), null);

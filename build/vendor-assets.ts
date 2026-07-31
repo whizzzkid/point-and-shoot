@@ -90,6 +90,8 @@ async function vendorFonts(): Promise<void> {
  * showcase list, which includes names the shipped UI never uses.
  */
 const ICON_NAMES = [
+  "arrow-down",
+  "arrow-up",
   "camera",
   "crosshair",
   "list-checks",
@@ -101,6 +103,8 @@ const ICON_NAMES = [
 
 /** Inner markup (everything between `<svg ...>` and `</svg>`) for each vendored Lucide icon. */
 const ICON_BODIES: Record<(typeof ICON_NAMES)[number], string> = {
+  "arrow-down": '<path d="M12 5v14" /><path d="m19 12-7 7-7-7" />',
+  "arrow-up": '<path d="m5 12 7-7 7 7" /><path d="M12 19V5" />',
   camera:
     '<path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" />',
   crosshair:

@@ -71,6 +71,18 @@ export function updateNoteText(session: Session, noteId: string, text: string): 
 }
 
 /**
+ * Replaces a session's display name with trimmed, non-blank text.
+ *
+ * @param session Session to rename.
+ * @param name Requested display name.
+ * @returns Updated session, or the original when the requested name is blank.
+ */
+export function updateSessionName(session: Session, name: string): Session {
+  const trimmedName = name.trim();
+  return trimmedName.length === 0 ? session : { ...session, name: trimmedName };
+}
+
+/**
  * Removes one note immutably.
  *
  * @param session Session containing the note.

@@ -19,6 +19,8 @@ const EXPECTED_FONT_FILES = [
 ];
 
 const EXPECTED_ICON_NAMES = [
+  "arrow-down",
+  "arrow-up",
   "camera",
   "crosshair",
   "list-checks",

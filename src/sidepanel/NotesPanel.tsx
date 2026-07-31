@@ -22,6 +22,7 @@ import {
   moveNote,
   setNoteStripQuery,
   updateNoteText,
+  updateSessionName,
 } from "./model.ts";
 import { copySessionPrompt, downloadSessionArchive } from "./plan/delivery.ts";
 import type { ExportDeliveryDependencies } from "./plan/delivery.ts";
@@ -120,28 +121,28 @@ function NoteCard(
           }}
         />
         <IconButton
+          disabled={busy || !canMoveUp}
+          icon={<Icon name="arrow-up" />}
+          label="Move up"
+          onClick={() => {
+            if (!busy && canMoveUp) onMove(note, "up");
+          }}
+        />
+        <IconButton
+          disabled={busy || !canMoveDown}
+          icon={<Icon name="arrow-down" />}
+          label="Move down"
+          onClick={() => {
+            if (!busy && canMoveDown) onMove(note, "down");
+          }}
+        />
+        <IconButton
           icon={<Icon name="trash-2" />}
           label="Delete"
           onClick={() => {
             if (!busy) onDelete(note);
           }}
         />
-        <Button
-          disabled={busy || !canMoveUp}
-          onClick={() => onMove(note, "up")}
-          size="sm"
-          variant="ghost"
-        >
-          Move up
-        </Button>
-        <Button
-          disabled={busy || !canMoveDown}
-          onClick={() => onMove(note, "down")}
-          size="sm"
-          variant="ghost"
-        >
-          Move down
-        </Button>
       </div>
     </article>
   );
@@ -165,6 +166,8 @@ export function NotesPanel(
   const [selectedPageKey, setSelectedPageKey] = useState<string>();
   const [editing, setEditing] = useState<Note>();
   const [editText, setEditText] = useState("");
+  const [editingSessionName, setEditingSessionName] = useState(false);
+  const [sessionName, setSessionName] = useState("");
   const [deleting, setDeleting] = useState<Note>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -232,6 +235,12 @@ export function NotesPanel(
     setEditing(note);
     setEditText(note.text);
   };
+  const beginSessionNameEdit = (): void => {
+    if (session !== null && session !== undefined) {
+      setSessionName(session.name);
+      setEditingSessionName(true);
+    }
+  };
 
   if (session === undefined) {
     return <main className="ps-notes-panel ps-notes-panel--center">Loading notes…</main>;
@@ -273,7 +282,49 @@ export function NotesPanel(
                 ? "Current session"
                 : "Completed session"}
             </p>
-            <h1>{session?.name ?? "Notes"}</h1>
+            {editingSessionName && session !== null
+              ? (
+                <div className="ps-session-name-editor">
+                  <Input
+                    accessibleName="Session name"
+                    onChange={setSessionName}
+                    value={sessionName}
+                  />
+                  <Button
+                    disabled={busy || sessionName.trim().length === 0}
+                    onClick={() => {
+                      const renamed = updateSessionName(session, sessionName);
+                      apply(renamed, () => setEditingSessionName(false));
+                    }}
+                    size="sm"
+                  >
+                    Save
+                    <span className="ps-visually-hidden">session name</span>
+                  </Button>
+                  <Button
+                    disabled={busy}
+                    onClick={() => setEditingSessionName(false)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Cancel
+                    <span className="ps-visually-hidden">session name editing</span>
+                  </Button>
+                </div>
+              )
+              : (
+                <div className="ps-session-name">
+                  <h1>{session?.name ?? "Notes"}</h1>
+                  {session === null ? null : (
+                    <IconButton
+                      icon={<Icon name="pencil" />}
+                      label="Edit session name"
+                      onClick={beginSessionNameEdit}
+                      size={16}
+                    />
+                  )}
+                </div>
+              )}
           </div>
           <nav aria-label="Captured pages" className="ps-page-list">
             <p className="ps-eyebrow">Pages</p>
