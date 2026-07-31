@@ -32,10 +32,14 @@ function attributes(node) {
 }
 
 function cssResourceLinks(css) {
-  return [...css.matchAll(/url\(\s*(['"]?)(https?:\/\/[^'")\s]+)\1\s*\)/giu)].map((match) => ({
-    kind: "asset",
-    url: match[2],
-  }));
+  const matches = [
+    ...css.matchAll(/url\(\s*(?<quote>['"]?)(?<url>https?:\/\/[^'")\s]+)\k<quote>\s*\)/giu),
+    ...css.matchAll(/@import\s+(?<quote>['"])(?<url>https?:\/\/[^'"\s;]+)\k<quote>/giu),
+  ];
+  return matches.flatMap((match) => {
+    const url = match.groups?.url;
+    return url === undefined ? [] : [{ kind: "asset", url }];
+  });
 }
 
 function inspectHtml(html) {

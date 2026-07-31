@@ -68,3 +68,16 @@ test("site integrity rejects a remote resource embedded in CSS", async () => {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
+
+test("site integrity rejects a quoted remote CSS import", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<style>@import "https://fonts.example.test/family.css";</style>',
+    );
+    await assert.rejects(checkSite(paths), /remote resource is not allowed/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
