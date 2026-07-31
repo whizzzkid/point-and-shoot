@@ -10,6 +10,8 @@ import { startFixtureServer } from "../../tests/fixtures/app/server.ts";
 
 const ROOT = new URL("../../", import.meta.url);
 const NOTES_PANEL_HARNESS = new URL("tests/e2e/notes-panel-harness.tsx", ROOT);
+const LONG_PAGE_TITLE =
+  "Gusto/zenpayroll #362755 — Fresh Eyes review with an unusually long page title";
 
 interface NotesPanelHarness {
   mount(theme: "dark" | "light", sizeBudgetBytes?: number): void;
@@ -42,7 +44,7 @@ function makeNote(
       styleDigest: null,
     }],
     id,
-    pageTitle: pageUrl.includes("checkout") ? "Checkout" : "Pricing",
+    pageTitle: pageUrl.includes("checkout") ? LONG_PAGE_TITLE : "Pricing",
     pageUrl,
     region: {
       box: { height: 50, width: 100, x: 10, y: 20 },
@@ -115,6 +117,28 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     }, SESSION);
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    const notesHeader = page.locator(".ps-notes-header");
+    const pageTitle = notesHeader.getByRole("heading", { name: LONG_PAGE_TITLE });
+    const compilePlan = notesHeader.getByRole("button", { name: "Compile plan" });
+    await Promise.all([notesHeader.waitFor(), pageTitle.waitFor(), compilePlan.waitFor()]);
+    assertEquals(
+      await pageTitle.evaluate((heading) => ({
+        ellipsis: getComputedStyle(heading).textOverflow,
+        overflows: heading.scrollWidth > heading.clientWidth,
+      })),
+      { ellipsis: "ellipsis", overflows: true },
+    );
+    const [headerBox, compilePlanBox] = await Promise.all([
+      notesHeader.boundingBox(),
+      compilePlan.boundingBox(),
+    ]);
+    if (headerBox === null) throw new Error("Notes header was not laid out");
+    if (compilePlanBox === null) throw new Error("Compile plan was not laid out");
+    assertEquals(
+      compilePlanBox.x + compilePlanBox.width <= headerBox.x + headerBox.width + 0.5,
+      true,
+      "Compile plan must remain fully inside the header beside an overflowing page title",
+    );
     await page.evaluate(() => {
       const harness = (globalThis as unknown as {
         pointShootNotesPanelTest: NotesPanelHarness;

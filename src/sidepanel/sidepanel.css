@@ -181,8 +181,24 @@ textarea {
   align-items: center;
   border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
   display: flex;
+  gap: var(--space-4);
   justify-content: space-between;
   padding: var(--space-5) var(--space-6);
+}
+
+.ps-notes-header > div {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.ps-notes-header > .ps-button {
+  flex: 0 0 auto;
+}
+
+.ps-notes-header h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ps-notes-header h2,
