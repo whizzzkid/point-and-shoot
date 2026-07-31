@@ -9,7 +9,8 @@
   // copies of real modules. Without this, `deno check` and `deno test` discover it
   // and the authoritative gate fails on files that exist to fail. React and Vue are pinned only
   // for W3.11's real development-build framework fixtures; extension surfaces still use Preact.
-  "exclude": [".claude-design/", ".review-playground/"],
+  // `site/` is the wave-5 Astro carve-out with its own isolated Node checks.
+  "exclude": [".claude-design/", ".review-playground/", "site/"],
   "lint": {
     "include": ["src/", "tests/", "build/", "scripts/"],
     "rules": {

@@ -2,7 +2,7 @@
 
 **Read [`README.md`](README.md) in this folder first.**
 
-- **Status:** deferred, post-v1
+- **Status:** in progress
 - **Goal:** the landing site from `.claude-design/point-and-shoot/ui_kits/marketing/index.html`,
   **and** the published documentation site rendered from the markdown in [`docs/`](../).
 
