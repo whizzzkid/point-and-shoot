@@ -2,6 +2,7 @@ import { assertEquals } from "@std/assert";
 import type { Session } from "./schema.ts";
 import {
   DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
+  nextSessionRevision,
   pageUrlForExport,
   projectedSessionSize,
   shouldStripQueryByDefault,
@@ -15,6 +16,13 @@ const SESSION: Session = {
   notes: [],
   schemaVersion: 1,
 };
+
+Deno.test("nextSessionRevision advances valid revisions and resets invalid values", () => {
+  assertEquals(nextSessionRevision(4), 5);
+  assertEquals(nextSessionRevision("stale"), 1);
+  assertEquals(nextSessionRevision(-1), 1);
+  assertEquals(nextSessionRevision(Number.MAX_SAFE_INTEGER), 1);
+});
 
 Deno.test("shouldStripQueryByDefault detects sensitive parameter names case-insensitively", () => {
   for (

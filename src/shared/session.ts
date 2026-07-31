@@ -12,6 +12,21 @@ export const DISPLAY_SESSION_ID_STORAGE_KEY = "displaySessionId";
 /** Monotonic storage value notifying open extension surfaces that session data changed. */
 export const SESSION_REVISION_STORAGE_KEY = "sessionRevision";
 
+/**
+ * Advances a stored session revision, resetting absent, invalid, or exhausted values.
+ *
+ * @param revision Value read from extension-local storage.
+ * @returns The next safe non-zero revision.
+ */
+export function nextSessionRevision(revision: unknown): number {
+  return typeof revision === "number" &&
+      Number.isSafeInteger(revision) &&
+      revision >= 0 &&
+      revision < Number.MAX_SAFE_INTEGER
+    ? revision + 1
+    : 1;
+}
+
 /** Settled maximum number of serialized elements retained by one note. */
 export const MAXIMUM_NOTE_ELEMENTS = 25;
 

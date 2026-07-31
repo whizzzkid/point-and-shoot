@@ -8,6 +8,7 @@ import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
   DISPLAY_SESSION_ID_STORAGE_KEY,
   MAXIMUM_NOTE_ELEMENTS,
+  nextSessionRevision,
   SESSION_REVISION_STORAGE_KEY,
   shouldStripQueryByDefault,
 } from "../shared/session.ts";
@@ -67,22 +68,17 @@ async function loadActiveFrom(
   return session?.endedAt === null ? session : null;
 }
 
-async function nextRevision(storage: BrowserShim["storage"]["local"]): Promise<number> {
-  const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
-  const revision = stored[SESSION_REVISION_STORAGE_KEY];
-  return typeof revision === "number" && Number.isSafeInteger(revision) && revision >= 0
-    ? revision + 1
-    : 1;
-}
-
 async function pointAtSession(
   storage: BrowserShim["storage"]["local"],
   sessionId: string,
 ): Promise<void> {
+  const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
   await storage.set({
     [ACTIVE_SESSION_ID_STORAGE_KEY]: sessionId,
     [DISPLAY_SESSION_ID_STORAGE_KEY]: sessionId,
-    [SESSION_REVISION_STORAGE_KEY]: await nextRevision(storage),
+    [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+      stored[SESSION_REVISION_STORAGE_KEY],
+    ),
   });
 }
 
@@ -124,9 +120,12 @@ async function endSession(
     };
     await putSession(database, ended);
     await storage.remove(ACTIVE_SESSION_ID_STORAGE_KEY);
+    const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
     await storage.set({
       [DISPLAY_SESSION_ID_STORAGE_KEY]: ended.id,
-      [SESSION_REVISION_STORAGE_KEY]: await nextRevision(storage),
+      [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+        stored[SESSION_REVISION_STORAGE_KEY],
+      ),
     });
     return ended;
   } finally {
