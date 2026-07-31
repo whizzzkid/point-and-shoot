@@ -216,29 +216,32 @@ edge cases (boundaries, empty collections, concurrency).
 **Exact versions everywhere.** No `latest`, no `stable`, no floating tags, no `^`, no `~`. GitHub
 Actions pin to the official action's semver major, which is this project's one deliberate exception.
 
-| Tool               | Version   | Pinned in                                                                                      |
-| ------------------ | --------- | ---------------------------------------------------------------------------------------------- |
-| deno               | `2.9.4`   | `mise.toml`                                                                                    |
-| node               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                                          |
-| lefthook           | `2.1.10`  | `mise.toml`                                                                                    |
-| playwright         | `1.62.0`  | `deno.json` imports                                                                            |
-| axe-core           | `4.12.1`  | `deno.json` imports; automated accessibility scans (W4.4)                                      |
-| `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
-| `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
-| `@types/pngjs`     | `6.0.5`   | `deno.json` imports; visual comparison type declarations (W4.2)                                |
-| pixelmatch         | `7.2.0`   | `deno.json` imports; visual pixel comparison (W4.2)                                            |
-| pngjs              | `7.0.0`   | `deno.json` imports; visual PNG decoding and diff artifacts (W4.2)                             |
-| preact             | `10.29.7` | `deno.json` imports                                                                            |
-| react              | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
-| react-dom          | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
-| scheduler          | `0.23.2`  | `deno.json` imports; React fixture dependency resolver                                         |
-| loose-envify       | `1.4.0`   | `deno.json` imports; React fixture dependency resolver                                         |
-| vue                | `3.5.40`  | `deno.json` imports; W3.11 development probe fixture only                                      |
-| esbuild            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
-| web-ext            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
-| `actions/checkout` | `v7`      | CI workflows                                                                                   |
-| `jdx/mise-action`  | `v4`      | CI workflows                                                                                   |
-| runner image       | `24.04`   | CI workflows (`runs-on: ubuntu-24.04`)                                                         |
+| Tool                               | Version   | Pinned in                                                                                      |
+| ---------------------------------- | --------- | ---------------------------------------------------------------------------------------------- |
+| deno                               | `2.9.4`   | `mise.toml`                                                                                    |
+| node                               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                                          |
+| lefthook                           | `2.1.10`  | `mise.toml`                                                                                    |
+| playwright                         | `1.62.0`  | `deno.json` imports                                                                            |
+| axe-core                           | `4.12.1`  | `deno.json` imports; automated accessibility scans (W4.4)                                      |
+| `@std/assert`                      | `1.0.14`  | `deno.json` imports                                                                            |
+| `@std/path`                        | `1.1.6`   | `deno.json` imports                                                                            |
+| `@types/pngjs`                     | `6.0.5`   | `deno.json` imports; visual comparison type declarations (W4.2)                                |
+| pixelmatch                         | `7.2.0`   | `deno.json` imports; visual pixel comparison (W4.2)                                            |
+| pngjs                              | `7.0.0`   | `deno.json` imports; visual PNG decoding and diff artifacts (W4.2)                             |
+| preact                             | `10.29.7` | `deno.json` imports                                                                            |
+| react                              | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| react-dom                          | `18.3.1`  | `deno.json` imports; W3.11 development/production probe fixture only                           |
+| scheduler                          | `0.23.2`  | `deno.json` imports; React fixture dependency resolver                                         |
+| loose-envify                       | `1.4.0`   | `deno.json` imports; React fixture dependency resolver                                         |
+| vue                                | `3.5.40`  | `deno.json` imports; W3.11 development probe fixture only                                      |
+| esbuild                            | `0.28.1`  | inline `npm:` specifier, `build/build.ts` (W2.3)                                               |
+| web-ext                            | `10.5.0`  | inline `npm:` specifier, `deno.json`'s `lint:firefox` task (W2.3); W2.12/W4.3 add further uses |
+| `actions/checkout`                 | `v7`      | CI workflows                                                                                   |
+| `actions/upload-artifact`          | `v7`      | CI and release workflows                                                                       |
+| `actions/github-script`            | `v9`      | release pull request artifact comment, `.github/workflows/release.yml`                         |
+| `googleapis/release-please-action` | `v5`      | release automation, `.github/workflows/release.yml`                                            |
+| `jdx/mise-action`                  | `v4`      | CI workflows                                                                                   |
+| runner image                       | `24.04`   | CI workflows (`runs-on: ubuntu-24.04`)                                                         |
 
 A resolved-but-unimported version is recorded here so the number is decided once, and is written
 into `deno.json` by the item that first needs it. Claiming a pin already lives somewhere it does not

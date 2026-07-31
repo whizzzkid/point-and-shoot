@@ -102,4 +102,5 @@ mise exec -- deno task ci
 
 The [Playwright companion guide](docs/tutorials/playwright-companion.md) shows how to load the
 unpacked extension beside a local app. Architecture, behavior specs, and the delivery plan live in
-the [documentation index](docs/README.md).
+the [documentation index](docs/README.md). Maintainers can follow the
+[release guide](docs/tutorials/releasing.md) to test and publish the browser packages.

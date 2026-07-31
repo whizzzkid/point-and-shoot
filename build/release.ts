@@ -117,6 +117,32 @@ export function assertTagMatchesVersion(tag: string, version: string): void {
 }
 
 /**
+ * Asserts that Release Please's tracked version sources match the packaged manifest version.
+ *
+ * @param version The version exported by the browser-manifest source.
+ * @param versionFile The trimmed contents of `version.txt`.
+ * @param releaseManifest The parsed Release Please manifest.
+ */
+export function assertVersionSources(
+  version: string,
+  versionFile: string,
+  releaseManifest: Readonly<Record<string, unknown>>,
+): void {
+  if (versionFile !== version) {
+    throw new Error(
+      `release: version.txt ${versionFile} does not match manifest version ${version}`,
+    );
+  }
+  if (releaseManifest["."] !== version) {
+    throw new Error(
+      `release: Release Please manifest version ${
+        String(releaseManifest["."])
+      } does not match ${version}`,
+    );
+  }
+}
+
+/**
  * Rejects paths that cannot appear in a release archive.
  *
  * @param paths Archive entry paths reported by `unzip`.
@@ -146,6 +172,23 @@ async function validateReleaseSet(
   version: string,
   tag: string | undefined,
 ): Promise<string> {
+  const sourceRoot = new URL("../", import.meta.url);
+  const versionFile = (await Deno.readTextFile(new URL("version.txt", sourceRoot))).trim();
+  const releaseManifestValue: unknown = JSON.parse(
+    await Deno.readTextFile(new URL(".release-please-manifest.json", sourceRoot)),
+  );
+  if (
+    typeof releaseManifestValue !== "object" ||
+    releaseManifestValue === null ||
+    Array.isArray(releaseManifestValue)
+  ) {
+    throw new Error("release: .release-please-manifest.json must contain an object");
+  }
+  assertVersionSources(
+    version,
+    versionFile,
+    releaseManifestValue as Record<string, unknown>,
+  );
   if (tag !== undefined) assertTagMatchesVersion(tag, version);
   const reports = await Promise.all(
     (["chrome", "firefox"] as const).map((target) =>
