@@ -13,6 +13,7 @@ import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@st
 import type { BrowserContext, Locator, Page, Worker } from "playwright";
 import { CAPTURE_REGION_MESSAGE, isCaptureRegionResponse } from "../../src/shared/messages.ts";
 import { type Session, validateSession } from "../../src/shared/schema.ts";
+import { createExportArchive } from "../../src/shared/serialize/zip.ts";
 import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY } from "../../src/shared/settings.ts";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
@@ -145,15 +146,19 @@ function assertMarkdownImagesResolve(
   const references = [...markdown.matchAll(/\[[^\]]*\]\((?<target>[^)]+)\)/g)]
     .map((match) => match.groups?.target)
     .filter((target): target is string => target?.startsWith("./") === true);
+  const expectedReferences = [...entries.keys()]
+    .filter((path) => path.startsWith("shots/") && path.endsWith(".webp"))
+    .map((path) => `./${path}`);
   assertEquals(
-    references.length,
+    expectedReferences.length,
     expectedReferenceCount,
-    "Markdown screenshot reference count did not match exported notes",
+    "ZIP screenshot count did not match exported notes",
   );
-  for (const reference of references) {
-    const archivePath = reference.replace(/^\.\//, "");
-    assert(entries.has(archivePath), `Markdown references missing ZIP entry: ${archivePath}`);
-  }
+  assertEquals(
+    references,
+    expectedReferences,
+    "Markdown screenshot references did not match the ZIP entries",
+  );
 }
 
 interface FixtureCaptureCase {
@@ -531,6 +536,18 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       assertEquals(
         await panel.getByRole("button", { name: "Download for agent" }).isDisabled(),
         true,
+      );
+      const zeroNoteEntries = readStoredZipEntries(
+        createExportArchive(emptyNoteSession, { includedNoteIds: new Set() }),
+      );
+      assertEquals([...zeroNoteEntries.keys()], ["session.json", "plan.md"]);
+      const zeroNoteExport = validatedSession(
+        JSON.parse(new TextDecoder().decode(zeroNoteEntries.get("session.json"))),
+      );
+      assertEquals(zeroNoteExport.notes, []);
+      assertStringIncludes(
+        new TextDecoder().decode(zeroNoteEntries.get("plan.md")),
+        "0 notes captured.",
       );
       await panel.getByRole("button", { name: "Include all" }).click();
       const entries = await downloadEntries(panel);
