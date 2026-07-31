@@ -28,11 +28,13 @@ import {
   FIREFOX_OFFLINE_PREFERENCES,
   firefoxBootFixtureUrl,
 } from "./profile.ts";
+import { MarionettePortHandoffError, retryMarionettePortHandoff } from "./startup-retry.ts";
 
 const SOURCE_DIRECTORY = fromFileUrl(new URL("../../dist/firefox/", import.meta.url));
 const STARTUP_TIMEOUT_MILLISECONDS = 45_000;
 const STATE_TIMEOUT_MILLISECONDS = 10_000;
 const POLL_INTERVAL_MILLISECONDS = 50;
+const MAXIMUM_START_ATTEMPTS = 3;
 const WEB_ELEMENT_IDENTIFIER = "element-6066-11e4-a52e-4f735466cecf";
 const ACTION_BUTTON_SELECTOR =
   `.unified-extensions-item-action-button[data-extensionid="${FIREFOX_EXTENSION_ID}"]`;
@@ -48,6 +50,17 @@ interface AssetResult {
   readonly path: string;
   readonly status: number;
   readonly url: string;
+}
+
+interface FirefoxProcess {
+  readonly child: Deno.ChildProcess;
+  readonly output: OutputState;
+  readonly outputTasks: readonly Promise<void>[];
+  readonly status: Promise<Deno.CommandStatus>;
+}
+
+interface FirefoxRuntime extends FirefoxProcess {
+  readonly client: MarionetteClient;
 }
 
 function asRecord(value: unknown, label: string): Record<string, unknown> {
@@ -259,32 +272,92 @@ function firefoxCommand(
   });
 }
 
+async function stopFirefoxProcess(
+  process: FirefoxProcess,
+  client?: MarionetteClient,
+): Promise<void> {
+  if (client !== undefined) {
+    try {
+      await client.close();
+    } catch {
+      // Firefox may have already exited after a failed command.
+    }
+  }
+  try {
+    process.child.kill();
+  } catch {
+    // web-ext may already have exited.
+  }
+  await process.status;
+  await Promise.allSettled(process.outputTasks);
+}
+
+async function startFirefoxAttempt(
+  artifactsDirectory: string,
+  fixtureUrl: string,
+): Promise<FirefoxRuntime> {
+  const marionettePort = reserveTcpPort();
+  const output: OutputState = { backgroundReady: false, lines: [] };
+  const child = firefoxCommand(artifactsDirectory, fixtureUrl, marionettePort).spawn();
+  const process: FirefoxProcess = {
+    child,
+    output,
+    outputTasks: [
+      consumeOutput(child.stdout, "stdout", output),
+      consumeOutput(child.stderr, "stderr", output),
+    ],
+    status: child.status,
+  };
+
+  try {
+    await waitForBackground(process.output, process.status);
+  } catch (error) {
+    await stopFirefoxProcess(process);
+    throw error;
+  }
+
+  let client: MarionetteClient | undefined;
+  try {
+    client = await MarionetteClient.connect(
+      marionettePort,
+      STATE_TIMEOUT_MILLISECONDS,
+    );
+    asRecord(await client.startSession(), "new session");
+    return { ...process, client };
+  } catch (error) {
+    await stopFirefoxProcess(process, client);
+    throw new MarionettePortHandoffError(
+      `Firefox did not accept a Marionette session on reserved port ${marionettePort}`,
+      { cause: error },
+    );
+  }
+}
+
+async function startFirefox(
+  artifactsDirectory: string,
+  fixtureUrl: string,
+): Promise<FirefoxRuntime> {
+  return await retryMarionettePortHandoff(
+    () => startFirefoxAttempt(artifactsDirectory, fixtureUrl),
+    MAXIMUM_START_ATTEMPTS,
+    (error, nextAttempt) => {
+      console.warn(
+        `${error.message}; relaunching Firefox (${nextAttempt}/${MAXIMUM_START_ATTEMPTS})`,
+      );
+    },
+  );
+}
+
 async function runSmoke(): Promise<void> {
   await Deno.stat(join(SOURCE_DIRECTORY, "manifest.json"));
   const fixture = startFixtureServer();
   const fixtureUrl = firefoxBootFixtureUrl(fixture.base);
   const artifactsDirectory = await Deno.makeTempDir({ prefix: "pns-smoke-firefox-" });
-  const marionettePort = reserveTcpPort();
-  const output: OutputState = { backgroundReady: false, lines: [] };
-  const child = firefoxCommand(
-    artifactsDirectory,
-    fixtureUrl,
-    marionettePort,
-  ).spawn();
-  const status = child.status;
-  const outputTasks = [
-    consumeOutput(child.stdout, "stdout", output),
-    consumeOutput(child.stderr, "stderr", output),
-  ];
-  let client: MarionetteClient | undefined;
+  let runtime: FirefoxRuntime | undefined;
 
   try {
-    await waitForBackground(output, status);
-    client = await MarionetteClient.connect(
-      marionettePort,
-      STARTUP_TIMEOUT_MILLISECONDS,
-    );
-    asRecord(await client.startSession(), "new session");
+    runtime = await startFirefox(artifactsDirectory, fixtureUrl);
+    const { client } = runtime;
 
     await navigate(client, fixtureUrl);
     await activateWithBrowserAction(client);
@@ -399,24 +472,13 @@ async function runSmoke(): Promise<void> {
       "Firefox smoke passed: event page, activation, sidebar, capture, font, and icon sprite.",
     );
   } catch (error) {
-    console.error("Firefox smoke output:");
-    console.error(output.lines.slice(-80).join("\n"));
+    if (runtime !== undefined) {
+      console.error("Firefox smoke output:");
+      console.error(runtime.output.lines.slice(-80).join("\n"));
+    }
     throw error;
   } finally {
-    if (client !== undefined) {
-      try {
-        await client.close();
-      } catch {
-        // Firefox may have already exited after a failed command.
-      }
-    }
-    try {
-      child.kill();
-    } catch {
-      // web-ext may already have exited.
-    }
-    await status;
-    await Promise.allSettled(outputTasks);
+    if (runtime !== undefined) await stopFirefoxProcess(runtime, runtime.client);
     await fixture.close();
     await Deno.remove(artifactsDirectory, { recursive: true });
   }
