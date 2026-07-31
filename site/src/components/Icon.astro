@@ -1,0 +1,19 @@
+---
+interface Props {
+  base: string;
+  name: "arrow-up" | "camera" | "crosshair" | "list-checks";
+}
+
+const { base, name } = Astro.props;
+---
+
+<svg class="icon" aria-hidden="true">
+  <use href={`${base}brand/icons.svg#icon-${name}`}></use>
+</svg>
+
+<style>
+  .icon {
+    width: var(--space-5);
+    height: var(--space-5);
+  }
+</style>

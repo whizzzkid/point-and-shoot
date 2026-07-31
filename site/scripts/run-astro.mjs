@@ -8,6 +8,8 @@ const repositoryRoot = resolve(siteRoot, "..");
 const generatedRoot = resolve(siteRoot, ".generated");
 const generatedDesignRoot = resolve(generatedRoot, "design");
 const sourceDesignRoot = resolve(repositoryRoot, "src/shared/design");
+const sourceIcon = resolve(repositoryRoot, ".claude-design/point-and-shoot/assets/icon.svg");
+const sourceProductPreview = resolve(repositoryRoot, "tests/visual/baselines/notes-dark.png");
 const command = process.argv[2];
 const supportedCommands = new Set(["build", "check", "dev"]);
 
@@ -17,11 +19,16 @@ if (!supportedCommands.has(command)) {
 
 await rm(generatedRoot, { force: true, recursive: true });
 await mkdir(resolve(generatedDesignRoot, "fonts"), { recursive: true });
+await mkdir(resolve(generatedRoot, "public/brand"), { recursive: true });
+await mkdir(resolve(generatedRoot, "public/product"), { recursive: true });
 await Promise.all([
   cp(resolve(sourceDesignRoot, "fonts"), resolve(generatedDesignRoot, "fonts"), {
     recursive: true,
   }),
   cp(resolve(sourceDesignRoot, "tokens.css"), resolve(generatedDesignRoot, "tokens.css")),
+  cp(resolve(sourceDesignRoot, "icons.svg"), resolve(generatedRoot, "public/brand/icons.svg")),
+  cp(sourceIcon, resolve(generatedRoot, "public/brand/icon.svg")),
+  cp(sourceProductPreview, resolve(generatedRoot, "public/product/notes-panel.png")),
 ]);
 
 const astro = resolve(siteRoot, "node_modules/astro/bin/astro.mjs");

@@ -4,4 +4,5 @@ export default defineConfig({
   site: "https://whizzzkid.github.io",
   base: "/point-and-shoot",
   output: "static",
+  publicDir: ".generated/public",
 });
