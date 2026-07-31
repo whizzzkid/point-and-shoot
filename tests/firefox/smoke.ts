@@ -22,11 +22,14 @@ import { FIREFOX_EXTENSION_ID } from "../../build/manifest.ts";
 import { validateSession } from "../../src/shared/schema.ts";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import { MarionetteClient } from "./marionette.ts";
-import { FIREFOX_OFFLINE_PREFERENCES } from "./profile.ts";
+import {
+  FIREFOX_EXTENSION_ORIGIN,
+  FIREFOX_EXTENSION_UUID,
+  FIREFOX_OFFLINE_PREFERENCES,
+  firefoxBootFixtureUrl,
+} from "./profile.ts";
 
 const SOURCE_DIRECTORY = fromFileUrl(new URL("../../dist/firefox/", import.meta.url));
-const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
-const EXTENSION_ORIGIN = `moz-extension://${EXTENSION_UUID}`;
 const STARTUP_TIMEOUT_MILLISECONDS = 45_000;
 const STATE_TIMEOUT_MILLISECONDS = 10_000;
 const POLL_INTERVAL_MILLISECONDS = 50;
@@ -220,7 +223,7 @@ function firefoxCommand(
 ): Deno.Command {
   const firefoxBinary = Deno.env.get("PNS_FIREFOX_BINARY");
   const uuidPreference = JSON.stringify({
-    [FIREFOX_EXTENSION_ID]: EXTENSION_UUID,
+    [FIREFOX_EXTENSION_ID]: FIREFOX_EXTENSION_UUID,
   }).replaceAll('"', '\\"');
   return new Deno.Command(Deno.execPath(), {
     args: [
@@ -259,12 +262,13 @@ function firefoxCommand(
 async function runSmoke(): Promise<void> {
   await Deno.stat(join(SOURCE_DIRECTORY, "manifest.json"));
   const fixture = startFixtureServer();
+  const fixtureUrl = firefoxBootFixtureUrl(fixture.base);
   const artifactsDirectory = await Deno.makeTempDir({ prefix: "pns-smoke-firefox-" });
   const marionettePort = reserveTcpPort();
   const output: OutputState = { backgroundReady: false, lines: [] };
   const child = firefoxCommand(
     artifactsDirectory,
-    `${fixture.base}/firefox-boot.html`,
+    fixtureUrl,
     marionettePort,
   ).spawn();
   const status = child.status;
@@ -282,7 +286,7 @@ async function runSmoke(): Promise<void> {
     );
     asRecord(await client.startSession(), "new session");
 
-    await navigate(client, `${fixture.base}/firefox-boot.html`);
+    await navigate(client, fixtureUrl);
     await activateWithBrowserAction(client);
     assertEquals(
       await waitForScript(
@@ -317,13 +321,16 @@ async function runSmoke(): Promise<void> {
       "Firefox sidebar",
     );
     assertEquals(sidebar.isOpen, true);
-    assertStringIncludes(String(sidebar.url), `${EXTENSION_ORIGIN}/sidepanel/sidepanel.html`);
+    assertStringIncludes(
+      String(sidebar.url),
+      `${FIREFOX_EXTENSION_ORIGIN}/sidepanel/sidepanel.html`,
+    );
     assert(typeof sidebar.currentID === "string" && sidebar.currentID.length > 0);
 
     await client.command("Marionette:SetContext", { value: "content" });
     await clickElement(client, "h1");
     await waitForNoteBadge(client);
-    await navigate(client, `${EXTENSION_ORIGIN}/sidepanel/sidepanel.html`);
+    await navigate(client, `${FIREFOX_EXTENSION_ORIGIN}/sidepanel/sidepanel.html`);
 
     const storedSessions = await executeAsyncScript(
       client,
@@ -385,7 +392,7 @@ async function runSmoke(): Promise<void> {
       assertEquals(asset.ok, true, `${asset.path} did not resolve`);
       assertEquals(asset.status, 200, `${asset.path} returned ${asset.status}`);
       assert(asset.byteLength > 0, `${asset.path} was empty`);
-      assertStringIncludes(asset.url, `${EXTENSION_ORIGIN}/`);
+      assertStringIncludes(asset.url, `${FIREFOX_EXTENSION_ORIGIN}/`);
     }
 
     console.log(

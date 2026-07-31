@@ -7,14 +7,16 @@
   <body>
     <h1>Fixture: Firefox boot check</h1>
     <p>
-      Loaded only by <code>scripts/boot-firefox.ts</code> (W2.12). Logs plain-text markers that the
-      boot check greps out of Firefox's own stdout (via <code>devtools.console.stdout.content</code>),
-      since Playwright cannot drive an extension-loaded Firefox instance directly.
+      Loaded by the Firefox boot and smoke harnesses. Logs plain-text markers that the boot check
+      greps out of Firefox's own stdout (via
+      <code>devtools.console.stdout.content</code>), since Playwright cannot drive an
+      extension-loaded Firefox instance directly.
     </p>
     <script>
-    // Must match the UUID pinned via `extensions.webextensions.uuids` in scripts/boot-firefox.ts —
-    // that pref is what makes this extension's moz-extension:// origin predictable across runs.
-    const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
+    // The runners pass the UUID they pin through `extensions.webextensions.uuids`, keeping the
+    // predictable moz-extension:// origin in one typed source instead of duplicating it here.
+    const EXTENSION_UUID = new URL(location.href).searchParams.get("extensionUuid");
+    if (EXTENSION_UUID === null) throw new Error("Firefox fixture requires extensionUuid");
     const FONT_RESOURCE = "src/shared/design/fonts/inter-400.woff2";
 
     // web-ext's --start-url opens this page before the temporary add-on finishes installing over
