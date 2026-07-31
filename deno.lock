@@ -6,6 +6,7 @@
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1.1.6": "1.1.6",
     "npm:@types/pngjs@6.0.5": "6.0.5",
+    "npm:axe-core@4.12.1": "4.12.1",
     "npm:esbuild@0.28.1": "0.28.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
     "npm:loose-envify@1.4.0": "1.4.0",
@@ -639,6 +640,9 @@
         "stubborn-fs",
         "when-exit"
       ]
+    },
+    "axe-core@4.12.1": {
+      "integrity": "sha512-s7iGf5GaVMxEG0ENN9x+xTr7GFZCb1ZP/1uATUpCEK2X78nDB3RwbtFCo9pGAf9ru+VwoQ464DkaLEeRM08wJA=="
     },
     "balanced-match@1.0.2": {
       "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="
@@ -2197,6 +2201,7 @@
       "jsr:@std/assert@1.0.14",
       "jsr:@std/path@1.1.6",
       "npm:@types/pngjs@6.0.5",
+      "npm:axe-core@4.12.1",
       "npm:fake-indexeddb@6.2.5",
       "npm:loose-envify@1.4.0",
       "npm:pixelmatch@7.2.0",

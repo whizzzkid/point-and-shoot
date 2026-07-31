@@ -39,6 +39,7 @@
     "@std/assert": "jsr:@std/assert@1.0.14",
     "@std/path": "jsr:@std/path@1.1.6",
     "@types/pngjs": "npm:@types/pngjs@6.0.5",
+    "axe-core": "npm:axe-core@4.12.1",
     "pixelmatch": "npm:pixelmatch@7.2.0",
     "playwright": "npm:playwright@1.62.0",
     "pngjs": "npm:pngjs@7.0.0",
@@ -76,6 +77,7 @@
     "visual:update": "deno task build && deno run -A tests/visual/run.ts --update",
     "boot:firefox": "deno run -A scripts/boot-firefox.ts",
     "smoke:firefox": "deno task build && deno run -A tests/firefox/smoke.ts",
+    "a11y": "deno task build && deno test -A tests/a11y/*.test.ts tests/a11y/*.spec.ts",
     "gallery": "deno run -A src/ui/gallery/server.ts",
     "ci": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }

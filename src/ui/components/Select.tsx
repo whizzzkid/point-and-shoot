@@ -10,6 +10,8 @@ export interface SelectOption {
 
 /** Props accepted by {@link Select}. */
 export interface SelectProps {
+  /** Accessible name for standalone use outside a wrapping label. */
+  readonly accessibleName?: string;
   readonly options: readonly (SelectOption | string)[];
   readonly value?: string;
   readonly onChange?: (value: string) => void;
@@ -18,13 +20,16 @@ export interface SelectProps {
 /**
  * Renders a native select so platform keyboard and assistive-technology behavior stays intact.
  *
- * @param props Available options, controlled value, and change callback.
+ * @param props Accessible name, available options, controlled value, and change callback.
  * @returns The select control.
  */
-export function Select({ options, value, onChange }: SelectProps): JSX.Element {
+export function Select(
+  { accessibleName, options, value, onChange }: SelectProps,
+): JSX.Element {
   return (
     <span className="ps-select">
       <select
+        aria-label={accessibleName}
         className="ps-select__control"
         onChange={(event) => onChange?.(event.currentTarget.value)}
         value={value}

@@ -60,6 +60,7 @@ missing one, because it turns an unimplemented gate into a green check.
 | `deno task lint:firefox`  | Runs `web-ext lint` against `dist/firefox/`                            | W2.3      |
 | `deno task boot:firefox`  | Loads `dist/firefox/` into Firefox via `web-ext run`; asserts it boots | W2.12     |
 | `deno task smoke:firefox` | Drives one Firefox capture through Marionette and validates its note   | W4.3      |
+| `deno task a11y`          | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks | W4.4      |
 | `deno task visual`        | Compares every surface and forced theme with its Linux baseline        | W4.2      |
 | `deno task visual:update` | Replaces visual baselines intentionally on the CI platform             | W4.2      |
 
@@ -218,6 +219,7 @@ Actions pin to the official action's semver major, which is this project's one d
 | node               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                                          |
 | lefthook           | `2.1.10`  | `mise.toml`                                                                                    |
 | playwright         | `1.62.0`  | `deno.json` imports                                                                            |
+| axe-core           | `4.12.1`  | `deno.json` imports; automated accessibility scans (W4.4)                                      |
 | `@std/assert`      | `1.0.14`  | `deno.json` imports                                                                            |
 | `@std/path`        | `1.1.6`   | `deno.json` imports                                                                            |
 | `@types/pngjs`     | `6.0.5`   | `deno.json` imports; visual comparison type declarations (W4.2)                                |

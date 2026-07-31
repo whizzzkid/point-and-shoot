@@ -125,7 +125,7 @@ export function PlanView(
             {session.notes.length === 1 ? "note" : "notes"}
           </p>
         </div>
-        <Button onClick={onBack} variant="ghost">Back to notes</Button>
+        <Button autoFocus onClick={onBack} variant="ghost">Back to notes</Button>
       </header>
 
       <div className="ps-plan-layout">
@@ -186,7 +186,9 @@ export function PlanView(
             </div>
             <span className="ps-technical-value">plan.md</span>
           </div>
-          <pre data-markdown-preview>{markdown}</pre>
+          <pre aria-label="Generated Markdown preview" data-markdown-preview tabIndex={0}>
+            {markdown}
+          </pre>
         </section>
       </div>
 
