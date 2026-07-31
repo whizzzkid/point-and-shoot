@@ -3,7 +3,6 @@
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Note, Session } from "../shared/schema.ts";
-import { DEFAULT_EXPORT_SIZE_BUDGET_BYTES, projectedSessionSize } from "../shared/session.ts";
 import {
   Badge,
   Button,
@@ -41,14 +40,7 @@ export interface NotesPanelProps {
   readonly iconSpriteUrl: string;
   readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
-  readonly sizeBudgetBytes?: number;
   readonly version: string;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1_000) return `${bytes} bytes`;
-  if (bytes < 1_000_000) return `${Math.ceil(bytes / 1_000)} kB`;
-  return `${(bytes / 1_000_000).toFixed(2)} MB`;
 }
 
 function targetLabel(note: Note): string {
@@ -184,7 +176,7 @@ function NoteCard(
 /**
  * Renders the current session review workspace backed by extension-owned persistence.
  *
- * @param props Repository, icon sprite, and export-budget threshold.
+ * @param props Repository, icon sprite, export delivery, and note-preview controller.
  * @returns Notes panel loading, empty, error, or review state.
  */
 export function NotesPanel(
@@ -193,7 +185,6 @@ export function NotesPanel(
     iconSpriteUrl,
     notePreview,
     repository,
-    sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
     version,
   }: NotesPanelProps,
 ): JSX.Element {
@@ -288,8 +279,6 @@ export function NotesPanel(
   }
 
   const noteCount = session?.notes.length ?? 0;
-  const projectedBytes = session === null ? 0 : projectedSessionSize(session);
-  const isOverBudget = projectedBytes > sizeBudgetBytes;
 
   if (session !== null && view === "plan") {
     return (
@@ -309,7 +298,6 @@ export function NotesPanel(
           }}
           onBack={() => setView("notes")}
           session={session}
-          sizeBudgetBytes={sizeBudgetBytes}
         />
         <VersionLabel version={version} />
       </IconSpriteProvider>
@@ -390,25 +378,6 @@ export function NotesPanel(
               </button>
             ))}
           </nav>
-          <div
-            className="ps-export-budget"
-            data-export-budget
-            data-over-budget={isOverBudget}
-          >
-            <div>
-              <span>{formatBytes(projectedBytes)} of {formatBytes(sizeBudgetBytes)}</span>
-              <span>{noteCount} {noteCount === 1 ? "note" : "notes"}</span>
-            </div>
-            <progress max={sizeBudgetBytes} value={Math.min(projectedBytes, sizeBudgetBytes)} />
-            {isOverBudget
-              ? (
-                <p role="alert">
-                  This session is above the configured warning threshold. Copy and download remain
-                  available.
-                </p>
-              )
-              : null}
-          </div>
         </aside>
 
         <section className="ps-notes-workspace">

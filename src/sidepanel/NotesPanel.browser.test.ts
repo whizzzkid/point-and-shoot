@@ -14,7 +14,7 @@ const LONG_PAGE_TITLE =
   "Gusto/zenpayroll #362755 — Fresh Eyes review with an unusually long page title";
 
 interface NotesPanelHarness {
-  mount(theme: "dark" | "light", sizeBudgetBytes?: number): void;
+  mount(theme: "dark" | "light"): void;
   mountWithLoadError(theme: "dark" | "light", message: string): void;
   mountWithSaveError(theme: "dark" | "light", message: string): void;
   previewEvents(): string[];
@@ -113,7 +113,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         pointShootNotesPanelTest: NotesPanelHarness;
       }).pointShootNotesPanelTest;
       await harness.seed(session);
-      harness.mount("dark", 100);
+      harness.mount("dark");
     }, SESSION);
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
@@ -210,10 +210,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         .getAttribute("aria-checked"),
       "true",
     );
-    assertEquals(
-      await page.locator("[data-export-budget]").getAttribute("data-over-budget"),
-      "true",
-    );
+    assertEquals(await page.locator("[data-export-budget]").count(), 0);
     await page.getByRole("button", { name: "Compile plan" }).focus();
     await page.keyboard.press("Enter");
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();

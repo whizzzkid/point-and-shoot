@@ -137,34 +137,6 @@ textarea {
   white-space: nowrap;
 }
 
-.ps-export-budget {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  margin-block-start: auto;
-}
-
-.ps-export-budget > div {
-  display: flex;
-  justify-content: space-between;
-}
-
-.ps-export-budget progress {
-  accent-color: var(--accent);
-  inline-size: 100%;
-}
-
-.ps-export-budget[data-over-budget="true"] {
-  color: var(--warning);
-}
-
-.ps-export-budget[data-over-budget="true"] progress {
-  accent-color: var(--warning);
-}
-
-.ps-export-budget p {
-  margin-block-end: var(--space-0);
-}
-
 .ps-notes-workspace {
   display: flex;
   flex: 3 1 calc(var(--space-24) * 4);
@@ -443,7 +415,7 @@ textarea {
   border-block-start: calc(var(--space-1) / 4) solid var(--border-subtle);
   display: grid;
   gap: var(--space-6);
-  grid-template-columns: minmax(0, 1fr) minmax(calc(var(--space-24) * 3), auto);
+  grid-template-columns: minmax(0, 1fr);
   padding: var(--space-4) var(--space-6);
 }
 
@@ -466,20 +438,11 @@ textarea {
   max-inline-size: calc(var(--space-24) * 7);
 }
 
-.ps-plan-actions {
-  min-inline-size: calc(var(--space-24) * 3);
-}
-
 .ps-plan-status {
   color: var(--success);
   font-size: var(--text-xs);
   margin: var(--space-2) var(--space-0) var(--space-0);
   text-align: end;
-}
-
-.ps-plan-actions > .ps-panel-error {
-  font-size: var(--text-xs);
-  margin: var(--space-2) var(--space-0) var(--space-0);
 }
 
 @media (max-width: 760px) {
@@ -491,10 +454,6 @@ textarea {
   .ps-plan-selection {
     border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
     border-inline-end: none;
-  }
-
-  .ps-plan-actions {
-    min-inline-size: 0;
   }
 
   .ps-plan-preview__actions > .ps-button {

@@ -19,7 +19,6 @@ interface PlanViewHarness {
   };
   mount(
     theme: "dark" | "light",
-    sizeBudgetBytes?: number,
     fail?: boolean,
     pending?: boolean,
     archiveFails?: boolean,
@@ -75,10 +74,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
     await page.getByText("Sensitive query parameters are stripped by default.").waitFor();
     await page.getByText("screenshots, page URLs, DOM text, selectors, and computed styles")
       .waitFor();
-    assertEquals(
-      await page.locator("[data-export-budget]").getAttribute("data-over-budget"),
-      "false",
-    );
+    assertEquals(await page.locator("[data-export-budget]").count(), 0);
 
     const darkBackground = await page.evaluate(() =>
       getComputedStyle(document.body).backgroundColor
@@ -137,22 +133,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
         pointShootPlanViewTest: PlanViewHarness;
       }).pointShootPlanViewTest;
       harness.unmount();
-      harness.mount("dark", 1);
-    });
-    await page.getByRole("alert").getByText(
-      "The selected bundle is above the 1 byte warning threshold.",
-    )
-      .waitFor();
-    assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isEnabled(), true);
-    assertEquals(await page.getByRole("button", { name: "Download prompt" }).isEnabled(), true);
-    assertEquals(await page.getByRole("button", { name: "Download bundle" }).isEnabled(), true);
-
-    await page.evaluate(() => {
-      const harness = (globalThis as unknown as {
-        pointShootPlanViewTest: PlanViewHarness;
-      }).pointShootPlanViewTest;
-      harness.unmount();
-      harness.mount("dark", 2_000_000, false, false, true);
+      harness.mount("dark", false, false, true);
     });
     await page.getByRole("alert").getByText("Screenshot must be a base64 WebP data URL").waitFor();
     assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isEnabled(), true);
@@ -164,7 +145,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
         pointShootPlanViewTest: PlanViewHarness;
       }).pointShootPlanViewTest;
       harness.unmount();
-      harness.mount("light", 2_000_000, true);
+      harness.mount("light", true);
     });
     await page.getByRole("button", { name: "Copy prompt" }).click();
     await page.getByRole("alert").getByText("Clipboard access was denied.").waitFor();
@@ -174,7 +155,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
         pointShootPlanViewTest: PlanViewHarness;
       }).pointShootPlanViewTest;
       harness.unmount();
-      harness.mount("dark", 2_000_000, false, true);
+      harness.mount("dark", false, true);
     });
     await page.getByRole("button", { name: "Download bundle" }).click();
     assertEquals(

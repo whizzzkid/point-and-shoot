@@ -3,7 +3,6 @@
 
 import { render } from "preact";
 import { browser } from "../shared/browser.ts";
-import { DEFAULT_SETTINGS, loadSettings } from "../shared/settings.ts";
 import componentStyles from "../ui/components/components.css" with { type: "text" };
 import { NotesPanel } from "./NotesPanel.tsx";
 import { browserNotePreviewController } from "./note-preview.ts";
@@ -16,26 +15,18 @@ document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
 
 const root = document.getElementById("app");
 if (root === null) throw new Error("sidepanel/index.html is missing #app");
-void loadSettings(browser.storage.local)
-  .catch((error: unknown) => {
-    console.error("point-and-shoot: panel settings could not load", error);
-    return DEFAULT_SETTINGS;
-  })
-  .then((settings) =>
-    render(
-      <NotesPanel
-        exportDelivery={{
-          clipboard: navigator.clipboard,
-          createObjectURL: (blob) => URL.createObjectURL(blob),
-          downloads: browser.downloads,
-          revokeObjectURL: (url) => URL.revokeObjectURL(url),
-        }}
-        iconSpriteUrl="/src/shared/design/icons.svg"
-        notePreview={browserNotePreviewController(browser)}
-        repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
-        sizeBudgetBytes={settings.exportSizeBudgetBytes}
-        version={browser.runtime.getManifest().version}
-      />,
-      root,
-    )
-  );
+render(
+  <NotesPanel
+    exportDelivery={{
+      clipboard: navigator.clipboard,
+      createObjectURL: (blob) => URL.createObjectURL(blob),
+      downloads: browser.downloads,
+      revokeObjectURL: (url) => URL.revokeObjectURL(url),
+    }}
+    iconSpriteUrl="/src/shared/design/icons.svg"
+    notePreview={browserNotePreviewController(browser)}
+    repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
+    version={browser.runtime.getManifest().version}
+  />,
+  root,
+);
