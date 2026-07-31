@@ -23,31 +23,34 @@ const EXPECTED_EXTENSION_ICONS = {
   "128": "icons/icon-128.png",
 };
 
+interface ManifestAction {
+  readonly default_icon: typeof EXPECTED_EXTENSION_ICONS;
+  readonly default_title: string;
+}
+
+function actionOf(manifest: Record<string, unknown>): ManifestAction {
+  return manifest.action as ManifestAction;
+}
+
 Deno.test("manifest - both targets declare manifest_version 3", () => {
   assertEquals(forChrome().manifest_version, 3);
   assertEquals(forFirefox().manifest_version, 3);
 });
 
-Deno.test("manifest - the toolbar action dispatches a click to start or end a session", () => {
+Deno.test("manifest - the toolbar action starts with the session-start title", () => {
   assertEquals(
-    (forChrome().action as Record<string, unknown>).default_title,
+    actionOf(forChrome()).default_title,
     "Point and Shoot — Start session",
   );
   assertEquals(
-    (forFirefox().action as Record<string, unknown>).default_title,
+    actionOf(forFirefox()).default_title,
     "Point and Shoot — Start session",
   );
 });
 
 Deno.test("manifest - the browser toolbar action uses the branded extension icons", () => {
-  assertEquals(
-    (forChrome().action as Record<string, unknown>).default_icon,
-    EXPECTED_EXTENSION_ICONS,
-  );
-  assertEquals(
-    (forFirefox().action as Record<string, unknown>).default_icon,
-    EXPECTED_EXTENSION_ICONS,
-  );
+  assertEquals(actionOf(forChrome()).default_icon, EXPECTED_EXTENSION_ICONS);
+  assertEquals(actionOf(forFirefox()).default_icon, EXPECTED_EXTENSION_ICONS);
 });
 
 Deno.test("manifest - permissions contain only browser capabilities that require a grant", () => {
