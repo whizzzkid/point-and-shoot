@@ -190,9 +190,17 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
       await page.locator("[data-export-budget]").getAttribute("data-over-budget"),
       "true",
     );
-    await page.getByRole("button", { name: "Compile plan" }).click();
+    await page.getByRole("button", { name: "Compile plan" }).focus();
+    await page.keyboard.press("Enter");
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();
     await page.getByLabel("Version 0.1.0").waitFor();
+    assertEquals(
+      await page.getByRole("button", { name: "Back to notes" }).evaluate((button) =>
+        button === document.activeElement
+      ),
+      true,
+      "opening the plan must move focus to its first action",
+    );
     await page.getByRole("button", { name: "Back to notes" }).click();
     await page.getByRole("heading", { name: "Checkout polish" }).waitFor();
 
