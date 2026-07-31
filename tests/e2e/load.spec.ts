@@ -13,7 +13,7 @@
  * Playwright cannot load extensions in Firefox, so this covers Chromium only; a `web-ext` smoke
  * check (W2.12) is Firefox's equivalent gate.
  *
- * Run with `deno task build && deno task e2e:smoke`.
+ * Run with `deno task e2e:smoke`.
  *
  * @module
  */

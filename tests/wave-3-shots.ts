@@ -19,7 +19,7 @@ import { DEFAULT_SETTINGS, type ExtensionSettings } from "../src/shared/settings
 import { startFixtureServer } from "./fixtures/app/server.ts";
 
 const EXTENSION_DIR = fromFileUrl(new URL("../dist/chrome/", import.meta.url));
-const OUTPUT_DIR = "docs/assets/wave-3";
+const DEFAULT_OUTPUT_DIRECTORY = "docs/assets/wave-3";
 const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
 const SURFACE_READY_TIMEOUT_MILLISECONDS = 5_000;
 
@@ -41,9 +41,20 @@ export type Wave3ShotSurface = typeof WAVE_3_SHOT_SURFACES[number];
 /** One deterministic theme captured by this script. */
 export type Wave3ShotTheme = typeof WAVE_3_SHOT_THEMES[number];
 
-/** Returns the committed output path for one surface/theme pair. */
-export function shotOutputPath(surface: Wave3ShotSurface, theme: Wave3ShotTheme): string {
-  return `${OUTPUT_DIR}/${surface}-${theme}.png`;
+/**
+ * Returns the output path for one surface/theme pair.
+ *
+ * @param surface Extension surface being captured.
+ * @param theme Forced theme used by the capture.
+ * @param outputDirectory Directory receiving the PNG.
+ * @returns Path for the surface and theme PNG.
+ */
+export function shotOutputPath(
+  surface: Wave3ShotSurface,
+  theme: Wave3ShotTheme,
+  outputDirectory = DEFAULT_OUTPUT_DIRECTORY,
+): string {
+  return `${outputDirectory}/${surface}-${theme}.png`;
 }
 
 interface ToolbarBoundsEvidence {
@@ -60,7 +71,7 @@ function overlaps(first: PlacementRect, second: PlacementRect): boolean {
     first.top + first.height > second.top;
 }
 
-async function writeToolbarBoundsEvidence(): Promise<void> {
+async function writeToolbarBoundsEvidence(outputDirectory: string): Promise<void> {
   const viewport = { height: 600, left: 0, top: 0, width: 1_000 };
   const selections = [
     { case: "top-left", selection: { height: 140, left: 40, top: 80, width: 200 } },
@@ -82,7 +93,7 @@ async function writeToolbarBoundsEvidence(): Promise<void> {
     return { case: name, overlap: false, selection, toolbar };
   });
   await Deno.writeTextFile(
-    `${OUTPUT_DIR}/toolbar-bounds.json`,
+    `${outputDirectory}/toolbar-bounds.json`,
     `${JSON.stringify({ evidence, viewport }, null, 2)}\n`,
   );
 }
@@ -124,6 +135,7 @@ async function seedExtension(serviceWorker: Worker): Promise<void> {
     };
     await extensionGlobal.chrome.storage.local.set({
       activeSessionId: session.id,
+      displaySessionId: session.id,
       settings,
     });
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -167,6 +179,31 @@ async function setTheme(serviceWorker: Worker, theme: Wave3ShotTheme): Promise<v
     };
     await extensionGlobal.chrome.storage.local.set({ settings: nextSettings });
   }, settings);
+}
+
+async function installHeadlessSidePanelStub(serviceWorker: Worker): Promise<void> {
+  await serviceWorker.evaluate(() => {
+    const extensionGlobal = globalThis as unknown as {
+      readonly chrome: {
+        readonly sidePanel?: {
+          readonly open?: (
+            options: { readonly tabId: number },
+            callback?: () => void,
+          ) => void;
+        };
+      };
+    };
+    if (typeof extensionGlobal.chrome.sidePanel?.open === "function") return;
+    // Playwright's headless Chromium omits sidePanel even though the shipped browser exposes it.
+    Object.defineProperty(extensionGlobal.chrome, "sidePanel", {
+      configurable: true,
+      value: {
+        open(_options: { readonly tabId: number }, callback?: () => void): void {
+          callback?.();
+        },
+      },
+    });
+  });
 }
 
 async function triggerExtensionAction(
@@ -214,59 +251,52 @@ async function captureLocator(
   console.log(`wrote ${outputPath}`);
 }
 
+async function prepareToolbarFixture(page: Page, fixtureBase: string, theme: Wave3ShotTheme) {
+  await page.setViewportSize({ height: 800, width: 1_280 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(`${fixtureBase}/${theme}.html`);
+  await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>(".panel");
+    const button = panel?.querySelector<HTMLElement>("button");
+    if (panel === null || panel === undefined || button === null || button === undefined) {
+      throw new Error("toolbar screenshot fixture has no panel button");
+    }
+    Object.assign(panel.style, {
+      bottom: "24px",
+      left: "50%",
+      margin: "0",
+      position: "fixed",
+      transform: "translateX(-50%)",
+      width: "420px",
+    });
+    Object.assign(button.style, {
+      display: "block",
+      marginInline: "auto",
+      width: "220px",
+    });
+  });
+}
+
 async function captureToolbar(
   context: BrowserContext,
   extensionId: string,
   serviceWorker: Worker,
   fixtureBase: string,
   theme: Wave3ShotTheme,
+  outputDirectory: string,
 ): Promise<void> {
   await setTheme(serviceWorker, theme);
   const page = await context.newPage();
   try {
-    await page.setViewportSize({ height: 800, width: 1_280 });
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto(`${fixtureBase}/${theme}.html`);
-    await page.evaluate(() => {
-      const panel = document.querySelector<HTMLElement>(".panel");
-      const button = panel?.querySelector<HTMLElement>("button");
-      if (panel === null || panel === undefined || button === null || button === undefined) {
-        throw new Error("toolbar screenshot fixture has no panel button");
-      }
-      Object.assign(panel.style, {
-        bottom: "24px",
-        left: "50%",
-        margin: "0",
-        position: "fixed",
-        transform: "translateX(-50%)",
-        width: "420px",
-      });
-      Object.assign(button.style, {
-        display: "block",
-        marginInline: "auto",
-        width: "220px",
-      });
-    });
-
+    await prepareToolbarFixture(page, fixtureBase, theme);
     await triggerExtensionAction(context, page, extensionId);
-    const popup = await context.newPage();
-    try {
-      await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`);
-      await popup.getByRole("heading", { name: "Checkout review" }).waitFor();
-      await page.bringToFront();
-      await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
-        (element as HTMLButtonElement).click();
-      });
-      await page.waitForFunction(
-        (expectedTheme) =>
-          document.querySelector("[data-point-and-shoot-host]")?.getAttribute("data-theme") ===
-            expectedTheme,
-        theme,
-        { timeout: SURFACE_READY_TIMEOUT_MILLISECONDS },
-      );
-    } finally {
-      await popup.close();
-    }
+    await page.waitForFunction(
+      (expectedTheme) =>
+        document.querySelector("[data-point-and-shoot-host]")?.getAttribute("data-theme") ===
+          expectedTheme,
+      theme,
+      { timeout: SURFACE_READY_TIMEOUT_MILLISECONDS },
+    );
 
     const target = page.locator(`button[data-testid="${theme}-action"]`);
     const targetBox = await target.boundingBox();
@@ -277,7 +307,7 @@ async function captureToolbar(
     );
     await page.waitForTimeout(100);
     await waitForFonts(page);
-    const outputPath = shotOutputPath("toolbar", theme);
+    const outputPath = shotOutputPath("toolbar", theme, outputDirectory);
     await page.screenshot({ animations: "disabled", path: outputPath });
     console.log(`wrote ${outputPath}`);
   } finally {
@@ -289,6 +319,7 @@ async function capturePopup(
   context: BrowserContext,
   extensionId: string,
   theme: Wave3ShotTheme,
+  outputDirectory: string,
 ): Promise<void> {
   const page = await context.newPage();
   try {
@@ -298,7 +329,11 @@ async function capturePopup(
     await page.locator(".ps-popup").evaluate((element, selectedTheme) => {
       (element as HTMLElement).dataset.theme = selectedTheme;
     }, theme);
-    await captureLocator(page.locator(".ps-popup"), page, shotOutputPath("popup", theme));
+    await captureLocator(
+      page.locator(".ps-popup"),
+      page,
+      shotOutputPath("popup", theme, outputDirectory),
+    );
   } finally {
     await page.close();
   }
@@ -308,6 +343,7 @@ async function captureNotesAndPlan(
   context: BrowserContext,
   extensionId: string,
   theme: Wave3ShotTheme,
+  outputDirectory: string,
 ): Promise<void> {
   const page = await context.newPage();
   try {
@@ -320,7 +356,7 @@ async function captureNotesAndPlan(
     await captureLocator(
       page.locator(".ps-notes-panel"),
       page,
-      shotOutputPath("notes", theme),
+      shotOutputPath("notes", theme, outputDirectory),
     );
 
     await page.getByRole("button", { name: "Compile plan" }).click();
@@ -331,7 +367,7 @@ async function captureNotesAndPlan(
     await captureLocator(
       page.locator(".ps-plan-view"),
       page,
-      shotOutputPath("plan", theme),
+      shotOutputPath("plan", theme, outputDirectory),
     );
   } finally {
     await page.close();
@@ -343,6 +379,7 @@ async function captureOptions(
   extensionId: string,
   serviceWorker: Worker,
   theme: Wave3ShotTheme,
+  outputDirectory: string,
 ): Promise<void> {
   await setTheme(serviceWorker, theme);
   const page = await context.newPage();
@@ -356,19 +393,21 @@ async function captureOptions(
       theme,
       { timeout: SURFACE_READY_TIMEOUT_MILLISECONDS },
     );
-    await captureLocator(page.locator(".ps-options"), page, shotOutputPath("options", theme));
+    await captureLocator(
+      page.locator(".ps-options"),
+      page,
+      shotOutputPath("options", theme, outputDirectory),
+    );
   } finally {
     await page.close();
   }
 }
 
-async function main(): Promise<void> {
-  await Deno.stat(`${EXTENSION_DIR}/manifest.json`);
-  await Deno.mkdir(OUTPUT_DIR, { recursive: true });
-  await writeToolbarBoundsEvidence();
-  const fixture = startFixtureServer();
-  const { context, extensionId, serviceWorker } = await launchExtension();
-  const runtimeErrors: string[] = [];
+function trackRuntimeErrors(
+  context: BrowserContext,
+  serviceWorker: Worker,
+  runtimeErrors: string[],
+): void {
   context.on("page", (page) => {
     page.on("console", (message) => {
       if (message.type() === "error") runtimeErrors.push(`${page.url()}: ${message.text()}`);
@@ -378,23 +417,62 @@ async function main(): Promise<void> {
   serviceWorker.on("console", (message) => {
     if (message.type() === "error") runtimeErrors.push(`service worker: ${message.text()}`);
   });
+}
+
+async function captureThemeShots(
+  fixtureBase: string,
+  outputDirectory: string,
+  runtimeErrors: string[],
+  theme: Wave3ShotTheme,
+): Promise<void> {
+  const { context, extensionId, serviceWorker } = await launchExtension();
+  trackRuntimeErrors(context, serviceWorker, runtimeErrors);
   try {
+    await installHeadlessSidePanelStub(serviceWorker);
+    await captureToolbar(
+      context,
+      extensionId,
+      serviceWorker,
+      fixtureBase,
+      theme,
+      outputDirectory,
+    );
     await seedExtension(serviceWorker);
+    await captureNotesAndPlan(context, extensionId, theme, outputDirectory);
+    await capturePopup(context, extensionId, theme, outputDirectory);
+    await captureOptions(context, extensionId, serviceWorker, theme, outputDirectory);
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * Captures every Wave 3 extension surface into one output directory.
+ *
+ * @param outputDirectory Directory receiving PNGs and toolbar placement evidence.
+ * @returns Nothing after the browser and fixture server close.
+ */
+export async function captureWave3Shots(
+  outputDirectory = DEFAULT_OUTPUT_DIRECTORY,
+): Promise<void> {
+  await Deno.stat(`${EXTENSION_DIR}/manifest.json`);
+  await Deno.mkdir(outputDirectory, { recursive: true });
+  await writeToolbarBoundsEvidence(outputDirectory);
+  const fixture = startFixtureServer();
+  const runtimeErrors: string[] = [];
+  try {
     for (const theme of WAVE_3_SHOT_THEMES) {
-      await captureToolbar(context, extensionId, serviceWorker, fixture.base, theme);
-      await captureNotesAndPlan(context, extensionId, theme);
-      await capturePopup(context, extensionId, theme);
-      await captureOptions(context, extensionId, serviceWorker, theme);
+      // A fresh profile prevents the second toolbar action from ending the first theme's session.
+      await captureThemeShots(fixture.base, outputDirectory, runtimeErrors, theme);
     }
     if (runtimeErrors.length > 0) {
       throw new Error(`Wave 3 screenshot surfaces logged errors:\n${runtimeErrors.join("\n")}`);
     }
   } finally {
-    await context.close();
     await fixture.close();
   }
 }
 
 if (import.meta.main) {
-  await main();
+  await captureWave3Shots();
 }
