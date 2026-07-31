@@ -10,6 +10,9 @@ The extension records the selected screenshot, page URL, DOM text, selector fall
 styles, and capture metadata. It uses `activeTab`, so it reads a page only after you invoke it
 there. Chrome and Firefox builds come from the same source.
 
+Every extension surface shows its packaged version in a tiny bottom-right marker, making a
+release-candidate install easy to identify while testing.
+
 ## Build from source
 
 You need [Git](https://git-scm.com/) and [mise](https://mise.jdx.dev/). The project installs exact

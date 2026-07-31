@@ -18,3 +18,4 @@ export { Switch, type SwitchProps } from "./Switch.tsx";
 export { Tabs, type TabsProps } from "./Tabs.tsx";
 export { Toast, type ToastProps } from "./Toast.tsx";
 export { Tooltip, type TooltipProps } from "./Tooltip.tsx";
+export { VersionLabel, type VersionLabelProps } from "./VersionLabel.tsx";

@@ -22,6 +22,12 @@ body {
   flex-direction: column;
   inline-size: min(100vw, calc(var(--space-24) * 4));
   min-block-size: calc(var(--space-24) * 4);
+  padding-block-end: var(--space-4);
+  position: relative;
+}
+
+.ps-popup > .ps-version-label {
+  position: absolute;
 }
 
 .ps-popup-header {

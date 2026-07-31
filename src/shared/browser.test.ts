@@ -43,6 +43,9 @@ function createFakeChrome(): FakeChrome {
       },
     },
     runtime: {
+      getManifest() {
+        return { version: "0.1.0" };
+      },
       getURL(path) {
         return `chrome-extension://dynamic-id/${path}`;
       },
@@ -190,6 +193,9 @@ function createFakeFirefox(): FakeFirefox {
       getBrowserInfo() {
         return Promise.resolve({ name: "Firefox" });
       },
+      getManifest() {
+        return { version: "0.1.0" };
+      },
       getURL(path) {
         return `moz-extension://random-uuid/${path}`;
       },
@@ -304,6 +310,17 @@ Deno.test("browser shim - getURL delegates resource paths to each engine", () =>
   assertEquals(
     createBrowserShim({ browser: firefoxGlobal }).runtime.getURL(resource),
     `moz-extension://random-uuid/${resource}`,
+  );
+});
+
+Deno.test("browser shim - getManifest exposes the packaged version on each engine", () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+
+  assertEquals(createBrowserShim({ chrome: chromeGlobal }).runtime.getManifest().version, "0.1.0");
+  assertEquals(
+    createBrowserShim({ browser: firefoxGlobal }).runtime.getManifest().version,
+    "0.1.0",
   );
 });
 

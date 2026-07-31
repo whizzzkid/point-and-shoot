@@ -95,7 +95,7 @@ function renderPopup(
   };
   render(
     <IconSpriteProvider url="">
-      <Popup actions={actions} repository={repository} theme={theme} />
+      <Popup actions={actions} repository={repository} theme={theme} version="0.1.0" />
     </IconSpriteProvider>,
     mount,
   );

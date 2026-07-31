@@ -22,6 +22,7 @@ let composer: PlacementRect | undefined;
 function renderToolbar(): void {
   const props: FloatingToolbarProps = {
     iconSpriteUrl: "",
+    version: "0.1.0",
     ...(composer === undefined ? {} : { composer }),
     ...(selection === undefined ? {} : { selection }),
   };
@@ -67,6 +68,7 @@ const harness = {
         button.textContent?.trim() || button.ariaLabel
       ),
       noteCount: toolbar.querySelector(".ps-badge")?.textContent,
+      version: toolbar.querySelector(".ps-version-label")?.textContent,
       sendDisabled: toolbar.querySelector<HTMLButtonElement>(".ps-button")?.disabled,
       sendVariant: toolbar.querySelector<HTMLButtonElement>(".ps-button")?.dataset.variant,
     };

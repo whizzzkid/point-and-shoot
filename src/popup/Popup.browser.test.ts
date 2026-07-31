@@ -53,6 +53,8 @@ Deno.test("popup launches every session action and renders both themes", async (
     });
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    await page.getByLabel("Version 0.1.0").waitFor();
+    assertEquals(await page.getByLabel("Version 0.1.0").textContent(), "v0.1.0");
     await page.getByText("2 notes").waitFor();
     const overlay = page.getByRole("switch", { name: "Overlay on this tab" });
     assertEquals(await overlay.getAttribute("aria-checked"), "false");

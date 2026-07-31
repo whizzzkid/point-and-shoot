@@ -22,6 +22,7 @@ render(
       actions={createPopupActions(browser)}
       repository={createPopupSessionRepository(browser.storage.local)}
       theme="dark"
+      version={browser.runtime.getManifest().version}
     />
   </IconSpriteProvider>,
   root,

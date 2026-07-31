@@ -14,7 +14,15 @@ import {
   SCREENSHOT_QUALITY_OPTIONS,
 } from "../shared/settings.ts";
 import type { Theme, ThemeOverride } from "../shared/theme.ts";
-import { Button, Dialog, Icon, Select, Switch, Tabs } from "../ui/components/index.ts";
+import {
+  Button,
+  Dialog,
+  Icon,
+  Select,
+  Switch,
+  Tabs,
+  VersionLabel,
+} from "../ui/components/index.ts";
 import type { OptionsRepository } from "./repository.ts";
 
 const SECTIONS = ["General", "Capture", "Export & privacy", "Shortcuts", "Data"] as const;
@@ -31,6 +39,7 @@ type OptionsStatus =
 export interface OptionsProps {
   readonly autoTheme: Theme;
   readonly repository: OptionsRepository;
+  readonly version: string;
 }
 
 interface SettingRowProps {
@@ -87,7 +96,7 @@ function selectedMaximumDimension(value: string): ScreenshotMaxDimension {
  * @param props Settings repository and the extension-page theme used for follow-backdrop mode.
  * @returns Loading, error, and complete options-page states.
  */
-export function Options({ autoTheme, repository }: OptionsProps): JSX.Element {
+export function Options({ autoTheme, repository, version }: OptionsProps): JSX.Element {
   const [settings, setSettings] = useState<ExtensionSettings>();
   const [shortcut, setShortcut] = useState("Not assigned");
   const [section, setSection] = useState<OptionsSection>("General");
@@ -400,6 +409,7 @@ export function Options({ autoTheme, repository }: OptionsProps): JSX.Element {
       >
         This cannot be undone. Export any sessions you need before continuing.
       </Dialog>
+      <VersionLabel version={version} />
     </main>
   );
 }

@@ -24,6 +24,7 @@ export interface CaptureOverlayProps {
   readonly onSend?: () => void;
   readonly ownerDocument?: Document;
   readonly ownerWindow?: Window;
+  readonly version: string;
 }
 
 /**
@@ -44,6 +45,7 @@ export function CaptureOverlay(
     onSend,
     ownerDocument = document,
     ownerWindow = window,
+    version,
   }: CaptureOverlayProps,
 ): JSX.Element | null {
   const [activeTool, setActiveTool] = useState<ToolbarTool | null>("select");
@@ -227,6 +229,7 @@ export function CaptureOverlay(
         onToolChange={setActiveTool}
         ownerDocument={ownerDocument}
         ownerWindow={ownerWindow}
+        version={version}
         {...(onSend === undefined ? {} : { onSend })}
         {...(toolbarSelection === undefined ? {} : { selection: toolbarSelection })}
       />

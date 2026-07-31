@@ -24,6 +24,11 @@ export interface RuntimeInfo {
   readonly engine: Engine;
 }
 
+/** Minimal extension-manifest shape read at runtime. */
+export interface ExtensionManifest {
+  readonly version: string;
+}
+
 /** Options accepted by {@link BrowserShim.tabs}'s `captureVisibleTab`. */
 export interface CaptureOptions {
   readonly format?: "png" | "jpeg";
@@ -128,7 +133,8 @@ export type StorageChangedListener = (changes: StorageChanges, areaName: string)
 /**
  * The normalized, promise-based surface every other module in this codebase imports instead of
  * `chrome.*` or `browser.*`. Every method here resolves or rejects a promise; none take a
- * callback. The native synchronous `runtime.getURL` is the one exception.
+ * callback. The native synchronous `runtime.getManifest` and `runtime.getURL` methods are the
+ * exceptions.
  */
 export interface BrowserShim {
   readonly runtimeInfo: RuntimeInfo;
@@ -145,6 +151,12 @@ export interface BrowserShim {
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
   };
   readonly runtime: {
+    /**
+     * Returns the packaged manifest for the running extension.
+     *
+     * @returns The manifest fields used by extension surfaces.
+     */
+    getManifest(): ExtensionManifest;
     /**
      * Resolves a manifest-relative asset path against the browser-assigned extension origin.
      *
@@ -208,6 +220,7 @@ export interface ChromeGlobalShape {
     ): void;
   };
   readonly runtime: {
+    getManifest(): ExtensionManifest;
     getURL(path: string): string;
     openOptionsPage(callback: () => void): void;
     sendMessage(message: unknown, callback: (response: unknown) => void): void;
@@ -265,6 +278,7 @@ export interface FirefoxGlobalShape {
   readonly runtime: {
     /** Firefox-only engine identity method, used to distinguish namespace aliases safely. */
     getBrowserInfo(): Promise<{ readonly name: string }>;
+    getManifest(): ExtensionManifest;
     getURL(path: string): string;
     openOptionsPage(): Promise<void>;
     sendMessage(message: unknown): Promise<unknown>;
@@ -362,6 +376,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       },
     },
     runtime: {
+      getManifest() {
+        return chromeGlobal.runtime.getManifest();
+      },
       getURL(path) {
         return chromeGlobal.runtime.getURL(path);
       },
@@ -456,6 +473,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       },
     },
     runtime: {
+      getManifest() {
+        return firefoxGlobal.runtime.getManifest();
+      },
       getURL(path) {
         return firefoxGlobal.runtime.getURL(path);
       },

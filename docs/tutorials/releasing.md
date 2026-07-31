@@ -50,7 +50,8 @@ to a 14-day GitHub Actions artifact containing:
 The files are built from the exact release pull request head SHA shown in the comment. Download
 them, extract them, and follow the Chrome and Firefox loading steps in
 [Get started](getting-started.md). Review both themes and complete at least one capture and export
-in each browser before merging.
+in each browser before merging. Confirm that the tiny version marker at the bottom-right of the
+injected toolbar, notes and plan views, popup, and options page matches the candidate version.
 
 To reproduce the package checks from a local checkout of the release pull request, run:
 

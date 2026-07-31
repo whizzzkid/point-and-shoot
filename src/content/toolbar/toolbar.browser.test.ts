@@ -19,6 +19,7 @@ interface ToolbarHarness {
     readonly noteCount: string | null | undefined;
     readonly sendDisabled: boolean | undefined;
     readonly sendVariant: string | undefined;
+    readonly version: string | null | undefined;
   }>;
   controls(): {
     readonly activeLabel: string | null | undefined;
@@ -26,6 +27,7 @@ interface ToolbarHarness {
     readonly noteCount: string | null | undefined;
     readonly sendDisabled: boolean | undefined;
     readonly sendVariant: string | undefined;
+    readonly version: string | null | undefined;
   };
   destroy(): void;
   place(selection?: PlacementRect, composer?: PlacementRect): Promise<PlacementRect>;
@@ -143,6 +145,7 @@ Deno.test("floating toolbar - exposes selection, count, and plan navigation only
       noteCount: "0 notes",
       sendDisabled: true,
       sendVariant: "primary",
+      version: "v0.1.0",
     });
   } finally {
     await browser.close();

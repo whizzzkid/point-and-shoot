@@ -18,6 +18,7 @@ render(
   <Options
     autoTheme={matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"}
     repository={createOptionsRepository(browser)}
+    version={browser.runtime.getManifest().version}
   />,
   root,
 );
