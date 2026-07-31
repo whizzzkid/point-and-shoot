@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
-import { forChrome } from "./manifest.ts";
+import { forChrome, manifestBase } from "./manifest.ts";
 import {
   assertTagMatchesVersion,
   nextCalver,
@@ -56,6 +56,7 @@ Deno.test("nextCalver - resets the sequence when the UTC date advances", () => {
 Deno.test("nextCalver - rejects a non-bootstrap SemVer and invalid calendar date", () => {
   assertThrows(() => nextCalver("1.2.3", new Date("2026-07-31T00:00:00Z")));
   assertThrows(() => nextCalver("2026.231.0", new Date("2026-07-31T00:00:00Z")));
+  assertThrows(() => nextCalver("2026.0731.0", new Date("2026-07-31T00:00:00Z")));
 });
 
 Deno.test("nextCalver - rejects a version later than the UTC release date", () => {
@@ -86,7 +87,7 @@ Deno.test("runReleaseCommand - prints the next version", async () => {
 });
 
 Deno.test("runReleaseCommand - prints the packaged manifest version", async () => {
-  assertEquals(await runReleaseCommand(["current"]), "0.1.0");
+  assertEquals(await runReleaseCommand(["current"]), manifestBase.version);
 });
 
 Deno.test("runReleaseCommand - rejects unsupported commands", async () => {

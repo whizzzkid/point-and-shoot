@@ -20,8 +20,8 @@ GitHub suppresses recursive workflow events created by that token.
 Use one UTC calendar version in the form `YYYY.MMDD.N`:
 
 - `YYYY` is the four-digit UTC year.
-- `MMDD` is the numeric UTC month and day without a leading zero. July 31 is `731`; January 2 is
-  `102`.
+- `MMDD` is the variable-width numeric encoding `month * 100 + day`, without a leading zero. July 31
+  is `731`; January 2 is `102`.
 - `N` starts at `0` and increments for each additional release on the same UTC day.
 
 For example, the first release on July 31, 2026 is `2026.731.0`, and its tag is `v2026.731.0`. This

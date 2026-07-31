@@ -33,7 +33,7 @@ interface Calver {
 
 const CALVER_DATE_COMPONENT_FACTOR = 100;
 const CALVER_DATE_KEY_FACTOR = 10_000;
-const CALVER_PATTERN = /^(?<year>\d{4})\.(?<monthDay>\d{3,4})\.(?<sequence>0|[1-9]\d*)$/;
+const CALVER_PATTERN = /^(?<year>\d{4})\.(?<monthDay>[1-9]\d{2,3})\.(?<sequence>0|[1-9]\d*)$/;
 const BOOTSTRAP_VERSION = "0.1.0";
 const REQUIRED_MANIFEST_KEYS = [
   "action",
