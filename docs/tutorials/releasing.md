@@ -17,9 +17,10 @@ collide because the month occupies every digit before the final two day digits.
 ## Enable release pull requests
 
 An administrator must enable **Allow GitHub Actions to create and approve pull requests** under
-**Settings → Actions → General → Workflow permissions**. The release workflow grants its
-orchestration job only the `contents`, `issues`, and `pull-requests` write permissions Release
-Please needs. Build jobs use narrower permissions.
+**Settings → Actions → General → Workflow permissions**. The release orchestration job grants
+Release Please `contents`, `issues`, and `pull-requests` write access. It also grants
+`actions: write` solely to dispatch CI for the generated release PR; build jobs use narrower
+permissions.
 
 The workflow intentionally uses GitHub's repository token instead of a personal access token. Events
 produced by that token do not start another workflow, so `.github/workflows/release.yml` builds the
