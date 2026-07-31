@@ -20,7 +20,15 @@ async function responsePath(distRoot, requestUrl) {
   if (url.pathname !== siteBase && !url.pathname.startsWith(`${siteBase}/`)) {
     return null;
   }
-  const relativePath = decodeURIComponent(url.pathname.slice(siteBase.length)).replace(/^\/+/, "");
+  let relativePath;
+  try {
+    relativePath = decodeURIComponent(url.pathname.slice(siteBase.length)).replace(/^\/+/, "");
+  } catch (error) {
+    if (error instanceof URIError) {
+      return null;
+    }
+    throw error;
+  }
   const candidate = resolve(distRoot, relativePath);
   if (candidate !== distRoot && !candidate.startsWith(`${distRoot}${sep}`)) {
     return null;
