@@ -172,6 +172,11 @@ textarea {
   min-inline-size: 0;
 }
 
+.ps-note-card:focus-visible {
+  box-shadow: var(--shadow-focus);
+  outline: none;
+}
+
 .ps-notes-header {
   align-items: center;
   border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);

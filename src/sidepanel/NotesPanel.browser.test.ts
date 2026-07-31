@@ -15,6 +15,8 @@ interface NotesPanelHarness {
   mount(theme: "dark" | "light", sizeBudgetBytes?: number): void;
   mountWithLoadError(theme: "dark" | "light", message: string): void;
   mountWithSaveError(theme: "dark" | "light", message: string): void;
+  previewEvents(): string[];
+  resetPreviewEvents(): void;
   seed(session: Session): Promise<void>;
   setTheme(theme: "dark" | "light"): void;
   unmount(): void;
@@ -113,6 +115,26 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
     }, SESSION);
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootNotesPanelTest: NotesPanelHarness;
+      }).pointShootNotesPanelTest;
+      harness.resetPreviewEvents();
+    });
+    const firstCard = page.locator('[data-note-id="note-1"]');
+    await firstCard.hover();
+    await page.locator(".ps-notes-header").hover();
+    await firstCard.focus();
+    await page.getByRole("button", { name: "Pricing" }).focus();
+    assertEquals(
+      await page.evaluate(() => {
+        const harness = (globalThis as unknown as {
+          pointShootNotesPanelTest: NotesPanelHarness;
+        }).pointShootNotesPanelTest;
+        return harness.previewEvents();
+      }),
+      ["show:note-1", "clear", "show:note-1", "clear"],
+    );
     await page.getByRole("button", { name: "Edit session name" }).click();
     const sessionName = page.getByRole("textbox", { name: "Session name" });
     await sessionName.fill("  Checkout polish  ");

@@ -6,6 +6,7 @@ import { browser } from "../shared/browser.ts";
 import { DEFAULT_SETTINGS, loadSettings } from "../shared/settings.ts";
 import componentStyles from "../ui/components/components.css" with { type: "text" };
 import { NotesPanel } from "./NotesPanel.tsx";
+import { browserNotePreviewController } from "./note-preview.ts";
 import { createNotesRepository } from "./repository.ts";
 import panelStyles from "./sidepanel.css" with { type: "text" };
 
@@ -30,6 +31,7 @@ void loadSettings(browser.storage.local)
           revokeObjectURL: (url) => URL.revokeObjectURL(url),
         }}
         iconSpriteUrl="/src/shared/design/icons.svg"
+        notePreview={browserNotePreviewController(browser)}
         repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
         sizeBudgetBytes={settings.exportSizeBudgetBytes}
       />,

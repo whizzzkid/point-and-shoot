@@ -35,6 +35,7 @@ export interface TabInfo {
   readonly id?: number;
   readonly windowId?: number;
   readonly active?: boolean;
+  readonly url?: string;
 }
 
 /** Query filter accepted by {@link BrowserShim.tabs}'s `query`. */

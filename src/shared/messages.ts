@@ -32,6 +32,9 @@ export const FRAMEWORK_PROBE_MESSAGE = "point-and-shoot:framework-probe";
 /** Runtime message sent by a direct content-UI gesture to open the notes workspace. */
 export const OPEN_NOTES_PANEL_MESSAGE = "point-and-shoot:open-notes-panel";
 
+/** Runtime message routed from a note card to the inspected page's preview layer. */
+export const NOTE_PREVIEW_MESSAGE = "point-and-shoot:note-preview";
+
 /** State returned by the content realm after an overlay state query or toggle. */
 export interface OverlayStateResponse {
   readonly mounted: boolean;
@@ -60,6 +63,22 @@ export interface AddNoteRequest {
 export type ActiveSessionSummary =
   | { readonly active: false }
   | { readonly active: true; readonly noteCount: number; readonly sessionId: string };
+
+/** Monotonic note-preview request shared by the panel, background, and content realms. */
+export type NotePreviewRequest =
+  | {
+    readonly action: "clear";
+    readonly generation: number;
+    readonly type: typeof NOTE_PREVIEW_MESSAGE;
+  }
+  | {
+    readonly action: "show";
+    readonly generation: number;
+    readonly pageUrl: string;
+    readonly selectors: readonly SelectorBundle[];
+    readonly stripQuery: boolean;
+    readonly type: typeof NOTE_PREVIEW_MESSAGE;
+  };
 
 /** Result returned after one captured note is durably appended. */
 export type AddNoteResponse =
@@ -360,6 +379,43 @@ function isNoteElement(candidate: unknown): candidate is NoteElement {
   }
   if (candidate.componentHint === undefined) return true;
   return isComponentHint(candidate.componentHint);
+}
+
+/**
+ * Narrows an untrusted runtime value to a bounded note-preview request.
+ *
+ * @param message Value received by the background or content realm.
+ * @returns Whether the request is an exact clear or show message with valid selectors.
+ */
+export function isNotePreviewRequest(message: unknown): message is NotePreviewRequest {
+  if (
+    !isRecord(message) ||
+    message.type !== NOTE_PREVIEW_MESSAGE ||
+    typeof message.generation !== "number" ||
+    !Number.isSafeInteger(message.generation) ||
+    message.generation < 0
+  ) {
+    return false;
+  }
+  if (message.action === "clear") {
+    return hasOnlyKeys(message, ["action", "generation", "type"]);
+  }
+  return message.action === "show" &&
+    hasOnlyKeys(message, [
+      "action",
+      "generation",
+      "pageUrl",
+      "selectors",
+      "stripQuery",
+      "type",
+    ]) &&
+    typeof message.pageUrl === "string" &&
+    message.pageUrl !== "" &&
+    typeof message.stripQuery === "boolean" &&
+    Array.isArray(message.selectors) &&
+    message.selectors.length > 0 &&
+    message.selectors.length <= MAXIMUM_NOTE_ELEMENTS &&
+    message.selectors.every(isSelectorBundle);
 }
 
 /**

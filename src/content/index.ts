@@ -19,6 +19,7 @@ import { browser } from "../shared/browser.ts";
 import iconSprite from "../shared/design/icons.svg" with { type: "text" };
 import {
   GET_OVERLAY_STATE_MESSAGE,
+  isNotePreviewRequest,
   OPEN_NOTES_PANEL_MESSAGE,
   TOGGLE_OVERLAY_MESSAGE,
 } from "../shared/messages.ts";
@@ -30,6 +31,7 @@ import { addFrameworkComponentHints } from "./framework-hints.ts";
 import { createShadowHost } from "./host.ts";
 import { createOverlayLifecycle } from "./lifecycle.ts";
 import { saveCapturedSelection } from "./notes.ts";
+import { createNotePreviewLayer } from "./note-preview.ts";
 import type { PickerSelection } from "./picker/ElementPicker.tsx";
 import type { RegionCapture } from "../shared/schema.ts";
 import { watchSessionSummary } from "./session-summary.ts";
@@ -167,6 +169,7 @@ function mountOverlay(
 function initializeContent(initialSettings: ExtensionSettings): void {
   let settings = initialSettings;
   let refreshMountedTheme: (() => void) | undefined;
+  const notePreview = createNotePreviewLayer(document, ownerWindow);
   const lifecycle = createOverlayLifecycle(() => {
     const mounted = mountOverlay(() => settings, () => lifecycle.destroy());
     refreshMountedTheme = mounted.refreshTheme;
@@ -181,6 +184,10 @@ function initializeContent(initialSettings: ExtensionSettings): void {
     refreshMountedTheme?.();
   });
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (isNotePreviewRequest(message)) {
+      sendResponse({ shown: notePreview.handle(message) });
+      return;
+    }
     if (message === GET_OVERLAY_STATE_MESSAGE) {
       sendResponse({ mounted: lifecycle.isMounted() });
       return;

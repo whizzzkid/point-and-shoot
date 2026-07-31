@@ -279,6 +279,27 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
       await editVisibleNote(panel, FIRST_NOTE);
       await panel.locator("[data-page-key]").filter({ hasText: "Fixture: dark page" }).click();
+      const darkNoteCard = panel.locator("[data-note-id]").first();
+      await page.bringToFront();
+      await darkNoteCard.dispatchEvent("pointerenter");
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 1
+      );
+      await darkNoteCard.dispatchEvent("pointerleave");
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 0
+      );
+      await darkNoteCard.evaluate((element) => (element as HTMLElement).focus());
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 1
+      );
+      await panel.locator(".ps-notes-header").evaluate((element) =>
+        (element as HTMLElement).focus()
+      );
+      await darkNoteCard.evaluate((element) => (element as HTMLElement).blur());
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 0
+      );
       await editVisibleNote(panel, SECOND_NOTE);
       await panel.getByRole("button", { name: "Compile plan" }).click();
       await panel.getByRole("heading", { name: "Compile plan" }).waitFor();

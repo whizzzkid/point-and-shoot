@@ -28,11 +28,13 @@ import { copySessionPrompt, downloadSessionArchive } from "./plan/delivery.ts";
 import type { ExportDeliveryDependencies } from "./plan/delivery.ts";
 import { PlanView } from "./plan/PlanView.tsx";
 import type { NotesRepository } from "./repository.ts";
+import type { NotePreviewController } from "./note-preview.ts";
 
 /** Props accepted by {@link NotesPanel}. */
 export interface NotesPanelProps {
   readonly exportDelivery: ExportDeliveryDependencies;
   readonly iconSpriteUrl: string;
+  readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
   readonly sizeBudgetBytes?: number;
 }
@@ -62,6 +64,8 @@ interface NoteCardProps {
   readonly onDelete: (note: Note) => void;
   readonly onEdit: (note: Note) => void;
   readonly onMove: (note: Note, direction: "up" | "down") => void;
+  readonly onPreviewClear: () => void;
+  readonly onPreviewShow: (note: Note) => void;
   readonly onStripQuery: (note: Note, checked: boolean) => void;
 }
 
@@ -74,13 +78,36 @@ function NoteCard(
     onDelete,
     onEdit,
     onMove,
+    onPreviewClear,
+    onPreviewShow,
     onStripQuery,
   }: NoteCardProps,
 ): JSX.Element {
   const target = targetLabel(note);
   const xpath = xpathLabel(note);
   return (
-    <article className="ps-note-card" data-note-id={note.id}>
+    <article
+      aria-label={`Preview note: ${note.text || target}`}
+      className="ps-note-card"
+      data-note-id={note.id}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          onPreviewClear();
+        }
+      }}
+      onFocus={(event) => {
+        const previousTarget = event.relatedTarget;
+        if (
+          !(previousTarget instanceof Node) || !event.currentTarget.contains(previousTarget)
+        ) {
+          onPreviewShow(note);
+        }
+      }}
+      onPointerEnter={() => onPreviewShow(note)}
+      onPointerLeave={onPreviewClear}
+      tabIndex={0}
+    >
       <CaptureMinimap
         label={`Captured region — ${target}`}
         screenshot={note.region.screenshot}
@@ -158,6 +185,7 @@ export function NotesPanel(
   {
     exportDelivery,
     iconSpriteUrl,
+    notePreview,
     repository,
     sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
   }: NotesPanelProps,
@@ -201,6 +229,7 @@ export function NotesPanel(
       stopWatching();
     };
   }, [repository]);
+  useEffect(() => () => notePreview.clear(), [notePreview]);
 
   const groups = useMemo(
     () => session === undefined || session === null ? [] : groupNotesByPage(session),
@@ -407,6 +436,8 @@ export function NotesPanel(
                           apply(moveNote(session, selected.id, direction));
                         }
                       }}
+                      onPreviewClear={() => notePreview.clear()}
+                      onPreviewShow={(selected) => notePreview.show(selected)}
                       onStripQuery={(selected, checked) => {
                         if (session !== null) {
                           apply(setNoteStripQuery(session, selected.id, checked));

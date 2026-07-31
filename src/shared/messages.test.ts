@@ -10,8 +10,10 @@ import {
   isCaptureRegionResponse,
   isFrameworkProbeRequest,
   isFrameworkProbeResponse,
+  isNotePreviewRequest,
   isOverlayStateResponse,
   isToggleActiveTabResponse,
+  NOTE_PREVIEW_MESSAGE,
 } from "./messages.ts";
 
 const VALID_REQUEST = {
@@ -27,6 +29,52 @@ const VALID_CAPTURE = {
   truncated: false,
   viewport: VALID_REQUEST.viewport,
 };
+
+const VALID_SELECTORS = {
+  cssPath: ["#save"],
+  reachable: true,
+  tagClasses: "button",
+  testIds: [],
+  textSnippet: "Save",
+  xpath: ["/html/body/button"],
+};
+
+Deno.test("note preview guards accept exact ordered requests and reject malformed selectors", () => {
+  assertEquals(
+    isNotePreviewRequest({
+      action: "show",
+      generation: 3,
+      pageUrl: "https://example.com/editor",
+      selectors: [VALID_SELECTORS],
+      stripQuery: false,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    true,
+  );
+  assertEquals(
+    isNotePreviewRequest({ action: "clear", generation: 4, type: NOTE_PREVIEW_MESSAGE }),
+    true,
+  );
+  assertEquals(
+    isNotePreviewRequest({
+      action: "show",
+      generation: 3,
+      pageUrl: "https://example.com/editor",
+      selectors: [{ ...VALID_SELECTORS, cssPath: [] }],
+      stripQuery: false,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    false,
+  );
+  assertEquals(
+    isNotePreviewRequest({
+      action: "clear",
+      generation: 2.5,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    false,
+  );
+});
 
 Deno.test("capture message guards accept valid requests and both response variants", () => {
   assertEquals(isCaptureRegionRequest(VALID_REQUEST), true);

@@ -5,6 +5,7 @@ import { browser } from "../shared/browser.ts";
 import { registerCaptureHandler } from "./capture.ts";
 import { registerFrameworkProbeHandler } from "./framework-probe.ts";
 import { registerNoteHandler } from "./notes.ts";
+import { registerNotePreviewHandler } from "./note-preview.ts";
 import {
   createSessionActionController,
   registerSessionActionHandler,
@@ -36,3 +37,4 @@ registerActivationHandlers(
 registerCaptureHandler(browser);
 registerFrameworkProbeHandler(browser);
 registerNoteHandler(browser, sessions);
+registerNotePreviewHandler(browser);
