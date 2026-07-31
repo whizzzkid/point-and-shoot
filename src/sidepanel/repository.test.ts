@@ -103,6 +103,26 @@ Deno.test("notes repository resets an invalid shared revision when saving", asyn
   await resetDatabase();
 });
 
+Deno.test("notes repository keeps a persisted save successful when revision publishing fails", async () => {
+  await resetDatabase();
+  const storage = createStorage("session-1");
+  const failingStorage: BrowserShim["storage"]["local"] = {
+    ...storage,
+    set(items) {
+      if (SESSION_REVISION_STORAGE_KEY in items) {
+        return Promise.reject(new Error("revision storage unavailable"));
+      }
+      return storage.set(items);
+    },
+  };
+  const renamed = { ...SESSION, name: "Renamed" };
+
+  await createNotesRepository(failingStorage).save(renamed);
+
+  assertEquals(await createNotesRepository(storage).load(), renamed);
+  await resetDatabase();
+});
+
 Deno.test("notes repository returns null without a valid active-session pointer", async () => {
   await resetDatabase();
   assertEquals(await createNotesRepository(createStorage()).load(), null);
