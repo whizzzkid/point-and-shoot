@@ -13,14 +13,14 @@ repo.
 
 ## Map
 
-| Path                                | What lives there                                                                        | Published?      |
-| ----------------------------------- | --------------------------------------------------------------------------------------- | --------------- |
-| [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it         | Yes             |
-| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps     | Repository only |
-| [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics      | Yes             |
-| [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                        | Repository only |
-| [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release               | Yes             |
-| `assets/`                           | Committed images referenced by these docs and by PR bodies, one subdirectory per wave   | When referenced |
+| Path                                | What lives there                                                                      | Published?      |
+| ----------------------------------- | ------------------------------------------------------------------------------------- | --------------- |
+| [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it       | Yes             |
+| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps   | Repository only |
+| [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics    | Yes             |
+| [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                      | Repository only |
+| [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release             | Yes             |
+| `assets/`                           | Committed images referenced by these docs and by PR bodies, one subdirectory per wave | When referenced |
 
 `plans/` is the entry point for anyone about to do work. Start at
 [`plans/README.md`](plans/README.md) — it carries the shared context, the settled decisions, the
