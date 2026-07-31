@@ -17,15 +17,15 @@
  */
 
 import { fromFileUrl, join } from "@std/path";
+import { FIREFOX_EXTENSION_ID } from "../build/manifest.ts";
+import {
+  FIREFOX_EXTENSION_UUID,
+  FIREFOX_OFFLINE_PREFERENCES,
+  firefoxBootFixtureUrl,
+} from "../tests/firefox/profile.ts";
 import { startFixtureServer } from "../tests/fixtures/app/server.ts";
 
 const SOURCE_DIR = fromFileUrl(new URL("../dist/firefox/", import.meta.url));
-
-// Must match tests/fixtures/app/firefox-boot.html's EXTENSION_UUID and FONT_RESOURCE, and
-// build/manifest.ts's forFirefox() gecko id — pinning the UUID via `extensions.webextensions.uuids`
-// is what makes this extension's moz-extension:// origin predictable across runs.
-const GECKO_ID = "point-and-shoot@gusto.com";
-const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
 
 const BOOT_TIMEOUT_MS = 45_000;
 
@@ -191,20 +191,13 @@ async function main() {
       // embedded quotes — the inner quotes must be pre-escaped here or the generated user.js
       // breaks with "prefs parse error: unknown keyword".
       "--pref",
-      `extensions.webextensions.uuids={\\"${GECKO_ID}\\":\\"${EXTENSION_UUID}\\"}`,
-      "--pref",
-      "services.settings.server=data:,#remote-settings-dummy/v1",
-      "--pref",
-      "extensions.getAddons.cache.enabled=false",
-      "--pref",
-      "browser.search.update=false",
-      "--pref",
-      "app.normandy.enabled=false",
+      `extensions.webextensions.uuids={\\"${FIREFOX_EXTENSION_ID}\\":\\"${FIREFOX_EXTENSION_UUID}\\"}`,
+      ...FIREFOX_OFFLINE_PREFERENCES.flatMap((preference) => ["--pref", preference]),
       // Space-separated `--args -headless` crashes web-ext's yargs parser
       // (`TypeError: Cannot redefine property: a`) — the `=`-joined form avoids re-tokenizing it.
       "--args=-headless",
       "--start-url",
-      `${fixture.base}/firefox-boot.html`,
+      firefoxBootFixtureUrl(fixture.base),
       // Without --verbose, web-ext never forwards the launched Firefox process's own
       // stdout/stderr, so none of the console markers below would ever be visible.
       "--verbose",

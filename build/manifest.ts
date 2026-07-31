@@ -25,6 +25,15 @@ export const SUPPORTED = {
   firefox: 109,
 } as const;
 
+/**
+ * Firefox's stable add-on identity.
+ *
+ * This is an identifier, not a support address. Changing it after distribution makes Firefox
+ * treat the build as a different extension, so tests and release tooling import this constant
+ * instead of repeating it.
+ */
+export const FIREFOX_EXTENSION_ID = "pointandshoot@whizzzkid.dev";
+
 /** The extension's six permissions, exactly as settled in `docs/plans/README.md`. No more. */
 const PERMISSIONS = [
   "activeTab",
@@ -157,7 +166,10 @@ export function forFirefox(): Record<string, unknown> {
     },
     browser_specific_settings: {
       gecko: {
-        id: "point-and-shoot@gusto.com",
+        id: FIREFOX_EXTENSION_ID,
+        data_collection_permissions: {
+          required: ["none"],
+        },
         strict_min_version: `${SUPPORTED.firefox}.0`,
       },
     },

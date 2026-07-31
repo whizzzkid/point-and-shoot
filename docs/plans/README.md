@@ -362,6 +362,12 @@ not guessed.
 | Firefox minimum  | `109`                                                 | `browser_specific_settings.gecko.strict_min_version`; the same `SUPPORTED` constant    |
 | esbuild `target` | derived from `SUPPORTED` — never written as a literal | W2.3                                                                                   |
 
+Firefox's stable add-on ID is `pointandshoot@whizzzkid.dev`. It is an identifier, not a support
+address. Changing it after distribution would make Firefox treat the build as a different extension,
+so `build/manifest.ts` owns it and Firefox test/release tooling imports the same constant. The same
+Gecko settings declare `data_collection_permissions.required: ["none"]`: captures and exports stay
+local unless the user deliberately hands a bundle to another tool.
+
 Resolved each from **that vendor's own MV3 support baseline**, not from the other's number: Chrome's
 `chrome.sidePanel` API landed in Chrome 114, but the `sidePanel.open()` method the browser shim
 (W2.1) calls did not ship until Chrome 116, so the Chrome floor is 116. Firefox's Manifest V3 became

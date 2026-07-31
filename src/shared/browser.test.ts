@@ -169,8 +169,8 @@ function createFakeFirefox(): FakeFirefox {
 
   const firefoxGlobal: FirefoxGlobalShape = {
     tabs: {
-      captureTab(tabId, options) {
-        calls.push(`tabs.captureTab:${tabId}`);
+      captureVisibleTab(_windowId, options) {
+        calls.push("tabs.captureVisibleTab");
         return Promise.resolve(`data:image/${options?.format ?? "png"};base64,FAKE-CAPTURE`);
       },
       query(_queryInfo) {
@@ -362,7 +362,7 @@ Deno.test("browser shim - construction defers APIs unavailable to content script
   );
 });
 
-Deno.test("browser shim - captureVisibleTab agrees across engines via divergent underlying calls", async () => {
+Deno.test("browser shim - captureVisibleTab agrees across callback and promise API shapes", async () => {
   const { chromeGlobal, calls: chromeCalls } = createFakeChrome();
   const { firefoxGlobal, calls: firefoxCalls } = createFakeFirefox();
   const chromeShim = createBrowserShim({ chrome: chromeGlobal });
@@ -374,7 +374,7 @@ Deno.test("browser shim - captureVisibleTab agrees across engines via divergent 
   assertEquals(chromeResult, "data:image/png;base64,FAKE-CAPTURE");
   assertEquals(firefoxResult, "data:image/png;base64,FAKE-CAPTURE");
   assertEquals(chromeCalls, ["tabs.captureVisibleTab"]);
-  assertEquals(firefoxCalls, ["tabs.query", "tabs.captureTab:1"]);
+  assertEquals(firefoxCalls, ["tabs.captureVisibleTab"]);
 });
 
 Deno.test("browser shim - openPanel agrees across engines via divergent underlying calls", async () => {

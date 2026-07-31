@@ -59,13 +59,12 @@ background script starts, and one `web_accessible_resources` file resolves throu
 deliberately — Playwright cannot load extensions in Firefox, which is the constraint the whole
 approach works around.
 
-This entry is the part W4.3 will not cover: capture. W3.5 notes that Firefox's capture API differs
-in name and options, that the divergence is unit-tested against a fake through the W2.1 shim, and
-that the boot check does not exercise capture at all. So the one place the two browsers most
-plausibly diverge is verified only against a test double.
+W4.3 covers one representative Firefox capture through the real toolbar, injected overlay, native
+sidebar, and persisted session. It deliberately does not duplicate Chromium's multi-page lifecycle,
+export, restricted-page, quota, accessibility, or visual-regression coverage, so those deeper
+Firefox behaviours remain beyond v1's smoke tier.
 
-Start from what W4.3 actually builds, then extend it to capture rather than standing up a second
-harness. Do not reopen this before W4.3 exists.
+Start from W4.3's Marionette harness rather than standing up a second Firefox stack.
 
 ## N.3 — Fixture-page coverage for the selector sad paths
 
