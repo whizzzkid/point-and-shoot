@@ -19,10 +19,16 @@ coverage/
 dist/
 
 # Node-ecosystem tooling reached through `npm:` specifiers. There is no
-# package.json, but Playwright, esbuild and web-ext still write here.
+# root package.json, but Playwright, esbuild and web-ext still write here.
 node_modules/
 .playwright/
 playwright-report/
+
+# The Astro site owns an isolated Node toolchain. Its generated design bridge is
+# ephemeral: committed design tokens and fonts remain under src/shared/design/.
+site/.astro/
+site/.generated/
+site/.lighthouse/
 
 # Extension packages produced by web-ext (wave 4 release packaging)
 web-ext-artifacts/
