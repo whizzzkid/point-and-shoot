@@ -64,10 +64,10 @@ interface ManifestBase {
   readonly name: string;
   readonly version: string;
   readonly description: string;
-  readonly icons: Readonly<Record<string, string>>;
+  readonly icons: typeof EXTENSION_ICONS;
   readonly permissions: readonly string[];
   readonly action: {
-    readonly default_icon: Readonly<Record<string, string>>;
+    readonly default_icon: typeof EXTENSION_ICONS;
     readonly default_title: string;
   };
   readonly options_ui: {
