@@ -53,39 +53,50 @@ export async function launchExtension(userDataDir = ""): Promise<ExtensionLaunch
       `--load-extension=${EXTENSION_DIR}`,
     ],
   });
-  const serviceWorker = context.serviceWorkers()[0] ??
-    await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
-  const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
+  try {
+    const serviceWorker = context.serviceWorkers()[0] ??
+      await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
+    const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
 
-  while (Date.now() < readinessDeadline) {
-    const listenersReady = await serviceWorker.evaluate(() => {
-      const extensionGlobal = globalThis as unknown as {
-        readonly chrome: {
-          readonly commands: {
-            readonly onCommand: { hasListeners(): boolean };
-          };
-          readonly runtime: {
-            readonly onMessage: { hasListeners(): boolean };
+    while (Date.now() < readinessDeadline) {
+      const listenersReady = await serviceWorker.evaluate(() => {
+        const extensionGlobal = globalThis as unknown as {
+          readonly chrome: {
+            readonly commands: {
+              readonly onCommand: { hasListeners(): boolean };
+            };
+            readonly runtime: {
+              readonly onMessage: { hasListeners(): boolean };
+            };
           };
         };
-      };
-      return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
-        extensionGlobal.chrome.runtime.onMessage.hasListeners();
-    });
-    if (listenersReady) {
-      return {
-        context,
-        extensionId: new URL(serviceWorker.url()).host,
-        serviceWorker,
-      };
+        return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
+          extensionGlobal.chrome.runtime.onMessage.hasListeners();
+      });
+      if (listenersReady) {
+        return {
+          context,
+          extensionId: new URL(serviceWorker.url()).host,
+          serviceWorker,
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MILLISECONDS));
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MILLISECONDS));
-  }
 
-  await context.close();
-  throw new Error(
-    `extension listeners were not ready within ${LISTENER_READY_TIMEOUT_MILLISECONDS}ms`,
-  );
+    throw new Error(
+      `extension listeners were not ready within ${LISTENER_READY_TIMEOUT_MILLISECONDS}ms`,
+    );
+  } catch (error) {
+    try {
+      await context.close();
+    } catch (closeError) {
+      throw new AggregateError(
+        [error, closeError],
+        "extension initialization and context cleanup both failed",
+      );
+    }
+    throw error;
+  }
 }
 
 /**
@@ -229,28 +240,32 @@ export async function waitForStoredSession(
             : typeof stored.displaySessionId === "string"
             ? stored.displaySessionId
             : undefined);
-        if (selectedId !== undefined) {
+        const databaseExists = (await indexedDB.databases())
+          .some((database) => database.name === "point-and-shoot");
+        if (selectedId !== undefined && databaseExists) {
           const database = await new Promise<IDBDatabase>((resolve, reject) => {
             const request = indexedDB.open("point-and-shoot");
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
           });
           try {
-            const record = await new Promise<unknown>((resolve, reject) => {
-              const request = database.transaction("sessions", "readonly")
-                .objectStore("sessions")
-                .get(selectedId);
-              request.onsuccess = () => resolve(request.result);
-              request.onerror = () => reject(request.error);
-            });
-            if (
-              typeof record === "object" &&
-              record !== null &&
-              "notes" in record &&
-              Array.isArray(record.notes) &&
-              record.notes.length === expectedNoteCount
-            ) {
-              return record;
+            if (database.objectStoreNames.contains("sessions")) {
+              const record = await new Promise<unknown>((resolve, reject) => {
+                const request = database.transaction("sessions", "readonly")
+                  .objectStore("sessions")
+                  .get(selectedId);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              if (
+                typeof record === "object" &&
+                record !== null &&
+                "notes" in record &&
+                Array.isArray(record.notes) &&
+                record.notes.length === expectedNoteCount
+              ) {
+                return record;
+              }
             }
           } finally {
             database.close();
