@@ -22,6 +22,7 @@ import { FIREFOX_EXTENSION_ID } from "../../build/manifest.ts";
 import { validateSession } from "../../src/shared/schema.ts";
 import { startFixtureServer } from "../fixtures/app/server.ts";
 import { MarionetteClient } from "./marionette.ts";
+import { FIREFOX_OFFLINE_PREFERENCES } from "./profile.ts";
 
 const SOURCE_DIRECTORY = fromFileUrl(new URL("../../dist/firefox/", import.meta.url));
 const EXTENSION_UUID = "6f1a2b3c-d4e5-46f7-8a9b-0c1d2e3f4a5b";
@@ -240,6 +241,7 @@ function firefoxCommand(
       `marionette.port=${marionettePort}`,
       "--pref",
       `extensions.webextensions.uuids=${uuidPreference}`,
+      ...FIREFOX_OFFLINE_PREFERENCES.flatMap((preference) => ["--pref", preference]),
       "--args=-headless",
       "--args=-marionette",
       "--args=-remote-allow-system-access",

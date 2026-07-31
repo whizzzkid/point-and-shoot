@@ -18,6 +18,7 @@
 
 import { fromFileUrl, join } from "@std/path";
 import { FIREFOX_EXTENSION_ID } from "../build/manifest.ts";
+import { FIREFOX_OFFLINE_PREFERENCES } from "../tests/firefox/profile.ts";
 import { startFixtureServer } from "../tests/fixtures/app/server.ts";
 
 const SOURCE_DIR = fromFileUrl(new URL("../dist/firefox/", import.meta.url));
@@ -192,14 +193,7 @@ async function main() {
       // breaks with "prefs parse error: unknown keyword".
       "--pref",
       `extensions.webextensions.uuids={\\"${FIREFOX_EXTENSION_ID}\\":\\"${EXTENSION_UUID}\\"}`,
-      "--pref",
-      "services.settings.server=data:,#remote-settings-dummy/v1",
-      "--pref",
-      "extensions.getAddons.cache.enabled=false",
-      "--pref",
-      "browser.search.update=false",
-      "--pref",
-      "app.normandy.enabled=false",
+      ...FIREFOX_OFFLINE_PREFERENCES.flatMap((preference) => ["--pref", preference]),
       // Space-separated `--args -headless` crashes web-ext's yargs parser
       // (`TypeError: Cannot redefine property: a`) — the `=`-joined form avoids re-tokenizing it.
       "--args=-headless",
