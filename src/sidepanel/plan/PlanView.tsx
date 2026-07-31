@@ -6,6 +6,7 @@ import type { Session } from "../../shared/schema.ts";
 import { toMarkdown } from "../../shared/serialize/index.ts";
 import { createExportArchive } from "../../shared/serialize/zip.ts";
 import { Badge, Button, CaptureMinimap, Checkbox, Icon } from "../../ui/components/index.ts";
+import { promptFilename } from "./delivery.ts";
 
 /** Export actions invoked by the plan view after it validates the current selection. */
 export interface PlanViewActions {
@@ -89,6 +90,7 @@ export function PlanView(
   const isBusy = actionState.status === "busy";
   const promptIsBlocked = selectedCount === 0 || markdownProjection.status === "error" || isBusy;
   const bundleIsBlocked = selectedCount === 0 || archiveProjection.status === "error" || isBusy;
+  const promptDisplayName = promptFilename(session).split("/").at(-1) ?? "prompt.md";
 
   const replaceSelection = (next: ReadonlySet<string>): void => {
     setActionState({ status: "idle" });
@@ -201,7 +203,7 @@ export function PlanView(
               <p className="ps-eyebrow">Generated prompt</p>
               <h2>Markdown preview</h2>
             </div>
-            <span className="ps-technical-value">plan.md</span>
+            <span className="ps-technical-value">{promptDisplayName}</span>
           </div>
           <div className="ps-plan-preview__actions">
             <Button

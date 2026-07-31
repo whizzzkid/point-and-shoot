@@ -66,6 +66,8 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
     });
 
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();
+    await page.getByText("checkout-review.md", { exact: true }).waitFor();
+    assertEquals(await page.getByText("plan.md", { exact: true }).count(), 0);
     const preview = page.locator("[data-markdown-preview]");
     await preview.getByText("The primary action is pushed against the card edge.").waitFor();
     assertEquals((await preview.textContent())?.includes("access_token"), false);
