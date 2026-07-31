@@ -25,12 +25,6 @@ export interface ExtensionLaunch {
   readonly serviceWorker: Worker;
 }
 
-/** Durable session pointers stored outside IndexedDB by the extension. */
-export interface SessionPointers {
-  readonly activeId: string | undefined;
-  readonly displayId: string | undefined;
-}
-
 /** Toolbar badge and tooltip state for one browser tab. */
 export interface ActionState {
   readonly badgeText: string;
@@ -53,39 +47,50 @@ export async function launchExtension(userDataDir = ""): Promise<ExtensionLaunch
       `--load-extension=${EXTENSION_DIR}`,
     ],
   });
-  const serviceWorker = context.serviceWorkers()[0] ??
-    await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
-  const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
+  try {
+    const serviceWorker = context.serviceWorkers()[0] ??
+      await context.waitForEvent("serviceworker", { timeout: SERVICE_WORKER_TIMEOUT_MILLISECONDS });
+    const readinessDeadline = Date.now() + LISTENER_READY_TIMEOUT_MILLISECONDS;
 
-  while (Date.now() < readinessDeadline) {
-    const listenersReady = await serviceWorker.evaluate(() => {
-      const extensionGlobal = globalThis as unknown as {
-        readonly chrome: {
-          readonly commands: {
-            readonly onCommand: { hasListeners(): boolean };
-          };
-          readonly runtime: {
-            readonly onMessage: { hasListeners(): boolean };
+    while (Date.now() < readinessDeadline) {
+      const listenersReady = await serviceWorker.evaluate(() => {
+        const extensionGlobal = globalThis as unknown as {
+          readonly chrome: {
+            readonly commands: {
+              readonly onCommand: { hasListeners(): boolean };
+            };
+            readonly runtime: {
+              readonly onMessage: { hasListeners(): boolean };
+            };
           };
         };
-      };
-      return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
-        extensionGlobal.chrome.runtime.onMessage.hasListeners();
-    });
-    if (listenersReady) {
-      return {
-        context,
-        extensionId: new URL(serviceWorker.url()).host,
-        serviceWorker,
-      };
+        return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
+          extensionGlobal.chrome.runtime.onMessage.hasListeners();
+      });
+      if (listenersReady) {
+        return {
+          context,
+          extensionId: new URL(serviceWorker.url()).host,
+          serviceWorker,
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MILLISECONDS));
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MILLISECONDS));
-  }
 
-  await context.close();
-  throw new Error(
-    `extension listeners were not ready within ${LISTENER_READY_TIMEOUT_MILLISECONDS}ms`,
-  );
+    throw new Error(
+      `extension listeners were not ready within ${LISTENER_READY_TIMEOUT_MILLISECONDS}ms`,
+    );
+  } catch (error) {
+    try {
+      await context.close();
+    } catch (closeError) {
+      throw new AggregateError(
+        [error, closeError],
+        "extension initialization and context cleanup both failed",
+      );
+    }
+    throw error;
+  }
 }
 
 /**
@@ -166,112 +171,6 @@ export async function waitForHostCount(page: Page, expectedCount: number): Promi
 }
 
 /**
- * Reads the current durable session pointers from extension-local storage.
- *
- * @param serviceWorker Real extension service worker.
- * @returns Active and displayed session ids when present.
- */
-export async function readSessionPointers(serviceWorker: Worker): Promise<SessionPointers> {
-  return await serviceWorker.evaluate(async () => {
-    const extensionGlobal = globalThis as unknown as {
-      readonly chrome: {
-        readonly storage: {
-          readonly local: {
-            get(keys: readonly string[]): Promise<Record<string, unknown>>;
-          };
-        };
-      };
-    };
-    const stored = await extensionGlobal.chrome.storage.local.get([
-      "activeSessionId",
-      "displaySessionId",
-    ]);
-    return {
-      activeId: typeof stored.activeSessionId === "string" ? stored.activeSessionId : undefined,
-      displayId: typeof stored.displaySessionId === "string" ? stored.displaySessionId : undefined,
-    };
-  });
-}
-
-/**
- * Waits for and reads one raw session record from the extension's IndexedDB store.
- *
- * @param serviceWorker Real extension service worker.
- * @param expectedNoteCount Required note count before returning.
- * @param sessionId Optional explicit record id; defaults to the active or displayed pointer.
- * @returns The unknown stored value for production validation by the caller.
- */
-export async function waitForStoredSession(
-  serviceWorker: Worker,
-  expectedNoteCount: number,
-  sessionId?: string,
-): Promise<unknown> {
-  return await serviceWorker.evaluate(
-    async ({ expectedNoteCount, pollInterval, requestedId, timeout }) => {
-      const extensionGlobal = globalThis as unknown as {
-        readonly chrome: {
-          readonly storage: {
-            readonly local: {
-              get(keys: readonly string[]): Promise<Record<string, unknown>>;
-            };
-          };
-        };
-      };
-      const deadline = Date.now() + timeout;
-      do {
-        const stored = await extensionGlobal.chrome.storage.local.get([
-          "activeSessionId",
-          "displaySessionId",
-        ]);
-        const selectedId = requestedId ??
-          (typeof stored.activeSessionId === "string"
-            ? stored.activeSessionId
-            : typeof stored.displaySessionId === "string"
-            ? stored.displaySessionId
-            : undefined);
-        if (selectedId !== undefined) {
-          const database = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open("point-and-shoot");
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          try {
-            const record = await new Promise<unknown>((resolve, reject) => {
-              const request = database.transaction("sessions", "readonly")
-                .objectStore("sessions")
-                .get(selectedId);
-              request.onsuccess = () => resolve(request.result);
-              request.onerror = () => reject(request.error);
-            });
-            if (
-              typeof record === "object" &&
-              record !== null &&
-              "notes" in record &&
-              Array.isArray(record.notes) &&
-              record.notes.length === expectedNoteCount
-            ) {
-              return record;
-            }
-          } finally {
-            database.close();
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      } while (Date.now() < deadline);
-      throw new Error(
-        `session did not reach ${expectedNoteCount} notes within ${timeout}ms`,
-      );
-    },
-    {
-      expectedNoteCount,
-      pollInterval: POLL_INTERVAL_MILLISECONDS,
-      requestedId: sessionId,
-      timeout: STATE_TIMEOUT_MILLISECONDS,
-    },
-  );
-}
-
-/**
  * Resolves the browser tab id for a foreground page.
  *
  * @param context Persistent Chromium context owning the page.
@@ -336,7 +235,11 @@ export async function waitForActionState(
       }
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } while (Date.now() < deadline);
-    return observed;
+    throw new Error(
+      `action state did not match within ${timeout}ms: ${
+        JSON.stringify({ expected, observed, tabId })
+      }`,
+    );
   }, {
     expected,
     pollInterval: POLL_INTERVAL_MILLISECONDS,
