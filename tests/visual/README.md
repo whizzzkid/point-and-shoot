@@ -11,6 +11,7 @@ Use the pinned Ubuntu 24.04 Playwright image so the browser, fonts, and operatin
 ```bash
 docker run --rm --platform linux/amd64 \
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+  --env PNS_VISUAL_UPDATE_PLATFORM=ubuntu-24.04-playwright-1.62.0 \
   --volume "$PWD:/work" \
   --workdir /work \
   mcr.microsoft.com/playwright:v1.62.0-noble \

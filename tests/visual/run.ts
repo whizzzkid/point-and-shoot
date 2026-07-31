@@ -28,12 +28,31 @@ const ACTUAL_DIRECTORY = `${REPORT_DIRECTORY}/actual`;
 const DIFF_ARTIFACT_DIRECTORY = `${REPORT_DIRECTORY}/diffs`;
 const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
+const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
 
 interface SnapshotComparisonOptions {
   readonly update: boolean;
+}
+
+/**
+ * Reports whether a runtime is the documented visual-baseline update environment.
+ *
+ * @param operatingSystem Deno runtime operating system.
+ * @param architecture Deno runtime architecture.
+ * @param marker Explicit container marker from the documented update command.
+ * @returns Whether baseline replacement is allowed.
+ */
+export function supportsBaselineUpdates(
+  operatingSystem: string,
+  architecture: string,
+  marker: string | undefined,
+): boolean {
+  return operatingSystem === "linux" &&
+    architecture === "x86_64" &&
+    marker === BASELINE_UPDATE_PLATFORM_MARKER;
 }
 
 function snapshotName(surface: Surface, theme: Wave3ShotTheme): string {
@@ -116,6 +135,18 @@ async function main(): Promise<void> {
     throw new Error(`unknown visual test arguments: ${unknownArguments.join(", ")}`);
   }
   const update = Deno.args.includes("--update");
+  if (
+    update &&
+    !supportsBaselineUpdates(
+      Deno.build.os,
+      Deno.build.arch,
+      Deno.env.get("PNS_VISUAL_UPDATE_PLATFORM"),
+    )
+  ) {
+    throw new Error(
+      "visual baseline updates require the documented Ubuntu 24.04 Playwright container",
+    );
+  }
   await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
   });
