@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import type { JSX } from "preact";
-import { useMemo, useState } from "preact/hooks";
+import { useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Session } from "../../shared/schema.ts";
 import { toMarkdown } from "../../shared/serialize/index.ts";
 import { createExportArchive } from "../../shared/serialize/zip.ts";
@@ -52,6 +52,7 @@ function selectionFor(session: Session, selected: ReadonlySet<string>): Readonly
 export function PlanView(
   { actions, onBack, session, sizeBudgetBytes }: PlanViewProps,
 ): JSX.Element {
+  const viewRef = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(session.notes.map((note) => note.id)),
   );
@@ -91,6 +92,10 @@ export function PlanView(
   const promptIsBlocked = selectedCount === 0 || markdownProjection.status === "error" || isBusy;
   const bundleIsBlocked = selectedCount === 0 || archiveProjection.status === "error" || isBusy;
   const promptDisplayName = promptFilename(session).split("/").at(-1) ?? "prompt.md";
+
+  useLayoutEffect(() => {
+    viewRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+  }, []);
 
   const replaceSelection = (next: ReadonlySet<string>): void => {
     setActionState({ status: "idle" });
@@ -134,7 +139,7 @@ export function PlanView(
   };
 
   return (
-    <main className="ps-plan-view">
+    <main className="ps-plan-view" ref={viewRef}>
       <header className="ps-plan-header">
         <div>
           <p className="ps-eyebrow">Agent-ready export</p>
@@ -144,7 +149,7 @@ export function PlanView(
             {session.notes.length === 1 ? "note" : "notes"}
           </p>
         </div>
-        <Button autoFocus onClick={onBack} variant="ghost">Back to notes</Button>
+        <Button onClick={onBack} variant="ghost">Back to notes</Button>
       </header>
 
       <div className="ps-plan-layout">

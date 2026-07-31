@@ -35,9 +35,19 @@ Deno.test("Release Please manifest updates every packaged version source", async
 Deno.test("release workflow builds exact preview and release SHAs", async () => {
   const workflow = await Deno.readTextFile(new URL(".github/workflows/release.yml", ROOT));
   const ciWorkflow = await Deno.readTextFile(new URL(".github/workflows/ci.yml", ROOT));
+  const denoConfig = await Deno.readTextFile(new URL("deno.json", ROOT));
 
   assertStringIncludes(workflow, "googleapis/release-please-action@v5");
-  assertStringIncludes(workflow, "release-as: ${{ steps.version.outputs.next }}");
+  assertStringIncludes(workflow, "skip-github-pull-request: true");
+  assertStringIncludes(
+    denoConfig,
+    '"release:pr": "deno run -A npm:release-please@17.6.0 release-pr"',
+  );
+  assertStringIncludes(workflow, "deno task release:pr");
+  assertStringIncludes(workflow, `trap 'rm -f -- "\${token_file}"' EXIT INT TERM`);
+  assertStringIncludes(workflow, '--release-as="${NEXT_VERSION}"');
+  assertStringIncludes(workflow, "pr_created: ${{ steps.release_pr.outputs.prs_created }}");
+  assertStringIncludes(workflow, "pr: ${{ steps.release_pr.outputs.pr }}");
   assertStringIncludes(workflow, "actions: write");
   assertStringIncludes(workflow, 'gh workflow run ci.yml --ref "${head_branch}"');
   assertStringIncludes(ciWorkflow, "workflow_dispatch:");
