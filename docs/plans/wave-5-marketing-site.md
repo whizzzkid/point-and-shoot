@@ -69,7 +69,7 @@ is why it waits on W5.8 as well.
 
 ## W5.1 — Astro project scaffold
 
-- [ ] `site/` — SHA: _pending_
+- [x] `site/` — SHA: `9aa7506`
 
 **parallel-safe.**
 
@@ -86,7 +86,7 @@ passes untouched; no Astro or Vite config references anything under `src/`.
 
 ## W5.2 — Port the marketing kit
 
-- [ ] `site/src/` — SHA: _pending_
+- [x] `site/src/` — SHA: `dd10e4f`
 
 **Depends on:** W5.1, W5.3, W5.4.
 
@@ -105,7 +105,7 @@ photography, no illustration.
 
 ## W5.3 — Share the design tokens
 
-- [ ] `site/src/styles/` — SHA: _pending_
+- [x] `site/src/styles/` — SHA: `4ade8c4`
 
 **parallel-safe.** Consumes W2.4.
 
@@ -121,7 +121,7 @@ build pick it up, with no second copy of the palette anywhere under `site/`.
 
 ## W5.4 — Self-hosted fonts
 
-- [ ] `site/public/fonts/` — SHA: _pending_
+- [x] `site/public/fonts/` — SHA: `02766c6`
 
 **parallel-safe.** Consumes W2.5.
 
@@ -139,7 +139,7 @@ intentional.
 
 ## W5.5 — Install links
 
-- [ ] `site/src/` install CTAs — SHA: _pending_
+- [x] `site/src/` install CTAs — SHA: `4c881b7`
 
 **parallel-safe.**
 
@@ -156,7 +156,7 @@ placeholder or `#` href remains.
 
 ## W5.6 — Deploy and quality gates
 
-- [ ] `.github/workflows/site.yml` — SHA: _pending_
+- [x] `.github/workflows/site.yml` — SHA: `a40ed29`
 
 **Depends on:** W5.2, W5.5, W5.8.
 
@@ -179,7 +179,7 @@ violation and confirm the a11y job fails, then revert it — an unproven gate is
 
 ## W5.7 — Render the docs markdown
 
-- [ ] `site/src/content/docs/`, `site/src/pages/docs/` — SHA: _pending_
+- [x] `site/src/content/docs/`, `site/src/pages/docs/` — SHA: `9eda88f`
 
 **Depends on:** W5.1, W5.3, W5.4.
 
@@ -214,7 +214,7 @@ third-party origin in the output.
 
 ## W5.8 — Docs navigation, diagrams, and link integrity
 
-- [ ] `site/src/components/docs/`, link-check task — SHA: _pending_
+- [x] `site/src/components/docs/`, link-check task — SHA: `6ea8fb5`
 
 **Depends on:** W5.7.
 
