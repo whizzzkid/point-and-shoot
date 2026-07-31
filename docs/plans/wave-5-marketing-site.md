@@ -11,15 +11,15 @@ the same toolchain, and the docs must be themed with the _product's_ design toke
 generic docs theme — which only works if the token pipeline (W5.3) is built once and consumed by
 both.
 
-## Why this is deferred and separate
+## Why this was deferred and remains separate
 
 A landing page ships nothing until there is something to install, and its content depends on a
 product that doesn't exist yet. It is also the one surface where the design intentionally departs
 from the rest — the bundle notes the marketing site is "the one place spacing opens up," in contrast
 to the information-dense tool.
 
-Nothing in waves 1–4 depends on this, and this depends on nothing but the design bundle. It can be
-picked up at any time after v1 works.
+Nothing in waves 1–4 depended on this, and this depends on nothing but the design bundle. Work began
+after v1 was functional, while the isolated site toolchain remains intentionally separate.
 
 ## Stack
 
