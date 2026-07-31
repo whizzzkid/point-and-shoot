@@ -513,6 +513,6 @@ footer p {
   *,
   *::before,
   *::after {
-    transition-duration: var(--space-0) !important;
+    transition-duration: calc(var(--duration-fast) * 0) !important;
   }
 }
