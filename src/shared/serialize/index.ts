@@ -1,5 +1,11 @@
 import type { Note, Session } from "../schema.ts";
 import { pageUrlForExport, shouldStripQueryByDefault } from "../session.ts";
+import type {
+  BoxModelDigest,
+  ColorDigest,
+  ElementDigest,
+  StyleDigestBundle,
+} from "../style-digest.ts";
 
 /** Controls which notes and image references an export projection includes. */
 export interface SerializeOptions {
@@ -57,6 +63,75 @@ export function toJson(session: Session, options: SerializeOptions = {}): string
 
 function jsonEvidence(value: unknown): string {
   return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function pixelValue(value: number): string {
+  return value === 0 ? "0" : `${value}px`;
+}
+
+function cssShorthand(top: number, right: number, bottom: number, left: number): string {
+  const values = [top, right, bottom, left];
+  if (top === right && top === bottom && top === left) values.splice(1);
+  else if (top === bottom && right === left) values.splice(2);
+  else if (right === left) values.splice(3, 1);
+  return values.map(pixelValue).join(" ");
+}
+
+function terseBox(box: BoxModelDigest): Record<string, number | string> {
+  return {
+    width: box.width,
+    height: box.height,
+    padding: cssShorthand(
+      box.paddingTop,
+      box.paddingRight,
+      box.paddingBottom,
+      box.paddingLeft,
+    ),
+    margin: cssShorthand(box.marginTop, box.marginRight, box.marginBottom, box.marginLeft),
+    borderWidth: cssShorthand(
+      box.borderTopWidth,
+      box.borderRightWidth,
+      box.borderBottomWidth,
+      box.borderLeftWidth,
+    ),
+  };
+}
+
+function terseColor(color: ColorDigest): Record<string, string> {
+  const borderColors = [
+    color.borderTopColor,
+    color.borderRightColor,
+    color.borderBottomColor,
+    color.borderLeftColor,
+  ];
+  const sharedBorderColor = borderColors.every((value) => value === borderColors[0]);
+  if (sharedBorderColor) {
+    return {
+      color: color.color,
+      backgroundColor: color.backgroundColor,
+      borderColor: color.borderTopColor,
+    };
+  }
+  return { ...color };
+}
+
+function terseElement(element: ElementDigest): Record<string, unknown> {
+  return {
+    box: terseBox(element.box),
+    typography: element.typography,
+    color: terseColor(element.color),
+  };
+}
+
+function terseStyleDigest(digest: StyleDigestBundle): Record<string, unknown> {
+  return {
+    self: terseElement(digest.self),
+    parent: digest.parent === null ? null : terseElement(digest.parent),
+    siblings: digest.siblings.map((sibling) => ({
+      ...sibling,
+      element: terseElement(sibling.element),
+    })),
+  };
 }
 
 function singleLine(value: string, fallback: string): string {
@@ -119,7 +194,7 @@ function noteMarkdown(
       "",
       element.styleDigest === null
         ? "Computed style evidence was unavailable."
-        : `Computed style evidence:\n\n${jsonEvidence(element.styleDigest)}`,
+        : `Computed style evidence:\n\n${jsonEvidence(terseStyleDigest(element.styleDigest))}`,
     );
   });
 

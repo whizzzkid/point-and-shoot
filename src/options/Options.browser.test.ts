@@ -65,7 +65,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     await page.getByLabel("Screenshot quality").selectOption("0.85");
     await page.getByLabel("Maximum screenshot dimension").selectOption("2048");
     await page.getByRole("tab", { name: "Export & privacy" }).click();
-    await page.getByLabel("Export size budget").selectOption("8000000");
+    await page.getByLabel("Export warning threshold").selectOption("8000000");
     await page.getByRole("switch", { name: "Strip sensitive query strings" }).click();
     await page.getByText("Saved.").waitFor();
 
@@ -95,7 +95,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     assertEquals(await page.getByLabel("Screenshot quality").inputValue(), "0.85");
     assertEquals(await page.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
     await page.getByRole("tab", { name: "Export & privacy" }).click();
-    assertEquals(await page.getByLabel("Export size budget").inputValue(), "8000000");
+    assertEquals(await page.getByLabel("Export warning threshold").inputValue(), "8000000");
     assertEquals(
       await page.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
         "aria-checked",

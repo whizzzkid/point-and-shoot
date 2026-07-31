@@ -82,9 +82,12 @@ query string is included in an export.
 
 1. Select **Compile plan** in the side panel.
 2. Include or exclude individual notes and read the generated Markdown preview.
-3. Confirm the selected ZIP is within the configured size budget.
+3. Review the selected ZIP size. Crossing the configured warning threshold does not block export.
 4. Read the outbound-data disclosure beside the export actions.
-5. Select **Download for agent**.
+5. Select one of the prompt actions:
+   - **Copy prompt** puts the image-free Markdown preview on the clipboard.
+   - **Download prompt** saves that same preview as a standalone `.md` file.
+   - **Download bundle** saves the complete ZIP with canonical JSON and screenshots.
 
 The ZIP contains:
 
@@ -92,8 +95,8 @@ The ZIP contains:
 - `plan.md`, the selected notes and relative screenshot links; and
 - `shots/note-NN.webp`, one screenshot per selected note.
 
-An export with no included notes is disabled. If the bundle exceeds its configured limit, exclude
-notes or lower screenshot quality or maximum dimensions in the options page.
+An export with no included notes is disabled. A size warning is advisory; you may export as-is,
+exclude notes, or lower screenshot quality or maximum dimensions in the options page.
 
 ## Hand the bundle to a local agent
 
@@ -104,7 +107,8 @@ repository that owns the page you captured, then give it this instruction:
 > resolve every relative image link under `shots/`. Implement the requested fixes, then verify them
 > against the captured pages.
 
-Keep the extracted directory intact; moving only `plan.md` leaves its screenshot links dangling.
+Keep the extracted ZIP directory intact; moving only its `plan.md` leaves its screenshot links
+dangling. The standalone prompt download contains no screenshot links.
 
 ## End the session
 

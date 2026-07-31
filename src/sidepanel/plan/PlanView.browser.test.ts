@@ -11,8 +11,19 @@ const ROOT = new URL("../../../", import.meta.url);
 const PLAN_VIEW_HARNESS = new URL("tests/e2e/plan-view-harness.tsx", ROOT);
 
 interface PlanViewHarness {
-  readonly actionLog: { copies: string[][]; downloads: string[][]; backs: number };
-  mount(theme: "dark" | "light", sizeBudgetBytes?: number, fail?: boolean, pending?: boolean): void;
+  readonly actionLog: {
+    copies: string[][];
+    bundleDownloads: string[][];
+    promptDownloads: string[][];
+    backs: number;
+  };
+  mount(
+    theme: "dark" | "light",
+    sizeBudgetBytes?: number,
+    fail?: boolean,
+    pending?: boolean,
+    archiveFails?: boolean,
+  ): void;
   resolveActions(): void;
   setTheme(theme: "dark" | "light"): void;
   unmount(): void;
@@ -85,8 +96,10 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
     assertEquals((await preview.textContent())?.includes("total wraps"), false);
     await page.getByRole("button", { name: "Copy prompt" }).click();
     await page.getByText("Prompt copied.").waitFor();
-    await page.getByRole("button", { name: "Download for agent" }).click();
-    await page.getByText("Agent bundle download started.").waitFor();
+    await page.getByRole("button", { name: "Download prompt" }).click();
+    await page.getByText("Prompt download started.").waitFor();
+    await page.getByRole("button", { name: "Download bundle" }).click();
+    await page.getByText("Bundle download started.").waitFor();
     assertEquals(
       await page.evaluate(() => {
         const harness = (globalThis as unknown as {
@@ -94,20 +107,26 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
         }).pointShootPlanViewTest;
         return {
           copies: harness.actionLog.copies,
-          downloads: harness.actionLog.downloads,
+          bundleDownloads: harness.actionLog.bundleDownloads,
+          promptDownloads: harness.actionLog.promptDownloads,
         };
       }),
       {
         copies: [["note-button"]],
-        downloads: [["note-button"]],
+        bundleDownloads: [["note-button"]],
+        promptDownloads: [["note-button"]],
       },
     );
 
     await page.getByRole("button", { name: "Exclude all" }).click();
-    assertEquals(await page.getByText("Agent bundle download started.").count(), 0);
+    assertEquals(await page.getByText("Bundle download started.").count(), 0);
     assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isDisabled(), true);
     assertEquals(
-      await page.getByRole("button", { name: "Download for agent" }).isDisabled(),
+      await page.getByRole("button", { name: "Download prompt" }).isDisabled(),
+      true,
+    );
+    assertEquals(
+      await page.getByRole("button", { name: "Download bundle" }).isDisabled(),
       true,
     );
 
@@ -118,9 +137,25 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
       harness.unmount();
       harness.mount("dark", 1);
     });
-    await page.getByRole("alert").getByText("The selected bundle is over the 1 byte limit.")
+    await page.getByRole("alert").getByText(
+      "The selected bundle is above the 1 byte warning threshold.",
+    )
       .waitFor();
-    assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isDisabled(), true);
+    assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isEnabled(), true);
+    assertEquals(await page.getByRole("button", { name: "Download prompt" }).isEnabled(), true);
+    assertEquals(await page.getByRole("button", { name: "Download bundle" }).isEnabled(), true);
+
+    await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPlanViewTest: PlanViewHarness;
+      }).pointShootPlanViewTest;
+      harness.unmount();
+      harness.mount("dark", 2_000_000, false, false, true);
+    });
+    await page.getByRole("alert").getByText("Screenshot must be a base64 WebP data URL").waitFor();
+    assertEquals(await page.getByRole("button", { name: "Copy prompt" }).isEnabled(), true);
+    assertEquals(await page.getByRole("button", { name: "Download prompt" }).isEnabled(), true);
+    assertEquals(await page.getByRole("button", { name: "Download bundle" }).isDisabled(), true);
 
     await page.evaluate(() => {
       const harness = (globalThis as unknown as {
@@ -139,7 +174,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
       harness.unmount();
       harness.mount("dark", 2_000_000, false, true);
     });
-    await page.getByRole("button", { name: "Download for agent" }).click();
+    await page.getByRole("button", { name: "Download bundle" }).click();
     assertEquals(
       await page.getByRole("checkbox", { name: "Include Checkout" }).isDisabled(),
       true,
@@ -151,7 +186,13 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
       }).pointShootPlanViewTest;
       harness.resolveActions();
     });
-    await page.getByText("Agent bundle download started.").waitFor();
+    await page.getByText("Bundle download started.").waitFor();
+
+    await page.setViewportSize({ height: 900, width: 600 });
+    for (const name of ["Copy prompt", "Download prompt", "Download bundle"]) {
+      await page.getByRole("button", { name }).focus();
+      assertEquals(await page.getByRole("button", { name }).isVisible(), true);
+    }
   } finally {
     await browser.close();
     await fixture.close();

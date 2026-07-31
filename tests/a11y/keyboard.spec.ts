@@ -83,7 +83,7 @@ Deno.test("keyboard-only flow activates, captures, annotates, reviews, and expor
     await panel.getByRole("heading", { name: "Compile plan" }).waitFor();
     await assertVisibleKeyboardFocus(panel);
 
-    const download = panel.getByRole("button", { name: "Download for agent" });
+    const download = panel.getByRole("button", { name: "Download bundle" });
     await tabTo(panel, download);
     await assertVisibleKeyboardFocus(panel);
     const downloadStarted = panel.waitForEvent("download");

@@ -24,7 +24,11 @@ import {
   updateNoteText,
   updateSessionName,
 } from "./model.ts";
-import { copySessionPrompt, downloadSessionArchive } from "./plan/delivery.ts";
+import {
+  copySessionPrompt,
+  downloadSessionArchive,
+  downloadSessionPrompt,
+} from "./plan/delivery.ts";
 import type { ExportDeliveryDependencies } from "./plan/delivery.ts";
 import { PlanView } from "./plan/PlanView.tsx";
 import type { NotesRepository } from "./repository.ts";
@@ -286,8 +290,12 @@ export function NotesPanel(
           actions={{
             copy: (includedNoteIds) =>
               copySessionPrompt(session, { includedNoteIds }, exportDelivery),
-            download: (includedNoteIds) =>
+            downloadBundle: (includedNoteIds) =>
               downloadSessionArchive(session, { includedNoteIds }, exportDelivery).then(
+                () => undefined,
+              ),
+            downloadPrompt: (includedNoteIds) =>
+              downloadSessionPrompt(session, { includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
           }}
@@ -386,8 +394,8 @@ export function NotesPanel(
             {isOverBudget
               ? (
                 <p role="alert">
-                  Export is over the size budget. Delete notes or reduce screenshot settings before
-                  export.
+                  This session is above the configured warning threshold. Copy and download remain
+                  available.
                 </p>
               )
               : null}

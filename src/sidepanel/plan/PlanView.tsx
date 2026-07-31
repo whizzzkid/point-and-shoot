@@ -10,7 +10,8 @@ import { Badge, Button, CaptureMinimap, Checkbox, Icon } from "../../ui/componen
 /** Export actions invoked by the plan view after it validates the current selection. */
 export interface PlanViewActions {
   readonly copy: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
-  readonly download: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
+  readonly downloadBundle: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
+  readonly downloadPrompt: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
 }
 
 /** Props accepted by {@link PlanView}. */
@@ -23,7 +24,10 @@ export interface PlanViewProps {
 
 type ActionState =
   | { readonly status: "idle" }
-  | { readonly status: "busy"; readonly action: "copy" | "download" }
+  | {
+    readonly status: "busy";
+    readonly action: "copy" | "download-bundle" | "download-prompt";
+  }
   | { readonly status: "success"; readonly message: string }
   | { readonly status: "error"; readonly message: string };
 
@@ -52,10 +56,19 @@ export function PlanView(
   );
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
   const includedNoteIds = useMemo(() => selectionFor(session, selected), [session, selected]);
-  const markdown = useMemo(
-    () => toMarkdown(session, { includedNoteIds }),
-    [includedNoteIds, session],
-  );
+  const markdownProjection = useMemo(() => {
+    try {
+      return {
+        status: "ready" as const,
+        markdown: toMarkdown(session, { includedNoteIds, includeImageReferences: false }),
+      };
+    } catch (cause) {
+      return {
+        status: "error" as const,
+        message: cause instanceof Error ? cause.message : "The prompt could not be built.",
+      };
+    }
+  }, [includedNoteIds, session]);
   const archiveProjection = useMemo(() => {
     try {
       return {
@@ -74,8 +87,8 @@ export function PlanView(
   const isOverBudget = archiveProjection.status === "ready" &&
     archiveBytes > sizeBudgetBytes;
   const isBusy = actionState.status === "busy";
-  const isBlocked = selectedCount === 0 || isOverBudget ||
-    archiveProjection.status === "error" || isBusy;
+  const promptIsBlocked = selectedCount === 0 || markdownProjection.status === "error" || isBusy;
+  const bundleIsBlocked = selectedCount === 0 || archiveProjection.status === "error" || isBusy;
 
   const replaceSelection = (next: ReadonlySet<string>): void => {
     setActionState({ status: "idle" });
@@ -94,7 +107,7 @@ export function PlanView(
   };
 
   const runAction = (
-    action: "copy" | "download",
+    action: "copy" | "download-bundle" | "download-prompt",
     operation: () => Promise<void>,
   ): void => {
     setActionState({ status: "busy", action });
@@ -103,7 +116,11 @@ export function PlanView(
       .then(() => {
         setActionState({
           status: "success",
-          message: action === "copy" ? "Prompt copied." : "Agent bundle download started.",
+          message: action === "copy"
+            ? "Prompt copied."
+            : action === "download-prompt"
+            ? "Prompt download started."
+            : "Bundle download started.",
         });
       })
       .catch((cause: unknown) => {
@@ -186,9 +203,56 @@ export function PlanView(
             </div>
             <span className="ps-technical-value">plan.md</span>
           </div>
-          <pre aria-label="Generated Markdown preview" data-markdown-preview tabIndex={0}>
-            {markdown}
-          </pre>
+          <div className="ps-plan-preview__actions">
+            <Button
+              disabled={promptIsBlocked}
+              onClick={() => runAction("copy", () => actions.copy(includedNoteIds))}
+              variant="secondary"
+            >
+              {actionState.status === "busy" && actionState.action === "copy"
+                ? "Copying…"
+                : "Copy prompt"}
+            </Button>
+            <Button
+              disabled={promptIsBlocked}
+              onClick={() =>
+                runAction(
+                  "download-prompt",
+                  () => actions.downloadPrompt(includedNoteIds),
+                )}
+              variant="secondary"
+            >
+              {actionState.status === "busy" && actionState.action === "download-prompt"
+                ? "Preparing…"
+                : "Download prompt"}
+            </Button>
+            <Button
+              disabled={bundleIsBlocked}
+              icon={<Icon name="list-checks" />}
+              onClick={() =>
+                runAction(
+                  "download-bundle",
+                  () => actions.downloadBundle(includedNoteIds),
+                )}
+            >
+              {actionState.status === "busy" && actionState.action === "download-bundle"
+                ? "Preparing…"
+                : "Download bundle"}
+            </Button>
+          </div>
+          {markdownProjection.status === "ready"
+            ? (
+              <pre aria-label="Generated Markdown preview" data-markdown-preview tabIndex={0}>
+                {markdownProjection.markdown}
+              </pre>
+            )
+            : <p className="ps-panel-error" role="alert">{markdownProjection.message}</p>}
+          {actionState.status === "success"
+            ? <p className="ps-plan-status" role="status">{actionState.message}</p>
+            : null}
+          {actionState.status === "error"
+            ? <p className="ps-panel-error" role="alert">{actionState.message}</p>
+            : null}
         </section>
       </div>
 
@@ -223,8 +287,8 @@ export function PlanView(
             {isOverBudget
               ? (
                 <p role="alert">
-                  The selected bundle is over the {formatBytes(sizeBudgetBytes)}{" "}
-                  limit. Exclude notes before exporting.
+                  The selected bundle is above the {formatBytes(sizeBudgetBytes)}{" "}
+                  warning threshold. Copy and download remain available.
                 </p>
               )
               : null}
@@ -232,32 +296,6 @@ export function PlanView(
               ? <p role="alert">{archiveProjection.message}</p>
               : null}
           </div>
-          <div className="ps-plan-actions__buttons">
-            <Button
-              disabled={isBlocked}
-              onClick={() => runAction("copy", () => actions.copy(includedNoteIds))}
-              variant="secondary"
-            >
-              {actionState.status === "busy" && actionState.action === "copy"
-                ? "Copying…"
-                : "Copy prompt"}
-            </Button>
-            <Button
-              disabled={isBlocked}
-              onClick={() => runAction("download", () => actions.download(includedNoteIds))}
-              icon={<Icon name="message-square-plus" />}
-            >
-              {actionState.status === "busy" && actionState.action === "download"
-                ? "Preparing…"
-                : "Download for agent"}
-            </Button>
-          </div>
-          {actionState.status === "success"
-            ? <p className="ps-plan-status" role="status">{actionState.message}</p>
-            : null}
-          {actionState.status === "error"
-            ? <p className="ps-panel-error" role="alert">{actionState.message}</p>
-            : null}
         </div>
       </footer>
     </main>

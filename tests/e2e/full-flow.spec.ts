@@ -141,7 +141,7 @@ async function editVisibleNote(panel: Page, text: string): Promise<void> {
 
 async function downloadEntries(panel: Page): Promise<Map<string, Uint8Array>> {
   const downloadStarted = panel.waitForEvent("download");
-  await panel.getByRole("button", { name: "Download for agent" }).click();
+  await panel.getByRole("button", { name: "Download bundle" }).click();
   const download = await downloadStarted;
   const path = await download.path();
   if (path === null) throw new Error("agent bundle download did not produce a local file");
@@ -509,7 +509,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       );
       await emptyPanel.getByRole("heading", { name: "No notes yet" }).waitFor();
       assertEquals(await emptyPanel.getByRole("button", { name: "Compile plan" }).count(), 0);
-      assertEquals(await emptyPanel.getByRole("button", { name: "Download for agent" }).count(), 0);
+      assertEquals(await emptyPanel.getByRole("button", { name: "Download bundle" }).count(), 0);
       await emptyPanel.close();
 
       await serviceWorker.evaluate(() => {
@@ -563,7 +563,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       );
       assertEquals(await panel.getByRole("button", { name: "Copy prompt" }).isDisabled(), true);
       assertEquals(
-        await panel.getByRole("button", { name: "Download for agent" }).isDisabled(),
+        await panel.getByRole("button", { name: "Download bundle" }).isDisabled(),
         true,
       );
       const zeroNoteEntries = readStoredZipEntries(

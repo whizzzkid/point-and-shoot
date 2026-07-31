@@ -48,14 +48,20 @@ read, browser call, or mutation of the input record.
 4. Its component hint, only when present.
 5. Its computed-style evidence, or an explicit unavailable state.
 
+Computed-style evidence is terse only in Markdown. Four-sided padding, margin, and border widths use
+CSS shorthand strings, and equal border colors become one `borderColor`. Differing border colors
+retain their individual side names. This convenience projection never changes the full style digest
+in the stored session or canonical JSON.
+
 Screenshot paths are relative and lexically sortable:
 
 - Up to 99 selected notes use `./shots/note-01.webp` through `./shots/note-99.webp`.
 - Larger sessions widen every number to the selected-note count's digit width.
 
-The clipboard projection uses the same note content and selection, identifies itself as image-free,
-and omits every screenshot reference. It points the reader to the downloaded bundle for the
-canonical JSON and screenshots.
+The preview, clipboard projection, and standalone Markdown download use the same image-free text.
+They omit every screenshot reference and point the reader to the ZIP bundle for canonical JSON and
+screenshots. The browser saves the standalone prompt under
+`point-and-shoot/<session-name-or-id>.md`.
 
 ## ZIP archive
 
@@ -72,22 +78,22 @@ the archive uses store-only entries so its exact byte length is stable and inexp
 The browser prompts the user to save the archive under `point-and-shoot/<session-name-or-id>.zip`.
 An object URL exists only for the download call and is revoked whether that call succeeds or fails.
 
-## Size budget and errors
+## Size warning and errors
 
-The default limit is `2,000,000` bytes, taken from the
+The default warning threshold is `2,000,000` bytes, taken from the
 [settled-numbers table](../plans/README.md#settled-numbers). The options page can select a fixed
-`1,000,000`, `2,000,000`, `4,000,000`, or `8,000,000` byte limit. The plan view measures the exact
-ZIP bytes for the current selection. When the archive exceeds the configured limit, both copy and
-download are disabled until the user excludes notes. The view shows the selected size, the limit,
-and an alert.
+`1,000,000`, `2,000,000`, `4,000,000`, or `8,000,000` byte threshold. The plan view measures the
+exact ZIP bytes for the current selection. When the archive exceeds the configured threshold, the
+view shows the selected size and an advisory alert. Copy prompt, download prompt, and download
+bundle remain available.
 
-A serialization, clipboard, or download failure remains on the plan view and is announced as an
-alert. No failed action clears the session or changes note selection.
+An empty selection or serialization failure blocks the affected output. A clipboard or download
+failure remains on the plan view and is announced as an alert. No failed action clears the session
+or changes note selection.
 
 ## Outbound disclosure
 
-Immediately beside the export actions, the plan view states that the bundle can contain screenshots,
-page URLs, DOM text, selectors, and computed styles; that it should be treated like any file pasted
-into a chat; and that a hosted agent may receive data captured from authenticated pages. Point &
-Shoot does not upload the bundle in v1. See
-[ADR-0013](../adr/0013-export-bundles-contain-page-data.md).
+The plan view states that the bundle can contain screenshots, page URLs, DOM text, selectors, and
+computed styles; that it should be treated like any file pasted into a chat; and that a hosted agent
+may receive data captured from authenticated pages. Point & Shoot does not upload the bundle in v1.
+See [ADR-0013](../adr/0013-export-bundles-contain-page-data.md).

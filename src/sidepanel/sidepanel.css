@@ -392,6 +392,14 @@ textarea {
   margin-block-end: var(--space-3);
 }
 
+.ps-plan-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-block-end: var(--space-3);
+}
+
 .ps-plan-preview pre {
   background: var(--bg-surface);
   border: calc(var(--space-1) / 4) solid var(--border-subtle);
@@ -446,13 +454,6 @@ textarea {
   min-inline-size: calc(var(--space-24) * 3);
 }
 
-.ps-plan-actions__buttons {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
-  margin-block-start: var(--space-3);
-}
-
 .ps-plan-status {
   color: var(--success);
   font-size: var(--text-xs);
@@ -478,5 +479,9 @@ textarea {
 
   .ps-plan-actions {
     min-inline-size: 0;
+  }
+
+  .ps-plan-preview__actions > .ps-button {
+    flex: 1 1 auto;
   }
 }
