@@ -23,34 +23,39 @@ try {
   try {
     for (const surface of surfaces) {
       const context = await browser.newContext();
-      const page = await context.newPage();
-      const consoleErrors = [];
-      page.on("console", (message) => {
-        if (message.type() === "error") {
-          consoleErrors.push(message.text());
-        }
-      });
-      await page.goto(`${origin}${siteBase}${surface.path}`, { waitUntil: "networkidle" });
-      if (probeFailure) {
-        await page.addStyleTag({
-          content:
-            "body, body * { color: rgb(119 119 119) !important; " +
-            "background-color: rgb(119 119 119) !important; }",
+      try {
+        const page = await context.newPage();
+        const consoleErrors = [];
+        page.on("console", (message) => {
+          if (message.type() === "error") {
+            consoleErrors.push(message.text());
+          }
         });
-      }
+        await page.goto(`${origin}${siteBase}${surface.path}`, { waitUntil: "networkidle" });
+        if (probeFailure) {
+          await page.addStyleTag({
+            content:
+              "body, body * { color: rgb(119 119 119) !important; " +
+              "background-color: rgb(119 119 119) !important; }",
+          });
+        }
 
-      const results = await new AxeBuilder({ page })
-        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-        .analyze();
-      failures.push(
-        ...results.violations
-          .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-          .map((violation) => formatViolation(surface.name, violation)),
-      );
-      failures.push(
-        ...consoleErrors.map((message) => `${surface.name}: console error: ${message}`),
-      );
-      await context.close();
+        const results = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+          .analyze();
+        failures.push(
+          ...results.violations
+            .filter(
+              (violation) => violation.impact === "serious" || violation.impact === "critical",
+            )
+            .map((violation) => formatViolation(surface.name, violation)),
+        );
+        failures.push(
+          ...consoleErrors.map((message) => `${surface.name}: console error: ${message}`),
+        );
+      } finally {
+        await context.close();
+      }
     }
   } finally {
     await new Promise((resolveClosed, reject) => {
