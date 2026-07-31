@@ -75,7 +75,7 @@ jobs:
           before_pr="$(release_pr_json)"
           before_sha="$(jq -r '.sha // empty' <<< "${before_pr}")"
           token_file="$(mktemp "${RUNNER_TEMP}/release-please-token.XXXXXX")"
-          trap 'rm -f "${token_file}"' EXIT INT TERM
+          trap 'rm -f -- "${token_file}"' EXIT INT TERM
           printf '%s' "${GH_TOKEN}" > "${token_file}"
 
           deno task release:pr \

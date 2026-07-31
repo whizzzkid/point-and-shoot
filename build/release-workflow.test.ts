@@ -44,6 +44,7 @@ Deno.test("release workflow builds exact preview and release SHAs", async () => 
     '"release:pr": "deno run -A npm:release-please@17.6.0 release-pr"',
   );
   assertStringIncludes(workflow, "deno task release:pr");
+  assertStringIncludes(workflow, `trap 'rm -f -- "\${token_file}"' EXIT INT TERM`);
   assertStringIncludes(workflow, '--release-as="${NEXT_VERSION}"');
   assertStringIncludes(workflow, "pr_created: ${{ steps.release_pr.outputs.prs_created }}");
   assertStringIncludes(workflow, "pr: ${{ steps.release_pr.outputs.pr }}");
