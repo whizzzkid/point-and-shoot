@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,7 @@ const repositoryRoot = resolve(siteRoot, "..");
 const generatedRoot = resolve(siteRoot, ".generated");
 const generatedDesignRoot = resolve(generatedRoot, "design");
 const sourceDesignRoot = resolve(repositoryRoot, "src/shared/design");
+const sourceDocsAssets = resolve(repositoryRoot, "docs/assets");
 const sourceIcon = resolve(repositoryRoot, ".claude-design/point-and-shoot/assets/icon.svg");
 const sourceProductPreview = resolve(repositoryRoot, "tests/visual/baselines/notes-dark.png");
 const command = process.argv[2];
@@ -20,16 +21,34 @@ if (!supportedCommands.has(command)) {
 await rm(generatedRoot, { force: true, recursive: true });
 await mkdir(resolve(generatedDesignRoot, "fonts"), { recursive: true });
 await mkdir(resolve(generatedRoot, "public/brand"), { recursive: true });
+await mkdir(resolve(generatedRoot, "public/docs"), { recursive: true });
 await mkdir(resolve(generatedRoot, "public/product"), { recursive: true });
 await Promise.all([
   cp(resolve(sourceDesignRoot, "fonts"), resolve(generatedDesignRoot, "fonts"), {
     recursive: true,
   }),
   cp(resolve(sourceDesignRoot, "tokens.css"), resolve(generatedDesignRoot, "tokens.css")),
+  cp(sourceDocsAssets, resolve(generatedRoot, "public/docs/assets"), {
+    recursive: true,
+  }),
   cp(resolve(sourceDesignRoot, "icons.svg"), resolve(generatedRoot, "public/brand/icons.svg")),
   cp(sourceIcon, resolve(generatedRoot, "public/brand/icon.svg")),
   cp(sourceProductPreview, resolve(generatedRoot, "public/product/notes-panel.png")),
 ]);
+
+const tokens = await readFile(resolve(sourceDesignRoot, "tokens.css"), "utf8");
+const lightThemeBlocks = [...tokens.matchAll(/\[data-theme="light"\]\s*(\{[^}]*\})/g)]
+  .map((match) => `:root ${match[1]}`)
+  .join("\n");
+
+if (lightThemeBlocks.length === 0) {
+  throw new Error("The generated design tokens do not define a light theme.");
+}
+
+await writeFile(
+  resolve(generatedDesignRoot, "tokens-docs.css"),
+  `${tokens}\n@media (prefers-color-scheme: light) {\n${lightThemeBlocks}\n}\n`,
+);
 
 const astro = resolve(siteRoot, "node_modules/astro/bin/astro.mjs");
 const child = spawn(process.execPath, [astro, command], {

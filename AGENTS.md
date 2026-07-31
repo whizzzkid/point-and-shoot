@@ -282,6 +282,7 @@ Five folders under [`docs/`](docs/README.md), and no new top-level directories:
 Plus [`docs/README.md`](docs/README.md) (the published index and the documentation conventions every
 item inherits) and [`docs/design.md`](docs/design.md) (the design-bundle map).
 
-**Everything under `docs/` is published** — wave 5 renders it to HTML themed with the product's own
-tokens. Write every doc for a reader who has never seen the repo, keep links relative, and put
-nothing there you would not publish.
+**Everything under `docs/` is public in the repository.** Wave 5 renders the product-facing index,
+design guide, specs, and tutorials to HTML themed with the product's own tokens. Plans and ADRs stay
+repository-only. Write every doc for a reader who has never seen the repo, keep links relative, and
+put nothing there you would not make public.

@@ -191,16 +191,9 @@ scale, and mono treatment for technical strings that the extension uses.
   existing directory, or a build step that syncs it. Do **not** fork or copy the markdown into
   `site/`; two copies of a doc drift within one release, and the repo-local copy is the one
   contributors edit.
-- Publish `docs/README.md`, `docs/design.md`, `docs/specs/`, `docs/adr/`, and `docs/tutorials/`.
-  Publish `docs/plans/` too — the plan is public and the tracking issue links into it.
-- **Frame the plans for an outside reader.** The plan files are written _to an executing agent_:
-  they carry `SHA: _pending_` slots, branch names, and instructions to break assertions
-  deliberately. Rendered without context they read as an internal artifact leaked to the web —
-  someone evaluating the extension hits a wave page, sees a column of unchecked boxes, and concludes
-  the project is abandoned. Publish them under a section that says up front what they are (living
-  delivery plans written for implementing agents; an unchecked box means not yet built) and surfaces
-  each wave's **Status** prominently. The transparency is worth more than the polish, but the
-  framing has to be explicit.
+- Publish `docs/README.md`, `docs/design.md`, `docs/specs/`, and `docs/tutorials/`. Keep
+  `docs/plans/` and `docs/adr/` repository-only. They remain public and readable in GitHub, and
+  references to them from a published product document link back to the repository.
 - Style prose from the tokens: body copy in `--font-body`, headings in `--font-display`, and every
   code span, URL, XPath, and element name in `--font-mono`. Long technical strings truncate with an
   ellipsis and expose the full value, exactly as in-product.
@@ -208,12 +201,12 @@ scale, and mono treatment for technical strings that the extension uses.
 - Support both themes, honouring `prefers-color-scheme`, since the docs are read on other people's
   screens (the extension's dual-theme requirement, ADR 0010, applies here for the same reason).
 
-**Verify:** every file under `docs/` appears in the built output — enumerate with
-`find docs -name '*.md'` and assert one page each, so a new doc cannot be silently unpublished. Grep
-the build for hardcoded colours and font stacks: there must be none — and confirm the three font
-tokens actually resolve to the vendored families rather than falling through to a browser default,
-which is what a `tokens.css` missing its font definitions would look like. Every published plan page
-carries the framing note. No third-party origin in the output.
+**Verify:** every Markdown file in the published set appears in the built output, and no plan or ADR
+route exists. Enumerate the source patterns and assert one page each, so a new product doc cannot be
+silently unpublished. Grep the build for hardcoded colours and font stacks: there must be none — and
+confirm the three font tokens actually resolve to the vendored families rather than falling through
+to a browser default, which is what a `tokens.css` missing its font definitions would look like. No
+third-party origin in the output.
 
 **Commit:** `feat(site): render the docs markdown as themed html`
 
@@ -239,20 +232,14 @@ Make the rendered docs navigable and prove they are not broken.
 - Anchor links for every heading, so a PR can cite a specific rule.
 - A link checker over the built output covering internal links, anchors, and external URLs, wired as
   a task and run in CI (W5.6).
-- A **plan-count check** in the same task: derive the item count from the wave files' item headings
-  (`grep -hcE '^## W[1-5]\.[0-9]+ ' docs/plans/wave-*.md`, summed — count headings, not checkboxes;
-  W1.5 alone carries three boxes for one item) and fail if it disagrees with the index. The plan
-  already drifted twice here — it grew from 48 to 50 to 53 items and prose references were left
-  stale — and [rule 7](README.md#rules-for-working-any-wave) substep 5 requires the graph, the
-  assignment table, and the count to agree. That invariant is currently enforced by an agent
-  remembering. W2.4 generates tokens rather than trusting a human to copy them; the same argument
-  applies to a number stated in three places.
+- A published-scope check in the same task: enumerate the product-document source patterns, require
+  one output page per source, and reject any generated `/docs/plans/` or `/docs/adr/` route.
 
 **Verify:** the link checker passes with zero broken internal links and zero broken anchors, and the
-plan-count check agrees with the index. Every Mermaid block in `docs/` renders as SVG with no error
-box — check each one in a browser, not just the exit code. Deliberately break one relative link and
-confirm the checker fails; add an item to a wave file without updating the index and confirm the
-count check fails.
+published-scope check matches the source set. Every Mermaid block in the published docs renders as
+SVG with no error box — check each one in a browser, not just the exit code. Deliberately break one
+relative link and confirm the checker fails; add a product doc without an output page and confirm
+the scope check fails.
 
 **Commit:** `feat(site): add docs nav, build-time mermaid, and link checking`
 
@@ -263,16 +250,14 @@ count check fails.
 - W5.1–W5.8 checked with real commit SHAs.
 - Site builds and deploys; the deployed URL serves it, and `/docs/` serves the rendered
   documentation.
-- Every markdown file under `docs/` has a published page — verified by enumeration, not by spot
-  check.
+- Every Markdown file in the published product-doc set has a page, while plans and ADRs have no site
+  route — verified by enumeration, not by spot check.
 - Tokens and fonts are **shared** with the extension rather than copied — verified by changing one
   token at source and seeing both builds move. The docs are themed from those same tokens, with no
   stock docs theme and no second palette.
 - No third-party origin in the built output.
-- Link checker green; the plan-count check agrees with the index; every Mermaid diagram renders as
-  build-time SVG.
-- Every published plan page carries the framing note explaining what a delivery plan is and what an
-  unchecked box means.
+- Link checker green; the published-scope check agrees with the source set; every published Mermaid
+  diagram renders as build-time SVG.
 - Lighthouse and axe both pass on the landing page and on a docs page, and the a11y gate has been
   observed failing once.
 - Every install link resolves.

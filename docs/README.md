@@ -6,20 +6,21 @@ highlight a region and write what's wrong — and it captures the screenshot, th
 every element in the highlight, and the surrounding DOM and meta context into one note. A page can
 hold many notes. The collected notes compile into a prompt a local coding agent can act on.
 
-Everything in this folder is written to be **published**: the markdown here is the source for the
-rendered documentation site, themed with the same design tokens as the product (see
-[Publishing](#publishing) below). Write for a reader who has never seen the repo.
+Everything in this folder is written to be **publicly readable in the repository**. The product
+guides are also the source for the rendered documentation site, themed with the same design tokens
+as the extension (see [Publishing](#publishing) below). Write for a reader who has never seen the
+repo.
 
 ## Map
 
-| Path                                | What lives there                                                                      | Published?     |
-| ----------------------------------- | ------------------------------------------------------------------------------------- | -------------- |
-| [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it       | Yes            |
-| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps   | Yes            |
-| [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics    | Yes            |
-| [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                      | Yes            |
-| [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release             | Yes            |
-| `assets/`                           | Committed images referenced by these docs and by PR bodies, one subdirectory per wave | Yes, as images |
+| Path                                | What lives there                                                                        | Published?      |
+| ----------------------------------- | --------------------------------------------------------------------------------------- | --------------- |
+| [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it         | Yes             |
+| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps     | Repository only |
+| [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics      | Yes             |
+| [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                        | Repository only |
+| [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release               | Yes             |
+| `assets/`                           | Committed images referenced by these docs and by PR bodies, one subdirectory per wave   | When referenced |
 
 `plans/` is the entry point for anyone about to do work. Start at
 [`plans/README.md`](plans/README.md) — it carries the shared context, the settled decisions, the
@@ -79,12 +80,17 @@ Concretely, for every item of work:
 
 The published docs site is **wave 5** scope, built alongside the marketing site so both share one
 toolchain and one set of design tokens — see
-[`plans/wave-5-marketing-site.md`](plans/wave-5-marketing-site.md). The markdown in this folder is
-converted to HTML and themed with the same tokens the extension uses, so the docs look like the
-product rather than like a generic docs theme.
+[`plans/wave-5-marketing-site.md`](plans/wave-5-marketing-site.md). The site publishes this index,
+the design guide, specifications, and tutorials. Plans and ADRs remain repository-only because they
+document delivery mechanics and architectural history rather than product use. Published pages link
+back to those sources on GitHub when the context matters.
+
+The published Markdown is converted to HTML and themed with the same tokens the extension uses, so
+the docs look like the product rather than like a generic docs theme.
 
 Two consequences for how you write here:
 
 - Files in this folder are **inputs to a build**, so paths and link targets matter. A broken
   relative link becomes a broken page.
-- Nothing in this folder is private. Do not write anything here you would not publish.
+- Nothing in this folder is private. Repository-only means omitted from the website, not
+  confidential.

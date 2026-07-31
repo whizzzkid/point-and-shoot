@@ -1,0 +1,51 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+import { docsTitle, docsUrl } from "../../lib/docs";
+
+interface Props {
+  base: string;
+  currentId: string;
+  entries: CollectionEntry<"docs">[];
+}
+
+const { base, currentId, entries } = Astro.props;
+const groups = [
+  {
+    label: "Overview",
+    entries: entries.filter((entry) => entry.id === "readme" || entry.id === "design"),
+  },
+  {
+    label: "Specifications",
+    entries: entries.filter((entry) => entry.id.startsWith("specs/")),
+  },
+  {
+    label: "Tutorials",
+    entries: entries.filter((entry) => entry.id.startsWith("tutorials/")),
+  },
+];
+---
+
+<aside class="docs-sidebar">
+  <nav aria-label="Documentation navigation">
+    {
+      groups.map((group) => (
+        <section>
+          <h2>{group.label}</h2>
+          <ul>
+            {group.entries.map((entry) => (
+              <li>
+                <a
+                  aria-current={entry.id === currentId ? "page" : undefined}
+                  href={docsUrl(entry.id, base)}
+                >
+                  {docsTitle(entry.body, entry.id)}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </nav>
+</aside>

@@ -1,0 +1,53 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+import DocsSidebar from "../components/docs/DocsSidebar.astro";
+import "../styles/docs.css";
+
+interface Props {
+  currentId: string;
+  entries: CollectionEntry<"docs">[];
+  title: string;
+}
+
+const { currentId, entries, title } = Astro.props;
+const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/`;
+const canonicalPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={`${title} — Point & Shoot product documentation.`} />
+    <link rel="icon" href={`${base}brand/icon.svg`} type="image/svg+xml" />
+    <link rel="canonical" href={`https://whizzzkid.github.io${canonicalPath}`} />
+    <title>{title} — Point & Shoot docs</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#docs-content">Skip to content</a>
+    <header class="docs-header">
+      <a class="docs-brand" href={base} aria-label="Point & Shoot home">
+        <img src={`${base}brand/icon.svg`} alt="" width="48" height="48" />
+        <span>Point & Shoot</span>
+      </a>
+      <nav aria-label="Site navigation">
+        <a href={`${base}docs/`} aria-current="page">Docs</a>
+        <a href="https://github.com/whizzzkid/point-and-shoot">GitHub</a>
+      </nav>
+    </header>
+    <div class="docs-shell">
+      <DocsSidebar base={base} currentId={currentId} entries={entries} />
+      <main class="docs-content" id="docs-content">
+        <slot />
+        <footer>
+          <p>Point & Shoot product documentation.</p>
+          <a href="https://github.com/whizzzkid/point-and-shoot/tree/main/docs">
+            Read the source on GitHub
+          </a>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
