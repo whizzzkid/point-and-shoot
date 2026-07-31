@@ -238,6 +238,45 @@ Deno.test("session state handlers answer summaries and refresh the action after 
   assertEquals(synchronizations, 1);
 });
 
+Deno.test("session state handlers return an inactive summary when loading fails", async () => {
+  let messageListener: MessageListener | undefined;
+  const responses: unknown[] = [];
+  const errors: unknown[] = [];
+  registerSessionStateHandlers(
+    {
+      runtime: {
+        onMessage: {
+          addListener(listener) {
+            messageListener = listener;
+          },
+        },
+      },
+      storage: {
+        onChanged: {
+          addListener: () => undefined,
+          removeListener: () => undefined,
+        },
+      },
+    },
+    {
+      summary: () => Promise.reject(new Error("IndexedDB unavailable.")),
+      synchronize: () => Promise.resolve(),
+      toggle: () => Promise.resolve({ state: "unavailable" }),
+    },
+    (error) => errors.push(error),
+  );
+
+  messageListener?.(
+    GET_ACTIVE_SESSION_SUMMARY_MESSAGE,
+    {},
+    (response) => responses.push(response),
+  );
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assertEquals(responses, [{ active: false }]);
+  assertEquals((errors[0] as Error).message, "IndexedDB unavailable.");
+});
+
 Deno.test("session action rolls back the overlay and reports a start failure", async () => {
   const fake = createFakes();
   const controller = createSessionActionController(fake.browser, fake.activation, {

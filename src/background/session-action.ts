@@ -194,7 +194,10 @@ export function registerSessionStateHandlers(
 ): void {
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message !== GET_ACTIVE_SESSION_SUMMARY_MESSAGE) return;
-    void controller.summary().then(sendResponse).catch(reportError);
+    void controller.summary().then(sendResponse).catch((error) => {
+      sendResponse({ active: false });
+      reportError(error);
+    });
     return true;
   });
   browser.storage.onChanged.addListener((changes, areaName) => {
