@@ -112,6 +112,20 @@ function localRoute(pathname) {
   return pathname.slice(siteBase.length);
 }
 
+/**
+ * Parses the three-digit HTTP status emitted by curl.
+ *
+ * @param {string} output - Curl's `--write-out` output.
+ * @returns {number} The parsed HTTP status.
+ */
+export function parseHttpStatus(output) {
+  const status = output.trim();
+  if (!/^\d{3}$/.test(status)) {
+    throw new Error(`invalid HTTP status from curl: ${JSON.stringify(output)}`);
+  }
+  return Number(status);
+}
+
 async function externalStatus(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -146,7 +160,7 @@ async function externalStatus(url) {
         "%{http_code}",
         url,
       ]);
-      return Number.parseInt(stdout, 10);
+      return parseHttpStatus(stdout);
     }
   } finally {
     clearTimeout(timeout);
@@ -177,10 +191,18 @@ export async function checkSite({
   for (const [route, page] of pages) {
     const sourceUrl = `${localOrigin}${deployedPath(route)}`;
     for (const link of page.links) {
-      const url = new URL(link.url, sourceUrl);
+      let url;
+      try {
+        url = new URL(link.url, sourceUrl);
+      } catch {
+        problems.push(`${route}: malformed link ${link.url}`);
+        continue;
+      }
       if (url.origin !== localOrigin) {
         if (link.kind === "page" && /^https?:$/.test(url.protocol)) {
           externalUrls.add(url.href);
+        } else if (link.kind === "page" && ["mailto:", "tel:"].includes(url.protocol)) {
+          continue;
         } else {
           problems.push(`${route}: remote resource is not allowed: ${link.url}`);
         }
@@ -196,7 +218,13 @@ export async function checkSite({
       const targetPage = pages.get(targetRoute);
       if (targetPage !== undefined) {
         if (url.hash.length > 1) {
-          const anchor = decodeURIComponent(url.hash.slice(1));
+          let anchor;
+          try {
+            anchor = decodeURIComponent(url.hash.slice(1));
+          } catch {
+            problems.push(`${route}: malformed anchor ${url.hash} in ${targetRoute}`);
+            continue;
+          }
           if (!targetPage.ids.has(anchor)) {
             problems.push(`${route}: missing anchor ${url.hash} in ${targetRoute}`);
           }

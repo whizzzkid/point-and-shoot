@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 
-import { checkSite } from "./check-links.mjs";
+import { checkSite, parseHttpStatus } from "./check-links.mjs";
 
 async function fixture() {
   const root = await mkdtemp(resolve(tmpdir(), "point-and-shoot-site-"));
@@ -77,6 +77,48 @@ test("site integrity rejects a quoted remote CSS import", async () => {
       '<style>@import "https://fonts.example.test/family.css";</style>',
     );
     await assert.rejects(checkSite(paths), /remote resource is not allowed/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("HTTP status parsing rejects an indeterminate curl response", () => {
+  assert.equal(parseHttpStatus("200"), 200);
+  assert.throws(() => parseHttpStatus(""), /invalid HTTP status/);
+  assert.throws(() => parseHttpStatus("not-a-status"), /invalid HTTP status/);
+});
+
+test("site integrity reports a malformed URL", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(resolve(paths.distRoot, "docs/index.html"), '<a href="https://%">Bad</a>');
+    await assert.rejects(checkSite(paths), /malformed link https:\/\/%/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity accepts contact links", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<a href="mailto:hello@example.test">Email</a><a href="tel:+15555550123">Call</a>',
+    );
+    await checkSite(paths);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity reports a malformed anchor encoding", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<a href="/point-and-shoot/#%E0%A4%A">Bad anchor</a>',
+    );
+    await assert.rejects(checkSite(paths), /malformed anchor #%E0%A4%A/);
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
