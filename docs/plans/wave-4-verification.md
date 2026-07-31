@@ -3,18 +3,19 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 4 assumes
 [wave 3](wave-3-ui-and-capture.md) is complete.
 
-- **Status:** blocked on Wave 3's component-gallery exit criterion
+- **Status:** in progress — W4.1–W4.3 merged; W4.4 is next
 - **Goal:** prove the thing works, on both browsers, for keyboard and screen-reader users, and
   package it for install.
 
 Wave 4 items are almost entirely **parallel-safe** — they touch disjoint test and packaging files.
-W4.6 (CI) depends on the jobs it wires up; W4.8 (PR) depends on everything.
+W4.6 (CI) depends on the jobs it wires up and is now blocked only on W4.4; W4.8 (PR) depends on
+everything.
 
 ---
 
 ## W4.1 — Full-flow E2E suite
 
-- [ ] `tests/e2e/` — SHA: _pending_
+- [x] `tests/e2e/` — SHA: `3c7dcd2`
 
 **parallel-safe.**
 
@@ -39,7 +40,7 @@ Force a theme in every visual assertion (ADR 0010). Upload traces on failure.
 
 ## W4.2 — Visual regression
 
-- [ ] `tests/visual/` + baselines — SHA: _pending_
+- [x] `tests/visual/` + baselines — SHA: `d31e4da`
 
 **parallel-safe.**
 
@@ -61,7 +62,7 @@ visual change is always visible in review.
 
 ## W4.3 — Firefox smoke check
 
-- [ ] `tests/firefox/` + `deno task smoke:firefox` — SHA: _pending_
+- [x] `tests/firefox/` + `deno task smoke:firefox` — SHA: `8487329`
 
 **parallel-safe.**
 
