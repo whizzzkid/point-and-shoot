@@ -55,8 +55,8 @@ Deno.test("sampleBackdrop - resolves bounded samples on the light and dark fixtu
     const light = await readFixtureTheme(page, `${fixture.base}/light.html`);
     const dark = await readFixtureTheme(page, `${fixture.base}/dark.html`);
 
-    assertEquals(light.theme, "light");
-    assertEquals(dark.theme, "dark");
+    assertEquals(light.theme, "dark");
+    assertEquals(dark.theme, "light");
     assertLessOrEqual(light.sampleCount, 5);
     assertLessOrEqual(dark.sampleCount, 5);
   } finally {
@@ -119,10 +119,10 @@ Deno.test("sampleBackdrop - skips transparent layers and watchTheme debounces sc
       return { cancelledSampleCalls, composited, sampled, watched };
     });
 
-    assertEquals(outcomes.composited.theme, "light");
-    assertEquals(outcomes.sampled.theme, "light");
+    assertEquals(outcomes.composited.theme, "dark");
+    assertEquals(outcomes.sampled.theme, "dark");
     assertEquals(outcomes.watched.sampleCalls, 2);
-    assertEquals(outcomes.watched.themes, ["light"]);
+    assertEquals(outcomes.watched.themes, ["dark"]);
     assertEquals(outcomes.cancelledSampleCalls, 1);
   } finally {
     await browser.close();

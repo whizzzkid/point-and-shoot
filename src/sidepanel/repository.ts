@@ -5,9 +5,23 @@ import type { Session } from "../shared/schema.ts";
 import {
   ACTIVE_SESSION_ID_STORAGE_KEY,
   DISPLAY_SESSION_ID_STORAGE_KEY,
+  nextSessionRevision,
   SESSION_REVISION_STORAGE_KEY,
 } from "../shared/session.ts";
 import { getSession, openStore, putSession } from "../shared/store.ts";
+
+async function publishRevision(storage: BrowserShim["storage"]["local"]): Promise<void> {
+  try {
+    const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
+    await storage.set({
+      [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+        stored[SESSION_REVISION_STORAGE_KEY],
+      ),
+    });
+  } catch {
+    // IndexedDB is authoritative; invalidation must not turn a committed save into a failure.
+  }
+}
 
 /** Persistence boundary consumed by the notes-panel component. */
 export interface NotesRepository {
@@ -55,6 +69,7 @@ export function createNotesRepository(
       } finally {
         database.close();
       }
+      await publishRevision(storage);
     },
     watch(onChange) {
       if (onChanged === undefined) return () => undefined;

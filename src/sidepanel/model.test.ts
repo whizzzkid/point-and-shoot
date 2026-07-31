@@ -7,6 +7,7 @@ import {
   moveNote,
   setNoteStripQuery,
   updateNoteText,
+  updateSessionName,
 } from "./model.ts";
 
 function makeNote(id: string, pageUrl: string, text: string): Note {
@@ -60,6 +61,14 @@ Deno.test("note mutations preserve the original session and update only the requ
   assertEquals(edited.notes[0]?.text, "Updated");
   assertEquals(queryChanged.notes[0]?.stripQuery, false);
   assertEquals(deleted.notes.map((note) => note.id), ["note-1", "note-3"]);
+});
+
+Deno.test("updateSessionName trims a valid name and rejects a blank name", () => {
+  const renamed = updateSessionName(SESSION, "  Checkout polish  ");
+
+  assertNotEquals(renamed, SESSION);
+  assertEquals(renamed.name, "Checkout polish");
+  assertEquals(updateSessionName(SESSION, "   "), SESSION);
 });
 
 Deno.test("moveNote reorders within a page group without crossing intervening page notes", () => {

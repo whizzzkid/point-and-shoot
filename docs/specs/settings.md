@@ -45,9 +45,10 @@ The background reads screenshot settings for every capture request. The selected
 to WebP encoding, and the selected maximum dimension caps the output's longest edge. Downscaling to
 that edge marks the capture `truncated`, just as the default `1024` pixel cap does.
 
-The notes panel and plan view use `exportSizeBudgetBytes` for their displayed budget and exact ZIP
-enforcement. The measured `2 MB` value remains the default; the user may deliberately choose one of
-the other fixed budgets.
+The notes panel and plan view use `exportSizeBudgetBytes` as a displayed warning threshold. The plan
+view compares it with the exact ZIP size, but exceeding it never disables copy or download. The
+measured `2 MB` value remains the default; the user may deliberately choose one of the other fixed
+thresholds.
 
 When `stripSensitiveQueries` is on, a new note defaults `stripQuery` to true only if a query
 parameter name contains `token`, `key`, `secret`, `auth`, or `session`, case-insensitively. Turning

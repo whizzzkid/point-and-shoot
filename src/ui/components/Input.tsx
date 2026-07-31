@@ -6,6 +6,8 @@ import type { JSX } from "preact";
 export interface InputProps {
   /** Accessible name when it should differ from placeholder guidance. */
   readonly accessibleName?: string;
+  readonly autoFocus?: boolean;
+  readonly elementRef?: (element: HTMLInputElement | HTMLTextAreaElement | null) => void;
   readonly placeholder?: string;
   readonly value?: string;
   readonly onChange?: (value: string) => void;
@@ -23,6 +25,8 @@ export interface InputProps {
 export function Input(
   {
     accessibleName,
+    autoFocus = false,
+    elementRef,
     placeholder,
     value,
     onChange,
@@ -38,10 +42,12 @@ export function Input(
     return (
       <textarea
         aria-label={resolvedAccessibleName}
+        autoFocus={autoFocus}
         className="ps-input"
         data-mono={mono}
         onInput={(event) => onChange?.(event.currentTarget.value)}
         placeholder={placeholder}
+        {...(elementRef === undefined ? {} : { ref: elementRef })}
         rows={rows}
         value={value}
       />
@@ -50,10 +56,12 @@ export function Input(
   return (
     <input
       aria-label={resolvedAccessibleName}
+      autoFocus={autoFocus}
       className="ps-input"
       data-mono={mono}
       onInput={(event) => onChange?.(event.currentTarget.value)}
       placeholder={placeholder}
+      {...(elementRef === undefined ? {} : { ref: elementRef })}
       type="text"
       value={value}
     />

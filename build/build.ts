@@ -16,7 +16,7 @@
 import { fromFileUrl } from "@std/path";
 import * as esbuild from "npm:esbuild@0.28.1";
 import { forChrome, forFirefox, SUPPORTED } from "./manifest.ts";
-import { ICON_SIZES, placeholderIconPng } from "./icons.ts";
+import { extensionIconPng, ICON_SIZES } from "./icons.ts";
 import { preactResolverPlugin } from "./preact.ts";
 
 const ROOT = new URL("../", import.meta.url);
@@ -94,7 +94,7 @@ async function writeIcons(targetDir: URL): Promise<void> {
   const iconsDir = new URL("icons/", targetDir);
   await Deno.mkdir(iconsDir, { recursive: true });
   for (const size of ICON_SIZES) {
-    await Deno.writeFile(new URL(`icon-${size}.png`, iconsDir), await placeholderIconPng(size));
+    await Deno.writeFile(new URL(`icon-${size}.png`, iconsDir), await extensionIconPng(size));
   }
 }
 

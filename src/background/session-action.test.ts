@@ -1,11 +1,18 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import type { ActionClickedListener } from "../shared/browser.ts";
+import type {
+  ActionClickedListener,
+  MessageListener,
+  StorageChangedListener,
+} from "../shared/browser.ts";
+import { GET_ACTIVE_SESSION_SUMMARY_MESSAGE } from "../shared/messages.ts";
+import { SESSION_REVISION_STORAGE_KEY } from "../shared/session.ts";
 import { SCHEMA_VERSION, type Session } from "../shared/schema.ts";
 import type { ActivationController, ActivationOutcome } from "./activation.ts";
 import type { SessionService } from "./session.ts";
 import {
   createSessionActionController,
   registerSessionActionHandler,
+  registerSessionStateHandlers,
   type SessionActionBrowser,
 } from "./session-action.ts";
 
@@ -184,6 +191,90 @@ Deno.test("session action caps the badge while keeping the tooltip count exact",
     "action.badge:99+",
     "action.title:Point and Shoot — End session (120 notes)",
   ]);
+});
+
+Deno.test("session state handlers answer summaries and refresh the action after revisions", async () => {
+  let messageListener: MessageListener | undefined;
+  let storageListener: StorageChangedListener | undefined;
+  let synchronizations = 0;
+  const responses: unknown[] = [];
+  registerSessionStateHandlers(
+    {
+      runtime: {
+        onMessage: {
+          addListener(listener) {
+            messageListener = listener;
+          },
+        },
+      },
+      storage: {
+        onChanged: {
+          addListener(listener) {
+            storageListener = listener;
+          },
+          removeListener: () => undefined,
+        },
+      },
+    },
+    {
+      summary: () => Promise.resolve({ active: true, noteCount: 2, sessionId: "session-1" }),
+      synchronize: () => {
+        synchronizations += 1;
+        return Promise.resolve();
+      },
+      toggle: () => Promise.resolve({ state: "unavailable" }),
+    },
+  );
+  messageListener?.(
+    GET_ACTIVE_SESSION_SUMMARY_MESSAGE,
+    {},
+    (response) => responses.push(response),
+  );
+  storageListener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 2 } }, "local");
+  storageListener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 3 } }, "sync");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assertEquals(responses, [{ active: true, noteCount: 2, sessionId: "session-1" }]);
+  assertEquals(synchronizations, 1);
+});
+
+Deno.test("session state handlers return an inactive summary when loading fails", async () => {
+  let messageListener: MessageListener | undefined;
+  const responses: unknown[] = [];
+  const errors: unknown[] = [];
+  registerSessionStateHandlers(
+    {
+      runtime: {
+        onMessage: {
+          addListener(listener) {
+            messageListener = listener;
+          },
+        },
+      },
+      storage: {
+        onChanged: {
+          addListener: () => undefined,
+          removeListener: () => undefined,
+        },
+      },
+    },
+    {
+      summary: () => Promise.reject(new Error("IndexedDB unavailable.")),
+      synchronize: () => Promise.resolve(),
+      toggle: () => Promise.resolve({ state: "unavailable" }),
+    },
+    (error) => errors.push(error),
+  );
+
+  messageListener?.(
+    GET_ACTIVE_SESSION_SUMMARY_MESSAGE,
+    {},
+    (response) => responses.push(response),
+  );
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assertEquals(responses, [{ active: false }]);
+  assertEquals((errors[0] as Error).message, "IndexedDB unavailable.");
 });
 
 Deno.test("session action rolls back the overlay and reports a start failure", async () => {

@@ -1,17 +1,18 @@
-/**
- * Generates the four placeholder extension icon PNGs (`manifestBase.icons`' 16/32/48/128px set) as
- * a flat brand-color square. No real icon asset has been vendored from `.claude-design/` yet —
- * this keeps the build unblocked the same way W2.3's placeholder HTML shells do; a later wave
- * replaces this with a real rasterized export of `.claude-design/point-and-shoot/assets/icon.svg`.
- *
- * @module
- */
+/** Generates the raster extension icons declared by `manifestBase.icons`. */
 
 /** The sizes `manifestBase.icons` declares in `build/manifest.ts`. */
 export const ICON_SIZES = [16, 32, 48, 128] as const;
 
-/** Space Grotesk brand indigo, matched to `.claude-design/point-and-shoot/assets/icon.svg`. */
-const BRAND_RGB: readonly [number, number, number] = [79, 70, 229];
+/** Viewfinder blue from `.claude-design/point-and-shoot/assets/icon.svg`. */
+const BRAND_RGB: readonly [number, number, number] = [0x4f, 0x7c, 0xff];
+const SOURCE_SIZE = 48;
+const SOURCE_CENTER = SOURCE_SIZE / 2;
+const CORNER_INSET = 6;
+const CORNER_RADIUS = 4;
+const CORNER_END = 16;
+const CENTER_DOT_RADIUS = 5;
+const STROKE_RADIUS = 1.5;
+const SAMPLES_PER_AXIS = 4;
 
 const PNG_SIGNATURE = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -72,18 +73,90 @@ async function zlibDeflate(data: Uint8Array): Promise<Uint8Array> {
   return concat(chunks);
 }
 
-/** Encodes a flat-color `size`x`size` RGBA PNG. */
-export async function placeholderIconPng(size: number): Promise<Uint8Array> {
+function distanceToSegment(
+  x: number,
+  y: number,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): number {
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const lengthSquared = segmentX ** 2 + segmentY ** 2;
+  const projection = Math.min(
+    1,
+    Math.max(0, ((x - startX) * segmentX + (y - startY) * segmentY) / lengthSquared),
+  );
+  return Math.hypot(
+    x - (startX + projection * segmentX),
+    y - (startY + projection * segmentY),
+  );
+}
+
+function isViewfinderPoint(x: number, y: number): boolean {
+  if (Math.hypot(x - SOURCE_CENTER, y - SOURCE_CENTER) <= CENTER_DOT_RADIUS) return true;
+
+  const cornerX = x > SOURCE_CENTER ? SOURCE_SIZE - x : x;
+  const cornerY = y > SOURCE_CENTER ? SOURCE_SIZE - y : y;
+  const verticalDistance = distanceToSegment(
+    cornerX,
+    cornerY,
+    CORNER_INSET,
+    CORNER_END,
+    CORNER_INSET,
+    CORNER_INSET + CORNER_RADIUS,
+  );
+  const horizontalDistance = distanceToSegment(
+    cornerX,
+    cornerY,
+    CORNER_INSET + CORNER_RADIUS,
+    CORNER_INSET,
+    CORNER_END,
+    CORNER_INSET,
+  );
+  const arcDistance = cornerX <= CORNER_INSET + CORNER_RADIUS &&
+      cornerY <= CORNER_INSET + CORNER_RADIUS
+    ? Math.abs(
+      Math.hypot(
+        cornerX - (CORNER_INSET + CORNER_RADIUS),
+        cornerY - (CORNER_INSET + CORNER_RADIUS),
+      ) - CORNER_RADIUS,
+    )
+    : Number.POSITIVE_INFINITY;
+  return Math.min(verticalDistance, horizontalDistance, arcDistance) <= STROKE_RADIUS;
+}
+
+function coverageAt(size: number, pixelX: number, pixelY: number): number {
+  let coveredSamples = 0;
+  for (let sampleY = 0; sampleY < SAMPLES_PER_AXIS; sampleY++) {
+    for (let sampleX = 0; sampleX < SAMPLES_PER_AXIS; sampleX++) {
+      const sourceX = (pixelX + (sampleX + 0.5) / SAMPLES_PER_AXIS) * SOURCE_SIZE / size;
+      const sourceY = (pixelY + (sampleY + 0.5) / SAMPLES_PER_AXIS) * SOURCE_SIZE / size;
+      if (isViewfinderPoint(sourceX, sourceY)) coveredSamples++;
+    }
+  }
+  return coveredSamples / SAMPLES_PER_AXIS ** 2;
+}
+
+/**
+ * Rasterizes the design-system viewfinder mark into an antialiased RGBA PNG.
+ *
+ * @param size Square output dimension in pixels.
+ * @returns Encoded PNG bytes.
+ */
+export async function extensionIconPng(size: number): Promise<Uint8Array> {
   const [r, g, b] = BRAND_RGB;
   const raw = new Uint8Array(size * (1 + size * 4));
   let offset = 0;
   for (let y = 0; y < size; y++) {
     raw[offset++] = 0; // filter type: none
     for (let x = 0; x < size; x++) {
-      raw[offset++] = r;
-      raw[offset++] = g;
-      raw[offset++] = b;
-      raw[offset++] = 255;
+      const alpha = Math.round(coverageAt(size, x, y) * 255);
+      raw[offset++] = alpha === 0 ? 0 : r;
+      raw[offset++] = alpha === 0 ? 0 : g;
+      raw[offset++] = alpha === 0 ? 0 : b;
+      raw[offset++] = alpha;
     }
   }
 

@@ -55,6 +55,7 @@ function serializableElements(selection: PickerSelection): readonly NoteElement[
  * @param runtime Promise-based extension message channel.
  * @param capture Completed region screenshot.
  * @param selection Picker evidence to strip of live DOM references.
+ * @param text User-authored note text, or an empty string when explicitly skipped.
  * @param page Full recorded page identity.
  * @returns Durable note and session identifiers plus the current note count.
  * @throws {@link NoteSaveError} when the message channel or storage operation fails.
@@ -63,6 +64,7 @@ export async function saveCapturedSelection(
   runtime: NoteMessageRuntime,
   capture: RegionCapture,
   selection: PickerSelection,
+  text: string,
   page: CapturedPage,
 ): Promise<Extract<AddNoteResponse, { readonly ok: true }>> {
   const request: AddNoteRequest = {
@@ -70,6 +72,7 @@ export async function saveCapturedSelection(
     elements: serializableElements(selection),
     pageTitle: page.title,
     pageUrl: page.url,
+    text,
     type: ADD_NOTE_MESSAGE,
   };
   let response: unknown;

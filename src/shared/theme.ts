@@ -196,12 +196,12 @@ export function resolveTheme(
     0,
   ) / colors.length;
   if (previousTheme === "dark") {
-    return averageLuminance >= DARK_TO_LIGHT_THRESHOLD ? "light" : "dark";
+    return averageLuminance <= LIGHT_TO_DARK_THRESHOLD ? "light" : "dark";
   }
   if (previousTheme === "light") {
-    return averageLuminance <= LIGHT_TO_DARK_THRESHOLD ? "dark" : "light";
+    return averageLuminance >= DARK_TO_LIGHT_THRESHOLD ? "dark" : "light";
   }
-  return averageLuminance >= LUMINANCE_THRESHOLD ? "light" : "dark";
+  return averageLuminance >= LUMINANCE_THRESHOLD ? "dark" : "light";
 }
 
 /**

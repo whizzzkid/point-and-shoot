@@ -1,4 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import type { Session } from "../schema.ts";
+import type { StyleDigestBundle } from "../style-digest.ts";
 import { EXPORT_FIXTURE_SESSION } from "./fixture.ts";
 import { shotPath, toJson, toMarkdown } from "./index.ts";
 
@@ -39,6 +41,67 @@ Deno.test("toMarkdown can select notes and omit image references for clipboard o
   assertEquals(actual.includes("primary action"), false);
   assertEquals(actual.includes("shots/"), false);
   assertEquals(actual.includes("Framework hint"), false);
+});
+
+Deno.test("toMarkdown tersely projects uniform, mixed, and zero computed styles", () => {
+  const originalDigest = EXPORT_FIXTURE_SESSION.notes[0]?.elements[0]?.styleDigest;
+  if (originalDigest === null || originalDigest === undefined) {
+    throw new Error("export fixture must include computed style evidence");
+  }
+  const digest: StyleDigestBundle = {
+    ...originalDigest,
+    self: {
+      ...originalDigest.self,
+      box: {
+        ...originalDigest.self.box,
+        paddingTop: 0,
+        paddingRight: 8,
+        paddingBottom: 16,
+        paddingLeft: 24,
+        marginTop: 4,
+        marginRight: 8,
+        marginBottom: 4,
+        marginLeft: 8,
+      },
+      color: {
+        ...originalDigest.self.color,
+        borderTopColor: "#111111",
+        borderRightColor: "#222222",
+        borderBottomColor: "#333333",
+        borderLeftColor: "#444444",
+      },
+    },
+  };
+  const session: Session = {
+    ...EXPORT_FIXTURE_SESSION,
+    notes: [{
+      ...EXPORT_FIXTURE_SESSION.notes[0]!,
+      elements: [{
+        ...EXPORT_FIXTURE_SESSION.notes[0]!.elements[0]!,
+        styleDigest: digest,
+      }],
+    }],
+  };
+  const actual = toMarkdown(session);
+
+  assertStringIncludes(actual, `"padding": "0 8px 16px 24px"`);
+  assertStringIncludes(actual, `"margin": "4px 8px"`);
+  assertStringIncludes(actual, `"borderWidth": "1px"`);
+  assertStringIncludes(actual, `"borderTopColor": "#111111"`);
+  assertEquals(actual.includes('"paddingTop"'), false);
+  assertEquals(actual.includes('"borderColor"'), false);
+});
+
+Deno.test("Markdown style projection does not mutate or replace canonical session JSON", () => {
+  const before = toJson(EXPORT_FIXTURE_SESSION);
+
+  const markdown = toMarkdown(EXPORT_FIXTURE_SESSION);
+
+  assertStringIncludes(markdown, `"padding": "12px 16px"`);
+  assertStringIncludes(markdown, `"margin": "0"`);
+  assertStringIncludes(markdown, `"borderColor": "#4f7cff"`);
+  assertEquals(markdown.includes('"paddingTop"'), false);
+  assertEquals(toJson(EXPORT_FIXTURE_SESSION), before);
 });
 
 Deno.test("serializers handle an empty inclusion set without leaking excluded note data", () => {

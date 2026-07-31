@@ -23,11 +23,17 @@ export const CAPTURE_REGION_MESSAGE = "point-and-shoot:capture-region";
 /** Runtime message sent after a capture to append its serializable note evidence. */
 export const ADD_NOTE_MESSAGE = "point-and-shoot:add-note";
 
+/** Runtime message requesting the canonical active-session note count. */
+export const GET_ACTIVE_SESSION_SUMMARY_MESSAGE = "point-and-shoot:get-active-session-summary";
+
 /** Runtime message requesting opt-in component hints from the page's main execution world. */
 export const FRAMEWORK_PROBE_MESSAGE = "point-and-shoot:framework-probe";
 
 /** Runtime message sent by a direct content-UI gesture to open the notes workspace. */
 export const OPEN_NOTES_PANEL_MESSAGE = "point-and-shoot:open-notes-panel";
+
+/** Runtime message routed from a note card to the inspected page's preview layer. */
+export const NOTE_PREVIEW_MESSAGE = "point-and-shoot:note-preview";
 
 /** State returned by the content realm after an overlay state query or toggle. */
 export interface OverlayStateResponse {
@@ -50,7 +56,29 @@ export interface AddNoteRequest {
   readonly elements: readonly NoteElement[];
   readonly pageTitle: string;
   readonly pageUrl: string;
+  readonly text: string;
 }
+
+/** Canonical active-session state returned to injected UI. */
+export type ActiveSessionSummary =
+  | { readonly active: false }
+  | { readonly active: true; readonly noteCount: number; readonly sessionId: string };
+
+/** Monotonic note-preview request shared by the panel, background, and content realms. */
+export type NotePreviewRequest =
+  | {
+    readonly action: "clear";
+    readonly generation: number;
+    readonly type: typeof NOTE_PREVIEW_MESSAGE;
+  }
+  | {
+    readonly action: "show";
+    readonly generation: number;
+    readonly pageUrl: string;
+    readonly selectors: readonly SelectorBundle[];
+    readonly stripQuery: boolean;
+    readonly type: typeof NOTE_PREVIEW_MESSAGE;
+  };
 
 /** Result returned after one captured note is durably appended. */
 export type AddNoteResponse =
@@ -354,6 +382,43 @@ function isNoteElement(candidate: unknown): candidate is NoteElement {
 }
 
 /**
+ * Narrows an untrusted runtime value to a bounded note-preview request.
+ *
+ * @param message Value received by the background or content realm.
+ * @returns Whether the request is an exact clear or show message with valid selectors.
+ */
+export function isNotePreviewRequest(message: unknown): message is NotePreviewRequest {
+  if (
+    !isRecord(message) ||
+    message.type !== NOTE_PREVIEW_MESSAGE ||
+    typeof message.generation !== "number" ||
+    !Number.isSafeInteger(message.generation) ||
+    message.generation < 0
+  ) {
+    return false;
+  }
+  if (message.action === "clear") {
+    return hasOnlyKeys(message, ["action", "generation", "type"]);
+  }
+  return message.action === "show" &&
+    hasOnlyKeys(message, [
+      "action",
+      "generation",
+      "pageUrl",
+      "selectors",
+      "stripQuery",
+      "type",
+    ]) &&
+    typeof message.pageUrl === "string" &&
+    message.pageUrl !== "" &&
+    typeof message.stripQuery === "boolean" &&
+    Array.isArray(message.selectors) &&
+    message.selectors.length > 0 &&
+    message.selectors.length <= MAXIMUM_NOTE_ELEMENTS &&
+    message.selectors.every(isSelectorBundle);
+}
+
+/**
  * Narrows an untrusted runtime value to a bounded framework probe request.
  *
  * @param message Value received from a content realm.
@@ -437,9 +502,26 @@ export function isAddNoteRequest(message: unknown): message is AddNoteRequest {
     message.type === ADD_NOTE_MESSAGE &&
     typeof message.pageTitle === "string" &&
     typeof message.pageUrl === "string" &&
+    typeof message.text === "string" &&
     isRegionCapture(message.capture) &&
     Array.isArray(message.elements) &&
     message.elements.every(isNoteElement);
+}
+
+/**
+ * Narrows an untrusted runtime reply to {@link ActiveSessionSummary}.
+ *
+ * @param message Value returned by the background session-summary handler.
+ * @returns Whether the reply is an exact inactive or active summary.
+ */
+export function isActiveSessionSummary(message: unknown): message is ActiveSessionSummary {
+  if (!isRecord(message) || typeof message.active !== "boolean") return false;
+  if (!message.active) return hasOnlyKeys(message, ["active"]);
+  return hasOnlyKeys(message, ["active", "noteCount", "sessionId"]) &&
+    typeof message.noteCount === "number" &&
+    Number.isInteger(message.noteCount) &&
+    message.noteCount >= 0 &&
+    typeof message.sessionId === "string";
 }
 
 /**

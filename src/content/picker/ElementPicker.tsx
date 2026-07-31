@@ -239,7 +239,14 @@ export function ElementPicker(
       selectionCallback.current?.({ elements, kind: "elements", region });
     };
     const confirmCurrent = (): void => {
-      const element = currentElement.current;
+      const activeElement = ownerDocument.activeElement;
+      const element = currentElement.current ??
+        (activeElement !== null &&
+            activeElement !== ownerDocument.body &&
+            activeElement !== ownerDocument.documentElement &&
+            !activeElement.matches("[data-point-and-shoot-host]")
+          ? activeElement
+          : undefined);
       if (element !== undefined) {
         const capture = capturePickerElement(element, true);
         const region = capture.rect;

@@ -18,9 +18,15 @@ const mount = document.createElement("div");
 mount.id = "app";
 document.body.append(mount);
 
-const actionLog: { copies: string[][]; downloads: string[][]; backs: number } = {
+const actionLog: {
+  copies: string[][];
+  bundleDownloads: string[][];
+  promptDownloads: string[][];
+  backs: number;
+} = {
   copies: [],
-  downloads: [],
+  bundleDownloads: [],
+  promptDownloads: [],
   backs: 0,
 };
 let pendingResolvers: (() => void)[] = [];
@@ -62,9 +68,13 @@ function actions(fail: boolean, pending: boolean): PlanViewActions {
       actionLog.copies.push([...includedNoteIds]);
       return result(fail, pending, "Clipboard access was denied.");
     },
-    download(includedNoteIds) {
-      actionLog.downloads.push([...includedNoteIds]);
+    downloadBundle(includedNoteIds) {
+      actionLog.bundleDownloads.push([...includedNoteIds]);
       return result(fail, pending, "The bundle could not download.");
+    },
+    downloadPrompt(includedNoteIds) {
+      actionLog.promptDownloads.push([...includedNoteIds]);
+      return result(fail, pending, "The prompt could not download.");
     },
   };
 }
@@ -74,6 +84,7 @@ function mountPlan(
   sizeBudgetBytes: number,
   fail: boolean,
   pending: boolean,
+  archiveFails: boolean,
 ): void {
   document.documentElement.dataset.theme = theme;
   render(
@@ -83,7 +94,16 @@ function mountPlan(
         onBack={() => {
           actionLog.backs++;
         }}
-        session={SESSION_WITH_IMAGES}
+        session={archiveFails
+          ? {
+            ...SESSION_WITH_IMAGES,
+            notes: SESSION_WITH_IMAGES.notes.map((note, index) =>
+              index === 0
+                ? { ...note, region: { ...note.region, screenshot: "not-a-webp-data-url" } }
+                : note
+            ),
+          }
+          : SESSION_WITH_IMAGES}
         sizeBudgetBytes={sizeBudgetBytes}
       />
     </IconSpriteProvider>,
@@ -98,8 +118,9 @@ const harness = {
     sizeBudgetBytes = 2_000_000,
     fail = false,
     pending = false,
+    archiveFails = false,
   ) {
-    mountPlan(theme, sizeBudgetBytes, fail, pending);
+    mountPlan(theme, sizeBudgetBytes, fail, pending, archiveFails);
   },
   resolveActions() {
     const resolvers = pendingResolvers;

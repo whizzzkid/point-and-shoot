@@ -12,6 +12,7 @@ assumes.** An agent prompted with _"work on W3.4"_ must read this file first, th
 | 4 — Verification and release | [`wave-4-verification.md`](wave-4-verification.md)     | blocked on wave 3 gallery completion |
 | 5 — Marketing site           | [`wave-5-marketing-site.md`](wave-5-marketing-site.md) | deferred, post-v1                    |
 | — Nice-to-haves              | [`wave-nice-to-haves.md`](wave-nice-to-haves.md)       | open, unscheduled                    |
+| — Post-wave UX corrections   | [`ux-corrections.md`](ux-corrections.md)               | approved, implementation in progress |
 
 `wave-nice-to-haves.md` is not a wave. It holds work that is worth doing but blocks nothing, so no
 wave's exit criteria reference it and no barrier waits on it. An item there that turns out to block
@@ -20,6 +21,10 @@ a wave gets **moved** into that wave's file, not copied.
 [`arch-review-point-and-shoot.md`](arch-review-point-and-shoot.md) is the architecture review of
 this plan. Its findings are already folded into the wave files and this index — read it for the
 reasoning behind a rule you are tempted to skip, not as a list of outstanding work.
+
+[`arch-review-ux-corrections.md`](arch-review-ux-corrections.md) reviews the post-wave UX stack. Its
+state-ownership and async-ordering findings are folded into
+[`ux-corrections.md`](ux-corrections.md).
 
 ---
 
@@ -278,10 +283,10 @@ deviate. Each has a corresponding ADR under `docs/adr/`.
 - **Never use `chrome.offscreen`** — Firefox has no equivalent. Image cropping uses
   `createImageBitmap` + `OffscreenCanvas.convertToBlob`, which works in both background contexts.
 - All extension APIs go through a promise-based `browser.*` shim, never bare `chrome.*` callbacks.
-- Permissions are minimal: `activeTab`, `storage`, `scripting`, `commands`, `downloads`,
-  `clipboardWrite`, plus `sidePanel` (Chrome) / `sidebar_action` (Firefox). **No `<all_urls>`.**
-  `activeTab` is granted only on explicit user gesture, so the extension can never read a page the
-  user didn't point it at. This is a user-facing privacy guarantee, not a convenience.
+- Permissions are minimal: `activeTab`, `storage`, `scripting`, `downloads`, `clipboardWrite`, plus
+  `sidePanel` (Chrome) / `sidebar_action` (Firefox). **No `<all_urls>`.** `activeTab` is granted
+  only on explicit user gesture, so the extension can never read a page the user didn't point it at.
+  This is a user-facing privacy guarantee, not a convenience.
 
 **Data**
 

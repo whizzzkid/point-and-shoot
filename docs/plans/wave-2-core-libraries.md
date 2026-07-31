@@ -120,10 +120,10 @@ files guarantees they drift. One typed source, two emitted files.
   `_pending W2.2_` until you fill them; a project that refuses `^` on a dev dependency should not
   leave its browser floors to whoever writes the item.
 - A typed `manifest.base` object holding everything shared: `manifest_version: 3`, name, version,
-  description, icons, `permissions` (exactly the six from the README's permission list — no more),
-  `action`, `commands` (with a suggested default shortcut and a clear description string), and
-  `web_accessible_resources` for the vendored fonts and icon sprite. **No `content_scripts`** — a
-  static registration is standing access to every matched page, granted at install rather than by
+  description, icons, `permissions` (exactly the grants from the README's permission list — no
+  more), `action`, `commands` (with a suggested default shortcut and a clear description string),
+  and `web_accessible_resources` for the vendored fonts and icon sprite. **No `content_scripts`** —
+  a static registration is standing access to every matched page, granted at install rather than by
   the gesture ADR-0002 turns the permission model on, so the background injects on demand instead.
 - A `forChrome()` producing `background.service_worker` (type `module`) and `side_panel`.
 - A `forFirefox()` producing `background.scripts` (Firefox MV3 uses an event page, **not** a service

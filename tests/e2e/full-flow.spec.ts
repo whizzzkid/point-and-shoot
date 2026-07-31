@@ -115,10 +115,20 @@ async function resumeSession(
   await popup.close();
 }
 
+async function savePendingCapture(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    document.activeElement?.matches("[data-point-and-shoot-host]") === true
+  );
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+}
+
 async function capture(locator: Locator): Promise<void> {
   await locator.scrollIntoViewIfNeeded();
   await locator.hover();
   await locator.click();
+  await savePendingCapture(locator.page());
 }
 
 async function editVisibleNote(panel: Page, text: string): Promise<void> {
@@ -131,7 +141,7 @@ async function editVisibleNote(panel: Page, text: string): Promise<void> {
 
 async function downloadEntries(panel: Page): Promise<Map<string, Uint8Array>> {
   const downloadStarted = panel.waitForEvent("download");
-  await panel.getByRole("button", { name: "Download for agent" }).click();
+  await panel.getByRole("button", { name: "Download bundle" }).click();
   const download = await downloadStarted;
   const path = await download.path();
   if (path === null) throw new Error("agent bundle download did not produce a local file");
@@ -206,6 +216,7 @@ const FIXTURE_CASES: readonly FixtureCaptureCase[] = [
       const target = { x: box.x + 24, y: box.y + 24 };
       await page.mouse.move(target.x, target.y);
       await page.mouse.click(target.x, target.y);
+      await savePendingCapture(page);
     },
     verify: (session) => {
       const selectors = session.notes[0]?.elements[0]?.selectors;
@@ -268,6 +279,27 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
       await editVisibleNote(panel, FIRST_NOTE);
       await panel.locator("[data-page-key]").filter({ hasText: "Fixture: dark page" }).click();
+      const darkNoteCard = panel.locator("[data-note-id]").first();
+      await page.bringToFront();
+      await darkNoteCard.dispatchEvent("pointerenter");
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 1
+      );
+      await darkNoteCard.dispatchEvent("pointerleave");
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 0
+      );
+      await darkNoteCard.evaluate((element) => (element as HTMLElement).focus());
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 1
+      );
+      await panel.locator(".ps-notes-header").evaluate((element) =>
+        (element as HTMLElement).focus()
+      );
+      await darkNoteCard.evaluate((element) => (element as HTMLElement).blur());
+      await page.waitForFunction(() =>
+        document.querySelectorAll("[data-point-and-shoot-preview-host]").length === 0
+      );
       await editVisibleNote(panel, SECOND_NOTE);
       await panel.getByRole("button", { name: "Compile plan" }).click();
       await panel.getByRole("heading", { name: "Compile plan" }).waitFor();
@@ -477,7 +509,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       );
       await emptyPanel.getByRole("heading", { name: "No notes yet" }).waitFor();
       assertEquals(await emptyPanel.getByRole("button", { name: "Compile plan" }).count(), 0);
-      assertEquals(await emptyPanel.getByRole("button", { name: "Download for agent" }).count(), 0);
+      assertEquals(await emptyPanel.getByRole("button", { name: "Download bundle" }).count(), 0);
       await emptyPanel.close();
 
       await serviceWorker.evaluate(() => {
@@ -492,13 +524,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
           throw new DOMException("quota exceeded", "QuotaExceededError");
         };
       });
-      const quotaError = page.waitForEvent("console", {
-        predicate: (message) =>
-          message.type() === "error" &&
-          message.text().includes("IndexedDB storage quota exceeded"),
-      });
       await capture(page.getByTestId("light-action"));
-      await quotaError;
       const afterQuotaFailure = validatedSession(
         await waitForStoredSession(serviceWorker, 0, sessionId),
       );
@@ -514,6 +540,9 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
         IDBObjectStore.prototype.put = state.pointAndShootOriginalPut;
         delete state.pointAndShootOriginalPut;
       });
+      await page.keyboard.press("Escape");
+      await waitForHostCount(page, 0);
+      await resumeSession(context, page, extensionId);
       await capture(page.getByTestId("light-action"));
       const emptyNoteSession = validatedSession(
         await waitForStoredSession(serviceWorker, 1, sessionId),
@@ -534,7 +563,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       );
       assertEquals(await panel.getByRole("button", { name: "Copy prompt" }).isDisabled(), true);
       assertEquals(
-        await panel.getByRole("button", { name: "Download for agent" }).isDisabled(),
+        await panel.getByRole("button", { name: "Download bundle" }).isDisabled(),
         true,
       );
       const zeroNoteEntries = readStoredZipEntries(

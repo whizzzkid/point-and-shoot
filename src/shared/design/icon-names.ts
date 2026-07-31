@@ -4,6 +4,8 @@
  * `#icon-<name>` symbol id in `src/shared/design/icons.svg`.
  */
 export type IconName =
+  | "arrow-down"
+  | "arrow-up"
   | "camera"
   | "crosshair"
   | "list-checks"

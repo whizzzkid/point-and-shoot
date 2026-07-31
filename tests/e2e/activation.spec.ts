@@ -6,6 +6,7 @@ import { startFixtureServer } from "../fixtures/app/server.ts";
 import {
   launchExtension,
   openExtensionPage,
+  readSessionPointers,
   readStoredZipEntries,
   triggerExtensionAction,
   waitForHostCount,
@@ -17,6 +18,35 @@ const LISTENER_POLL_INTERVAL_MILLISECONDS = 25;
 const AGENT_TRIAL_NOTE =
   "This button looks like unstyled browser chrome. Give it a clear light-theme background, " +
   "border, and hover treatment.";
+
+Deno.test("Escape dismisses capture UI while preserving the active session for resume", async () => {
+  const fixture = startFixtureServer();
+  const { context, extensionId, serviceWorker } = await launchExtension();
+  try {
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/index.html`);
+    await triggerExtensionAction(context, page, extensionId);
+    await waitForHostCount(page, 1);
+    const before = await readSessionPointers(serviceWorker);
+    if (before.activeId === undefined) throw new Error("session did not start");
+
+    await page.keyboard.press("Escape");
+    await waitForHostCount(page, 0);
+    assertEquals((await readSessionPointers(serviceWorker)).activeId, before.activeId);
+
+    const popup = await openExtensionPage(context, extensionId, "popup/popup.html");
+    await page.bringToFront();
+    await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForHostCount(page, 1);
+    assertEquals((await readSessionPointers(serviceWorker)).activeId, before.activeId);
+    await popup.close();
+  } finally {
+    await context.close();
+    await fixture.close();
+  }
+});
 
 interface ActionState {
   readonly badgeText: string;
@@ -439,7 +469,7 @@ Deno.test("capture persists into the notes panel across a close and reopen", asy
     assertEquals(markdownPreview?.includes("access_token"), false);
 
     const downloadStarted = reopenedPanel.waitForEvent("download");
-    await reopenedPanel.getByRole("button", { name: "Download for agent" }).click();
+    await reopenedPanel.getByRole("button", { name: "Download bundle" }).click();
     const download = await downloadStarted;
     const downloadPath = await download.path();
     if (downloadPath === null) {
@@ -574,7 +604,7 @@ Deno.test("options persist every setting and update a mounted overlay theme", as
     await options.getByLabel("Maximum screenshot dimension").selectOption("2048");
     await options.getByText("Saved.").waitFor();
     await options.getByRole("tab", { name: "Export & privacy" }).click();
-    await options.getByLabel("Export size budget").selectOption("8000000");
+    await options.getByLabel("Export warning threshold").selectOption("8000000");
     await options.getByText("Saved.").waitFor();
     await options.getByRole("switch", { name: "Strip sensitive query strings" }).click();
     await options.getByText("Saved.").waitFor();
@@ -595,7 +625,7 @@ Deno.test("options persist every setting and update a mounted overlay theme", as
     assertEquals(await options.getByLabel("Screenshot quality").inputValue(), "0.85");
     assertEquals(await options.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
     await options.getByRole("tab", { name: "Export & privacy" }).click();
-    assertEquals(await options.getByLabel("Export size budget").inputValue(), "8000000");
+    assertEquals(await options.getByLabel("Export warning threshold").inputValue(), "8000000");
     assertEquals(
       await options.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
         "aria-checked",

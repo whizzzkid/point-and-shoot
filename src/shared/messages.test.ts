@@ -3,14 +3,17 @@ import {
   ADD_NOTE_MESSAGE,
   CAPTURE_REGION_MESSAGE,
   FRAMEWORK_PROBE_MESSAGE,
+  isActiveSessionSummary,
   isAddNoteRequest,
   isAddNoteResponse,
   isCaptureRegionRequest,
   isCaptureRegionResponse,
   isFrameworkProbeRequest,
   isFrameworkProbeResponse,
+  isNotePreviewRequest,
   isOverlayStateResponse,
   isToggleActiveTabResponse,
+  NOTE_PREVIEW_MESSAGE,
 } from "./messages.ts";
 
 const VALID_REQUEST = {
@@ -26,6 +29,52 @@ const VALID_CAPTURE = {
   truncated: false,
   viewport: VALID_REQUEST.viewport,
 };
+
+const VALID_SELECTORS = {
+  cssPath: ["#save"],
+  reachable: true,
+  tagClasses: "button",
+  testIds: [],
+  textSnippet: "Save",
+  xpath: ["/html/body/button"],
+};
+
+Deno.test("note preview guards accept exact ordered requests and reject malformed selectors", () => {
+  assertEquals(
+    isNotePreviewRequest({
+      action: "show",
+      generation: 3,
+      pageUrl: "https://example.com/editor",
+      selectors: [VALID_SELECTORS],
+      stripQuery: false,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    true,
+  );
+  assertEquals(
+    isNotePreviewRequest({ action: "clear", generation: 4, type: NOTE_PREVIEW_MESSAGE }),
+    true,
+  );
+  assertEquals(
+    isNotePreviewRequest({
+      action: "show",
+      generation: 3,
+      pageUrl: "https://example.com/editor",
+      selectors: [{ ...VALID_SELECTORS, cssPath: [] }],
+      stripQuery: false,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    false,
+  );
+  assertEquals(
+    isNotePreviewRequest({
+      action: "clear",
+      generation: 2.5,
+      type: NOTE_PREVIEW_MESSAGE,
+    }),
+    false,
+  );
+});
 
 Deno.test("capture message guards accept valid requests and both response variants", () => {
   assertEquals(isCaptureRegionRequest(VALID_REQUEST), true);
@@ -93,6 +142,7 @@ Deno.test("isAddNoteRequest accepts serializable evidence and rejects malformed 
     }],
     pageTitle: "Checkout",
     pageUrl: "https://example.com/checkout?access_token=secret",
+    text: "The save button overlaps the total.",
     type: ADD_NOTE_MESSAGE,
   };
   const element = request.elements[0]!;
@@ -135,6 +185,7 @@ Deno.test("isAddNoteRequest accepts serializable evidence and rejects malformed 
     false,
   );
   assertEquals(isAddNoteRequest({ ...request, pageUrl: undefined }), false);
+  assertEquals(isAddNoteRequest({ ...request, text: undefined }), false);
   assertEquals(
     isAddNoteRequest({
       ...request,
@@ -168,6 +219,19 @@ Deno.test("isAddNoteResponse accepts durable results and typed errors", () => {
       ok: true,
       sessionId: "session-1",
     }),
+    false,
+  );
+});
+
+Deno.test("active session summaries accept only exact inactive and counted active states", () => {
+  assertEquals(isActiveSessionSummary({ active: false }), true);
+  assertEquals(
+    isActiveSessionSummary({ active: true, noteCount: 2, sessionId: "session-1" }),
+    true,
+  );
+  assertEquals(isActiveSessionSummary({ active: false, noteCount: 0 }), false);
+  assertEquals(
+    isActiveSessionSummary({ active: true, noteCount: -1, sessionId: "session-1" }),
     false,
   );
 });

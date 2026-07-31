@@ -114,13 +114,18 @@
   width: var(--ps-icon-button-size);
 }
 
-.ps-icon-button:hover {
+.ps-icon-button:hover:not(:disabled) {
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
-.ps-icon-button:active {
+.ps-icon-button:active:not(:disabled) {
   background: var(--bg-inset);
+}
+
+.ps-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .ps-icon-button:focus-visible {

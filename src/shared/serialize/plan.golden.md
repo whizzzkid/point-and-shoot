@@ -68,18 +68,9 @@ Computed style evidence:
     "box": {
       "width": 180,
       "height": 48,
-      "paddingTop": 12,
-      "paddingRight": 16,
-      "paddingBottom": 12,
-      "paddingLeft": 16,
-      "marginTop": 0,
-      "marginRight": 0,
-      "marginBottom": 0,
-      "marginLeft": 0,
-      "borderTopWidth": 1,
-      "borderRightWidth": 1,
-      "borderBottomWidth": 1,
-      "borderLeftWidth": 1
+      "padding": "12px 16px",
+      "margin": "0",
+      "borderWidth": "1px"
     },
     "typography": {
       "fontFamily": "Inter",
@@ -91,10 +82,7 @@ Computed style evidence:
     "color": {
       "color": "#ffffff",
       "backgroundColor": "#4f7cff",
-      "borderTopColor": "#4f7cff",
-      "borderRightColor": "#4f7cff",
-      "borderBottomColor": "#4f7cff",
-      "borderLeftColor": "#4f7cff"
+      "borderColor": "#4f7cff"
     }
   },
   "parent": null,

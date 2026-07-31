@@ -121,7 +121,7 @@ Deno.test("floating toolbar - browser geometry clears quadrants, sticky chrome, 
   }
 });
 
-Deno.test("floating toolbar - approved controls expose one pressed tool and disabled send", async () => {
+Deno.test("floating toolbar - exposes selection, count, and plan navigation only", async () => {
   const fixture = startFixtureServer();
   const browser = await chromium.launch();
 
@@ -134,20 +134,16 @@ Deno.test("floating toolbar - approved controls expose one pressed tool and disa
         pointShootToolbarTest: ToolbarHarness;
       }).pointShootToolbarTest;
       await harness.place();
-      return {
-        initial: harness.controls(),
-        screenshot: await harness.choose("Screenshot"),
-      };
+      return harness.controls();
     });
 
-    assertEquals(states.initial, {
+    assertEquals(states, {
       activeLabel: "Select",
-      labels: ["Select", "Screenshot", "Note", "Send to agent"],
+      labels: ["Select", "Send to agent"],
       noteCount: "0 notes",
       sendDisabled: true,
       sendVariant: "primary",
     });
-    assertEquals(states.screenshot.activeLabel, "Screenshot");
   } finally {
     await browser.close();
     await fixture.close();

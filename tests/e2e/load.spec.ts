@@ -173,7 +173,7 @@ Deno.test("built chrome extension - boots and executes without error", async () 
     });
     assertEquals(hostState.count, 1, "content script did not create exactly one shadow host");
     assert(hostState.closed, "content script shadow root must be closed");
-    assertEquals(hostState.theme, "light", "light fixture did not select its matching theme");
+    assertEquals(hostState.theme, "dark", "light fixture did not select its contrasting theme");
     assert(hostState.fontLoaded, "vendored Inter did not load into the shadow-host document");
 
     // Injected twice by design — a second gesture on the same tab re-runs the file, and the guard in

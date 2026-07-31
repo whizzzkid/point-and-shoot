@@ -156,6 +156,9 @@ const harness = {
       ".ps-picker-highlight, .ps-picker-drag-box, .ps-picker-frame-shield",
     ).length;
   },
+  toolbarPresent(): boolean {
+    return shadowHost.root.querySelector('[role="toolbar"]') !== null;
+  },
 };
 
 (globalThis as unknown as { pointShootOverlayA11y: typeof harness }).pointShootOverlayA11y =

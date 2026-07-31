@@ -22,16 +22,23 @@ import {
   moveNote,
   setNoteStripQuery,
   updateNoteText,
+  updateSessionName,
 } from "./model.ts";
-import { copySessionPrompt, downloadSessionArchive } from "./plan/delivery.ts";
+import {
+  copySessionPrompt,
+  downloadSessionArchive,
+  downloadSessionPrompt,
+} from "./plan/delivery.ts";
 import type { ExportDeliveryDependencies } from "./plan/delivery.ts";
 import { PlanView } from "./plan/PlanView.tsx";
 import type { NotesRepository } from "./repository.ts";
+import type { NotePreviewController } from "./note-preview.ts";
 
 /** Props accepted by {@link NotesPanel}. */
 export interface NotesPanelProps {
   readonly exportDelivery: ExportDeliveryDependencies;
   readonly iconSpriteUrl: string;
+  readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
   readonly sizeBudgetBytes?: number;
 }
@@ -61,6 +68,8 @@ interface NoteCardProps {
   readonly onDelete: (note: Note) => void;
   readonly onEdit: (note: Note) => void;
   readonly onMove: (note: Note, direction: "up" | "down") => void;
+  readonly onPreviewClear: () => void;
+  readonly onPreviewShow: (note: Note) => void;
   readonly onStripQuery: (note: Note, checked: boolean) => void;
 }
 
@@ -73,13 +82,36 @@ function NoteCard(
     onDelete,
     onEdit,
     onMove,
+    onPreviewClear,
+    onPreviewShow,
     onStripQuery,
   }: NoteCardProps,
 ): JSX.Element {
   const target = targetLabel(note);
   const xpath = xpathLabel(note);
   return (
-    <article className="ps-note-card" data-note-id={note.id}>
+    <article
+      aria-label={`Preview note: ${note.text || target}`}
+      className="ps-note-card"
+      data-note-id={note.id}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          onPreviewClear();
+        }
+      }}
+      onFocus={(event) => {
+        const previousTarget = event.relatedTarget;
+        if (
+          !(previousTarget instanceof Node) || !event.currentTarget.contains(previousTarget)
+        ) {
+          onPreviewShow(note);
+        }
+      }}
+      onPointerEnter={() => onPreviewShow(note)}
+      onPointerLeave={onPreviewClear}
+      tabIndex={0}
+    >
       <CaptureMinimap
         label={`Captured region — ${target}`}
         screenshot={note.region.screenshot}
@@ -120,28 +152,28 @@ function NoteCard(
           }}
         />
         <IconButton
+          disabled={busy || !canMoveUp}
+          icon={<Icon name="arrow-up" />}
+          label="Move up"
+          onClick={() => {
+            if (!busy && canMoveUp) onMove(note, "up");
+          }}
+        />
+        <IconButton
+          disabled={busy || !canMoveDown}
+          icon={<Icon name="arrow-down" />}
+          label="Move down"
+          onClick={() => {
+            if (!busy && canMoveDown) onMove(note, "down");
+          }}
+        />
+        <IconButton
           icon={<Icon name="trash-2" />}
           label="Delete"
           onClick={() => {
             if (!busy) onDelete(note);
           }}
         />
-        <Button
-          disabled={busy || !canMoveUp}
-          onClick={() => onMove(note, "up")}
-          size="sm"
-          variant="ghost"
-        >
-          Move up
-        </Button>
-        <Button
-          disabled={busy || !canMoveDown}
-          onClick={() => onMove(note, "down")}
-          size="sm"
-          variant="ghost"
-        >
-          Move down
-        </Button>
       </div>
     </article>
   );
@@ -157,6 +189,7 @@ export function NotesPanel(
   {
     exportDelivery,
     iconSpriteUrl,
+    notePreview,
     repository,
     sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
   }: NotesPanelProps,
@@ -165,6 +198,8 @@ export function NotesPanel(
   const [selectedPageKey, setSelectedPageKey] = useState<string>();
   const [editing, setEditing] = useState<Note>();
   const [editText, setEditText] = useState("");
+  const [editingSessionName, setEditingSessionName] = useState(false);
+  const [sessionName, setSessionName] = useState("");
   const [deleting, setDeleting] = useState<Note>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -198,6 +233,7 @@ export function NotesPanel(
       stopWatching();
     };
   }, [repository]);
+  useEffect(() => () => notePreview.clear(), [notePreview]);
 
   const groups = useMemo(
     () => session === undefined || session === null ? [] : groupNotesByPage(session),
@@ -232,6 +268,12 @@ export function NotesPanel(
     setEditing(note);
     setEditText(note.text);
   };
+  const beginSessionNameEdit = (): void => {
+    if (session !== null && session !== undefined) {
+      setSessionName(session.name);
+      setEditingSessionName(true);
+    }
+  };
 
   if (session === undefined) {
     return <main className="ps-notes-panel ps-notes-panel--center">Loading notes…</main>;
@@ -248,8 +290,12 @@ export function NotesPanel(
           actions={{
             copy: (includedNoteIds) =>
               copySessionPrompt(session, { includedNoteIds }, exportDelivery),
-            download: (includedNoteIds) =>
+            downloadBundle: (includedNoteIds) =>
               downloadSessionArchive(session, { includedNoteIds }, exportDelivery).then(
+                () => undefined,
+              ),
+            downloadPrompt: (includedNoteIds) =>
+              downloadSessionPrompt(session, { includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
           }}
@@ -273,7 +319,49 @@ export function NotesPanel(
                 ? "Current session"
                 : "Completed session"}
             </p>
-            <h1>{session?.name ?? "Notes"}</h1>
+            {editingSessionName && session !== null
+              ? (
+                <div className="ps-session-name-editor">
+                  <Input
+                    accessibleName="Session name"
+                    onChange={setSessionName}
+                    value={sessionName}
+                  />
+                  <Button
+                    disabled={busy || sessionName.trim().length === 0}
+                    onClick={() => {
+                      const renamed = updateSessionName(session, sessionName);
+                      apply(renamed, () => setEditingSessionName(false));
+                    }}
+                    size="sm"
+                  >
+                    Save
+                    <span className="ps-visually-hidden">session name</span>
+                  </Button>
+                  <Button
+                    disabled={busy}
+                    onClick={() => setEditingSessionName(false)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Cancel
+                    <span className="ps-visually-hidden">session name editing</span>
+                  </Button>
+                </div>
+              )
+              : (
+                <div className="ps-session-name">
+                  <h1>{session?.name ?? "Notes"}</h1>
+                  {session === null ? null : (
+                    <IconButton
+                      icon={<Icon name="pencil" />}
+                      label="Edit session name"
+                      onClick={beginSessionNameEdit}
+                      size={16}
+                    />
+                  )}
+                </div>
+              )}
           </div>
           <nav aria-label="Captured pages" className="ps-page-list">
             <p className="ps-eyebrow">Pages</p>
@@ -306,8 +394,8 @@ export function NotesPanel(
             {isOverBudget
               ? (
                 <p role="alert">
-                  Export is over the size budget. Delete notes or reduce screenshot settings before
-                  export.
+                  This session is above the configured warning threshold. Copy and download remain
+                  available.
                 </p>
               )
               : null}
@@ -356,6 +444,8 @@ export function NotesPanel(
                           apply(moveNote(session, selected.id, direction));
                         }
                       }}
+                      onPreviewClear={() => notePreview.clear()}
+                      onPreviewShow={(selected) => notePreview.show(selected)}
                       onStripQuery={(selected, checked) => {
                         if (session !== null) {
                           apply(setNoteStripQuery(session, selected.id, checked));

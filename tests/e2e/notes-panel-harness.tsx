@@ -55,6 +55,15 @@ const repository = createNotesRepository(storage, {
     storageListeners.delete(listener);
   },
 });
+const previewEvents: string[] = [];
+const notePreview = {
+  clear() {
+    previewEvents.push("clear");
+  },
+  show(note: Session["notes"][number]) {
+    previewEvents.push(`show:${note.id}`);
+  },
+};
 
 function fixtureScreenshot(index: number): string {
   const canvas = document.createElement("canvas");
@@ -88,6 +97,7 @@ function renderPanel(
         revokeObjectURL: () => undefined,
       }}
       iconSpriteUrl=""
+      notePreview={notePreview}
       repository={selectedRepository}
       {...(sizeBudgetBytes === undefined ? {} : { sizeBudgetBytes })}
     />,
@@ -112,6 +122,12 @@ const harness = {
       save: () => Promise.reject(new Error(message)),
       watch: () => () => undefined,
     });
+  },
+  previewEvents() {
+    return [...previewEvents];
+  },
+  resetPreviewEvents() {
+    previewEvents.length = 0;
   },
   async seed(session: Session) {
     const sessionWithImages: Session = {

@@ -41,6 +41,7 @@ interface OverlayA11yHarness {
     readonly transitionDuration: string;
   }[];
   overlayCount(): number;
+  toolbarPresent(): boolean;
 }
 
 async function bundleOverlayHarness(): Promise<string> {
@@ -205,6 +206,15 @@ Deno.test("overlay axe, contrast, Escape, and reduced motion pass in both themes
           ),
           0,
           `${theme} picker did not exit from its pinned keyboard state`,
+        );
+        assertEquals(
+          await page.evaluate(() =>
+            (globalThis as unknown as {
+              readonly pointShootOverlayA11y: OverlayA11yHarness;
+            }).pointShootOverlayA11y.toolbarPresent()
+          ),
+          false,
+          `${theme} toolbar remained after Escape`,
         );
       } finally {
         await page.close();

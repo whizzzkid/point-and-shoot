@@ -292,8 +292,8 @@ export function Options({ autoTheme, repository }: OptionsProps): JSX.Element {
                     <p>Set the bundle warning limit and the default treatment of sensitive URLs.</p>
                   </div>
                   <SettingRow
-                    help="Exports above this measured agent-ingestion budget are blocked."
-                    label="Export size budget"
+                    help="Exports above this measured agent-ingestion threshold remain available with a warning."
+                    label="Export warning threshold"
                   >
                     <Select
                       onChange={(value) =>

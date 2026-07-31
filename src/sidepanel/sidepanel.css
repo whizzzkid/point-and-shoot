@@ -55,6 +55,27 @@ textarea {
   font-size: var(--text-lg);
 }
 
+.ps-session-name,
+.ps-session-name-editor {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+}
+
+.ps-session-name {
+  justify-content: space-between;
+}
+
+.ps-session-name-editor {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.ps-session-name-editor > .ps-input {
+  flex: 1 1 100%;
+  min-inline-size: 0;
+}
+
 .ps-eyebrow {
   color: var(--text-secondary);
   font-family: var(--font-mono);
@@ -151,6 +172,11 @@ textarea {
   min-inline-size: 0;
 }
 
+.ps-note-card:focus-visible {
+  box-shadow: var(--shadow-focus);
+  outline: none;
+}
+
 .ps-notes-header {
   align-items: center;
   border-block-end: calc(var(--space-1) / 4) solid var(--border-subtle);
@@ -217,7 +243,7 @@ textarea {
   align-content: start;
   display: grid;
   gap: var(--space-1);
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: repeat(4, auto);
 }
 
 .ps-empty-notes {
@@ -366,6 +392,14 @@ textarea {
   margin-block-end: var(--space-3);
 }
 
+.ps-plan-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-block-end: var(--space-3);
+}
+
 .ps-plan-preview pre {
   background: var(--bg-surface);
   border: calc(var(--space-1) / 4) solid var(--border-subtle);
@@ -420,13 +454,6 @@ textarea {
   min-inline-size: calc(var(--space-24) * 3);
 }
 
-.ps-plan-actions__buttons {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
-  margin-block-start: var(--space-3);
-}
-
 .ps-plan-status {
   color: var(--success);
   font-size: var(--text-xs);
@@ -452,5 +479,9 @@ textarea {
 
   .ps-plan-actions {
     min-inline-size: 0;
+  }
+
+  .ps-plan-preview__actions > .ps-button {
+    flex: 1 1 auto;
   }
 }

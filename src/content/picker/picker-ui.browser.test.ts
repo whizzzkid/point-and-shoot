@@ -12,6 +12,17 @@ const PICKER_UI_HARNESS = new URL("tests/e2e/picker-ui-harness.tsx", ROOT);
 
 interface PickerUiSummary {
   readonly activeLabel: string | null | undefined;
+  readonly composerRect:
+    | {
+      readonly height: number;
+      readonly left: number;
+      readonly top: number;
+      readonly width: number;
+    }
+    | undefined;
+  readonly composerOpen: boolean;
+  readonly error: string | null | undefined;
+  readonly focusedLabel: string | null | undefined;
   readonly latestCount: number;
   readonly latestKind: string | undefined;
   readonly latestReason: string | undefined;
@@ -25,13 +36,117 @@ interface PickerUiSummary {
     }
     | undefined;
   readonly primaryCount: number;
+  readonly savedNotes: readonly string[];
+  readonly selectionCount: number;
+  readonly toolbarPresent: boolean;
 }
 
 interface PickerUiHarness {
+  cancelComposer(): Promise<void>;
+  failCapture(): void;
+  focusDocumentElement(): void;
   reenter(): Promise<void>;
   reset(): void;
+  saveNote(text: string, fail?: boolean): Promise<void>;
   summary(): PickerUiSummary;
 }
+
+Deno.test("note composer saves text and preserves it after persistence failure", async () => {
+  const fixture = startFixtureServer();
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1_000, height: 900 } });
+    await page.goto(`${fixture.base}/index.html`);
+    await page.addScriptTag({ content: await bundlePickerUiHarness() });
+    const target = page.getByTestId("save-note");
+
+    await target.hover();
+    await target.click();
+    await page.waitForTimeout(30);
+    await page.evaluate(async () => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      await harness.saveNote("The button is clipped.");
+    });
+    const saved = await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      return harness.summary();
+    });
+    assertEquals(saved.savedNotes, ["The button is clipped."]);
+    assertEquals(saved.composerOpen, false);
+    assertEquals(saved.activeLabel, "Select");
+
+    await target.hover();
+    await target.click();
+    await page.waitForTimeout(30);
+    await page.evaluate(async () => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      await harness.saveNote("Keep this text.", true);
+    });
+    const failed = await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      return harness.summary();
+    });
+    assertEquals(failed.composerOpen, true);
+    assertEquals(failed.error, "IndexedDB unavailable.");
+    assertEquals(failed.savedNotes, ["The button is clipped."]);
+    assertEquals(failed.composerRect?.height, 216);
+    assertGreater(failed.composerRect?.top ?? -1, 0);
+    assertGreater(900, (failed.composerRect?.top ?? 900) + (failed.composerRect?.height ?? 0));
+    await page.evaluate(async () => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      await harness.cancelComposer();
+      harness.focusDocumentElement();
+    });
+    const nonFocusableTarget = page.locator("#ambiguous-classes .card").first();
+    await nonFocusableTarget.hover();
+    await nonFocusableTarget.click();
+    await page.waitForTimeout(30);
+    await page.evaluate(async () => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      await harness.cancelComposer();
+    });
+    const cancelled = await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      return harness.summary();
+    });
+    assertEquals(cancelled.focusedLabel, "Select");
+    await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      harness.failCapture();
+    });
+    await target.hover();
+    await target.click();
+    await page.waitForTimeout(30);
+    const captureFailure = await page.evaluate(() => {
+      const harness = (globalThis as unknown as {
+        pointShootPickerUiTest: PickerUiHarness;
+      }).pointShootPickerUiTest;
+      return harness.summary();
+    });
+    assertEquals(captureFailure.composerOpen, false);
+    assertEquals(captureFailure.activeLabel, "Select");
+    assertEquals(captureFailure.error, "Screenshot capture failed.");
+  } finally {
+    await browser.close();
+    await fixture.close();
+  }
+});
 
 async function bundlePickerUiHarness(): Promise<string> {
   try {
@@ -86,6 +201,7 @@ Deno.test("element picker highlights, pins, drags, and Escape removes every over
       targetRect.x + targetRect.width / 2,
       targetRect.y + targetRect.height / 2,
     );
+    await page.waitForTimeout(30);
     const pinned = await page.evaluate(() => {
       const harness = (globalThis as unknown as {
         pointShootPickerUiTest: PickerUiHarness;
@@ -95,10 +211,15 @@ Deno.test("element picker highlights, pins, drags, and Escape removes every over
     assertEquals(pinned.latestKind, "elements");
     assertEquals(pinned.latestCount, 1);
     assertEquals(pinned.primaryCount, 1);
+    assertEquals(pinned.composerOpen, true);
     const pinnedPreview = pinned.preview;
     const otherTargetRect = await page.locator("#ambiguous-classes .card").nth(0).boundingBox();
     if (otherTargetRect === null) throw new Error("other ambiguous target has no box");
     await page.mouse.move(
+      otherTargetRect.x + otherTargetRect.width / 2,
+      otherTargetRect.y + otherTargetRect.height / 2,
+    );
+    await page.mouse.click(
       otherTargetRect.x + otherTargetRect.width / 2,
       otherTargetRect.y + otherTargetRect.height / 2,
     );
@@ -109,6 +230,7 @@ Deno.test("element picker highlights, pins, drags, and Escape removes every over
       return harness.summary();
     });
     assertEquals(afterMove.preview, pinnedPreview);
+    assertEquals(afterMove.selectionCount, 1);
 
     await page.keyboard.press("Escape");
     const escaped = await page.evaluate(() => {
@@ -120,6 +242,7 @@ Deno.test("element picker highlights, pins, drags, and Escape removes every over
     assertEquals(escaped.overlayCount, 0);
     assertEquals(escaped.preview, undefined);
     assertEquals(escaped.activeLabel, undefined);
+    assertEquals(escaped.toolbarPresent, false);
 
     await page.evaluate(async () => {
       const harness = (globalThis as unknown as {
@@ -175,6 +298,7 @@ Deno.test("element picker supports keyboard-only traversal and confirmation", as
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Enter");
+    await page.waitForTimeout(30);
 
     const confirmed = await page.evaluate(() => {
       const harness = (globalThis as unknown as {
@@ -185,7 +309,8 @@ Deno.test("element picker supports keyboard-only traversal and confirmation", as
     assertEquals(confirmed.latestKind, "elements");
     assertEquals(confirmed.latestCount, 1);
     assertEquals(confirmed.primaryCount, 1);
-    assertGreater(confirmed.preview?.width ?? 0, 0);
+    assertEquals(confirmed.composerOpen, true);
+    assertGreater(confirmed.overlayCount, 0);
   } finally {
     await browser.close();
     await fixture.close();

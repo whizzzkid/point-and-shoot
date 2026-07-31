@@ -35,6 +35,33 @@ export function exportFilename(session: Session): string {
 }
 
 /**
+ * Returns the download path used for a standalone Markdown prompt.
+ *
+ * @param session Session being exported.
+ * @returns A safe filename under the Point & Shoot downloads folder.
+ */
+export function promptFilename(session: Session): string {
+  return `point-and-shoot/${slug(session.name) || slug(session.id) || "session"}.md`;
+}
+
+async function downloadBlob(
+  blob: Blob,
+  filename: string,
+  dependencies: ExportDeliveryDependencies,
+): Promise<number> {
+  const objectUrl = dependencies.createObjectURL(blob);
+  try {
+    return await dependencies.downloads.download({
+      filename,
+      saveAs: true,
+      url: objectUrl,
+    });
+  } finally {
+    dependencies.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
  * Builds and downloads the selected session notes as a ZIP archive.
  *
  * @param session Validated session record.
@@ -49,18 +76,32 @@ export async function downloadSessionArchive(
 ): Promise<number> {
   const archive = createExportArchive(session, options);
   const archiveBuffer = archive.slice().buffer as ArrayBuffer;
-  const objectUrl = dependencies.createObjectURL(
+  return await downloadBlob(
     new Blob([archiveBuffer], { type: "application/zip" }),
+    exportFilename(session),
+    dependencies,
   );
-  try {
-    return await dependencies.downloads.download({
-      filename: exportFilename(session),
-      saveAs: true,
-      url: objectUrl,
-    });
-  } finally {
-    dependencies.revokeObjectURL(objectUrl);
-  }
+}
+
+/**
+ * Downloads the selected notes as standalone image-free Markdown.
+ *
+ * @param session Validated session record.
+ * @param options Per-note inclusion selection.
+ * @param dependencies Browser download and object-URL capabilities.
+ * @returns The browser-assigned download id.
+ */
+export async function downloadSessionPrompt(
+  session: Session,
+  options: SerializeOptions,
+  dependencies: ExportDeliveryDependencies,
+): Promise<number> {
+  const markdown = toMarkdown(session, { ...options, includeImageReferences: false });
+  return await downloadBlob(
+    new Blob([markdown], { type: "text/markdown;charset=utf-8" }),
+    promptFilename(session),
+    dependencies,
+  );
 }
 
 /**

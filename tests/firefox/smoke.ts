@@ -204,6 +204,22 @@ async function clickElement(client: MarionetteClient, selector: string): Promise
   await client.command("WebDriver:ElementClick", { id });
 }
 
+async function sendKeyboardKeys(
+  client: MarionetteClient,
+  keys: readonly string[],
+): Promise<void> {
+  await client.command("WebDriver:PerformActions", {
+    actions: [{
+      actions: keys.flatMap((value) => [
+        { type: "keyDown", value },
+        { type: "keyUp", value },
+      ]),
+      id: "point-and-shoot-keyboard",
+      type: "key",
+    }],
+  });
+}
+
 async function activateWithBrowserAction(client: MarionetteClient): Promise<void> {
   await client.command("Marionette:SetContext", { value: "chrome" });
   await clickElement(client, "#unified-extensions-button");
@@ -402,6 +418,13 @@ async function runSmoke(): Promise<void> {
 
     await client.command("Marionette:SetContext", { value: "content" });
     await clickElement(client, "h1");
+    await waitForScript(
+      client,
+      'return document.activeElement?.matches("[data-point-and-shoot-host]") === true',
+      (value) => value === true,
+      "Firefox note composer focus",
+    );
+    await sendKeyboardKeys(client, ["\uE004", "\uE004", "\uE007"]);
     await waitForNoteBadge(client);
     await navigate(client, `${FIREFOX_EXTENSION_ORIGIN}/sidepanel/sidepanel.html`);
 
