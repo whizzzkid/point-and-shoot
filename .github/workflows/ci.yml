@@ -101,6 +101,83 @@ jobs:
           name: e2e-smoke-trace
           path: playwright-report/
 
+  e2e-full:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-1.62.0
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+
+      - name: deno task e2e:full
+        run: deno task e2e:full
+
+      - name: Upload full E2E traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-full-traces
+          path: playwright-report/
+          if-no-files-found: warn
+
+  visual:
+    runs-on: ubuntu-24.04
+    # Baselines are generated in this exact image. Running the comparison on the GitHub host
+    # changes system fonts and makes otherwise-identical fixture text produce large diffs.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      - name: deno task visual
+        run: deno task visual
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs
+          path: playwright-report/visual/
+          if-no-files-found: warn
+
+  a11y:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-1.62.0
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+
+      - name: deno task a11y
+        run: deno task a11y
+
+      - name: Upload axe reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-axe-reports
+          path: playwright-report/a11y/
+          if-no-files-found: warn
+
   lint-firefox:
     runs-on: ubuntu-24.04
     steps:
@@ -130,5 +207,26 @@ jobs:
 
       - name: deno task boot:firefox
         run: deno task boot:firefox
+        env:
+          PNS_FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}
+
+  smoke-firefox:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/cache@v5
+        with:
+          path: ${{ runner.tool_cache }}/firefox
+          key: firefox-browser-${{ runner.os }}-${{ runner.arch }}-153.0
+
+      - uses: browser-actions/setup-firefox@v1
+        id: setup-firefox
+        with:
+          firefox-version: "153.0"
+
+      - name: deno task smoke:firefox
+        run: deno task smoke:firefox
         env:
           PNS_FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}

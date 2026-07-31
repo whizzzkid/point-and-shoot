@@ -112,10 +112,14 @@ function DefaultStateSpecimens({ theme }: { readonly theme: ThemeName }): JSX.El
         <Input placeholder="Default input" />
       </StateSpecimen>
       <StateSpecimen name="Select">
-        <Select options={["Local agent", "Cursor agent"]} value="Local agent" />
+        <Select
+          accessibleName={`${theme} default target agent`}
+          options={["Local agent", "Cursor agent"]}
+          value="Local agent"
+        />
       </StateSpecimen>
       <StateSpecimen name="Switch">
-        <Switch />
+        <Switch accessibleName={`${theme} default switch`} />
       </StateSpecimen>
       <StateSpecimen name="Tabs">
         <Tabs active="Notes" tabs={["Notes", "Plan"]} />
@@ -160,10 +164,14 @@ function InteractiveStateSpecimens(
         <Input placeholder={`${state} input`} />
       </StateSpecimen>
       <StateSpecimen name="Select">
-        <Select options={["Local agent", "Cursor agent"]} value="Local agent" />
+        <Select
+          accessibleName={`${theme} ${state} target agent`}
+          options={["Local agent", "Cursor agent"]}
+          value="Local agent"
+        />
       </StateSpecimen>
       <StateSpecimen name="Switch">
-        <Switch />
+        <Switch accessibleName={`${theme} ${state} switch`} />
       </StateSpecimen>
       <StateSpecimen name="Tabs">
         <Tabs active="Notes" tabs={["Notes", "Plan"]} />
@@ -209,7 +217,7 @@ function StateGallery({ theme }: { readonly theme: ThemeName }): JSX.Element {
             />
           </StateSpecimen>
           <StateSpecimen name="Switch">
-            <Switch checked />
+            <Switch accessibleName={`${theme} active switch`} checked />
           </StateSpecimen>
           <StateSpecimen name="Tabs">
             <Tabs active="Plan" tabs={["Notes", "Plan"]} />

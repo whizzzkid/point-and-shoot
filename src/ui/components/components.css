@@ -1,9 +1,9 @@
 .ps-button {
   align-items: center;
-  background: var(--accent);
+  background: var(--accent-active);
   border: calc(var(--space-1) / 4) solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--accent-contrast);
+  color: var(--white);
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-body);
@@ -19,12 +19,12 @@
     color var(--duration-fast) var(--ease-standard);
 }
 
-.ps-button:hover:not(:disabled) {
-  background: var(--accent-hover);
+.ps-button[data-variant="primary"]:hover:not(:disabled) {
+  filter: brightness(1.05);
 }
 
-.ps-button:active:not(:disabled) {
-  background: var(--accent-active);
+.ps-button[data-variant="primary"]:active:not(:disabled) {
+  filter: brightness(0.9);
 }
 
 .ps-button:focus-visible {
@@ -169,17 +169,17 @@
 
 .ps-badge[data-tone="success"] {
   border-color: var(--success);
-  color: var(--success);
+  color: var(--text-primary);
 }
 
 .ps-badge[data-tone="warning"] {
   border-color: var(--warning);
-  color: var(--warning);
+  color: var(--text-primary);
 }
 
 .ps-badge[data-tone="danger"] {
   border-color: var(--danger);
-  color: var(--danger);
+  color: var(--text-primary);
 }
 
 .ps-tag {
@@ -199,7 +199,7 @@
   align-items: center;
   background: transparent;
   border: 0;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
   height: var(--space-5);
@@ -256,7 +256,7 @@ input.ps-input {
 }
 
 .ps-input::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .ps-checkbox {
@@ -299,7 +299,7 @@ input.ps-input {
 }
 
 .ps-checkbox:hover .ps-checkbox__box {
-  border-color: var(--text-tertiary);
+  border-color: var(--text-secondary);
 }
 
 .ps-checkbox > input:focus-visible + .ps-checkbox__box {
@@ -435,7 +435,7 @@ input.ps-input {
   background: transparent;
   border: calc(var(--space-1) / 4) solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
   height: var(--space-8);
@@ -520,7 +520,7 @@ input.ps-input {
 .ps-select__chevron {
   border-block-end: calc(var(--space-1) / 2) solid currentColor;
   border-inline-end: calc(var(--space-1) / 2) solid currentColor;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   height: var(--space-2);
   inset-block-start: calc(50% - var(--space-1));
   inset-inline-end: var(--space-3);
@@ -619,7 +619,7 @@ button.ps-capture-minimap:focus-visible {
   background: var(--bg-elevated);
   border: calc(var(--space-1) / 4) solid var(--warning);
   border-radius: var(--radius-xs);
-  color: var(--warning);
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   inset-block-start: var(--space-1);
@@ -694,7 +694,7 @@ button.ps-capture-minimap:focus-visible {
   background: transparent;
   border: 0;
   border-block-end: calc(var(--space-1) / 2) solid transparent;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font-body);
   font-size: var(--text-sm);

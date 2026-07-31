@@ -3,8 +3,8 @@
 **Read [`README.md`](README.md) in this folder first.** Wave 3 assumes
 [wave 2](wave-2-core-libraries.md) is complete.
 
-- **Status:** exit reconciliation open — implementation delivered across PRs #9–#13; component
-  gallery follow-up pending merge
+- **Status:** complete — implementation delivered across PRs #9–#13; the component-gallery exit
+  criterion merged in PR #18
 - **Goal:** the product. Every surface from the design bundle, built in Preact against the generated
   tokens, plus the capture pipeline and the export that turns notes into an agent prompt.
 
@@ -119,7 +119,7 @@ URL rotates.
 
 ## W3.1 — Preact component library
 
-- [x] `src/ui/components/` + gallery page — SHA: `b5a15f2`
+- [x] `src/ui/components/` + gallery page — SHA: `26d4153`
 
 **parallel-safe.** Nothing inside wave 3 blocks this, but five other items block on it — W3.3, W3.6,
 W3.7, W3.8, and W3.9 all consume the component library, so start this first.
@@ -588,8 +588,7 @@ native controls and the picker has a dedicated keyboard-only browser path, but t
 browser suites use pointer activation. W4.4 owns the systematic keyboard and screen-reader audit, so
 it must close that evidence gap before release.
 
-The gallery follow-up closes the implementation and evidence gap with an explicit state matrix.
-`src/ui/gallery/server.test.ts` asserts every applicable component-state combination in both themes
-and keeps transient Toast examples visible for visual review. Wave 3 remains open—and therefore
-keeps the Wave 4 barrier closed—until this follow-up merges. The post-merge plan sync then records
-its SHA.
+The gallery follow-up merged in PR #18 as `26d4153` and closed the implementation and evidence gap
+with an explicit state matrix. `src/ui/gallery/server.test.ts` asserts every applicable
+component-state combination in both themes and keeps transient Toast examples visible for visual
+review. Wave 3 is complete, and the Wave 4 barrier is open.
