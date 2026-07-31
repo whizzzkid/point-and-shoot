@@ -173,6 +173,26 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
       ["Edit", "Move up", "Move down", "Delete"],
     );
     assertEquals(
+      await Promise.all([
+        firstCard.locator(".ps-note-card__content").boundingBox(),
+        firstCardActions.boundingBox(),
+        firstCard.locator(".ps-capture-minimap").boundingBox(),
+      ]).then(([content, actions, screenshot]) =>
+        content !== null && actions !== null && screenshot !== null &&
+        content.x + content.width <= screenshot.x &&
+        actions.y + actions.height <= screenshot.y
+      ),
+      true,
+      "note content must stay left while compact actions sit above the screenshot on the right",
+    );
+    assertEquals(
+      await firstCardActions.getByRole("button").evaluateAll((buttons) =>
+        buttons.every((button) => button.getBoundingClientRect().width <= 32)
+      ),
+      true,
+      "note actions must use condensed icon-button targets",
+    );
+    assertEquals(
       await firstCardActions.getByRole("button", { name: "Move up" }).isDisabled(),
       true,
     );

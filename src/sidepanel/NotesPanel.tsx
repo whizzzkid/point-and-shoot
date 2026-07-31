@@ -106,11 +106,6 @@ function NoteCard(
       onPointerLeave={onPreviewClear}
       tabIndex={0}
     >
-      <CaptureMinimap
-        label={`Captured region — ${target}`}
-        screenshot={note.region.screenshot}
-        truncated={note.region.truncated}
-      />
       <div className="ps-note-card__content">
         <div className="ps-note-card__meta">
           <span className="ps-technical-value" title={target}>{target}</span>
@@ -137,36 +132,47 @@ function NoteCard(
           <span>Strip query when exporting</span>
         </label>
       </div>
-      <div className="ps-note-card__actions">
-        <IconButton
-          icon={<Icon name="pencil" />}
-          label="Edit"
-          onClick={() => {
-            if (!busy) onEdit(note);
-          }}
-        />
-        <IconButton
-          disabled={busy || !canMoveUp}
-          icon={<Icon name="arrow-up" />}
-          label="Move up"
-          onClick={() => {
-            if (!busy && canMoveUp) onMove(note, "up");
-          }}
-        />
-        <IconButton
-          disabled={busy || !canMoveDown}
-          icon={<Icon name="arrow-down" />}
-          label="Move down"
-          onClick={() => {
-            if (!busy && canMoveDown) onMove(note, "down");
-          }}
-        />
-        <IconButton
-          icon={<Icon name="trash-2" />}
-          label="Delete"
-          onClick={() => {
-            if (!busy) onDelete(note);
-          }}
+      <div className="ps-note-card__visual">
+        <div className="ps-note-card__actions">
+          <IconButton
+            icon={<Icon name="pencil" />}
+            label="Edit"
+            onClick={() => {
+              if (!busy) onEdit(note);
+            }}
+            size={16}
+          />
+          <IconButton
+            disabled={busy || !canMoveUp}
+            icon={<Icon name="arrow-up" />}
+            label="Move up"
+            onClick={() => {
+              if (!busy && canMoveUp) onMove(note, "up");
+            }}
+            size={16}
+          />
+          <IconButton
+            disabled={busy || !canMoveDown}
+            icon={<Icon name="arrow-down" />}
+            label="Move down"
+            onClick={() => {
+              if (!busy && canMoveDown) onMove(note, "down");
+            }}
+            size={16}
+          />
+          <IconButton
+            icon={<Icon name="trash-2" />}
+            label="Delete"
+            onClick={() => {
+              if (!busy) onDelete(note);
+            }}
+            size={16}
+          />
+        </div>
+        <CaptureMinimap
+          label={`Captured region — ${target}`}
+          screenshot={note.region.screenshot}
+          truncated={note.region.truncated}
         />
       </div>
     </article>
