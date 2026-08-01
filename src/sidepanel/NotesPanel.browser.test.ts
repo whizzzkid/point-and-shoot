@@ -10,9 +10,11 @@ import { startFixtureServer } from "../../tests/fixtures/app/server.ts";
 
 const ROOT = new URL("../../", import.meta.url);
 const NOTES_PANEL_HARNESS = new URL("tests/e2e/notes-panel-harness.tsx", ROOT);
+const LONG_PAGE_TITLE =
+  "Gusto/zenpayroll #362755 — Fresh Eyes review with an unusually long page title";
 
 interface NotesPanelHarness {
-  mount(theme: "dark" | "light", sizeBudgetBytes?: number): void;
+  mount(theme: "dark" | "light"): void;
   mountWithLoadError(theme: "dark" | "light", message: string): void;
   mountWithSaveError(theme: "dark" | "light", message: string): void;
   previewEvents(): string[];
@@ -42,7 +44,7 @@ function makeNote(
       styleDigest: null,
     }],
     id,
-    pageTitle: pageUrl.includes("checkout") ? "Checkout" : "Pricing",
+    pageTitle: pageUrl.includes("checkout") ? LONG_PAGE_TITLE : "Pricing",
     pageUrl,
     region: {
       box: { height: 50, width: 100, x: 10, y: 20 },
@@ -111,10 +113,32 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         pointShootNotesPanelTest: NotesPanelHarness;
       }).pointShootNotesPanelTest;
       await harness.seed(session);
-      harness.mount("dark", 100);
+      harness.mount("dark");
     }, SESSION);
 
     await page.getByRole("heading", { name: "Checkout review" }).waitFor();
+    const notesHeader = page.locator(".ps-notes-header");
+    const pageTitle = notesHeader.getByRole("heading", { name: LONG_PAGE_TITLE });
+    const compilePlan = notesHeader.getByRole("button", { name: "Compile plan" });
+    await Promise.all([notesHeader.waitFor(), pageTitle.waitFor(), compilePlan.waitFor()]);
+    assertEquals(
+      await pageTitle.evaluate((heading) => ({
+        ellipsis: getComputedStyle(heading).textOverflow,
+        overflows: heading.scrollWidth > heading.clientWidth,
+      })),
+      { ellipsis: "ellipsis", overflows: true },
+    );
+    const [headerBox, compilePlanBox] = await Promise.all([
+      notesHeader.boundingBox(),
+      compilePlan.boundingBox(),
+    ]);
+    if (headerBox === null) throw new Error("Notes header was not laid out");
+    if (compilePlanBox === null) throw new Error("Compile plan was not laid out");
+    assertEquals(
+      compilePlanBox.x + compilePlanBox.width <= headerBox.x + headerBox.width + 0.5,
+      true,
+      "Compile plan must remain fully inside the header beside an overflowing page title",
+    );
     await page.evaluate(() => {
       const harness = (globalThis as unknown as {
         pointShootNotesPanelTest: NotesPanelHarness;
@@ -147,6 +171,26 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         buttons.map((button) => button.getAttribute("aria-label"))
       ),
       ["Edit", "Move up", "Move down", "Delete"],
+    );
+    assertEquals(
+      await Promise.all([
+        firstCard.locator(".ps-note-card__content").boundingBox(),
+        firstCardActions.boundingBox(),
+        firstCard.locator(".ps-capture-minimap").boundingBox(),
+      ]).then(([content, actions, screenshot]) =>
+        content !== null && actions !== null && screenshot !== null &&
+        content.x + content.width <= screenshot.x &&
+        actions.y + actions.height <= screenshot.y
+      ),
+      true,
+      "note content must stay left while compact actions sit above the screenshot on the right",
+    );
+    assertEquals(
+      await firstCardActions.getByRole("button").evaluateAll((buttons) =>
+        buttons.every((button) => button.getBoundingClientRect().width <= 32)
+      ),
+      true,
+      "note actions must use condensed icon-button targets",
     );
     assertEquals(
       await firstCardActions.getByRole("button", { name: "Move up" }).isDisabled(),
@@ -186,10 +230,7 @@ Deno.test("notes panel reviews and persists a captured session in both themes", 
         .getAttribute("aria-checked"),
       "true",
     );
-    assertEquals(
-      await page.locator("[data-export-budget]").getAttribute("data-over-budget"),
-      "true",
-    );
+    assertEquals(await page.locator("[data-export-budget]").count(), 0);
     await page.getByRole("button", { name: "Compile plan" }).focus();
     await page.keyboard.press("Enter");
     await page.getByRole("heading", { name: "Compile plan" }).waitFor();

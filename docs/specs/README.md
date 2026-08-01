@@ -17,9 +17,9 @@ than being chosen locally, so two specs cannot disagree about the same limit.
 ## Published contracts
 
 - [Export bundle](export-bundle.md) — note selection, privacy projection, canonical JSON, Markdown,
-  ZIP layout, size warnings, and delivery failures.
+  ZIP layout, legacy settings compatibility, and delivery failures.
 - [Export-format spike](export-format-spike.md) — the measured agent trial that settled the v1
-  bundle shape and `2 MB` default warning threshold.
+  bundle shape and recorded the historical `2 MB` ingestion measurement.
 - [Toolbar session control](toolbar-session-control.md) — toolbar and keyboard entry points,
   lifecycle, badge and tooltip state, concurrency, and failure behavior.
 - [Extension settings](settings.md) — versioned defaults, runtime consumers, browser shortcuts,

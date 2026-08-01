@@ -78,18 +78,17 @@ the archive uses store-only entries so its exact byte length is stable and inexp
 The browser prompts the user to save the archive under `point-and-shoot/<session-name-or-id>.zip`.
 An object URL exists only for the download call and is revoked whether that call succeeds or fails.
 
-## Size warning and errors
+## Legacy size field and errors
 
-The default warning threshold is `2,000,000` bytes, taken from the
-[settled-numbers table](../plans/README.md#settled-numbers). The options page can select a fixed
-`1,000,000`, `2,000,000`, `4,000,000`, or `8,000,000` byte threshold. The plan view measures the
-exact ZIP bytes for the current selection. When the archive exceeds the configured threshold, the
-view shows the selected size and an advisory alert. Copy prompt, download prompt, and download
-bundle remain available.
+The version-one settings record retains its measured export-size field for compatibility with
+existing installations. The options page does not expose it, and the notes and plan views do not
+display byte totals, a usage meter, or a size warning. Copy prompt, download prompt, and download
+bundle remain available regardless of archive size.
 
-An empty selection or serialization failure blocks the affected output. A clipboard or download
-failure remains on the plan view and is announced as an alert. No failed action clears the session
-or changes note selection.
+The plan view still constructs the current archive before delivery so malformed screenshot data
+fails visibly. An empty selection or serialization failure blocks the affected output. A clipboard
+or download failure remains on the plan view and is announced as an alert. No failed action clears
+the session or changes note selection.
 
 ## Outbound disclosure
 

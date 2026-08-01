@@ -3,7 +3,6 @@
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Note, Session } from "../shared/schema.ts";
-import { DEFAULT_EXPORT_SIZE_BUDGET_BYTES, projectedSessionSize } from "../shared/session.ts";
 import {
   Badge,
   Button,
@@ -41,14 +40,7 @@ export interface NotesPanelProps {
   readonly iconSpriteUrl: string;
   readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
-  readonly sizeBudgetBytes?: number;
   readonly version: string;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1_000) return `${bytes} bytes`;
-  if (bytes < 1_000_000) return `${Math.ceil(bytes / 1_000)} kB`;
-  return `${(bytes / 1_000_000).toFixed(2)} MB`;
 }
 
 function targetLabel(note: Note): string {
@@ -114,11 +106,6 @@ function NoteCard(
       onPointerLeave={onPreviewClear}
       tabIndex={0}
     >
-      <CaptureMinimap
-        label={`Captured region — ${target}`}
-        screenshot={note.region.screenshot}
-        truncated={note.region.truncated}
-      />
       <div className="ps-note-card__content">
         <div className="ps-note-card__meta">
           <span className="ps-technical-value" title={target}>{target}</span>
@@ -145,36 +132,47 @@ function NoteCard(
           <span>Strip query when exporting</span>
         </label>
       </div>
-      <div className="ps-note-card__actions">
-        <IconButton
-          icon={<Icon name="pencil" />}
-          label="Edit"
-          onClick={() => {
-            if (!busy) onEdit(note);
-          }}
-        />
-        <IconButton
-          disabled={busy || !canMoveUp}
-          icon={<Icon name="arrow-up" />}
-          label="Move up"
-          onClick={() => {
-            if (!busy && canMoveUp) onMove(note, "up");
-          }}
-        />
-        <IconButton
-          disabled={busy || !canMoveDown}
-          icon={<Icon name="arrow-down" />}
-          label="Move down"
-          onClick={() => {
-            if (!busy && canMoveDown) onMove(note, "down");
-          }}
-        />
-        <IconButton
-          icon={<Icon name="trash-2" />}
-          label="Delete"
-          onClick={() => {
-            if (!busy) onDelete(note);
-          }}
+      <div className="ps-note-card__visual">
+        <div className="ps-note-card__actions">
+          <IconButton
+            icon={<Icon name="pencil" />}
+            label="Edit"
+            onClick={() => {
+              if (!busy) onEdit(note);
+            }}
+            size={16}
+          />
+          <IconButton
+            disabled={busy || !canMoveUp}
+            icon={<Icon name="arrow-up" />}
+            label="Move up"
+            onClick={() => {
+              if (!busy && canMoveUp) onMove(note, "up");
+            }}
+            size={16}
+          />
+          <IconButton
+            disabled={busy || !canMoveDown}
+            icon={<Icon name="arrow-down" />}
+            label="Move down"
+            onClick={() => {
+              if (!busy && canMoveDown) onMove(note, "down");
+            }}
+            size={16}
+          />
+          <IconButton
+            icon={<Icon name="trash-2" />}
+            label="Delete"
+            onClick={() => {
+              if (!busy) onDelete(note);
+            }}
+            size={16}
+          />
+        </div>
+        <CaptureMinimap
+          label={`Captured region — ${target}`}
+          screenshot={note.region.screenshot}
+          truncated={note.region.truncated}
         />
       </div>
     </article>
@@ -184,7 +182,7 @@ function NoteCard(
 /**
  * Renders the current session review workspace backed by extension-owned persistence.
  *
- * @param props Repository, icon sprite, and export-budget threshold.
+ * @param props Repository, icon sprite, export delivery, and note-preview controller.
  * @returns Notes panel loading, empty, error, or review state.
  */
 export function NotesPanel(
@@ -193,7 +191,6 @@ export function NotesPanel(
     iconSpriteUrl,
     notePreview,
     repository,
-    sizeBudgetBytes = DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
     version,
   }: NotesPanelProps,
 ): JSX.Element {
@@ -288,8 +285,6 @@ export function NotesPanel(
   }
 
   const noteCount = session?.notes.length ?? 0;
-  const projectedBytes = session === null ? 0 : projectedSessionSize(session);
-  const isOverBudget = projectedBytes > sizeBudgetBytes;
 
   if (session !== null && view === "plan") {
     return (
@@ -309,7 +304,6 @@ export function NotesPanel(
           }}
           onBack={() => setView("notes")}
           session={session}
-          sizeBudgetBytes={sizeBudgetBytes}
         />
         <VersionLabel version={version} />
       </IconSpriteProvider>
@@ -390,25 +384,6 @@ export function NotesPanel(
               </button>
             ))}
           </nav>
-          <div
-            className="ps-export-budget"
-            data-export-budget
-            data-over-budget={isOverBudget}
-          >
-            <div>
-              <span>{formatBytes(projectedBytes)} of {formatBytes(sizeBudgetBytes)}</span>
-              <span>{noteCount} {noteCount === 1 ? "note" : "notes"}</span>
-            </div>
-            <progress max={sizeBudgetBytes} value={Math.min(projectedBytes, sizeBudgetBytes)} />
-            {isOverBudget
-              ? (
-                <p role="alert">
-                  This session is above the configured warning threshold. Copy and download remain
-                  available.
-                </p>
-              )
-              : null}
-          </div>
         </aside>
 
         <section className="ps-notes-workspace">
