@@ -51,11 +51,10 @@ Deno.test("Release Please changelog formatting exclusion stays narrowly scoped",
       stdout: "piped",
     }).output();
 
-    assertEquals(
-      output.code,
-      0,
-      new TextDecoder().decode(output.stderr) || new TextDecoder().decode(output.stdout),
-    );
+    const failureDiagnostics = output.code === 0
+      ? undefined
+      : new TextDecoder().decode(output.stderr) || new TextDecoder().decode(output.stdout);
+    assertEquals(output.code, 0, failureDiagnostics);
 
     await Deno.writeTextFile(`${temporaryRoot}/README.md`, "# Other markdown\n\n* unformatted\n");
     const controlOutput = await new Deno.Command(Deno.execPath(), {

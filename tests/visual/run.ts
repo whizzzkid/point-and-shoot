@@ -64,7 +64,7 @@ export function supportsBaselineUpdates(
  *
  * @param manifestSource Serialized Chrome extension manifest.
  * @returns The complete manifest serialized with the visual fixture version.
- * @throws When the manifest is not an object with a string version.
+ * @throws When the source is invalid JSON or not an object with a string version.
  */
 export function normalizeVisualManifestVersion(manifestSource: string): string {
   const manifest: unknown = JSON.parse(manifestSource);
@@ -80,13 +80,25 @@ export function normalizeVisualManifestVersion(manifestSource: string): string {
   return `${JSON.stringify({ ...manifest, version: VISUAL_FIXTURE_VERSION }, null, 2)}\n`;
 }
 
-/** Normalizes mutable package metadata before the visual runner opens the built extension. */
-async function normalizeBuiltChromeManifest(): Promise<void> {
-  const manifestSource = await Deno.readTextFile(BUILT_CHROME_MANIFEST);
-  await Deno.writeTextFile(
-    BUILT_CHROME_MANIFEST,
-    normalizeVisualManifestVersion(manifestSource),
-  );
+/**
+ * Runs a visual operation with fixture package metadata, then restores the exact source.
+ *
+ * @param manifestPath Path to the built Chrome manifest.
+ * @param operation Visual operation that reads the normalized manifest.
+ * @returns The operation's result after restoring the manifest.
+ * @throws When manifest I/O, validation, or the visual operation fails.
+ */
+export async function withNormalizedVisualManifestVersion<T>(
+  manifestPath: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const manifestSource = await Deno.readTextFile(manifestPath);
+  await Deno.writeTextFile(manifestPath, normalizeVisualManifestVersion(manifestSource));
+  try {
+    return await operation();
+  } finally {
+    await Deno.writeTextFile(manifestPath, manifestSource);
+  }
 }
 
 function snapshotName(surface: Surface, theme: Wave3ShotTheme): string {
@@ -181,14 +193,15 @@ async function main(): Promise<void> {
       "visual baseline updates require the documented Ubuntu 24.04 Playwright container",
     );
   }
-  await normalizeBuiltChromeManifest();
-  await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  await withNormalizedVisualManifestVersion(BUILT_CHROME_MANIFEST, async () => {
+    await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    });
+    await Deno.mkdir(ACTUAL_DIRECTORY, { recursive: true });
+    await captureWave3Shots(ACTUAL_DIRECTORY);
+    await captureGallery();
+    await compareSnapshots({ update });
   });
-  await Deno.mkdir(ACTUAL_DIRECTORY, { recursive: true });
-  await captureWave3Shots(ACTUAL_DIRECTORY);
-  await captureGallery();
-  await compareSnapshots({ update });
 }
 
 if (import.meta.main) {
