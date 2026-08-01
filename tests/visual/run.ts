@@ -23,12 +23,16 @@ import {
 import { compareVisualSnapshot } from "./compare.ts";
 
 const BASELINE_DIRECTORY = fromFileUrl(new URL("./baselines/", import.meta.url));
+const BUILT_CHROME_MANIFEST = fromFileUrl(
+  new URL("../../dist/chrome/manifest.json", import.meta.url),
+);
 const REPORT_DIRECTORY = "playwright-report/visual";
 const ACTUAL_DIRECTORY = `${REPORT_DIRECTORY}/actual`;
 const DIFF_ARTIFACT_DIRECTORY = `${REPORT_DIRECTORY}/diffs`;
 const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
+const VISUAL_FIXTURE_VERSION = "0.1.0";
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
@@ -53,6 +57,36 @@ export function supportsBaselineUpdates(
   return operatingSystem === "linux" &&
     architecture === "x86_64" &&
     marker === BASELINE_UPDATE_PLATFORM_MARKER;
+}
+
+/**
+ * Replaces a built Chrome manifest's release-dependent version for deterministic screenshots.
+ *
+ * @param manifestSource Serialized Chrome extension manifest.
+ * @returns The complete manifest serialized with the visual fixture version.
+ * @throws When the manifest is not an object with a string version.
+ */
+export function normalizeVisualManifestVersion(manifestSource: string): string {
+  const manifest: unknown = JSON.parse(manifestSource);
+  if (
+    typeof manifest !== "object" ||
+    manifest === null ||
+    Array.isArray(manifest) ||
+    typeof (manifest as Record<string, unknown>)["version"] !== "string"
+  ) {
+    throw new Error("visual manifest must contain a string version");
+  }
+
+  return `${JSON.stringify({ ...manifest, version: VISUAL_FIXTURE_VERSION }, null, 2)}\n`;
+}
+
+/** Normalizes mutable package metadata before the visual runner opens the built extension. */
+async function normalizeBuiltChromeManifest(): Promise<void> {
+  const manifestSource = await Deno.readTextFile(BUILT_CHROME_MANIFEST);
+  await Deno.writeTextFile(
+    BUILT_CHROME_MANIFEST,
+    normalizeVisualManifestVersion(manifestSource),
+  );
 }
 
 function snapshotName(surface: Surface, theme: Wave3ShotTheme): string {
@@ -147,6 +181,7 @@ async function main(): Promise<void> {
       "visual baseline updates require the documented Ubuntu 24.04 Playwright container",
     );
   }
+  await normalizeBuiltChromeManifest();
   await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
   });

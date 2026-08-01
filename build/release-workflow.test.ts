@@ -32,6 +32,35 @@ Deno.test("Release Please manifest updates every packaged version source", async
   );
 });
 
+Deno.test("Release Please changelog output is outside repository formatting", async () => {
+  const temporaryRoot = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      `${temporaryRoot}/deno.json`,
+      await Deno.readTextFile(new URL("deno.json", ROOT)),
+    );
+    await Deno.writeTextFile(
+      `${temporaryRoot}/CHANGELOG.md`,
+      "# Changelog\n\n* **fix:** generated release note ([abc1234](https://example.com/abc1234))\n",
+    );
+
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: ["task", "fmt:check"],
+      cwd: temporaryRoot,
+      stderr: "piped",
+      stdout: "piped",
+    }).output();
+
+    assertEquals(
+      output.code,
+      0,
+      new TextDecoder().decode(output.stderr) || new TextDecoder().decode(output.stdout),
+    );
+  } finally {
+    await Deno.remove(temporaryRoot, { recursive: true });
+  }
+});
+
 Deno.test("release workflow builds exact preview and release SHAs", async () => {
   const workflow = await Deno.readTextFile(new URL(".github/workflows/release.yml", ROOT));
   const ciWorkflow = await Deno.readTextFile(new URL(".github/workflows/ci.yml", ROOT));
