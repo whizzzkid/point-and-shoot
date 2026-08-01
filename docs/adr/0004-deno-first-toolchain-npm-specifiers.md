@@ -41,7 +41,7 @@ both the lefthook pre-push hook and GitHub Actions invoke, so local and remote g
 - Tools invoked via `npm:` must carry their exact version in the specifier, since there is no
   lockfile entry pinning them for us. An unpinned `npm:` specifier is a floating dependency and is
   treated as a review blocker.
-- **Carve-out:** the wave-5 marketing site is Astro, which is Vite/Node-based and genuinely needs a
+- **Carve-out:** the marketing and documentation site is Astro, which is Vite/Node-based and needs a
   Node toolchain. It lives entirely in `site/` with its own `package.json`, and nothing it produces
   ships inside the extension. See [ADR-0008](0008-preact-for-extension-ui-astro-for-marketing.md).
 

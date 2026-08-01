@@ -90,7 +90,7 @@ function documentFontStyles(resourceUrl: (path: string) => string): string {
 function defendHostElement(element: HTMLElement): void {
   // The maximum CSS z-index plus an inline-important reset wins ordinary page stacking and reset
   // rules. Appending directly under <html> keeps transformed descendants from becoming its fixed
-  // containing block; W3.3 reparents it into the fullscreen element when the top layer requires it.
+  // containing block; this host reparents it into the fullscreen element when the top layer requires it.
   const importantStyles: Readonly<Record<string, string>> = {
     all: "initial",
     contain: "strict",

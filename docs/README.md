@@ -13,18 +13,16 @@ repo.
 
 ## Map
 
-| Path                                | What lives there                                                                      | Published?      |
-| ----------------------------------- | ------------------------------------------------------------------------------------- | --------------- |
-| [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it       | Yes             |
-| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps   | Repository only |
-| [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics    | Yes             |
-| [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                      | Repository only |
-| [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release             | Yes             |
-| `assets/`                           | Committed images referenced by these docs and by PR bodies, one subdirectory per wave | When referenced |
+| Path                                | What lives there                                                                 | Published?      |
+| ----------------------------------- | -------------------------------------------------------------------------------- | --------------- |
+| [`design.md`](design.md)            | The design system, MV3 substitutions, and application rules                      | Yes             |
+| [`specs/`](specs/README.md)         | Current contracts for the extension, release pipeline, and website               | Yes             |
+| [`adr/`](adr/README.md)             | Architecture decision records, numbered and immutable once accepted              | Repository only |
+| [`tutorials/`](tutorials/README.md) | Task walkthroughs for install, capture, Playwright, troubleshooting, and release | Yes             |
+| `assets/`                           | Committed images referenced by documentation and pull request bodies             | When referenced |
 
-`plans/` is the entry point for anyone about to do work. Start at
-[`plans/README.md`](plans/README.md) — it carries the shared context, the settled decisions, the
-dependency graph, and the rules every wave follows.
+Start with [`specs/README.md`](specs/README.md) when changing behavior. It maps the current
+contracts and links to the ADRs that explain their architectural constraints.
 
 ## What each kind of document is for
 
@@ -38,8 +36,6 @@ document nobody finds.
 - **Spec** (`specs/*.md`) — _what_ the software guarantees. Schemas, formats, invariants, error
   behavior. Normative: an implementation that disagrees with a spec is a bug in one of the two, and
   the PR must say which.
-- **Plan** (`plans/*.md`) — _how and in what order_ the work happens. Living documents; they carry
-  checkboxes and commit SHAs and are updated as items land.
 - **Tutorial** (`tutorials/*.md`) — how a _person_ accomplishes a task, start to finish, with real
   commands. Every command in a tutorial has been run.
 - **Design** (`design.md`) — the visual and interaction language, and the rules that keep the
@@ -78,12 +74,10 @@ Concretely, for every item of work:
 
 ## Publishing
 
-The published docs site is **wave 5** scope, built alongside the marketing site so both share one
-toolchain and one set of design tokens — see
-[`plans/wave-5-marketing-site.md`](plans/wave-5-marketing-site.md). The site publishes this index,
-the design guide, specifications, and tutorials. Plans and ADRs remain repository-only because they
-document delivery mechanics and architectural history rather than product use. Published pages link
-back to those sources on GitHub when the context matters.
+The published documentation is built alongside the marketing site so both share one toolchain and
+one set of design tokens. The site publishes this index, the design guide, specifications, and
+tutorials. ADRs remain repository-only because they document architectural history rather than
+product use. Published pages link back to ADRs on GitHub when the rationale matters.
 
 The published Markdown is converted to HTML and themed with the same tokens the extension uses, so
 the docs look like the product rather than like a generic docs theme.
@@ -94,3 +88,7 @@ Two consequences for how you write here:
   relative link becomes a broken page.
 - Nothing in this folder is private. Repository-only means omitted from the website, not
   confidential.
+
+Implementation plans are deliberately not stored under `docs/`. Once behavior lands, preserve its
+current contract in a spec and its lasting rationale in an ADR; use issues and pull requests for
+temporary sequencing and delivery history.

@@ -37,8 +37,8 @@ document except that container.
 - **We** cannot reach in either, and neither can our tests. Playwright's selector engine cannot
   pierce a closed root, so E2E tests must drive the UI through the same closed boundary — via an
   exposed test hook or by interacting with the container — rather than by querying inner elements.
-  This is a real cost and it shapes how wave 3's tests are written; `tests/fixtures/app/shadow.html`
-  exists to keep that limitation demonstrated rather than rediscovered.
+  This is a real cost and it shapes the browser tests; `tests/fixtures/app/shadow.html` exists to
+  keep that limitation demonstrated rather than rediscovered.
 - Design tokens do not inherit across the boundary. They must be injected into the shadow root
   deliberately, as an adopted stylesheet or an inline `<style>`, which is why token generation
   ([ADR-0011](0011-generated-design-tokens-with-drift-check.md)) produces something injectable

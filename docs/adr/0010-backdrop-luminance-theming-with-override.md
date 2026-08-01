@@ -37,8 +37,7 @@ disables sampling entirely.
   significant cost and it is not hypothetical: the same code screenshotted against two pages
   produces two different toolbars. Therefore **tests must always force a theme via the override** —
   never sample — and the override exists partly for this reason rather than purely as a user
-  preference. Wave 3's visual baselines are invalid if any of them was captured with sampling
-  active.
+  preference. The visual baselines are invalid if any of them was captured with sampling active.
 - The fixtures must cover both poles, which is why `tests/fixtures/app/dark.html` and `light.html`
   exist and why each contains a patch of the opposite luminance: a sampler that reads the whole page
   rather than the region behind the toolbar gets the patch case wrong, and only a fixture built for

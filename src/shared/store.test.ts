@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /**
  * Tests for the IndexedDB store, run against `fake-indexeddb` — real IndexedDB semantics without a
- * browser. Re-verified for real in wave 3 once the extension has a live page context.
+ * browser. Re-verified in the extension's live page-context tests.
  *
  * @module
  */
