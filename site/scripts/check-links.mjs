@@ -43,6 +43,7 @@ function cssResourceLinks(css) {
 
 function inspectHtml(html) {
   const document = parse(html);
+  const canonicalUrls = [];
   const ids = new Set();
   const links = [];
   let mermaidCount = 0;
@@ -74,8 +75,12 @@ function inspectHtml(html) {
       attrs.has("src")
     ) {
       links.push({ kind: "asset", url: attrs.get("src") });
-    } else if (node.tagName === "link" && attrs.get("rel") !== "canonical" && attrs.has("href")) {
-      links.push({ kind: "asset", url: attrs.get("href") });
+    } else if (node.tagName === "link" && attrs.has("href")) {
+      if (attrs.get("rel") === "canonical") {
+        canonicalUrls.push(attrs.get("href"));
+      } else {
+        links.push({ kind: "asset", url: attrs.get("href") });
+      }
     } else if (node.tagName === "use" && attrs.has("href")) {
       links.push({ kind: "asset", url: attrs.get("href") });
     }
@@ -86,7 +91,7 @@ function inspectHtml(html) {
   }
 
   visitNode(document);
-  return { ids, links, mermaidCount };
+  return { canonicalUrls, ids, links, mermaidCount };
 }
 
 function pageRoute(distRoot, filePath) {
@@ -162,6 +167,7 @@ export async function checkSite({
   distRoot = resolve(siteRoot, "dist"),
   docsRoot = resolve(repositoryRoot, "docs"),
   checkExternal = false,
+  siteUrl = process.env.SITE_URL ?? "http://localhost:4321",
 } = {}) {
   const htmlFiles = await walk(distRoot, (path) => path.endsWith(".html"));
   const pages = new Map();
@@ -174,6 +180,15 @@ export async function checkSite({
   const problems = [];
   const externalUrls = new Set();
   for (const [route, page] of pages) {
+    const expectedCanonical = new URL(route, siteUrl).href;
+    if (page.canonicalUrls.length !== 1) {
+      problems.push(`${route}: expected one canonical link, found ${page.canonicalUrls.length}`);
+    } else if (page.canonicalUrls[0] !== expectedCanonical) {
+      problems.push(
+        `${route}: unexpected canonical ${page.canonicalUrls[0]}; expected ${expectedCanonical}`,
+      );
+    }
+
     const sourceUrl = `${localOrigin}${route}`;
     for (const link of page.links) {
       let url;
