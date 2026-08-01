@@ -225,7 +225,7 @@ background validates ids, writes the pending target to `storage.session`, and op
 **Implementation:**
 
 1. Replace the toolbar button with `SplitButton`. The primary segment selects the default agent when
-   available; the arrow lists active target summaries and an “Manage agents” options action.
+   available; the arrow lists active target summaries and a “Manage agents” options action.
 2. Keep the action disabled only when the session has zero notes. No configured agent still opens
    the plan view, where the user can choose local actions or navigate to Agents settings.
 3. Fetch only safe summaries through the background. Never expose card JSON, credentials, run
