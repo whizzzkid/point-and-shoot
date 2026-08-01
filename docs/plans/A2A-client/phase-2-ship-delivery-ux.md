@@ -100,7 +100,7 @@ flowchart TD
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/options/agents-model.test.ts src/options/repository.test.ts
+mise exec -- deno task test src/options/agents-model.test.ts src/options/repository.test.ts
 mise exec -- deno task ci
 ```
 
@@ -145,7 +145,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/options/Options.browser.test.ts src/options/agents-model.test.ts
+mise exec -- deno task test src/options/Options.browser.test.ts src/options/agents-model.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -190,7 +190,7 @@ items carry ids and labels; the component owns keyboard navigation, focus return
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/ui/components/SplitButton.browser.test.ts
+mise exec -- deno task test src/ui/components/SplitButton.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -238,7 +238,7 @@ background validates ids, writes the pending target to `storage.session`, and op
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/messages.test.ts src/background/index.test.ts src/content/toolbar/toolbar.browser.test.ts
+mise exec -- deno task test src/shared/messages.test.ts src/background/index.test.ts src/content/toolbar/toolbar.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -285,7 +285,7 @@ perform no network request.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/sidepanel/plan/agent-delivery.test.ts src/sidepanel/plan/PlanView.browser.test.ts
+mise exec -- deno task test src/sidepanel/plan/agent-delivery.test.ts src/sidepanel/plan/PlanView.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -329,7 +329,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/sidepanel/agent-run-controller.test.ts src/sidepanel/AgentRunStatus.browser.test.ts
+mise exec -- deno task test src/sidepanel/agent-run-controller.test.ts src/sidepanel/AgentRunStatus.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -376,7 +376,7 @@ update time and run creation time.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/sidepanel/repository.test.ts src/sidepanel/history-model.test.ts
+mise exec -- deno task test src/sidepanel/repository.test.ts src/sidepanel/history-model.test.ts
 mise exec -- deno task ci
 ```
 
@@ -422,7 +422,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/sidepanel/HistoryView.browser.test.ts src/sidepanel/RunDetailView.browser.test.ts
+mise exec -- deno task test src/sidepanel/HistoryView.browser.test.ts src/sidepanel/RunDetailView.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -445,6 +445,7 @@ land; it is not assigned concurrently with a lane.
 - Modify: `src/sidepanel/index.tsx`
 - Modify: `tests/e2e/full-flow.spec.ts`
 - Create: `tests/e2e/a2a-delivery.spec.ts`
+- Modify: `tests/firefox/a2a-network.ts`
 - Modify: `tests/visual/visual-manifest.test.ts`
 - Modify: `docs/specs/a2a-client.md`
 - Modify: `docs/specs/a2a-agents.md`
@@ -462,12 +463,16 @@ land; it is not assigned concurrently with a lane.
    persistence failure, session deletion during a stream, and Clear all sessions with A2A history.
 5. Update visual-manifest expectations for Agents options, split toolbar, remote plan, history, and
    run detail. Phase 4 captures final baselines after enterprise auth UI settles.
+6. Extend the real-Firefox A2A smoke path from phase 0 through agent setup, reviewed send, terminal
+   response, panel reopen, and history. Keep permission-prompt boundaries explicit when automation
+   can drive only the already-granted runtime path.
 
 **Verification:**
 
 ```bash
 mise exec -- deno task e2e:full
-mise exec -- deno test -A tests/e2e/a2a-delivery.spec.ts
+mise exec -- deno task test tests/e2e/a2a-delivery.spec.ts
+mise exec -- deno task smoke:a2a-firefox
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```

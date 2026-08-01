@@ -16,7 +16,7 @@ repo.
 | Path                                | What lives there                                                                      | Published?      |
 | ----------------------------------- | ------------------------------------------------------------------------------------- | --------------- |
 | [`design.md`](design.md)            | The design system: what's in the bundle, the MV3 substitutions, how to apply it       | Yes             |
-| [`plans/`](plans/)                  | The wave-by-wave delivery plan — 54 items, dependency graphs, per-item verify steps   | Repository only |
+| [`plans/`](plans/)                  | Delivery plans — 54 v1 wave items plus 41 proposed A2A items, graphs, verify steps    | Repository only |
 | [`specs/`](specs/README.md)         | Settled behavioral contracts: note schema, export bundle format, capture semantics    | Yes             |
 | [`adr/`](adr/README.md)             | Architecture decision records, numbered, immutable once accepted                      | Repository only |
 | [`tutorials/`](tutorials/README.md) | Task walkthroughs: install, capture, Playwright, troubleshooting, release             | Yes             |

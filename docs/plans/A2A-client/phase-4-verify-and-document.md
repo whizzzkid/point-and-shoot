@@ -91,7 +91,7 @@ P4.7. It owns only the A2A fixture and protocol integration tests.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A tests/a2a/protocol-matrix.test.ts
+mise exec -- deno task test tests/a2a/protocol-matrix.test.ts
 mise exec -- deno task a2a:network
 mise exec -- deno task ci
 ```
@@ -134,7 +134,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A tests/a2a/security-boundaries.test.ts tests/a2a/recovery-faults.test.ts
+mise exec -- deno task test tests/a2a/security-boundaries.test.ts tests/a2a/recovery-faults.test.ts
 mise exec -- deno task ci
 ```
 
@@ -172,7 +172,7 @@ It owns Chromium scenarios and their harness only.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A tests/e2e/a2a-delivery.spec.ts tests/e2e/a2a-authentication.spec.ts tests/e2e/a2a-history.spec.ts
+mise exec -- deno task test tests/e2e/a2a-delivery.spec.ts tests/e2e/a2a-authentication.spec.ts tests/e2e/a2a-history.spec.ts
 mise exec -- deno task e2e:full
 mise exec -- deno task ci
 ```
@@ -227,7 +227,11 @@ visual manifests and generated baselines, not component behavior.
 
 **Files:**
 
+- Modify: `tests/wave-3-shots.ts`
+- Modify: `tests/visual/run.ts`
+- Modify: `tests/visual/run.test.ts`
 - Modify: `tests/visual/visual-manifest.test.ts`
+- Modify: `tests/visual/README.md`
 - Modify: `tests/visual/baselines/`
 - Modify: `docs/assets/`
 
@@ -245,11 +249,13 @@ visual manifests and generated baselines, not component behavior.
 **Verification:**
 
 ```bash
+mise exec -- deno task visual:update
 mise exec -- deno task visual
 mise exec -- deno task ci
 ```
 
-Run `visual` on the same pinned Linux image as CI; do not replace baselines from macOS.
+Run `visual:update` and the follow-up `visual` comparison in the documented pinned Linux image; do
+not replace baselines from macOS.
 
 **Commit:** `test(a2a): capture final visual states`
 
@@ -284,7 +290,7 @@ Run `visual` on the same pinned Linux image as CI; do not replace baselines from
 
 ```bash
 mise exec -- deno task a11y
-mise exec -- deno test -A tests/a11y/a2a-keyboard.spec.ts
+mise exec -- deno task test tests/a11y/a2a-keyboard.spec.ts
 mise exec -- deno task ci
 ```
 
@@ -330,7 +336,7 @@ owns user-facing docs only.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A tests/docs/links.test.ts
+mise exec -- deno task test tests/docs/links.test.ts
 mise exec -- deno task ci
 ```
 
@@ -370,7 +376,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A tests/docs/links.test.ts
+mise exec -- deno task test tests/docs/links.test.ts
 mise exec -- deno task ci
 ```
 

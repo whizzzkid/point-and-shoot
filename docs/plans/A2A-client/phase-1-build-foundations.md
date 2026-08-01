@@ -145,7 +145,7 @@ export interface AgentTransport {
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/validation.test.ts src/shared/store.test.ts
+mise exec -- deno task test src/shared/a2a/validation.test.ts src/shared/store.test.ts
 mise exec -- deno task ci
 ```
 
@@ -181,7 +181,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/agent-repository.test.ts
+mise exec -- deno task test src/shared/a2a/agent-repository.test.ts
 mise exec -- deno task ci
 ```
 
@@ -240,7 +240,7 @@ export function discoverAgent(request: DiscoverAgentRequest): Promise<DiscoverAg
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/discovery.test.ts src/shared/a2a/agent-repository.test.ts
+mise exec -- deno task test src/shared/a2a/discovery.test.ts src/shared/a2a/agent-repository.test.ts
 mise exec -- deno task ci
 ```
 
@@ -284,7 +284,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/run-repository.test.ts
+mise exec -- deno task test src/shared/a2a/run-repository.test.ts
 mise exec -- deno task ci
 ```
 
@@ -329,7 +329,7 @@ run and serially refreshes nonterminal tasks in the currently visible history pa
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/run-reducer.test.ts src/shared/a2a/reconciliation.test.ts
+mise exec -- deno task test src/shared/a2a/run-reducer.test.ts src/shared/a2a/reconciliation.test.ts
 mise exec -- deno task ci
 ```
 
@@ -378,7 +378,7 @@ security-requirement selector.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/credential-vault.test.ts src/shared/a2a/auth/strategy-registry.test.ts
+mise exec -- deno task test src/shared/a2a/auth/credential-vault.test.ts src/shared/a2a/auth/strategy-registry.test.ts
 mise exec -- deno task ci
 ```
 
@@ -415,7 +415,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/header-auth.test.ts src/shared/a2a/auth/strategy-registry.test.ts
+mise exec -- deno task test src/shared/a2a/auth/header-auth.test.ts src/shared/a2a/auth/strategy-registry.test.ts
 mise exec -- deno task ci
 ```
 
@@ -465,7 +465,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/transport.test.ts
+mise exec -- deno task test src/shared/a2a/transport.test.ts
 mise exec -- deno task ci
 ```
 
@@ -507,7 +507,7 @@ all four lane tips land.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/delivery.test.ts
+mise exec -- deno task test src/shared/a2a/delivery.test.ts
 mise exec -- deno task ci
 ```
 

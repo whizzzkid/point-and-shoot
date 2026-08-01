@@ -141,9 +141,9 @@ input limits, streaming lifecycle, and cross-browser assumptions have executable
 - **Failure mode:** One configured agent stalls the extension or exhausts its memory with an
   oversized or slow response before validation or persistence logic runs.
 - **Recommendation:** Phase 0 must measure and settle byte limits plus request, first-byte, and idle
-  timeouts. Enforce streaming byte counters before parsing, do not trust `Content-Length` alone, and
-  consume the shared limits in every later fetch path. The limits apply only to remote input, not
-  local prompt copy or download.
+  timeouts. Reject a declared `Content-Length` above the budget, but accept an absent length and
+  enforce streaming byte counters before parsing. Consume the shared limits in every later fetch
+  path. The limits apply only to remote input, not local prompt copy or download.
 - **Effort:** TBD.
 
 #### [🟠 High] OpenID Connect validation stopped before identity-token verification

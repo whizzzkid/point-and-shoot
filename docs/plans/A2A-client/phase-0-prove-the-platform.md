@@ -113,7 +113,7 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/sdk.test.ts build/build.test.ts
+mise exec -- deno task test src/shared/a2a/sdk.test.ts build/build.test.ts
 mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
@@ -190,7 +190,7 @@ and the cookie methods needed for a later feasibility decision.
 **Verification:**
 
 ```bash
-mise exec -- deno test -A build/manifest.test.ts src/shared/browser.test.ts src/shared/a2a/remote-access.test.ts
+mise exec -- deno task test build/manifest.test.ts src/shared/browser.test.ts src/shared/a2a/remote-access.test.ts
 mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
@@ -242,8 +242,9 @@ Bearer-protected requests, ordered SSE events, forced disconnect, polling, and t
    test the grant through the shim and drive the already-granted runtime path in the smoke fixture;
    state that boundary precisely in the PR.
 8. Measure safe card, metadata, key-set, JSON response, and SSE-frame limits plus request,
-   first-byte, and stream-idle timeouts in both browsers. Fail closed when a response omits a usable
-   length or exceeds a streaming limit; never rely on `Content-Length` alone.
+   first-byte, and stream-idle timeouts in both browsers. Reject a declared `Content-Length` above
+   the budget; when the header is absent or acceptable, count streamed bytes and abort at the limit
+   before parsing or whole-body buffering.
 9. Add real `a2a:network` and `smoke:a2a-firefox` tasks only when they execute these assertions. Do
    not add a passing stub.
 

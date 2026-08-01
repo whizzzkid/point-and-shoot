@@ -89,7 +89,7 @@ flowchart TD
 **Verification:**
 
 ```bash
-mise exec -- deno test -A build/manifest.test.ts
+mise exec -- deno task test build/manifest.test.ts
 mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
@@ -143,7 +143,7 @@ Inspect both built manifests and confirm that required permissions remain unchan
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/oauth.test.ts src/shared/a2a/auth/pkce.test.ts
+mise exec -- deno task test src/shared/a2a/auth/oauth.test.ts src/shared/a2a/auth/pkce.test.ts
 mise exec -- deno task a2a:network
 mise exec -- deno task ci
 ```
@@ -187,7 +187,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/oidc.test.ts src/shared/a2a/discovery.test.ts
+mise exec -- deno task test src/shared/a2a/auth/oidc.test.ts src/shared/a2a/discovery.test.ts
 mise exec -- deno task ci
 ```
 
@@ -225,7 +225,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/http-auth.test.ts src/shared/a2a/auth/query-api-key.test.ts
+mise exec -- deno task test src/shared/a2a/auth/http-auth.test.ts src/shared/a2a/auth/query-api-key.test.ts
 mise exec -- deno task ci
 ```
 
@@ -269,7 +269,7 @@ If the fixed decision rule rejects the adapter, also modify `build/manifest.ts` 
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/cookie-api-key.test.ts src/shared/browser.test.ts
+mise exec -- deno task test src/shared/a2a/auth/cookie-api-key.test.ts src/shared/browser.test.ts
 mise exec -- deno task a2a:network
 mise exec -- deno task smoke:a2a-firefox
 mise exec -- deno task ci
@@ -312,7 +312,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/card-signature.test.ts
+mise exec -- deno task test src/shared/a2a/card-signature.test.ts
 mise exec -- deno task ci
 ```
 
@@ -344,12 +344,13 @@ mise exec -- deno task ci
    recognized-but-externally-required state and tested limitation. Do not add native messaging or
    package a certificate.
 5. Test scheme negotiation, no certificate, accepted browser certificate, rejected certificate,
-   permission revocation, and fallback to another server-declared requirement set.
+   permission revocation, and user-triggered selection of another server-declared requirement set.
+   Assert that authentication failure never switches requirements automatically.
 
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/mtls.test.ts
+mise exec -- deno task test src/shared/a2a/auth/mtls.test.ts
 mise exec -- deno task a2a:network
 mise exec -- deno task smoke:a2a-firefox
 mise exec -- deno task ci
@@ -395,7 +396,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/sidepanel/agent-run-controller.test.ts src/sidepanel/AgentAuthenticationPrompt.browser.test.ts
+mise exec -- deno task test src/sidepanel/agent-run-controller.test.ts src/sidepanel/AgentAuthenticationPrompt.browser.test.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
@@ -438,7 +439,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/reconciliation.test.ts src/sidepanel/history-model.test.ts src/sidepanel/RunDetailView.browser.test.ts
+mise exec -- deno task test src/shared/a2a/reconciliation.test.ts src/sidepanel/history-model.test.ts src/sidepanel/RunDetailView.browser.test.ts
 mise exec -- deno task ci
 ```
 
@@ -489,8 +490,8 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno test -A src/shared/a2a/auth/strategy-registry.test.ts src/options/Options.browser.test.ts
-mise exec -- deno test -A tests/e2e/a2a-delivery.spec.ts
+mise exec -- deno task test src/shared/a2a/auth/strategy-registry.test.ts src/options/Options.browser.test.ts
+mise exec -- deno task test tests/e2e/a2a-delivery.spec.ts
 mise exec -- deno task a11y
 mise exec -- deno task ci
 ```
