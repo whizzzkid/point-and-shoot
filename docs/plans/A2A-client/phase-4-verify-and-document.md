@@ -354,7 +354,7 @@ mise exec -- deno task ci
 
 - Modify: `docs/tutorials/troubleshooting.md`
 - Create: `docs/tutorials/a2a-enterprise-setup.md`
-- Modify: `docs/adr/0018-optional-host-permissions-for-a2a.md`
+- Modify: `docs/adr/0019-optional-host-permissions-for-a2a.md`
 - Modify: `docs/specs/a2a-client.md`
 
 **Implementation:**
@@ -392,10 +392,19 @@ mise exec -- deno task ci
 
 **Files:**
 
-- Modify: `docs/plans/A2A-client/README.md`
-- Modify: `docs/plans/A2A-client/phase-4-verify-and-document.md`
-- Modify: `docs/plans/README.md`
 - Modify: `.github/workflows/ci.yml`
+- Modify: `AGENTS.md`
+- Modify: `docs/README.md`
+- Modify: `docs/adr/0019-optional-host-permissions-for-a2a.md`
+- Modify: `docs/specs/a2a-client.md`
+- Modify or delete when empty: `docs/plans/README.md`
+- Delete: `docs/plans/A2A-client/README.md`
+- Delete: `docs/plans/A2A-client/arch-review.md`
+- Delete: `docs/plans/A2A-client/phase-0-prove-the-platform.md`
+- Delete: `docs/plans/A2A-client/phase-1-build-foundations.md`
+- Delete: `docs/plans/A2A-client/phase-2-ship-delivery-ux.md`
+- Delete: `docs/plans/A2A-client/phase-3-expand-enterprise-support.md`
+- Delete: `docs/plans/A2A-client/phase-4-verify-and-document.md`
 
 **Implementation:**
 
@@ -403,13 +412,20 @@ mise exec -- deno task ci
    tasks to CI and keep expensive browser jobs separated for actionable failure reporting.
 2. Audit built Chrome and Firefox manifests for required permissions, optional host eligibility, and
    optional API declarations. Verify Firefox's minimum is 115 and compare both manifests with
-   ADR-0018 and the published privacy guidance.
+   ADR-0019 and the published privacy guidance.
 3. Audit bundles for Node-only imports, gRPC, remote code, secrets, fixture credentials, and an
    unpinned SDK dependency.
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
    or docs; do not close the plan with accepted high-severity debt.
-5. Record final command evidence, PRs, commits, supported and constrained auth paths, and known
-   browser limitations. Mark phases complete only after the combined results pass.
+5. Move the supported and constrained authentication paths, known browser limitations, and final
+   verification evidence into `docs/specs/a2a-client.md`. Record any lasting change to the reviewed
+   architecture in ADR-0019, and leave PR and commit delivery history on the final PR or tracking
+   issue. Mark phases complete only after the combined results pass.
+6. Retire the completed plan only after those durable artifacts are current: delete every file under
+   `docs/plans/A2A-client/`, then remove its index row and provisional decisions from
+   `docs/plans/README.md`. If no other active plans remain, remove the empty plan index and its map
+   entry, and change the `AGENTS.md` active-plan reference to a non-linking path so no dead link
+   remains.
 
 **Verification:**
 

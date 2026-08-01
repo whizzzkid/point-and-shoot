@@ -270,7 +270,7 @@ land.
 
 **Files:**
 
-- Create: `docs/adr/0018-optional-host-permissions-for-a2a.md`
+- Create: `docs/adr/0019-optional-host-permissions-for-a2a.md`
 - Create: `docs/specs/a2a-client.md`
 - Modify: `AGENTS.md`
 - Modify: `docs/adr/README.md`
