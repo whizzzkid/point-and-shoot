@@ -8,10 +8,11 @@
  *
  * Named `.spec.ts`, not `.test.ts`, so `deno task test`/`ci`'s default glob skips it — this suite
  * needs a real built `dist/chrome/` and a real browser, so it runs on its own slower tier via
- * `deno task e2e:smoke`, per the three-tier testing split in `docs/plans/README.md`.
+ * `deno task e2e:smoke`, per the three-tier testing split in
+ * `docs/specs/build-release-and-verification.md`.
  *
  * Playwright cannot load extensions in Firefox, so this covers Chromium only; a `web-ext` smoke
- * check (W2.12) is Firefox's equivalent gate.
+ * check is Firefox's equivalent gate.
  *
  * Run with `deno task e2e:smoke`.
  *
@@ -188,7 +189,7 @@ Deno.test("built chrome extension - boots and executes without error", async () 
     assert(hostState.fontLoaded, "vendored Inter did not load into the shadow-host document");
 
     // Injected twice by design — a second gesture on the same tab re-runs the file, and the guard in
-    // `src/content/index.ts` is what keeps that from double-initialising wave 3's overlay.
+    // `src/content/index.ts` is what keeps that from double-initialising the overlay.
     await injectBuiltContent(page, serviceWorker);
     assertEquals(
       await page.evaluate(() => document.querySelectorAll("[data-point-and-shoot-host]").length),

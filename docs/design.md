@@ -20,10 +20,8 @@ and committed verbatim so every agent working an item builds against the same to
 - Tokens are **generated, never hand-copied.** No hex value, font stack, radius, or spacing step
   from this bundle may be retyped into extension CSS or a JS constant. Import the token and use the
   custom property. A hardcoded `#4f7cff` is a bug even when it currently matches.
-- A non-blocking `deno task lint:design` (added in wave 2, per
-  [`plans/wave-2-core-libraries.md`](plans/wave-2-core-libraries.md)) runs the bundle's own
-  `_adherence.oxlintrc.json` ruleset over our components to flag drift. It reports; it does not gate
-  CI.
+- A non-blocking `deno task lint:design` runs the bundle's own `_adherence.oxlintrc.json` ruleset
+  over our components to flag drift. It reports; it does not gate CI.
 
 ## Export identity of the committed bundle
 
@@ -47,8 +45,8 @@ The `-C "$(git rev-parse --show-toplevel)"` is load-bearing: run from any subdir
 blob, which looks exactly like a real answer.
 
 **A re-export gets its own commit.** That commit updates the two values above, regenerates the
-tokens under `src/shared/design/`, and refreshes W4.2's visual baselines — all in the same commit,
-because all three move at the same instant. Without this record, W2.4's `tokens-drift` check cannot
+tokens under `src/shared/design/`, and refreshes the visual baselines — all in the same commit,
+because all three move at the same instant. Without this record, the `tokens-drift` check cannot
 tell a hand edit (which the rule above exists to catch) from a legitimate re-export with stale
 generated files, and an agent hits a red check on an unrelated PR with no way to know which it is.
 
@@ -88,10 +86,9 @@ sanctioned divergences from the bundle.
 | 2 | Lucide UMD from `unpkg.com/lucide@latest`                                                                    | A build-time SVG sprite containing only the icons actually referenced             | Remote script is blocked outright; `@latest` is also an unpinned dependency                                  |
 | 3 | React 18.3.1 + `react-dom` + `@babel/standalone` from `unpkg.com` for in-page JSX                            | Preact, precompiled at build time — no in-browser transform                       | In-browser Babel is remote code _and_ runtime compilation; both are prohibited                               |
 
-Substitutions 1 and 2 are verified in the Firefox smoke check
-([`plans/wave-4-verification.md`](plans/wave-4-verification.md) W4.3), because `moz-extension://`
-and `web_accessible_resources` resolve differently from Chrome's and that is the most likely place
-the builds silently diverge.
+Substitutions 1 and 2 are verified in the Firefox smoke check because `moz-extension://` and
+`web_accessible_resources` resolve differently from Chrome's and that is the most likely place the
+builds silently diverge.
 
 ## Vendored fonts across the shadow boundary
 
@@ -129,8 +126,8 @@ and prints its URL; it does not write a build artifact or make external requests
 - **Hover lightens, press deepens, nothing scales.** Darkening on hover reads as "disabled" against
   a near-black canvas, and a precision tool must not feel squishy.
 - **Focus rings are non-negotiable.** Every interactive element gets `--shadow-focus`. This is a
-  tool for selecting exact elements; keyboard visibility is a correctness requirement, tested in
-  W4.4.
+  tool for selecting exact elements; keyboard visibility is a correctness requirement covered by the
+  accessibility suite.
 - **Blur and transparency only in the injected overlay.** `--bg-overlay` + `--blur-panel` tell the
   user the toolbar is extension chrome floating above their page. The popup, options, and marketing
   surfaces are opaque.
@@ -153,12 +150,8 @@ and `light.html` fixtures.
 
 ## Related
 
-- [`plans/wave-1-foundations.md`](plans/wave-1-foundations.md) — W1.5 commits this bundle and writes
-  this page
-- [`plans/wave-2-core-libraries.md`](plans/wave-2-core-libraries.md) — vendoring, sprite build,
-  `lint:design`
-- [`plans/wave-3-ui-and-capture.md`](plans/wave-3-ui-and-capture.md) — builds the six surfaces from
-  the kits
-- [`plans/wave-5-marketing-site.md`](plans/wave-5-marketing-site.md) — reuses these tokens for the
-  site and for published docs
-- `adr/` — ADRs 0001–0011 record the decisions this page assumes
+- [`specs/extension-runtime.md`](specs/extension-runtime.md) — current extension surfaces and
+  capture contracts
+- [`specs/website-and-published-docs.md`](specs/website-and-published-docs.md) — token and font
+  reuse on the public site
+- [`adr/`](adr/README.md) — the architecture decisions this page assumes

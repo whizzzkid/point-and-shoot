@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import { shotOutputPath, WAVE_3_SHOT_SURFACES, WAVE_3_SHOT_THEMES } from "./wave-3-shots.ts";
 
-Deno.test("wave 3 screenshots cover every extension surface in both forced themes", () => {
+Deno.test("review screenshots cover every extension surface in both forced themes", () => {
   assertEquals(WAVE_3_SHOT_SURFACES, ["toolbar", "notes", "plan", "popup", "options"]);
   assertEquals(WAVE_3_SHOT_THEMES, ["dark", "light"]);
   assertEquals(

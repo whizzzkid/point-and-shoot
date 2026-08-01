@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 /**
- * Drives the real built Chromium extension through Wave 4's complete user flows.
+ * Drives the real built Chromium extension through the complete user flows.
  *
  * Named `.spec.ts`, not `.test.ts`, so the fast `deno task test` gate does not discover this
  * browser tier. Run with `deno task e2e:full`.

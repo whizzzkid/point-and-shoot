@@ -1,6 +1,6 @@
 # ADR-0008 — Preact for the extension UI; Astro only for the marketing site
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0018
 - **Date:** 2026-07-24
 
 ## Context

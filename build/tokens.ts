@@ -45,7 +45,7 @@ function readTokenFile(name: (typeof TOKEN_FILE_ORDER)[number]): Promise<string>
 
 /**
  * Replaces `fonts.css`'s line 1 (the upstream Google Fonts `@import`) with local `@font-face`
- * rules pointing at the W2.5-vendored WOFF2 files. The rest of `fonts.css` — the `:root` font-stack
+ * rules pointing at the vendored WOFF2 files. The rest of `fonts.css` — the `:root` font-stack
  * block — is kept verbatim; it defines the font-family tokens, not the remote dependency.
  */
 function substituteFontImport(fontsCss: string): string {

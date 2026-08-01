@@ -1,5 +1,5 @@
 /**
- * Firefox boot check (W2.12): loads the real built `dist/firefox/` extension into Firefox via
+ * Firefox boot check: loads the real built `dist/firefox/` extension into Firefox via
  * `web-ext run` and asserts it actually boots — the background script starts and a
  * `web_accessible_resources` file resolves through `moz-extension://`.
  *

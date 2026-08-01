@@ -55,13 +55,14 @@ The **Select** tool is active when the overlay opens.
 
 1. Move over the page to preview the element Point and Shoot will capture.
 2. Select one element, or drag a box around a visible region.
-3. Wait for the note count in the floating toolbar and browser badge to increase.
-4. In the side panel, find the new note and select **Edit**.
-5. Describe the broken behavior and the intended result, then select **Save changes**.
+3. In the composer, describe the broken behavior and intended result, then select **Save note**.
+   Select **Save without note** to keep an empty body, or **Cancel** to discard the pending capture.
+4. Wait for the note count in the floating toolbar and browser badge to increase.
+5. In the side panel, select **Edit** if the saved note needs another change.
 
 An empty note body is valid, but a specific problem statement gives an agent much better direction.
-The screenshot, URL, selectors, computed styles, and capture metadata were already stored when the
-selection completed.
+The screenshot, URL, selectors, computed styles, and capture metadata are stored only after either
+save action succeeds.
 
 Keyboard users can tab to a page element and press `Enter` while the selector is active. `Escape`
 exits the picker from its current state without ending the durable session.

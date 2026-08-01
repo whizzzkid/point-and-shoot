@@ -6,7 +6,7 @@
  * Two esbuild passes run because the two output formats are load-bearing, not a style choice:
  * `background/background.js` is a Chrome MV3 module service worker but a Firefox MV3 classic
  * background script (see `build/manifest.ts`'s `forChrome`/`forFirefox`), and `content/content.js`
- * runs as a classic content script pending W2.9's real-browser module-support check — both bundle
+ * runs as a classic content script for cross-browser compatibility — both bundle
  * as IIFE. `sidepanel`/`popup`/`options` load via `<script type="module">` in their own HTML shells
  * (this script's own output, copied verbatim), so they bundle as ESM.
  *
@@ -71,8 +71,8 @@ async function copyRecursive(src: URL, dest: URL): Promise<void> {
 
 /**
  * Copies the manifest-relative design assets `build/manifest.ts`'s `WEB_ACCESSIBLE_RESOURCES` and
- * the HTML shells reference — the vendored fonts, icon sprite, and generated token CSS from W2.4
- * and W2.5 — preserving the `src/shared/design/` path both rely on, not the whole design dir (its
+ * the HTML shells reference — the vendored fonts, icon sprite, and generated token CSS — preserving
+ * the `src/shared/design/` path both rely on, not the whole design dir (its
  * `.ts` sources have no runtime use in the shipped bundle).
  */
 async function copyDesignAssets(targetDir: URL): Promise<void> {

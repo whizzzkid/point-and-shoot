@@ -1,14 +1,14 @@
 /// <reference lib="dom" />
 
 /**
- * Content-script entry point. Creates the isolated Wave 3 UI host after the explicit activation
+ * Content-script entry point. Creates the isolated UI host after the explicit activation
  * gesture. Bundled as an IIFE because MV3 content scripts are classic scripts in both targets.
  *
  * Injected on a user gesture by `src/background/index.ts`, never registered in the manifest
  * (ADR-0002), so it must tolerate running on a page that finished loading long ago and being
  * injected more than once — a second gesture on the same tab re-runs this file top to bottom.
  *
- * The `data-point-and-shoot-content-ready` attribute is W2.9's deterministic boot signal: a
+ * The `data-point-and-shoot-content-ready` attribute is the deterministic boot signal: a
  * Playwright test can poll for it without sniffing for UI that doesn't exist yet.
  *
  * @module

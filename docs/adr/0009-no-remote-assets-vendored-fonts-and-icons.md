@@ -40,7 +40,7 @@ no stylesheets, no scripts, no analytics, no telemetry.
   build with missing glyphs.
 - Adding an icon means regenerating the sprite; using a character outside the subset means
   regenerating the font. Neither fails loudly at build time by default — a missing glyph renders as
-  a fallback or a box — so wave 2's build must make both failures visible.
+  a fallback or a box — so the build must make both failures visible.
 - Subsetting must account for text the UI does not control: page titles, URLs, and the user's own
   note text can contain any character. The subset covers the UI's own strings, and the font stack
   must degrade to a system font for everything else rather than showing boxes.
@@ -58,8 +58,8 @@ would block it anyway, but the privacy reason is the one that would still apply 
 
 **System fonts only, no bundled font.** Rejected, though it is the cheapest option and remains a
 reasonable fallback: the design system's type choices carry real identity, and matching the design
-bundle's rendering is what makes the visual baselines in wave 3 meaningful. The system stack stays
-as the fallback for out-of-subset text.
+bundle's rendering is what makes the visual baselines meaningful. The system stack stays as the
+fallback for out-of-subset text.
 
 **Icon font instead of an SVG sprite.** Rejected: icon fonts are worse across the board here — they
 inherit text-rendering quirks, they need careful accessibility handling, and they cannot carry

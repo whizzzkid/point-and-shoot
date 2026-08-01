@@ -20,7 +20,7 @@ export interface IconSpriteProviderProps {
 /**
  * Supplies the browser-resolved external sprite URL used by descendant icons.
  *
- * W3.2 passes `browser.runtime.getURL(...)` here for injected UI; extension and gallery pages may
+ * Injected UI passes `browser.runtime.getURL(...)` here; extension and gallery pages may
  * use the root-relative default.
  *
  * @param props Resolved sprite URL and descendant component tree.

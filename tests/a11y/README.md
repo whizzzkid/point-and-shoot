@@ -1,6 +1,6 @@
 # Accessibility verification
 
-Run the Wave 4 accessibility tier with:
+Run the accessibility tier with:
 
 ```bash
 deno task a11y
@@ -18,7 +18,7 @@ The task builds the Chrome extension, then verifies:
 
 ## Failure artifacts
 
-Serious and critical axe failures write JSON reports under `playwright-report/a11y/`. W4.6 uploads
+Serious and critical axe failures write JSON reports under `playwright-report/a11y/`. CI uploads
 that directory when the accessibility job fails.
 
 ## Closed shadow-root coverage

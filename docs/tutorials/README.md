@@ -11,5 +11,5 @@ These guides walk through Point and Shoot tasks from source build to agent hando
 - [Test and publish a release](releasing.md) — review Release Please's accumulated changes, test
   both browser packages, and merge the release pull request.
 
-Every command in these guides is part of the verified Wave 4 workflow. The guides describe the
-shipped behavior, including its failure states, rather than an idealized future flow.
+Every command in these guides is part of the verified build and release workflow. The guides
+describe shipped behavior, including failure states, rather than an idealized future flow.

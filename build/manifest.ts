@@ -16,7 +16,7 @@
  *   `sidePanel` API itself landed in Chrome 114, but `open()` did not ship until 116.
  * - `firefox: 109` — the first Firefox version where Manifest V3 became generally available.
  *
- * This is the one place these numbers are written. `build/build.ts` (W2.3) derives its esbuild
+ * This is the one place these numbers are written. `build/build.ts` derives its esbuild
  * `target` from this constant instead of a literal, and both manifest builders below assert their
  * declared floor matches it.
  */
@@ -34,7 +34,7 @@ export const SUPPORTED = {
  */
 export const FIREFOX_EXTENSION_ID = "pointandshoot@whizzzkid.dev";
 
-/** The extension's five permission grants, exactly as settled in `docs/plans/README.md`. No more. */
+/** The extension's five permission grants, per ADR-0002 and the extension-runtime spec. No more. */
 const PERMISSIONS = [
   "activeTab",
   "storage",
@@ -46,7 +46,7 @@ const PERMISSIONS = [
 /** A strict extension-pages CSP: no remote script or object sources, per ADR-0009. */
 const CONTENT_SECURITY_POLICY = "script-src 'self'; object-src 'self'";
 
-/** Vendored font and icon-sprite paths exposed to injected content scripts (landed by W2.5). */
+/** Vendored font and icon-sprite paths exposed to injected content scripts. */
 const WEB_ACCESSIBLE_RESOURCES = [
   "src/shared/design/fonts/*.woff2",
   "src/shared/design/icons.svg",

@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 /**
- * Captures every shipped Wave 3 surface in both forced themes for PR review.
+ * Captures every shipped extension surface in both forced themes for review.
  *
  * The script drives the built Chromium extension rather than static replicas: extension pages load
  * their production bundles and fonts, while the injected toolbar runs inside its production closed
@@ -23,7 +23,7 @@ const DEFAULT_OUTPUT_DIRECTORY = "docs/assets/wave-3";
 const SERVICE_WORKER_TIMEOUT_MILLISECONDS = 10_000;
 const SURFACE_READY_TIMEOUT_MILLISECONDS = 5_000;
 
-/** Extension surfaces that must appear in the Wave 3 pull request. */
+/** Extension surfaces that must appear in the visual review set. */
 export const WAVE_3_SHOT_SURFACES = [
   "toolbar",
   "notes",
@@ -32,7 +32,7 @@ export const WAVE_3_SHOT_SURFACES = [
   "options",
 ] as const;
 
-/** Forced design-system themes captured for every Wave 3 surface. */
+/** Forced design-system themes captured for every extension surface. */
 export const WAVE_3_SHOT_THEMES = ["dark", "light"] as const;
 
 /** One visible extension surface captured by this script. */
@@ -447,7 +447,7 @@ async function captureThemeShots(
 }
 
 /**
- * Captures every Wave 3 extension surface into one output directory.
+ * Captures every extension surface into one output directory.
  *
  * @param outputDirectory Directory receiving PNGs and toolbar placement evidence.
  * @returns Nothing after the browser and fixture server close.
@@ -466,7 +466,7 @@ export async function captureWave3Shots(
       await captureThemeShots(fixture.base, outputDirectory, runtimeErrors, theme);
     }
     if (runtimeErrors.length > 0) {
-      throw new Error(`Wave 3 screenshot surfaces logged errors:\n${runtimeErrors.join("\n")}`);
+      throw new Error(`Extension screenshot surfaces logged errors:\n${runtimeErrors.join("\n")}`);
     }
   } finally {
     await fixture.close();
