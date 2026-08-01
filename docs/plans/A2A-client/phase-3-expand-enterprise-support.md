@@ -133,8 +133,12 @@ Inspect both built manifests and confirm that required permissions remain unchan
    without requesting fetch access solely for navigation. Reject redirect URI changes, HTTPS
    downgrade, ungranted fetch endpoints, scope escalation, missing PKCE, mismatched state, expired
    device codes, and malformed token responses.
-6. Test access-token refresh once after `401`, refresh failure, revoked consent, concurrent
-   requests, browser restart, user cancel, timeout, and secret redaction.
+6. Treat each browser permission prompt and `launchWebAuthFlow()` call as a separate user-triggered
+   continuation. Persist only non-secret continuation state between steps; never assume a user
+   gesture survives an asynchronous discovery or grant boundary.
+7. Apply the settled metadata and token-response byte and time budgets before parsing.
+8. Test access-token refresh once after `401`, refresh failure, revoked consent, concurrent
+   requests, browser restart, user cancel, timeout, prompt continuation, and secret redaction.
 
 **Verification:**
 
@@ -164,15 +168,21 @@ mise exec -- deno task ci
 **Implementation:**
 
 1. Fetch and validate the card-declared OpenID Provider metadata from a granted HTTPS origin. Match
-   the issuer exactly and select authorization-code with PKCE.
+   the issuer exactly, select authorization-code with PKCE, and enforce the settled metadata and
+   JWK-set byte and time budgets before parsing.
 2. Request only scopes named by the chosen security requirement. Show the scopes before launching
    interactive authorization.
 3. When `capabilities.extendedAgentCard` is true, fetch the extended card after authentication and
    keep it only in `storage.session`. Replace it on credential change and clear it on disconnect.
 4. Use extended skills and requirements during the authenticated session without overwriting the
    persistently cached public card.
-5. Test issuer mismatch, metadata redirect, missing PKCE support, unsupported signing algorithm,
-   scope denial, expired token, invalid extended card, authenticated-card cache clear, and restart.
+5. Validate the ID token signature through the discovered JWK set and require exact issuer, intended
+   audience and `azp` when applicable, matching nonce, expiry, issued-at sanity, and an allowed
+   signing algorithm before accepting the authenticated session.
+6. Test signature failure, issuer mismatch, audience substitution, missing or mismatched `azp`,
+   nonce mismatch, metadata and JWK redirects, oversized metadata or JWK sets, missing PKCE support,
+   unsupported signing algorithm, scope denial, expired or future-issued token, invalid extended
+   card, authenticated-card cache clear, and restart.
 
 **Verification:**
 
@@ -207,7 +217,8 @@ mise exec -- deno task ci
 3. Never persist the final query URL, include it in run history, or follow a redirect that carries
    the key to another origin.
 4. Show a warning before connecting a query-located key because browser and intermediary logs may
-   retain URLs. Header mechanisms remain preferred when the card offers an alternative.
+   retain URLs. Do not silently prefer a header alternative: when multiple requirements are
+   satisfiable, the options workflow requires an explicit stable user selection.
 5. Test Basic encoding, unknown schemes, invalid parameter names, existing query values, redirect,
    redaction, `401`, `403`, concurrent requests, and browser restart.
 
@@ -410,8 +421,9 @@ mise exec -- deno task ci
 
 **Implementation:**
 
-1. Serially reconcile nonterminal runs when history becomes visible. Stream only the open run and
-   cancel its predecessor when navigation changes.
+1. Serially reconcile nonterminal runs in the visible history page. Stream only the open run and
+   cancel its predecessor when navigation changes; never enumerate the complete retained ledger on
+   startup.
 2. Honor server retry guidance for idempotent `GetTask` and `SubscribeToTask` only. Bound retry by
    panel visibility, abort signal, and one active operation per run; add jitter without retrying
    initial message delivery.
@@ -457,15 +469,18 @@ mise exec -- deno task ci
 **Implementation:**
 
 1. Exercise every SecurityScheme discriminant and every implemented OAuth flow through one
-   requirement selector. Preserve deterministic card order and all-of semantics inside one
-   requirement set without treating array order as a security preference.
+   requirement selector. Preserve all-of semantics inside one requirement set. Select the only
+   satisfiable requirement automatically, but require explicit user choice when multiple
+   alternatives are satisfiable; persist its fingerprint and never silently switch after failure.
 2. Register the independently tested OAuth/OIDC, HTTP/query, cookie-decision, signed-card, and mTLS
    adapters. Integrate signed-card validation into discovery without duplicating SDK
    canonicalization or JWS logic.
 3. Render supported, connected, missing-credential, deprecated, browser-managed, and unsupported
    states from the same typed result in options and run authentication UI.
-4. Verify a card with alternative requirements selects the first fully satisfiable set and a card
-   with combined requirements supplies every credential on every A2A request.
+4. Verify a card with alternative requirements preserves the user's selected fingerprint and a card
+   with combined requirements supplies every request contribution without header, query,
+   credential-mode, or browser-precondition collisions. Card or scope changes invalidate stale
+   credentials before a request is prepared.
 5. Add end-to-end fixtures for OAuth code, device code, OIDC, Basic, query key, the cookie decision,
    signed cards, mTLS decision, extended cards, `AUTH_REQUIRED`, `401`, and `403`.
 6. Update the specs with observed cross-browser constraints. Never label a detected-only scheme as
@@ -488,6 +503,8 @@ Phase 4 starts only when:
 
 - Every A2A v1 security-scheme discriminant has an implemented adapter or an explicit, tested
   browser-managed/unsupported result.
+- Alternative security requirements require stable explicit selection; credentials are invalidated
+  when their interface, scheme definition, or scope binding changes.
 - Authorization-code with PKCE, device code, client credentials, and OIDC clear credentials on
   browser restart and never persist secrets to disk.
 - Query and cookie decisions are documented with their measured browser behavior and leakage risks.

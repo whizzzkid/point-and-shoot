@@ -83,9 +83,12 @@ This plan is complete when:
 6. Closing or suspending an extension context does not lose the durable run. Reopening reconciles
    known tasks through `SubscribeToTask` or `GetTask` without silently duplicating an uncertain
    send.
-7. Session history lists every retained local session and its A2A runs. Removing an agent never
-   erases historical runs, no automatic retention policy deletes sessions or responses, and quota
-   failure marks the affected run history incomplete rather than silently dropping events.
+7. Session history cursor-pages every retained local session and its A2A runs. Removing an agent
+   never erases historical runs, no automatic retention policy deletes sessions or responses, and
+   quota failure marks the affected run history incomplete rather than silently dropping events.
+   Deleting one session or using Clear all sessions transactionally deletes its associated runs and
+   events after aborting active work, so remote prompts and responses do not survive the user's
+   deletion request.
 8. HTTP Bearer and header API-key authentication ship first. Later phases implement or explicitly
    constrain every A2A v1 security scheme declared by Agent Cards.
 9. Chrome and Firefox pass unit, integration, end-to-end, visual, accessibility, manifest, and
@@ -104,6 +107,12 @@ This plan is complete when:
   after the permission spike proves the exact Chrome and Firefox match patterns.
 - Never persist tokens, API keys, passwords, authorization codes, PKCE verifiers, client secrets, or
   authenticated extended Agent Cards to IndexedDB or `storage.local`.
+- Raise Firefox's minimum from 109 to 115 when the credential vault lands. Firefox 115 is the first
+  release with `storage.session`; an unreliable event-page memory shim or disk-backed fallback would
+  violate the credential-lifetime contract.
+- Bound every remote response before parsing or persistence. Phase 0 measures and settles card,
+  metadata, key-set, JSON response, SSE-frame, and timeout budgets in the plan index; later phases
+  consume those shared limits without imposing a hard cap on local copy or download actions.
 - Do not introduce a native companion, public webhook receiver, remote registry, response Markdown
   renderer, task cancellation, or general multi-turn composer in this plan.
 
@@ -157,7 +166,7 @@ sequenceDiagram
   User->>Panel: Confirm send
   Panel->>Ledger: Persist queued run and exact request
   Panel->>Client: sendMessageStream or sendMessage with messageId
-  Client->>Agent: A2A request with granted origin and auth headers
+  Client->>Agent: A2A request with granted origin and prepared authentication
   Agent-->>Client: Task, message, status, and artifact events
   Client-->>Panel: Ordered remote responses
   Panel->>Ledger: Append event and update materialized state
@@ -191,6 +200,7 @@ erDiagram
     string selectedInterfaceUrl
     string protocolBinding
     string protocolVersion
+    string securityRevision
     string tenant
     string publicCardJson
     string cacheEtag
@@ -206,6 +216,8 @@ erDiagram
     string taskId
     string contextId
     string requestText
+    string selectedSecurityRequirementFingerprint
+    string negotiatedInputMode
     string taskState
     string connectionState
     string persistenceState
@@ -222,13 +234,20 @@ erDiagram
 ```
 
 The optional interface tenant is persisted with the selected interface and included in every A2A
-request to that interface. `AgentRun` also stores the selected note ids and a target snapshot so
-history remains intelligible after a session changes or an agent profile is removed. Its persistence
-state is `complete` or `incomplete`; a failed event append aborts stream consumption and leaves the
-last committed event visible with an explicit storage error. Optional values use discriminated
-unions in TypeScript rather than nullable-field combinations. `AgentRunEvent` uses
-`[runId, sequence]` as its key so one streamed event is one append instead of a rewrite of the
-complete history.
+request to that interface. A security revision fingerprints the selected interface origin, the
+selected requirement set, its scheme definitions, and requested scopes. Credentials are usable only
+for that exact revision; refreshing a card into a different revision disconnects the profile until
+the user reviews and reconnects it. `AgentRun` stores that revision, the negotiated input mode,
+selected note ids, and a target snapshot so history remains intelligible after a session changes or
+an agent profile is removed.
+
+The run persistence state is `complete` or `incomplete`; a failed event append aborts stream
+consumption and leaves the last committed event visible with an explicit storage error. Optional
+values use discriminated unions in TypeScript rather than nullable-field combinations.
+`AgentRunEvent` uses `[runId, sequence]` as its key so one streamed event is one append instead of a
+rewrite of the complete history. Session summaries and run summaries are cursor-paged, event detail
+loads only for the open run, and reconciliation is limited to the visible page with one active
+operation at a time.
 
 ### Status model
 
@@ -259,8 +278,9 @@ browser differences and explicit server-side Origin policies.
    non-loopback HTTP.
 2. Request the narrowest browser-supported card-host pattern through `browser.permissions.request()`
    from the Add-agent click, while retaining the exact origin in the client allowlist.
-3. Fetch and runtime-validate the public Agent Card. Honor `Cache-Control`, `ETag`, and
-   `Last-Modified`; never execute or remotely load card-provided presentation assets.
+3. Fetch and runtime-validate the public Agent Card within the shared byte and time budgets. Honor
+   `Cache-Control`, `ETag`, and `Last-Modified`; never execute or remotely load card-provided
+   presentation assets.
 4. Select only SDK-supported browser transports: JSON-RPC or HTTP+JSON. gRPC remains unavailable in
    the browser. Persist the selected interface's optional tenant and include it in every request. If
    the selected interface uses another origin, require a second explicit grant.
@@ -275,9 +295,15 @@ The latest A2A v1 model uses `securitySchemes` plus agent-level or skill-level
 `securityRequirements`. This plan does not add skill selection, so initial delivery negotiates the
 agent-level requirements. Skill-level requirements remain visible metadata; a skill-specific server
 challenge becomes `AUTH_REQUIRED` or an HTTP authentication error rather than an invented client
-choice. The client chooses the first satisfiable requirement entry in card order for deterministic
-behavior; it does not treat array order as a security-strength signal or invent a weaker
-alternative.
+choice. If the card has one satisfiable agent-level requirement, the client selects it. If it has
+multiple satisfiable alternatives, the user must select one during connection; that stable choice is
+stored by fingerprint and never changes silently because of card order, credential availability, or
+an authentication failure. Every scheme inside the selected requirement remains mandatory.
+
+Authentication is modeled as a prepared request contribution, not a header-only hook. An adapter may
+contribute headers, a query parameter, browser request credentials, or a browser-managed TLS
+precondition. Composition rejects collisions, cross-origin redirects, stale security revisions, and
+unrequested scope changes before the SDK sends a request.
 
 Agent Card security requirements authenticate A2A endpoint requests. `TASK_STATE_AUTH_REQUIRED`
 instead represents in-task authorization and does not define a credential format. The client may
@@ -297,7 +323,7 @@ polling. It never places a credential in an A2A message without a separately neg
 | OAuth device code        | Phase 3 implements the card-declared device and token endpoints.                                           |
 | OAuth client credentials | Phase 3 accepts credentials per browser session; it never claims a packaged client secret is confidential. |
 | Deprecated OAuth flows   | Detect and explain implicit or password requirements; do not implement them.                               |
-| OpenID Connect           | Phase 3 discovers provider metadata, then reuses the OAuth authorization-code adapter.                     |
+| OpenID Connect           | Phase 3 discovers metadata and validates signed ID-token issuer, audience, nonce, and time claims.         |
 | Mutual TLS               | Use browser or OS certificate selection and enterprise policy when available; never package private keys.  |
 
 If cookie credentials or mutual TLS cannot meet the same Chrome and Firefox safety contract, the
@@ -401,6 +427,7 @@ was actually run against the final combined head.
 - [Chrome service-worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle)
 - [Firefox optional host permissions](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/optional_host_permissions)
 - [Firefox extension match patterns](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns)
+- [Firefox 115 extension API changes](https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/115#changes_for_add-on_developers)
 - [Cross-browser OAuth flow](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/identity/launchWebAuthFlow)
 - [Extension session storage](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage)
 
@@ -413,4 +440,5 @@ was actually run against the final combined head.
 - Automatic retry of an initial delivery with an unknown outcome.
 - Rendering agent-provided HTML or unsanitized Markdown.
 - Automatic deletion or retention limits for sessions, runs, responses, or artifacts.
+- Silent selection or fallback among alternative Agent Card security requirements.
 - Changing the local export bundle or sending screenshots and ZIP bytes in the first delivery slice.

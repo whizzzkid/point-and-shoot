@@ -81,13 +81,18 @@ export interface AgentTargetSummary {
   readonly authentication: "connected" | "required" | "unsupported";
 }
 
-export interface CredentialHeaders {
-  readonly headers: Readonly<Record<string, string>>;
-}
+export type AuthRequestContribution =
+  | { readonly kind: "headers"; readonly values: Readonly<Record<string, string>> }
+  | { readonly kind: "query"; readonly values: Readonly<Record<string, string>> }
+  | { readonly kind: "credentials"; readonly value: "include" }
+  | { readonly kind: "browser-managed"; readonly mechanism: "mtls" };
 
 export interface AuthStrategy {
   supports(scheme: SecurityScheme): boolean;
-  headers(profile: AgentProfile, schemeName: string): Promise<CredentialHeaders>;
+  prepare(
+    profile: AgentProfile,
+    schemeName: string,
+  ): Promise<readonly AuthRequestContribution[]>;
 }
 
 export interface AgentTransport {
@@ -119,18 +124,23 @@ export interface AgentTransport {
 **Implementation:**
 
 1. Define discriminated `AgentProfile`, `AgentRun`, and `AgentRunEvent` records. Persist only public
-   Agent Cards and the selected interface URL, binding, version, and optional tenant; store exact
-   request text, selected note ids, agent snapshot, message id, task/context ids, latest task state,
-   connection state, persistence state, error category, and timestamps on a run.
+   Agent Cards and the selected interface URL, binding, version, optional tenant, security revision,
+   and selected requirement fingerprint; store exact request text, negotiated input mode, selected
+   note ids, agent snapshot, message id, task/context ids, latest task state, connection state,
+   persistence state, error category, and timestamps on a run.
 2. Append IndexedDB migration version 2. Create `agents`, `agentRuns`, and `agentRunEvents` stores;
    never edit migration version 1.
 3. Key run events by `[runId, sequence]`. Add indexes for agent profiles by normalized card URL,
    runs by session id, runs by agent id, runs by updated time, and events by run id.
 4. Keep `SCHEMA_VERSION` in `src/shared/schema.ts` unchanged. Validate every record read from
    IndexedDB; never cast stored JSON to an A2A type.
-5. Test fresh database creation, v1-to-v2 migration, duplicate card URLs, invalid records, aborted
-   transactions, quota mapping, event ordering, and a database blocked by an old connection.
-6. Update the A2A client spec with the complete record reference and deletion semantics.
+5. Extend individual-session deletion and Clear all sessions so they first abort active controllers,
+   then transactionally delete matching `sessions`, `agentRuns`, and `agentRunEvents`. Prevent late
+   stream callbacks from recreating deleted history. Removing an agent still preserves run history.
+6. Test fresh database creation, v1-to-v2 migration, duplicate card URLs, invalid records, aborted
+   transactions, quota mapping, event ordering, delete during an active stream, transactional
+   rollback, and a database blocked by an old connection.
+7. Update the A2A client spec with the complete record reference and deletion semantics.
 
 **Verification:**
 
@@ -218,11 +228,14 @@ export function discoverAgent(request: DiscoverAgentRequest): Promise<DiscoverAg
 3. Return every additional interface origin that still needs a user grant instead of fetching it.
 4. Persist `ETag`, `Last-Modified`, and parsed `Cache-Control` metadata. Use conditional refreshes;
    preserve the last valid public card on `304`, and surface malformed replacements without
-   overwriting it.
+   overwriting it. Recompute a security revision over interface origin, requirement choice, scheme
+   definitions, and scopes; a changed revision invalidates credentials and requires user review.
 5. Reject redirects to ungranted origins, HTTPS downgrade, embedded credentials, required protocol
    extensions the client does not support, and cards with no browser transport.
-6. Test same-origin and multi-origin cards, cache hit/expiry, `304`, invalid JSON, invalid card,
-   redirect, unsupported extension, and gRPC-only failure.
+6. Apply the settled card byte and time budgets before JSON parsing.
+7. Test same-origin and multi-origin cards, cache hit/expiry, `304`, invalid JSON, oversized cards,
+   security revision changes, stale credential rejection, redirect, unsupported extension, and
+   gRPC-only failure.
 
 **Verification:**
 
@@ -248,8 +261,9 @@ mise exec -- deno task ci
 - Create: `src/shared/a2a/run-repository.ts`
 - Create: `src/shared/a2a/run-repository.test.ts`
 
-**Produces:** Atomic `createRun`, `appendRunEvent`, `updateRunSnapshot`, `getRun`,
-`listRunsForSession`, `listNonterminalRuns`, and `listRunEvents` operations.
+**Produces:** Atomic `createRun`, `appendRunEvent`, `updateRunSnapshot`, `getRun`, cursor-paged
+`listRunsForSession` and `listNonterminalRuns`, lazy `listRunEvents`, and cascading
+`deleteRunsForSession` operations.
 
 **Implementation:**
 
@@ -261,8 +275,11 @@ mise exec -- deno task ci
 4. Map quota exhaustion to the existing typed storage error boundary and retain the last committed
    state. Mark the run history incomplete when that update can commit; otherwise keep the storage
    error in the active controller. Never auto-delete older history to make space.
-5. Test concurrent appends, rollback, ordering, direct-message runs without task ids, soft-deleted
-   agents, missing sessions, invalid persisted records, and quota exhaustion.
+5. Return bounded pages with opaque cursors and stable `(updatedAt, id)` ordering. Load event detail
+   only for a requested run; never use an unbounded `getAll()` for retained history.
+6. Test concurrent appends, rollback, pagination boundaries, ordering ties, direct-message runs
+   without task ids, soft-deleted agents, missing sessions, invalid persisted records, cascading
+   deletion, and quota exhaustion.
 
 **Verification:**
 
@@ -289,7 +306,7 @@ mise exec -- deno task ci
 - Create: `src/shared/a2a/reconciliation.test.ts`
 
 **Produces:** Pure `reduceRunEvent` plus a visibility-scoped reconciler that streams only the open
-run and serially refreshes other nonterminal tasks.
+run and serially refreshes nonterminal tasks in the currently visible history page.
 
 **Implementation:**
 
@@ -303,9 +320,11 @@ run and serially refreshes other nonterminal tasks.
    fall back to `GetTask` after an unsupported-subscription response or disconnect.
 5. Mark a run `delivery-unknown` when initial delivery ends before a task id or direct message is
    observed. Never call the initial send method from reconciliation.
-6. Test every A2A task state, direct messages, artifact chunks, duplicate events, status regression,
-   stale snapshots, missing task ids, subscription failure, polling failure, abort, and panel
-   visibility changes.
+6. Never enumerate or reconcile the complete retained ledger on startup. Bound the visible page and
+   keep one active network operation at a time.
+7. Test every A2A task state, direct messages, artifact chunks, duplicate events, status regression,
+   stale snapshots, missing task ids, subscription failure, polling failure, abort, large history,
+   page changes, and panel visibility changes.
 
 **Verification:**
 
@@ -338,16 +357,23 @@ security-requirement selector.
 
 **Implementation:**
 
-1. Key credentials by agent id and scheme name. Make stored values readable only from trusted
-   extension contexts and clear one agent or the complete vault without touching profiles or runs.
+1. Key credentials by agent id, scheme name, and the profile's security revision. Bind each entry to
+   the selected interface origin, exact scheme definition, and requested scopes. Make stored values
+   readable only from trusted extension contexts and clear one agent or the complete vault without
+   touching profiles or runs.
 2. Model secrets as discriminated credential records. Never include a secret in an error, target
    summary, log, IndexedDB record, `storage.local`, URL history, or PR fixture.
-3. Evaluate security requirement alternatives in card order for deterministic behavior, without
-   treating order as a security-strength signal. A requirement is satisfiable only when every named
-   scheme has an adapter and a credential.
-4. Return a typed unsupported result listing scheme names and kinds; never downgrade to no auth.
-5. Test browser restart semantics by clearing session storage, missing credentials, multiple
-   alternative sets, multi-scheme requirements, unsupported schemes, and redacted errors.
+3. A requirement is satisfiable only when every named scheme has an adapter and a credential. If
+   exactly one is satisfiable, select it; if multiple are satisfiable, return them for explicit user
+   selection. Persist the selected requirement fingerprint and never switch alternatives after a
+   failure or because card order changes.
+4. Compose typed request contributions from every scheme in the selected requirement. Reject
+   duplicate headers or query parameters, conflicting request-credential modes, origin changes, and
+   incompatible browser-managed preconditions before transport.
+5. Return a typed unsupported result listing scheme names and kinds; never downgrade to no auth.
+6. Test browser restart semantics by clearing session storage, missing and stale credentials,
+   scheme-definition and scope changes, multiple alternative sets, explicit selection, multi-scheme
+   collisions, unsupported schemes, and redacted errors.
 
 **Verification:**
 
@@ -379,7 +405,9 @@ mise exec -- deno task ci
 2. Use the card-declared API-key header name. Reject forbidden, A2A-reserved, hop-by-hop, cookie,
    origin, and proxy authorization header names.
 3. Attach credentials through the SDK authentication fetch hook. On `401`, consume
-   `WWW-Authenticate`, refresh headers at most once, and never retry `403` automatically.
+   `WWW-Authenticate`, refresh headers at most once, and never retry `403` automatically. Use the
+   SDK authentication helper only if P0.1 proves it supports that policy; otherwise keep the SDK
+   transport and provide the project fetch wrapper.
 4. Redact authorization and API-key values from errors and test diagnostics.
 5. Test valid headers, malformed schemes, forbidden header names, missing credentials, one `401`
    refresh, repeated `401`, `403`, abort, and concurrent requests using independent credentials.
@@ -416,19 +444,23 @@ mise exec -- deno task ci
 1. Create a client from the already-validated Agent Card. Never let the SDK re-fetch an ungranted
    URL behind the permission broker, and include the selected interface's tenant in every request
    when present.
-2. Send the exact Markdown as one user text part with a stable client-generated message id. Prefer
-   `text/markdown`; fall back to `text/plain` only when the card accepts plain text, and block cards
-   whose input modes accept neither. Derive accepted output modes from the card.
+2. Send the exact Markdown as one v1 user `TextPart` with a stable client-generated message id.
+   Negotiate `text/markdown` when the selected agent or skill input modes accept it, otherwise
+   `text/plain`; store that negotiated mode in the run snapshot, but do not invent a media-type
+   field on `TextPart`. Block cards whose applicable input modes accept neither. Derive accepted
+   output modes from the card.
 3. Use streaming send only when the card advertises streaming. Otherwise call non-streaming send
    with immediate task return where supported, yield its single response through the same adapter,
    and let reconciliation poll a known nonterminal task with `GetTask`.
 4. Expose streaming, task lookup, and task subscription as typed methods. Convert SDK or HTTP errors
    into project error categories without dropping the original safe status and error code.
-5. Reject a card version or required extension the client does not support. Do not enable the v0.3
+5. Enforce the phase-0 settled JSON response, SSE-frame, request, first-byte, and idle budgets
+   before parsing or buffering remote data.
+6. Reject a card version or required extension the client does not support. Do not enable the v0.3
    compatibility layer in this phase.
-6. Test JSON-RPC and HTTP+JSON, tenant routing, streamed and non-streaming send, direct message,
-   task response, polling, version rejection, malformed response, protocol error, HTTP error, abort,
-   and timeout.
+7. Test JSON-RPC and HTTP+JSON, tenant routing, input-mode negotiation, streamed and non-streaming
+   send, direct message, task response, polling, version rejection, oversized or malformed response,
+   oversized SSE frame, protocol error, HTTP error, abort, and each timeout.
 
 **Verification:**
 
@@ -464,7 +496,8 @@ all four lane tips land.
    cannot persist, abort remote consumption and expose incomplete history rather than showing an
    unrecorded event.
 3. Abort when the caller closes the visible run, record `disconnected`, and leave the remote task
-   unchanged for later reconciliation.
+   unchanged for later reconciliation. Session deletion aborts first and transactionally removes the
+   run and events; an aborted callback cannot append after deletion.
 4. Record `delivery-unknown` when no remote identifier was observed. Never auto-retry the send.
 5. Test successful public and Bearer sends, storage failure before network, auth failure, disconnect
    before and after task id, event-persistence failure, direct message, terminal task, and abort.
@@ -488,6 +521,10 @@ Phase 2 starts only after all four lane stacks land and the combined head proves
 - The credential vault survives context suspension but clears on browser restart.
 - Bearer and header API-key requirements are negotiated from the card without a no-auth fallback.
 - An immutable run exists before network delivery and every stream event is ordered durably.
+- Credentials are bound to an explicit requirement fingerprint and security revision, and composed
+  request contributions fail closed on collisions.
+- Session deletion and Clear all sessions remove associated runs and events without a late-write
+  race.
 - Known tasks reconcile without replaying the initial send; unknown outcomes remain explicit.
 - Every new IndexedDB record is runtime-validated, and the canonical session schema remains
   version 1.

@@ -80,10 +80,13 @@ P4.7. It owns only the A2A fixture and protocol integration tests.
    mTLS, alternative requirements, combined requirements, and recognized unsupported schemes.
 3. Give each fixture an OS-assigned port, deterministic clock, deterministic ids, and explicit
    cleanup. Make tests independent of the public internet and real identity providers.
-4. Add malformed JSON, invalid cards, unsupported protocol versions and extensions, redirects,
-   delayed first bytes, truncated SSE, duplicate events, status regression, and task purge.
+4. Add malformed and oversized JSON, invalid and oversized cards, oversized metadata and JWK sets,
+   unsupported protocol versions and extensions, redirects, delayed first bytes, request and idle
+   timeouts, oversized or truncated SSE frames, duplicate events, status regression, and task purge.
 5. Keep fixture secrets synthetic and assert that failures, snapshots, and captured logs do not
    contain them.
+6. Add alternative-requirement, request-contribution collision, card security-revision drift,
+   credential-staleness, OIDC issuer/audience/nonce substitution, and invalid-signature fixtures.
 
 **Verification:**
 
@@ -120,8 +123,12 @@ mise exec -- deno task ci
 3. Exhaust storage before run creation and during an event append. Initial failure must prevent the
    network call; mid-stream failure must abort consumption and expose incomplete local history.
 4. Force worker suspension, panel close, offline transitions, abort races, duplicate UI activation,
-   malformed remote strings, and large text responses without replaying the initial send.
-5. Scan persisted stores, session storage summaries, rendered errors, and test logs for credentials,
+   malformed remote strings, and over-budget remote responses without replaying the initial send or
+   parsing beyond the settled boundary.
+5. Delete a session and use Clear all sessions during active streams. Verify controllers abort,
+   session/run/event deletion commits atomically, rollback preserves the previous state, and no late
+   event recreates deleted history.
+6. Scan persisted stores, session storage summaries, rendered errors, and test logs for credentials,
    authorization codes, PKCE verifiers, client secrets, query keys, and captured-page evidence.
 
 **Verification:**
@@ -156,8 +163,10 @@ It owns Chromium scenarios and their harness only.
 2. Drive toolbar target selection, review, exact Markdown send, streaming, status changes, panel
    close and reopen, task reconciliation, unknown delivery, and deliberate resend.
 3. Prove Copy prompt, Download prompt, and Download bundle before and after every remote failure.
-4. Open old local sessions, removed-agent runs, direct-message runs, interrupted tasks, incomplete
-   history, and corrupt-entry warnings without losing other history.
+4. Page through old local sessions, removed-agent runs, direct-message runs, interrupted tasks,
+   incomplete history, and corrupt-entry warnings without loading the full ledger or losing other
+   history. Delete one session and clear all sessions, confirming that prompts, responses, runs, and
+   events are removed while agent profiles remain.
 5. Assert that selecting an agent in the injected toolbar produces no remote request before review.
 
 **Verification:**
@@ -313,7 +322,8 @@ owns user-facing docs only.
 3. Document no-auth, Bearer, API-key, OAuth, OIDC, signed-card, cookie, and mTLS states exactly as
    phase 3 implemented or constrained them.
 4. Explain that credentials clear on browser restart, local history persists until user deletion or
-   storage exhaustion, incomplete history is explicit, and unknown initial delivery is not retried.
+   storage exhaustion, individual deletion and Clear all sessions remove associated prompts and
+   responses, incomplete history is explicit, and unknown initial delivery is not retried.
 5. Keep local copy and download behavior first-class. Do not imply that A2A is required to use or
    export Point & Shoot.
 
@@ -352,7 +362,8 @@ mise exec -- deno task ci
    `401`, `403`, certificate failures, network errors, task purge, storage exhaustion, and unknown
    delivery.
 4. Publish the data inventory: public cards and run history on disk; credentials, extended cards,
-   codes, and verifiers in session-only storage; exact Markdown sent only after review.
+   codes, and verifiers in session-only storage; exact Markdown sent only after review; session
+   deletion and Clear all sessions cascade through stored prompts, responses, runs, and events.
 5. Update the ADR with final measured browser behavior without changing the accepted decision's
    historical context.
 
@@ -385,7 +396,8 @@ mise exec -- deno task ci
 1. Run every project and A2A gate against the combined head. Add only stable, deterministic A2A
    tasks to CI and keep expensive browser jobs separated for actionable failure reporting.
 2. Audit built Chrome and Firefox manifests for required permissions, optional host eligibility, and
-   optional API declarations. Compare them with ADR-0018 and the published privacy guidance.
+   optional API declarations. Verify Firefox's minimum is 115 and compare both manifests with
+   ADR-0018 and the published privacy guidance.
 3. Audit bundles for Node-only imports, gRPC, remote code, secrets, fixture credentials, and an
    unpinned SDK dependency.
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
@@ -421,8 +433,10 @@ The A2A client plan is complete only when:
   policy, and no content or background interface is a generic network proxy.
 - Credentials and captured-page evidence are absent from durable stores, build output, logs, and
   fixtures.
+- Remote cards, metadata, key sets, JSON responses, and SSE frames are rejected before parsing or
+  whole-body buffering when they exceed settled budgets.
 - Local actions work with no agents configured and during every tested remote failure.
-- Run history is durable, ordered, explicit when incomplete, and never silently deletes or replays
-  work.
+- Run history is cursor-paged, durable, ordered, explicit when incomplete, and never silently
+  deletes or replays work; explicit session deletion removes its complete A2A history atomically.
 - Visual, accessibility, manifest, bundle, protocol, recovery, and documentation gates pass on the
   combined head.

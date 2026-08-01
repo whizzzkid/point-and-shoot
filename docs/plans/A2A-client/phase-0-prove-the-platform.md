@@ -68,7 +68,6 @@ files owned by P0.2.
 **Files:**
 
 - Modify: `deno.json`
-- Modify: `AGENTS.md`
 - Create: `src/shared/a2a/sdk.ts`
 - Create: `src/shared/a2a/sdk.test.ts`
 - Modify: `build/build.ts`
@@ -88,9 +87,10 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
 **Implementation:**
 
 1. Query the npm registry for `@a2a-js/sdk`, select the newest stable release implementing A2A v1,
-   and pin that exact version in `deno.json`. Record the same resolved version in the `AGENTS.md`
-   version table. If no stable v1 release exists, stop the phase and request an explicit prerelease
-   or alternative-client decision instead of silently pinning `next`.
+   and pin that exact version in `deno.json`. Record the resolved version in the PR for P0.4 to add
+   to the shared version table after both proof lanes converge. If no stable v1 release exists, stop
+   the phase and request an explicit prerelease or alternative-client decision instead of silently
+   pinning `next`.
 2. Import only `@a2a-js/sdk` protocol types and `@a2a-js/sdk/client`. Never import server, Express,
    compatibility, or gRPC subpaths into an extension entry point.
 3. Wrap `ClientFactory` construction in `src/shared/a2a/sdk.ts`, inject `fetch`, and restrict
@@ -98,8 +98,12 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
 4. Add a build test that bundles the new client module into Chrome and Firefox artifacts, scans for
    unresolved Node built-ins and gRPC peers, and records the minified byte delta in the test output.
 5. Inventory and test the SDK's v1 client, authentication hook, stream, task lookup/subscription,
-   and Agent Card signature-verification surfaces. Record missing or browser-incompatible surfaces
-   for P0.4 instead of assuming an example from another release still applies.
+   and Agent Card signature-verification surfaces. Prove whether authentication can contribute
+   headers, query parameters, request credentials, and browser-managed preconditions. Inspect the
+   SDK authentication helper's `401`/`403` behavior; later code must use a project wrapper unless
+   the helper can be configured to refresh at most once on `401` and never retry `403`. Record
+   missing or browser-incompatible surfaces for P0.4 instead of assuming an example from another
+   release still applies.
 6. Unit-test factory creation, transport preference, injected fetch, and failure when an Agent Card
    advertises only gRPC.
 7. Keep the wrapper as production code. Do not land a throwaway spike, compatibility shim, or copied
@@ -133,6 +137,7 @@ imports; P0.2 owns the manifest and browser shim.
 
 - Modify: `build/manifest.ts`
 - Modify: `build/manifest.test.ts`
+- Modify: `docs/plans/README.md`
 - Modify: `src/shared/browser.ts`
 - Modify: `src/shared/browser.test.ts`
 - Create: `src/shared/a2a/remote-access.ts`
@@ -163,19 +168,24 @@ and the cookie methods needed for a later feasibility decision.
 1. Add `optional_host_permissions: ["https://*/*"]` to both generated manifests. Add only browser-
    accepted loopback HTTP patterns proven by manifest tests; never add wildcard HTTP or required
    host permissions.
-2. Do not declare optional `identity` or `cookies` API permissions yet. Phase 3 owns those
+2. Raise `SUPPORTED.firefox` and the generated `strict_min_version` from 109 to 115, the first
+   Firefox release with `storage.session`. Update the settled browser-minimum row in
+   `docs/plans/README.md`. Do not emulate browser-session secret storage in a suspendable event page
+   or persist a fallback to disk.
+3. Do not declare optional `identity` or `cookies` API permissions yet. Phase 3 owns those
    declarations after the initial delivery slice is complete.
-3. Extend the existing Chrome and Firefox adapters instead of reading `chrome.*` or `browser.*`
+4. Extend the existing Chrome and Firefox adapters instead of reading `chrome.*` or `browser.*`
    elsewhere. Keep `storage.session` hidden from content scripts.
-4. Normalize a user URL to an exact client origin plus the narrowest Chrome and Firefox permission
+5. Normalize a user URL to an exact client origin plus the narrowest Chrome and Firefox permission
    patterns. Preserve a Chrome port restriction; omit the port for Firefox and enforce it in the
    client allowlist. Reject credentials in URLs, fragments, unsupported schemes, non-loopback HTTP,
    and malformed internationalized hosts.
-5. Unit-test grants, denial, revocation, repeated grants, default ports, Chrome port scoping,
+6. Unit-test grants, denial, revocation, repeated grants, default ports, Chrome port scoping,
    Firefox's host-wide port grant, loopback hosts, and every rejected URL class against both fake
    browser globals.
-6. Update the manifest permission assertion so it distinguishes required permissions, optional host
-   eligibility, and runtime grants. Assert that optional API permissions remain absent.
+7. Update the manifest permission assertion so it distinguishes required permissions, optional host
+   eligibility, and runtime grants. Assert that optional API permissions remain absent and both the
+   shared support constant and generated Firefox manifest require 115.
 
 **Verification:**
 
@@ -220,7 +230,8 @@ Bearer-protected requests, ordered SSE events, forced disconnect, polling, and t
    invalid token, and expose deterministic JSON-RPC and HTTP+JSON routes.
 3. Emit one task, status, artifact, and terminal event over SSE. Add fixtures for a non-streaming
    task with `GetTask` polling, malformed cards, gRPC-only cards, delayed first bytes, mid-stream
-   disconnect, and recovery.
+   disconnect, and recovery. Include oversized card, JSON response, and SSE-frame fixtures and prove
+   the client aborts at the byte boundary before parsing or buffering the complete body.
 4. Drive the permission prompt from an extension page user gesture, fetch the card, grant a second
    interface origin, and consume authenticated SSE from the visible extension page.
 5. Close the page mid-task, reopen it, and prove recovery through subscription or polling. Do not
@@ -230,7 +241,10 @@ Bearer-protected requests, ordered SSE events, forced disconnect, polling, and t
 7. Exercise the representative path in Firefox. If Firefox cannot automate the permission prompt,
    test the grant through the shim and drive the already-granted runtime path in the smoke fixture;
    state that boundary precisely in the PR.
-8. Add real `a2a:network` and `smoke:a2a-firefox` tasks only when they execute these assertions. Do
+8. Measure safe card, metadata, key-set, JSON response, and SSE-frame limits plus request,
+   first-byte, and stream-idle timeouts in both browsers. Fail closed when a response omits a usable
+   length or exceeds a streaming limit; never rely on `Content-Length` alone.
+9. Add real `a2a:network` and `smoke:a2a-firefox` tasks only when they execute these assertions. Do
    not add a passing stub.
 
 **Verification:**
@@ -257,23 +271,30 @@ land.
 
 - Create: `docs/adr/0018-optional-host-permissions-for-a2a.md`
 - Create: `docs/specs/a2a-client.md`
+- Modify: `AGENTS.md`
 - Modify: `docs/adr/README.md`
 - Modify: `docs/specs/README.md`
 - Modify: `docs/plans/A2A-client/README.md`
 - Modify: `docs/plans/A2A-client/phase-0-prove-the-platform.md`
+- Modify: `docs/plans/README.md`
 
 **Implementation:**
 
 1. Supersede only ADR-0002's rejection of optional host permissions. Preserve its `activeTab`
    guarantee for inspected pages and explain the difference between optional eligibility and a
    granted remote-agent origin.
-2. Record the proven SDK version, supported browser transports, runtime origin-grant flow, loopback
-   policy, stream owner, credential storage boundary, and recovery behavior in the A2A client spec.
+2. Record the proven SDK version and Firefox 115 minimum in the `AGENTS.md` version table. Record
+   the supported browser transports, runtime origin-grant flow, loopback policy, stream owner,
+   credential storage boundary, recovery behavior, and pre-parse remote-input enforcement in the A2A
+   client spec.
 3. Include the tested failure results. Do not convert a Chrome-only observation into a cross-browser
    capability claim.
 4. Run `wk-arch-review` over the ADR and spec, fold blockers into both artifacts, and record the
    review verdict before publishing.
-5. Mark P0.1-P0.4 with commit and PR references and identify all phase-1 items as unblocked.
+5. Add the measured remote-input byte limits and request, first-byte, and idle timeouts to the
+   settled-numbers table in `docs/plans/README.md`. Later items consume those values rather than
+   choosing local constants. These remote safety limits do not cap local prompt copy or downloads.
+6. Mark P0.1-P0.4 with commit and PR references and identify all phase-1 items as unblocked.
 
 **Verification:**
 
@@ -290,9 +311,13 @@ Also re-run every P0.1 and P0.3 proof against the combined head.
 Phase 1 remains blocked until all statements below have executable evidence:
 
 - The exact SDK client bundles into both extension targets without Node-only or gRPC dependencies.
+- Chrome's existing minimum and Firefox 115 expose the session-only credential store required by the
+  client; no older-Firefox disk or event-page memory fallback exists.
 - Optional runtime grants permit extension-context cross-origin fetch without changing required host
   access or allowing content-script fetches.
 - Multi-origin discovery and interface selection require and honor separate grants.
 - Authenticated SSE works in the visible extension surface and recovery works after that surface
   closes.
+- Remote cards, metadata, key sets, JSON responses, and SSE frames are bounded before parsing or
+  whole-body buffering, with measured request, first-byte, and idle timeouts.
 - The successor ADR and A2A client spec contain the proven result, limitations, and rollback path.

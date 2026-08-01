@@ -74,22 +74,28 @@ flowchart TD
 - Modify: `src/options/repository.test.ts`
 
 **Produces:** An options controller with `loadAgents`, `beginAddAgent`, `grantAdditionalOrigin`,
-`connectHeaderCredential`, `refreshAgent`, `setDefaultAgent`, `disconnectAgent`, and `removeAgent`.
+`selectSecurityRequirement`, `connectHeaderCredential`, `refreshAgent`, `setDefaultAgent`,
+`disconnectAgent`, and `removeAgent`.
 
 **Implementation:**
 
 1. Model Add agent as explicit states: editing URL, requesting card origin, discovering card,
-   requesting interface origin, requiring authentication, ready to save, and failed.
+   requesting interface origin, selecting an authentication requirement, requiring credentials,
+   ready to save, and failed.
 2. Keep every permission request in the originating user-click call stack. If discovery reveals a
    second origin after the first asynchronous grant, stop and expose a separate grant action.
 3. Save a profile only after card validation and supported-interface selection. A denied grant or
    failed discovery leaves no partial profile.
-4. Accept Bearer and card-declared header API-key credentials into `storage.session`; never echo the
-   value back after save.
+4. When more than one security requirement is satisfiable, require an explicit user choice and show
+   every scheme in each alternative. Accept Bearer and card-declared header API-key credentials into
+   `storage.session`; bind them to the saved security revision and never echo the value after save.
 5. Removing a profile soft-deletes it, clears its session credentials, and revokes an origin only
    when no other active profile or credential endpoint uses that origin.
-6. Test every state transition, repeated click, denial, multi-origin continuation, authenticated
-   card retry, refresh failure, disconnect, shared-origin removal, and repository failure.
+6. On card refresh, require reconnection when the selected interface, scheme definition,
+   requirement, or scopes change. Never apply an old credential to the refreshed profile.
+7. Test every state transition, repeated click, denial, multi-origin continuation, alternative
+   selection, authenticated card retry, credential-invalidating refresh, disconnect, shared-origin
+   removal, and repository failure.
 
 **Verification:**
 
@@ -124,14 +130,17 @@ mise exec -- deno task ci
 2. Add an accessible form for a base or Agent Card URL. Explain each permission before the browser
    prompt and render both the exact configured origin and the browser's host permission pattern in
    mono type.
-3. Render separate actions for second-origin permission, Bearer or API-key connection, refresh, set
-   default, disconnect, and remove. Never display a saved credential value.
+3. Render separate actions for second-origin permission, authentication-alternative selection,
+   Bearer or API-key connection, refresh, set default, disconnect, and remove. Never display a saved
+   credential value.
 4. Treat remote descriptions and skill names as text. Do not load `iconUrl`, remote HTML, or other
    card-provided assets.
 5. Keep one accent-blue interactive action per view, sentence-case copy, border-defined cards,
    keyboard order, focus restoration, and both forced themes.
-6. Cover empty, loading, permission-denied, invalid card, unsupported transport, auth-required,
-   connected, refresh-failed, shared-origin, and removed states.
+6. Explain that exact prompts and agent responses remain in local history until the user deletes the
+   session or clears all sessions. Cover empty, loading, permission-denied, invalid card,
+   unsupported transport, alternative-auth choice, auth-required, connected, credential-stale,
+   refresh-failed, shared-origin, and removed states.
 
 **Verification:**
 
@@ -160,7 +169,7 @@ update.
 - Create: `src/ui/components/SplitButton.browser.test.ts`
 - Modify: `src/ui/components/components.css`
 - Modify: `src/ui/components/index.ts`
-- Modify: `src/ui/gallery/Gallery.tsx`
+- Modify: `src/ui/gallery/index.tsx`
 
 **Produces:** A controlled split button with one primary action and an adjacent menu trigger. Menu
 items carry ids and labels; the component owns keyboard navigation, focus return, outside click, and
@@ -267,8 +276,9 @@ perform no network request.
 4. Disable remote send for an empty note selection, invalid prompt projection, missing grant,
    missing credential, unsupported auth, or active send. Preserve the current warning-only size
    behavior.
-5. Display the exact target origin and data disclosure before confirmation. A failed remote action
-   does not change selection, clear local actions, or end the session.
+5. Display the exact target origin and disclose before confirmation that the prompt and received
+   response are retained locally until the session is deleted. A failed remote action does not
+   change selection, clear local actions, or end the session.
 6. Test public, Bearer, and API-key send dispatch; no target; disconnected target; empty selection;
    over-warning-size prompt; storage error; auth error; network error; and duplicate-click guard.
 
@@ -338,22 +348,30 @@ mise exec -- deno task ci
 
 - Modify: `src/sidepanel/repository.ts`
 - Modify: `src/sidepanel/repository.test.ts`
+- Modify: `src/shared/store.ts`
+- Modify: `src/shared/store.test.ts`
 - Create: `src/sidepanel/history-model.ts`
 - Create: `src/sidepanel/history-model.test.ts`
 
-**Produces:** `listSessionHistory`, `loadHistoricalSession`, `listSessionRuns`, `loadRunDetail`, and
-a derived session/run tree sorted by session update time and run creation time.
+**Produces:** Cursor-paged `listSessionHistory` and `listSessionRuns`, `loadHistoricalSession`,
+`loadRunDetail`, `deleteHistoricalSession`, and a derived session/run tree sorted by stable session
+update time and run creation time.
 
 **Implementation:**
 
-1. Extend the repository to list every validated session rather than only the displayed or active
-   one. Keep the existing `load()` behavior for current-session startup.
+1. Extend the shared store with a bounded cursor API that returns valid records and typed corrupt
+   entries rather than relying on the existing `listSessions()` path, which silently skips invalid
+   records. Keep the existing `load()` behavior for current-session startup.
 2. Join sessions and runs in the model, not IndexedDB. Preserve orphaned run summaries with their
    stored target snapshot if a session record is corrupt or manually removed.
 3. Never auto-delete or truncate history. Surface validation and quota errors per affected entry so
-   one corrupt record does not hide valid sessions.
-4. Test active and completed sessions, empty history, multiple runs, removed agent, missing session,
-   corrupt session, corrupt run, concurrent save during list, and stable ordering.
+   one corrupt record does not hide valid sessions. Load bounded summary pages and lazy run events;
+   never load all retained sessions, runs, or events during startup.
+4. Individual deletion and the existing Clear all sessions action abort active work and
+   transactionally cascade through matching runs and events before refreshing the history cursor.
+5. Test active and completed sessions, empty and multi-page history, cursor ties, multiple runs,
+   removed agent, missing session, corrupt session, corrupt run, concurrent save during list,
+   deletion during an active stream, rollback, and stable ordering.
 
 **Verification:**
 
@@ -382,19 +400,23 @@ mise exec -- deno task ci
 
 **Implementation:**
 
-1. Render a history view with every retained session, note count, capture status, and nested A2A run
-   summaries. Completed local sessions remain openable and exportable.
+1. Render a history view with a bounded page of retained sessions, note count, capture status, and
+   nested A2A run summaries. Add Load more without replacing the visible page. Completed local
+   sessions remain openable and exportable.
 2. Render run detail from the immutable request and ordered event ledger, including target snapshot,
    remote identifiers, two-axis status, message and text-artifact responses, other artifact
    metadata, and safe errors.
 3. Add explicit Refresh for nonterminal known tasks. Do not reconnect every historical run with an
-   unbounded fan-out; serially refresh nonterminal summaries while the history view is visible and
-   stream only the open run.
+   unbounded fan-out; serially refresh only nonterminal summaries in the visible page while the
+   history view is visible and stream only the open run.
 4. Keep remote values in mono type where technical and use text-only rendering. Preserve focus when
    moving among notes, history, run detail, and back navigation.
-5. Cover empty, large, active, completed, failed, interrupted, unknown-outcome, removed-agent,
-   missing-session, corrupt-entry, and quota-warning states in both themes.
-6. Keep history styles in the history lane's own stylesheet. Import it from `HistoryView` so this
+5. Add Delete session with confirmation that names the local notes, prompts, responses, runs, and
+   events removed. Preserve agent profiles and credentials because they are independently managed.
+6. Cover empty, paged, large, active, completed, failed, interrupted, unknown-outcome,
+   removed-agent, missing-session, corrupt-entry, delete-in-progress, rollback, and quota-warning
+   states in both themes.
+7. Keep history styles in the history lane's own stylesheet. Import it from `HistoryView` so this
    parallel stack never edits the delivery lane's shared side-panel stylesheet.
 
 **Verification:**
@@ -435,8 +457,9 @@ land; it is not assigned concurrently with a lane.
 3. Drive the complete path: add agent, grant card and interface origins, connect Bearer or API key,
    capture notes, choose target in the toolbar, review selection, send, stream terminal response,
    reopen history, and inspect the exact request and result.
-4. Add sad paths for denied permission, revoked permission, `401`, `403`, disconnect after task id,
-   disconnect before task id, panel close/reopen, invalid event, and persistence failure.
+4. Add sad paths for denied permission, revoked permission, `401`, `403`, stale security revision,
+   disconnect after task id, disconnect before task id, panel close/reopen, invalid event,
+   persistence failure, session deletion during a stream, and Clear all sessions with A2A history.
 5. Update visual-manifest expectations for Agents options, split toolbar, remote plan, history, and
    run detail. Phase 4 captures final baselines after enterprise auth UI settles.
 
@@ -462,6 +485,7 @@ Phase 3 begins only when Chrome's complete first slice and Firefox's representat
 - Toolbar target choice opens review but performs no remote request.
 - Remote send uses the exact local Markdown projection and leaves all local actions intact.
 - Ordered streamed or polled task events and response text survive panel close and reopen.
-- History exposes every retained session and run without automatic deletion.
+- Cursor-paged history exposes every retained session and run without automatic deletion; explicit
+  session deletion and Clear all sessions cascade through prompts, responses, runs, and events.
 - Unknown initial-delivery outcomes, permission revocation, auth failure, and storage failure are
   explicit and do not silently retry or erase local data.
