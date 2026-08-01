@@ -4,7 +4,8 @@
 # section here — deno.json is the single task registry, so the two cannot diverge.
 #
 # Versions are pinned exactly, per the resolved-versions table in
-# AGENTS.md and the build specification. No `latest`, no ranges, no floating tags.
+# AGENTS.md and docs/specs/build-release-and-verification.md. No `latest`, no ranges, no
+# floating tags.
 
 [tools]
 deno = "2.9.4"
