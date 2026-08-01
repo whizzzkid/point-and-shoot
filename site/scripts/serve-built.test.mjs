@@ -22,10 +22,10 @@ async function closeFixture({ root, server }) {
   await rm(root, { force: true, recursive: true });
 }
 
-test("built-site server serves files under the repository base path", async () => {
+test("built-site server serves files from the custom-domain root", async () => {
   const builtSite = await fixture();
   try {
-    const response = await fetch(`${builtSite.origin}/point-and-shoot/`);
+    const response = await fetch(`${builtSite.origin}/`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /Point & Shoot/);
   } finally {
@@ -33,7 +33,7 @@ test("built-site server serves files under the repository base path", async () =
   }
 });
 
-test("built-site server rejects paths outside the repository base", async () => {
+test("built-site server returns not found for missing paths", async () => {
   const builtSite = await fixture();
   try {
     const response = await fetch(`${builtSite.origin}/outside/`);
@@ -46,7 +46,7 @@ test("built-site server rejects paths outside the repository base", async () => 
 test("built-site server rejects malformed percent-encoding without crashing", async () => {
   const builtSite = await fixture();
   try {
-    const response = await fetch(`${builtSite.origin}/point-and-shoot/%E0%A4%A`);
+    const response = await fetch(`${builtSite.origin}/%E0%A4%A`);
     assert.equal(response.status, 404);
   } finally {
     await closeFixture(builtSite);

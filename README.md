@@ -20,9 +20,9 @@
 </p>
 
 <p align="center">
-  <a href="https://whizzzkid.github.io/point-and-shoot/">Website</a>
+  <a href="https://pointandshoot.app/">Website</a>
   ·
-  <a href="https://whizzzkid.github.io/point-and-shoot/docs/">Documentation</a>
+  <a href="https://pointandshoot.app/docs/">Documentation</a>
   ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -150,7 +150,6 @@ npm run build
 
 The [Playwright companion guide](docs/tutorials/playwright-companion.md) explains how to load the
 unpacked extension beside a local application. Product documentation is also available on the
-[published documentation site](https://whizzzkid.github.io/point-and-shoot/docs/). Architecture,
-behavior specs, and the delivery plan live in the [repository documentation index](docs/README.md).
-Maintainers can follow the [release guide](docs/tutorials/releasing.md) to test and publish the
-browser packages.
+[published documentation site](https://pointandshoot.app/docs/). Architecture, behavior specs, and
+the delivery plan live in the [repository documentation index](docs/README.md). Maintainers can
+follow the [release guide](docs/tutorials/releasing.md) to test and publish the browser packages.

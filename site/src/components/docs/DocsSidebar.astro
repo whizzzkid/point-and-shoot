@@ -4,12 +4,11 @@ import type { CollectionEntry } from "astro:content";
 import { docsTitle, docsUrl } from "../../lib/docs";
 
 interface Props {
-  base: string;
   currentId: string;
   entries: CollectionEntry<"docs">[];
 }
 
-const { base, currentId, entries } = Astro.props;
+const { currentId, entries } = Astro.props;
 const groups = [
   {
     label: "Overview",
@@ -37,7 +36,7 @@ const groups = [
               <li>
                 <a
                   aria-current={entry.id === currentId ? "page" : undefined}
-                  href={docsUrl(entry.id, base)}
+                  href={docsUrl(entry.id)}
                 >
                   {docsTitle(entry.body, entry.id)}
                 </a>

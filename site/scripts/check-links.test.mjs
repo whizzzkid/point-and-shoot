@@ -10,15 +10,20 @@ async function fixture() {
   const root = await mkdtemp(resolve(tmpdir(), "point-and-shoot-site-"));
   const distRoot = resolve(root, "dist");
   const docsRoot = resolve(root, "docs");
+  const siteUrl = "https://pages.example.test";
   await mkdir(resolve(distRoot, "docs"), { recursive: true });
   await mkdir(docsRoot, { recursive: true });
-  await writeFile(resolve(distRoot, "index.html"), '<h1 id="home">Home</h1>');
+  await writeFile(
+    resolve(distRoot, "index.html"),
+    '<link rel="canonical" href="https://pages.example.test/"><h1 id="home">Home</h1>',
+  );
   await writeFile(
     resolve(distRoot, "docs/index.html"),
-    '<h1 id="docs">Docs</h1><a href="/point-and-shoot/#home">Home</a>',
+    '<link rel="canonical" href="https://pages.example.test/docs/">' +
+      '<h1 id="docs">Docs</h1><a href="/#home">Home</a>',
   );
   await writeFile(resolve(docsRoot, "README.md"), "# Docs\n");
-  return { distRoot, docsRoot, root };
+  return { distRoot, docsRoot, root, siteUrl };
 }
 
 test("site integrity accepts a complete published set", async () => {
@@ -35,11 +40,47 @@ test("site integrity accepts a complete published set", async () => {
 test("site integrity rejects a broken internal anchor", async () => {
   const paths = await fixture();
   try {
-    await writeFile(
-      resolve(paths.distRoot, "docs/index.html"),
-      '<a href="/point-and-shoot/#missing">Broken</a>',
-    );
+    await writeFile(resolve(paths.distRoot, "docs/index.html"), '<a href="/#missing">Broken</a>');
     await assert.rejects(checkSite(paths), /missing anchor #missing/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity rejects the obsolete repository prefix on assets", async () => {
+  const paths = await fixture();
+  try {
+    await mkdir(resolve(paths.distRoot, "brand"));
+    await writeFile(resolve(paths.distRoot, "brand/icon.svg"), "<svg></svg>");
+    await writeFile(
+      resolve(paths.distRoot, "index.html"),
+      '<img src="/point-and-shoot/brand/icon.svg" alt="">',
+    );
+    await writeFile(resolve(paths.distRoot, "docs/index.html"), "<h1>Docs</h1>");
+    await assert.rejects(checkSite(paths), /missing target \/point-and-shoot\/brand\/icon\.svg/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity rejects a canonical URL outside the configured Pages origin", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "index.html"),
+      '<link rel="canonical" href="https://stale.example.test/"><h1 id="home">Home</h1>',
+    );
+    await assert.rejects(checkSite(paths), /unexpected canonical https:\/\/stale\.example\.test\//);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity requires exactly one canonical URL per page", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(resolve(paths.distRoot, "index.html"), '<h1 id="home">Home</h1>');
+    await assert.rejects(checkSite(paths), /expected one canonical link, found 0/);
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
@@ -103,7 +144,8 @@ test("site integrity accepts contact links", async () => {
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
-      '<a href="mailto:hello@example.test">Email</a><a href="tel:+15555550123">Call</a>',
+      '<link rel="canonical" href="https://pages.example.test/docs/">' +
+        '<a href="mailto:hello@example.test">Email</a><a href="tel:+15555550123">Call</a>',
     );
     await checkSite(paths);
   } finally {
@@ -116,7 +158,7 @@ test("site integrity reports a malformed anchor encoding", async () => {
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
-      '<a href="/point-and-shoot/#%E0%A4%A">Bad anchor</a>',
+      '<a href="/#%E0%A4%A">Bad anchor</a>',
     );
     await assert.rejects(checkSite(paths), /malformed anchor #%E0%A4%A/);
   } finally {
