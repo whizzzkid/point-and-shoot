@@ -604,7 +604,7 @@ Deno.test("options persist every setting and update a mounted overlay theme", as
     await options.getByLabel("Maximum screenshot dimension").selectOption("2048");
     await options.getByText("Saved.").waitFor();
     await options.getByRole("tab", { name: "Export & privacy" }).click();
-    await options.getByLabel("Export warning threshold").selectOption("8000000");
+    assertEquals(await options.getByLabel("Export warning threshold").count(), 0);
     await options.getByText("Saved.").waitFor();
     await options.getByRole("switch", { name: "Strip sensitive query strings" }).click();
     await options.getByText("Saved.").waitFor();
@@ -625,7 +625,7 @@ Deno.test("options persist every setting and update a mounted overlay theme", as
     assertEquals(await options.getByLabel("Screenshot quality").inputValue(), "0.85");
     assertEquals(await options.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
     await options.getByRole("tab", { name: "Export & privacy" }).click();
-    assertEquals(await options.getByLabel("Export warning threshold").inputValue(), "8000000");
+    assertEquals(await options.getByLabel("Export warning threshold").count(), 0);
     assertEquals(
       await options.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
         "aria-checked",

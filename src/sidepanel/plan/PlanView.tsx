@@ -20,7 +20,6 @@ export interface PlanViewProps {
   readonly actions: PlanViewActions;
   readonly onBack: () => void;
   readonly session: Session;
-  readonly sizeBudgetBytes: number;
 }
 
 type ActionState =
@@ -32,13 +31,6 @@ type ActionState =
   | { readonly status: "success"; readonly message: string }
   | { readonly status: "error"; readonly message: string };
 
-function formatBytes(bytes: number): string {
-  if (bytes === 1) return "1 byte";
-  if (bytes < 1_000) return `${bytes} bytes`;
-  if (bytes < 1_000_000) return `${Math.ceil(bytes / 1_000)} kB`;
-  return `${(bytes / 1_000_000).toFixed(2)} MB`;
-}
-
 function selectionFor(session: Session, selected: ReadonlySet<string>): ReadonlySet<string> {
   return new Set(session.notes.filter((note) => selected.has(note.id)).map((note) => note.id));
 }
@@ -46,11 +38,11 @@ function selectionFor(session: Session, selected: ReadonlySet<string>): Readonly
 /**
  * Renders the generated plan preview, note selection, privacy disclosure, and export actions.
  *
- * @param props Session, exact size budget, delivery actions, and back navigation.
+ * @param props Session, delivery actions, and back navigation.
  * @returns The complete plan workspace.
  */
 export function PlanView(
-  { actions, onBack, session, sizeBudgetBytes }: PlanViewProps,
+  { actions, onBack, session }: PlanViewProps,
 ): JSX.Element {
   const viewRef = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState<ReadonlySet<string>>(
@@ -73,9 +65,9 @@ export function PlanView(
   }, [includedNoteIds, session]);
   const archiveProjection = useMemo(() => {
     try {
+      createExportArchive(session, { includedNoteIds });
       return {
         status: "ready" as const,
-        bytes: createExportArchive(session, { includedNoteIds }).byteLength,
       };
     } catch (cause) {
       return {
@@ -85,9 +77,6 @@ export function PlanView(
     }
   }, [includedNoteIds, session]);
   const selectedCount = includedNoteIds.size;
-  const archiveBytes = archiveProjection.status === "ready" ? archiveProjection.bytes : 0;
-  const isOverBudget = archiveProjection.status === "ready" &&
-    archiveBytes > sizeBudgetBytes;
   const isBusy = actionState.status === "busy";
   const promptIsBlocked = selectedCount === 0 || markdownProjection.status === "error" || isBusy;
   const bundleIsBlocked = selectedCount === 0 || archiveProjection.status === "error" || isBusy;
@@ -260,6 +249,9 @@ export function PlanView(
           {actionState.status === "error"
             ? <p className="ps-panel-error" role="alert">{actionState.message}</p>
             : null}
+          {archiveProjection.status === "error"
+            ? <p className="ps-panel-error" role="alert">{archiveProjection.message}</p>
+            : null}
         </section>
       </div>
 
@@ -277,31 +269,6 @@ export function PlanView(
               Sensitive query parameters are stripped by default. Change each note’s export setting
               from the notes view.
             </p>
-          </div>
-        </div>
-
-        <div className="ps-plan-actions">
-          <div
-            className="ps-export-budget"
-            data-export-budget
-            data-over-budget={isOverBudget}
-          >
-            <div>
-              <span>{formatBytes(archiveBytes)} of {formatBytes(sizeBudgetBytes)}</span>
-              <span>ZIP bundle</span>
-            </div>
-            <progress max={sizeBudgetBytes} value={Math.min(archiveBytes, sizeBudgetBytes)} />
-            {isOverBudget
-              ? (
-                <p role="alert">
-                  The selected bundle is above the {formatBytes(sizeBudgetBytes)}{" "}
-                  warning threshold. Copy and download remain available.
-                </p>
-              )
-              : null}
-            {archiveProjection.status === "error"
-              ? <p role="alert">{archiveProjection.message}</p>
-              : null}
           </div>
         </div>
       </footer>

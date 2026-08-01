@@ -82,7 +82,7 @@ query string is included in an export.
 
 1. Select **Compile plan** in the side panel.
 2. Include or exclude individual notes and read the generated Markdown preview.
-3. Review the selected ZIP size. Crossing the configured warning threshold does not block export.
+3. Review the selected evidence and generated prompt.
 4. Read the outbound-data disclosure beside the export actions.
 5. Select one of the prompt actions:
    - **Copy prompt** puts the image-free Markdown preview on the clipboard.
