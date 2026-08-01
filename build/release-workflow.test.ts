@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
 import { manifestBase } from "./manifest.ts";
 
@@ -32,7 +32,7 @@ Deno.test("Release Please manifest updates every packaged version source", async
   );
 });
 
-Deno.test("Release Please changelog output is outside repository formatting", async () => {
+Deno.test("Release Please changelog formatting exclusion stays narrowly scoped", async () => {
   const temporaryRoot = await Deno.makeTempDir();
   try {
     await Deno.writeTextFile(
@@ -56,6 +56,19 @@ Deno.test("Release Please changelog output is outside repository formatting", as
       0,
       new TextDecoder().decode(output.stderr) || new TextDecoder().decode(output.stdout),
     );
+
+    await Deno.writeTextFile(`${temporaryRoot}/README.md`, "# Other markdown\n\n* unformatted\n");
+    const controlOutput = await new Deno.Command(Deno.execPath(), {
+      args: ["task", "fmt:check"],
+      cwd: temporaryRoot,
+      stderr: "piped",
+      stdout: "piped",
+    }).output();
+    const controlDiagnostics = new TextDecoder().decode(controlOutput.stderr) +
+      new TextDecoder().decode(controlOutput.stdout);
+
+    assert(controlOutput.code !== 0, "formatter unexpectedly ignored unrelated Markdown");
+    assertStringIncludes(controlDiagnostics, "README.md");
   } finally {
     await Deno.remove(temporaryRoot, { recursive: true });
   }
