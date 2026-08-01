@@ -354,8 +354,9 @@ mise exec -- deno task ci
 
 - Modify: `docs/tutorials/troubleshooting.md`
 - Create: `docs/tutorials/a2a-enterprise-setup.md`
-- Modify: `docs/adr/0019-optional-host-permissions-for-a2a.md`
 - Modify: `docs/specs/a2a-client.md`
+- Create if the accepted decision changes: the next numbered successor ADR
+- Modify if a successor ADR is created: `docs/adr/README.md`
 
 **Implementation:**
 
@@ -370,8 +371,9 @@ mise exec -- deno task ci
 4. Publish the data inventory: public cards and run history on disk; credentials, extended cards,
    codes, and verifiers in session-only storage; exact Markdown sent only after review; session
    deletion and Clear all sessions cascade through stored prompts, responses, runs, and events.
-5. Update the ADR with final measured browser behavior without changing the accepted decision's
-   historical context.
+5. Keep accepted ADR-0019 immutable. Record operational observations in the spec and tutorial. If
+   measured browser behavior changes the accepted decision, create the next numbered ADR, mark it as
+   superseding ADR-0019, and update the ADR index.
 
 **Verification:**
 
@@ -395,8 +397,9 @@ mise exec -- deno task ci
 - Modify: `.github/workflows/ci.yml`
 - Modify: `AGENTS.md`
 - Modify: `docs/README.md`
-- Modify: `docs/adr/0019-optional-host-permissions-for-a2a.md`
 - Modify: `docs/specs/a2a-client.md`
+- Create if the accepted architecture changes: the next numbered successor ADR
+- Modify if a successor ADR is created: `docs/adr/README.md`
 - Modify or delete when empty: `docs/plans/README.md`
 - Delete: `docs/plans/A2A-client/README.md`
 - Delete: `docs/plans/A2A-client/arch-review.md`
@@ -418,14 +421,16 @@ mise exec -- deno task ci
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
    or docs; do not close the plan with accepted high-severity debt.
 5. Move the supported and constrained authentication paths, known browser limitations, and final
-   verification evidence into `docs/specs/a2a-client.md`. Record any lasting change to the reviewed
-   architecture in ADR-0019, and leave PR and commit delivery history on the final PR or tracking
-   issue. Mark phases complete only after the combined results pass.
+   verification evidence into `docs/specs/a2a-client.md`. Keep accepted ADR-0019 immutable; if the
+   delivered architecture changes its decision, create the next numbered successor ADR and update
+   the ADR index. Leave PR and commit delivery history on the final PR or tracking issue. Mark
+   phases complete only after the combined results pass.
 6. Retire the completed plan only after those durable artifacts are current: delete every file under
    `docs/plans/A2A-client/`, then remove its index row and provisional decisions from
    `docs/plans/README.md`. If no other active plans remain, remove the empty plan index and its map
-   entry, and change the `AGENTS.md` active-plan reference to a non-linking path so no dead link
-   remains.
+   entry. In `AGENTS.md`, change the introductory active-plan reference to a non-linking path,
+   change the docs-layout count from five folders to four, remove the `docs/plans/` table row, and
+   adjust the lifecycle paragraph so no dead link or known-stale folder guidance remains.
 
 **Verification:**
 
