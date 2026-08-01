@@ -90,9 +90,10 @@ Firefox.
 
 1. Open a normal web page and select the Point & Shoot toolbar icon. The side panel opens, a session
    starts, and the capture overlay appears.
-2. Select an element or drag around a visible region. Point & Shoot saves the screenshot and page
-   evidence as a note.
-3. In the side panel, select **Edit**, describe what should change, and save the note.
+2. Select an element or drag around a visible region. The note composer opens before anything is
+   stored.
+3. Describe what should change and select **Save note**, or select **Save without note** to keep an
+   empty body. **Cancel** discards the pending capture.
 4. Repeat across as many pages as needed.
 5. Select **Compile plan**, review the included notes, then select **Download for agent**.
 6. Select the browser toolbar icon again to end the session.
@@ -150,6 +151,6 @@ npm run build
 
 The [Playwright companion guide](docs/tutorials/playwright-companion.md) explains how to load the
 unpacked extension beside a local application. Product documentation is also available on the
-[published documentation site](https://pointandshoot.app/docs/). Architecture, behavior specs, and
-the delivery plan live in the [repository documentation index](docs/README.md). Maintainers can
-follow the [release guide](docs/tutorials/releasing.md) to test and publish the browser packages.
+[published documentation site](https://pointandshoot.app/docs/). Architecture decisions and behavior
+specifications live in the [repository documentation index](docs/README.md). Maintainers can follow
+the [release guide](docs/tutorials/releasing.md) to test and publish the browser packages.

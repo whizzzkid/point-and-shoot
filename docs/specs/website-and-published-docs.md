@@ -12,7 +12,7 @@ labels:
   - documentation
 related:
   - title: UI framework decision
-    path-or-url: ../adr/0008-preact-for-extension-ui-astro-for-marketing.md
+    path-or-url: ../adr/0018-astro-for-marketing-and-documentation.md
   - title: Generated design tokens
     path-or-url: ../adr/0011-generated-design-tokens-with-drift-check.md
   - title: Documentation index

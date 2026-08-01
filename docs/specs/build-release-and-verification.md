@@ -45,15 +45,16 @@ only task registry. Node packages used by extension tooling arrive through exact
 only `site/` has a `package.json` and lockfile.
 
 The pre-commit hook runs staged formatting and lint checks. The pre-push hook and the CI `checks`
-job both run `mise exec -- deno task ci`, which executes formatting, linting, type checking, and
-unit tests in sequence.
+job both run `deno task ci` after activating the pinned mise environment. The task executes
+formatting, linting, type checking, and unit tests in sequence.
 
 ### Build outputs
 
 `deno task build` wipes and recreates `dist/chrome/` and `dist/firefox/`. It bundles background and
 content entry points as IIFEs, extension pages as ESM, copies generated token CSS, vendored WOFF2
-fonts, the icon sprite, HTML shells, and generated manifests, and rejects unexpected absolute HTTP
-or HTTPS URLs in shipped text assets.
+fonts, the icon sprite, HTML shells, and generated manifests. The bundling stage rejects unexpected
+absolute HTTP or HTTPS URLs in generated JavaScript; `release:validate` provides the full-tree
+remote-URL guarantee for distributable archives.
 
 `deno task build:release` additionally minifies, omits sourcemaps, and creates `dist/chrome.zip` and
 `dist/firefox.zip`. Tests use temporary output directories and must not delete a developer's
@@ -88,8 +89,9 @@ The packaged version uses UTC CalVer `YYYY.MMDD.N`. `0.1.0` is the one permitted
 the first release calculation replaces it with CalVer. Multiple releases on one UTC date increment
 `N`; a later UTC date resets it to `0`.
 
-`.release-please-manifest.json` and `version.txt` must agree. Both generated browser manifests
-derive their version from `version.txt`, and a final tag must equal `v<manifest-version>`.
+`.release-please-manifest.json`, `version.txt`, and `manifestBase.version` in `build/manifest.ts`
+must agree. Release Please updates all three in lockstep, both browser manifests derive from
+`manifestBase.version`, and a final tag must equal `v<manifest-version>`.
 `deno task release:validate` checks both archives for:
 
 - a non-empty archive with safe paths and a root `manifest.json`;

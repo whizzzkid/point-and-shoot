@@ -67,6 +67,9 @@ theme.
 
 The picker supports pointer selection, drag-box selection, and keyboard traversal. Escape removes
 the injected picker and composer UI while leaving the active session and its stored notes intact.
+Selecting a target opens the note composer before anything is persisted. `Save note` captures the
+selection with the entered text, `Save without note` captures it with an empty body, and `Cancel`
+discards the pending capture without changing stored notes.
 
 `src/shared/selectors.ts` emits identity evidence in this trust order:
 
@@ -74,9 +77,10 @@ the injected picker and composer UI while leaving the active session and its sto
 2. ARIA role and accessible name; and
 3. structural CSS and XPath segment arrays.
 
-CSS and XPath paths round-trip through open shadow roots and same-origin frames. Closed-shadow
-interiors, foreign documents, and cross-origin frames emit a discriminated unreachable bundle
-instead of a plausible but invalid selector.
+CSS and XPath paths round-trip through open shadow roots. Elements inside same-origin or
+cross-origin frames, closed-shadow interiors, and other foreign documents emit a discriminated
+unreachable bundle instead of a plausible but invalid selector. The picker can enter a same-origin
+frame to identify a target, but the current selector format cannot encode the frame boundary.
 
 `src/shared/style-digest.ts` records the selected element's box model, typography, resolved colors,
 parent, and bounded neighboring siblings. Colors normalize to hex and numeric box measurements use
@@ -115,13 +119,13 @@ data.
 
 ### UI surfaces
 
-| Surface          | Current contract                                                                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Injected toolbar | Offers selection, current note count, and navigation to the side panel. It has no independent end-session or download action.                               |
-| Notes side panel | Reviews the active or last displayed session, edits and reorders notes within page groups, previews targets on the matching page, and opens compile/export. |
-| Plan view        | Selects notes and produces the canonical JSON, image-free prompt, and ZIP bundle described in [Export bundle](export-bundle.md).                            |
-| Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                   |
-| Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                           |
+| Surface          | Current contract                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Injected toolbar | Offers selection, current note count, and navigation to the side panel. It repositions clear of the active selection, composer, viewport edges, and fixed page chrome. It has no independent end-session or download action. |
+| Notes side panel | Reviews the active or last displayed session, edits and reorders notes within page groups, previews targets on the matching page, and opens compile/export.                                                                  |
+| Plan view        | Selects notes and produces the canonical JSON, image-free prompt, and ZIP bundle described in [Export bundle](export-bundle.md).                                                                                             |
+| Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                                                                                    |
+| Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                                                                                            |
 
 All extension surfaces show the packaged manifest version. The component gallery is a development
 surface and does not ship as an extension page.
@@ -144,6 +148,8 @@ sequenceDiagram
     Content->>Content: Build selectors and style evidence
     Content->>Background: Request clean region screenshot
     Background-->>Content: WebP capture or typed error
+    Content-->>User: Open note composer
+    User->>Content: Save note or save without note
     Content->>Background: Append validated note
     Background->>Store: Serialize and persist session
     Background-->>Panel: Publish revision

@@ -1,6 +1,6 @@
 # ADR-0008 — Preact for the extension UI; Astro only for the marketing site
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0018
 - **Date:** 2026-07-24
 
 ## Context
@@ -16,9 +16,9 @@ is around 45KB minified and gzipped for react + react-dom; Preact is around 4KB 
 API and JSX handling. At this surface area — a toolbar and an overlay — React's advantages
 (ecosystem depth, concurrent rendering, the larger hooks surface) buy nothing we need.
 
-Astro came up because it is the obvious choice for the marketing site and it would be tidy to use
-one framework for everything. It does not work for the extension, for reasons worth writing down so
-nobody re-litigates them:
+Astro came up because it is the obvious choice for the wave-5 marketing site and it would be tidy to
+use one framework for everything. It does not work for the extension, for reasons worth writing down
+so nobody re-litigates them:
 
 - It is Vite/Node-based, which conflicts with the Deno-first toolchain
   ([ADR-0004](0004-deno-first-toolchain-npm-specifiers.md)).
@@ -32,9 +32,8 @@ nobody re-litigates them:
 ## Decision
 
 Use Preact with JSX for all five extension surfaces: the injected toolbar overlay, the popup, the
-notes side panel, the plan view, and the options page. Use Astro for the marketing and docs site
-only, isolated in `site/` with its own Node toolchain, producing nothing that ships inside the
-extension.
+notes side panel, the plan view, and the options page. Use Astro for the wave-5 marketing site only,
+isolated in `site/` with its own Node toolchain, producing nothing that ships inside the extension.
 
 ## Consequences
 
