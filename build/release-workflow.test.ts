@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
 import { manifestBase } from "./manifest.ts";
 
@@ -30,6 +30,47 @@ Deno.test("Release Please manifest updates every packaged version source", async
     manifestSource,
     `version: "${manifestBase.version}", // x-release-please-version`,
   );
+});
+
+Deno.test("Release Please changelog formatting exclusion stays narrowly scoped", async () => {
+  const temporaryRoot = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      `${temporaryRoot}/deno.json`,
+      await Deno.readTextFile(new URL("deno.json", ROOT)),
+    );
+    await Deno.writeTextFile(
+      `${temporaryRoot}/CHANGELOG.md`,
+      "# Changelog\n\n* **fix:** generated release note ([abc1234](https://example.com/abc1234))\n",
+    );
+
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: ["task", "fmt:check"],
+      cwd: temporaryRoot,
+      stderr: "piped",
+      stdout: "piped",
+    }).output();
+
+    const failureDiagnostics = output.code === 0
+      ? undefined
+      : new TextDecoder().decode(output.stderr) || new TextDecoder().decode(output.stdout);
+    assertEquals(output.code, 0, failureDiagnostics);
+
+    await Deno.writeTextFile(`${temporaryRoot}/README.md`, "# Other markdown\n\n* unformatted\n");
+    const controlOutput = await new Deno.Command(Deno.execPath(), {
+      args: ["task", "fmt:check"],
+      cwd: temporaryRoot,
+      stderr: "piped",
+      stdout: "piped",
+    }).output();
+    const controlDiagnostics = new TextDecoder().decode(controlOutput.stderr) +
+      new TextDecoder().decode(controlOutput.stdout);
+
+    assert(controlOutput.code !== 0, "formatter unexpectedly ignored unrelated Markdown");
+    assertStringIncludes(controlDiagnostics, "README.md");
+  } finally {
+    await Deno.remove(temporaryRoot, { recursive: true });
+  }
 });
 
 Deno.test("release workflow builds exact preview and release SHAs", async () => {
