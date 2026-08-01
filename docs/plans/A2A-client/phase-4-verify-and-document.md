@@ -356,6 +356,7 @@ mise exec -- deno task ci
 - Create: `docs/tutorials/a2a-enterprise-setup.md`
 - Modify: `docs/specs/a2a-client.md`
 - Create if the accepted decision changes: the next numbered successor ADR
+- Modify if a successor ADR is created: ADR-0019's status line only
 - Modify if a successor ADR is created: `docs/adr/README.md`
 
 **Implementation:**
@@ -371,9 +372,10 @@ mise exec -- deno task ci
 4. Publish the data inventory: public cards and run history on disk; credentials, extended cards,
    codes, and verifiers in session-only storage; exact Markdown sent only after review; session
    deletion and Clear all sessions cascade through stored prompts, responses, runs, and events.
-5. Keep accepted ADR-0019 immutable. Record operational observations in the spec and tutorial. If
-   measured browser behavior changes the accepted decision, create the next numbered ADR, mark it as
-   superseding ADR-0019, and update the ADR index.
+5. Keep accepted ADR-0019 immutable except for the status-only update the ADR policy permits. Record
+   operational observations in the spec and tutorial. If measured browser behavior changes the
+   accepted decision, create the next numbered ADR, mark it as superseding ADR-0019, change only
+   ADR-0019's status to `Superseded by ADR-NNNN`, and update the ADR index.
 
 **Verification:**
 
@@ -399,6 +401,7 @@ mise exec -- deno task ci
 - Modify: `docs/README.md`
 - Modify: `docs/specs/a2a-client.md`
 - Create if the accepted architecture changes: the next numbered successor ADR
+- Modify if a successor ADR is created: the current governing A2A ADR's status line only
 - Modify if a successor ADR is created: `docs/adr/README.md`
 - Modify or delete when empty: `docs/plans/README.md`
 - Delete: `docs/plans/A2A-client/README.md`
@@ -414,17 +417,18 @@ mise exec -- deno task ci
 1. Run every project and A2A gate against the combined head. Add only stable, deterministic A2A
    tasks to CI and keep expensive browser jobs separated for actionable failure reporting.
 2. Audit built Chrome and Firefox manifests for required permissions, optional host eligibility, and
-   optional API declarations. Verify Firefox's minimum is 115 and compare both manifests with
-   ADR-0019 and the published privacy guidance.
+   optional API declarations. Verify Firefox's minimum is 115 and compare both manifests with the
+   current governing A2A ADR named by `docs/adr/README.md` and the published privacy guidance.
 3. Audit bundles for Node-only imports, gRPC, remote code, secrets, fixture credentials, and an
    unpinned SDK dependency.
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
    or docs; do not close the plan with accepted high-severity debt.
 5. Move the supported and constrained authentication paths, known browser limitations, and final
-   verification evidence into `docs/specs/a2a-client.md`. Keep accepted ADR-0019 immutable; if the
-   delivered architecture changes its decision, create the next numbered successor ADR and update
-   the ADR index. Leave PR and commit delivery history on the final PR or tracking issue. Mark
-   phases complete only after the combined results pass.
+   verification evidence into `docs/specs/a2a-client.md`. Keep the current governing A2A ADR
+   immutable except for a permitted status-only update. If the delivered architecture changes its
+   decision, create the next numbered successor ADR, change only the predecessor's status to
+   `Superseded by ADR-NNNN`, and update the ADR index. Leave PR and commit delivery history on the
+   final PR or tracking issue. Mark phases complete only after the combined results pass.
 6. Retire the completed plan only after those durable artifacts are current: delete every file under
    `docs/plans/A2A-client/`, then remove its index row and provisional decisions from
    `docs/plans/README.md`. If no other active plans remain, remove the empty plan index and its map
