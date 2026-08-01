@@ -3,7 +3,6 @@ import { chromium } from "playwright";
 
 import { startBuiltSite } from "./serve-built.mjs";
 
-const siteBase = "";
 const surfaces = [
   { name: "marketing", path: "/" },
   { name: "documentation", path: "/docs/" },
@@ -31,7 +30,7 @@ try {
             consoleErrors.push(message.text());
           }
         });
-        await page.goto(`${origin}${siteBase}${surface.path}`, { waitUntil: "networkidle" });
+        await page.goto(`${origin}${surface.path}`, { waitUntil: "networkidle" });
         if (probeFailure) {
           await page.addStyleTag({
             content:

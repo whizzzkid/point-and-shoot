@@ -5,7 +5,6 @@ import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const siteBase = "";
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -17,12 +16,9 @@ const contentTypes = new Map([
 
 async function responsePath(distRoot, requestUrl) {
   const url = new URL(requestUrl, "http://localhost");
-  if (url.pathname !== siteBase && !url.pathname.startsWith(`${siteBase}/`)) {
-    return null;
-  }
   let relativePath;
   try {
-    relativePath = decodeURIComponent(url.pathname.slice(siteBase.length)).replace(/^\/+/, "");
+    relativePath = decodeURIComponent(url.pathname).replace(/^\/+/, "");
   } catch (error) {
     if (error instanceof URIError) {
       return null;
@@ -90,5 +86,5 @@ export async function startBuiltSite({
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { origin } = await startBuiltSite();
-  console.log(`Listening at ${origin}${siteBase}/`);
+  console.log(`Listening at ${origin}/`);
 }

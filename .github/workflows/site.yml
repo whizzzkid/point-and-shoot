@@ -27,10 +27,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pages:
+    permissions:
+      pages: read
+    outputs:
+      site_url: ${{ steps.pages.outputs.base_url }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Read GitHub Pages metadata
+        id: pages
+        uses: actions/configure-pages@v5
+
   build:
+    needs: pages
     permissions:
       contents: read
       pages: read
+    env:
+      SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -48,9 +62,6 @@ jobs:
         run: npm run test
       - name: Build site
         run: npm run build
-      - name: Configure GitHub Pages
-        if: github.event_name == 'push'
-        uses: actions/configure-pages@v5
       - name: Upload GitHub Pages artifact
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v4
@@ -58,6 +69,9 @@ jobs:
           path: site/dist
 
   link-check:
+    needs: pages
+    env:
+      SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -73,6 +87,9 @@ jobs:
         run: npm run links
 
   accessibility:
+    needs: pages
+    env:
+      SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -90,6 +107,9 @@ jobs:
         run: npm run a11y
 
   lighthouse:
+    needs: pages
+    env:
+      SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
     defaults:
       run:

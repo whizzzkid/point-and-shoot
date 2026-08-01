@@ -11,9 +11,8 @@ interface Props {
 }
 
 const { currentId, entries, title } = Astro.props;
-const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/`;
 const canonicalPath = Astro.url.pathname;
-const docsIndexPath = `${base}docs/`;
+const docsIndexPath = "/docs/";
 ---
 
 <!doctype html>
@@ -22,15 +21,15 @@ const docsIndexPath = `${base}docs/`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={`${title} — Point & Shoot product documentation.`} />
-    <link rel="icon" href={`${base}brand/icon.svg`} type="image/svg+xml" />
-    <link rel="canonical" href={`https://pointandshoot.app${canonicalPath}`} />
+    <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={Astro.url.href} />
     <title>{title} — Point & Shoot docs</title>
   </head>
   <body>
     <a class="skip-link" href="#docs-content">Skip to content</a>
     <header class="docs-header">
-      <a class="docs-brand" href={base} aria-label="Point & Shoot home">
-        <img src={`${base}brand/icon.svg`} alt="" width="48" height="48" />
+      <a class="docs-brand" href="/" aria-label="Point & Shoot home">
+        <img src="/brand/icon.svg" alt="" width="48" height="48" />
         <span>Point & Shoot</span>
       </a>
       <nav aria-label="Site navigation">
@@ -41,7 +40,7 @@ const docsIndexPath = `${base}docs/`;
       </nav>
     </header>
     <div class="docs-shell">
-      <DocsSidebar base={base} currentId={currentId} entries={entries} />
+      <DocsSidebar currentId={currentId} entries={entries} />
       <main class="docs-content" id="docs-content">
         <slot />
         <footer>

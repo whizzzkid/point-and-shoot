@@ -2,7 +2,6 @@ import { dirname, extname, relative, resolve, sep } from "node:path";
 import { visit } from "unist-util-visit";
 
 const repositoryUrl = "https://github.com/whizzzkid/point-and-shoot";
-const siteBase = "";
 const publishedRoots = new Set(["README.md", "design.md", "specs", "tutorials"]);
 const excludedRoots = new Set(["adr", "plans"]);
 
@@ -14,7 +13,7 @@ function splitUrl(url) {
 function publishedRoute(relativePath) {
   const withoutExtension = relativePath.replace(/\.md$/, "");
   const route = withoutExtension.replace(/(^|\/)README$/, "$1").replace(/\/$/, "");
-  return `${siteBase}/docs/${route.length > 0 ? `${route}/` : ""}`;
+  return `/docs/${route.length > 0 ? `${route}/` : ""}`;
 }
 
 function rewriteRelativeUrl(url, sourcePath, docsRoot) {
@@ -52,7 +51,7 @@ function rewriteRelativeUrl(url, sourcePath, docsRoot) {
   }
 
   if (relativePath.startsWith("assets/")) {
-    return `${siteBase}/docs/${relativePath}${suffix}`;
+    return `/docs/${relativePath}${suffix}`;
   }
 
   return url;

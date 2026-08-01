@@ -8,7 +8,7 @@ import { remarkDocsLinks } from "./src/markdown/remark-docs-links.mjs";
 import { remarkStaticMermaid } from "./src/markdown/remark-static-mermaid.mjs";
 
 export default defineConfig({
-  site: "https://pointandshoot.app",
+  site: process.env.SITE_URL ?? "http://localhost:4321",
   base: "/",
   output: "static",
   publicDir: ".generated/public",

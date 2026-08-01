@@ -9,7 +9,6 @@ import { startBuiltSite } from "./serve-built.mjs";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const reportRoot = resolve(siteRoot, ".lighthouse");
-const siteBase = "";
 const surfaces = [
   { name: "marketing", path: "/" },
   { name: "documentation", path: "/docs/" },
@@ -32,7 +31,7 @@ try {
   const { origin, server } = await startBuiltSite({ port: 0 });
   try {
     for (const surface of surfaces) {
-      const result = await lighthouse(`${origin}${siteBase}${surface.path}`, {
+      const result = await lighthouse(`${origin}${surface.path}`, {
         logLevel: "error",
         onlyCategories: Object.keys(thresholds),
         output: "json",

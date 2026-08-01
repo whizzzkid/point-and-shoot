@@ -9,7 +9,6 @@ import { docsRoute, isPublishedDoc } from "../src/lib/docs-manifest.ts";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
-const siteBase = "";
 const localOrigin = "https://point-and-shoot.invalid";
 const execFileAsync = promisify(execFile);
 
@@ -98,20 +97,6 @@ function pageRoute(distRoot, filePath) {
   return `/${relativePath.replace(/index\.html$/, "")}`;
 }
 
-function deployedPath(route) {
-  return `${siteBase}${route === "/" ? "/" : route}`;
-}
-
-function localRoute(pathname) {
-  if (pathname === siteBase || pathname === `${siteBase}/`) {
-    return "/";
-  }
-  if (!pathname.startsWith(`${siteBase}/`)) {
-    return null;
-  }
-  return pathname.slice(siteBase.length);
-}
-
 /**
  * Parses the three-digit HTTP status emitted by curl.
  *
@@ -189,7 +174,7 @@ export async function checkSite({
   const problems = [];
   const externalUrls = new Set();
   for (const [route, page] of pages) {
-    const sourceUrl = `${localOrigin}${deployedPath(route)}`;
+    const sourceUrl = `${localOrigin}${route}`;
     for (const link of page.links) {
       let url;
       try {
@@ -209,11 +194,7 @@ export async function checkSite({
         continue;
       }
 
-      const targetRoute = localRoute(url.pathname);
-      if (targetRoute === null) {
-        problems.push(`${route}: link escapes the configured site base: ${link.url}`);
-        continue;
-      }
+      const targetRoute = url.pathname;
 
       const targetPage = pages.get(targetRoute);
       if (targetPage !== undefined) {
