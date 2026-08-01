@@ -130,26 +130,30 @@ Deno.test("validateReleaseArchive - reports a valid Chrome package and its size"
     async (archivePath) => {
       const report = await validateReleaseArchive({
         archivePath,
-        expectedVersion: "0.1.0",
+        expectedVersion: manifestBase.version,
         target: "chrome",
       });
       assertEquals(report.target, "chrome");
-      assertEquals(report.version, "0.1.0");
+      assertEquals(report.version, manifestBase.version);
       assert(report.sizeBytes > 0);
     },
   );
 });
 
 Deno.test("validateReleaseArchive - rejects manifest version drift", async () => {
+  const mismatchedVersion = manifestBase.version === "0.1.0" ? "2026.731.0" : "0.1.0";
   await withArchive(
     async () => {},
     async (archivePath) => {
-      await assertRejects(() =>
-        validateReleaseArchive({
-          archivePath,
-          expectedVersion: "2026.731.0",
-          target: "chrome",
-        })
+      await assertRejects(
+        () =>
+          validateReleaseArchive({
+            archivePath,
+            expectedVersion: mismatchedVersion,
+            target: "chrome",
+          }),
+        Error,
+        `does not match ${mismatchedVersion}`,
       );
     },
   );
@@ -160,16 +164,19 @@ Deno.test("validateReleaseArchive - rejects missing manifest keys", async () => 
     async (root) => {
       await Deno.writeTextFile(
         new URL("manifest.json", root),
-        `${JSON.stringify({ manifest_version: 3, version: "0.1.0" })}\n`,
+        `${JSON.stringify({ manifest_version: 3, version: manifestBase.version })}\n`,
       );
     },
     async (archivePath) => {
-      await assertRejects(() =>
-        validateReleaseArchive({
-          archivePath,
-          expectedVersion: "0.1.0",
-          target: "chrome",
-        })
+      await assertRejects(
+        () =>
+          validateReleaseArchive({
+            archivePath,
+            expectedVersion: manifestBase.version,
+            target: "chrome",
+          }),
+        Error,
+        "manifest is missing required key action",
       );
     },
   );
@@ -184,12 +191,15 @@ Deno.test("validateReleaseArchive - rejects remote URLs in an otherwise valid pa
       );
     },
     async (archivePath) => {
-      await assertRejects(() =>
-        validateReleaseArchive({
-          archivePath,
-          expectedVersion: "0.1.0",
-          target: "chrome",
-        })
+      await assertRejects(
+        () =>
+          validateReleaseArchive({
+            archivePath,
+            expectedVersion: manifestBase.version,
+            target: "chrome",
+          }),
+        Error,
+        "archive contains forbidden remote URL",
       );
     },
   );
