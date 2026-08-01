@@ -119,13 +119,13 @@ data.
 
 ### UI surfaces
 
-| Surface          | Current contract                                                                                                                                                                                                             |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Injected toolbar | Offers selection, current note count, and navigation to the side panel. It repositions clear of the active selection, composer, viewport edges, and fixed page chrome. It has no independent end-session or download action. |
-| Notes side panel | Reviews the active or last displayed session, edits and reorders notes within page groups, previews targets on the matching page, and opens compile/export.                                                                  |
-| Plan view        | Selects notes and produces the canonical JSON, image-free prompt, and ZIP bundle described in [Export bundle](export-bundle.md).                                                                                             |
-| Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                                                                                    |
-| Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                                                                                            |
+| Surface          | Current contract                                                                                                                                                                                                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Injected toolbar | Offers selection, current note count, and navigation to the side panel. It prefers positions clear of the active selection, composer, viewport edges, and sampled fixed page chrome, then uses the lowest-overlap fallback when none is clear. It has no independent end-session or download action. |
+| Notes side panel | Reviews the active or last displayed session, edits and reorders notes within page groups, previews targets on the matching page, and opens compile/export.                                                                                                                                          |
+| Plan view        | Selects notes and produces the canonical JSON, image-free prompt, and ZIP bundle described in [Export bundle](export-bundle.md).                                                                                                                                                                     |
+| Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                                                                                                                                                            |
+| Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                                                                                                                                                                    |
 
 All extension surfaces show the packaged manifest version. The component gallery is a development
 surface and does not ship as an extension page.

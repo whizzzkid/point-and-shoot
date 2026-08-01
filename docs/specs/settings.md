@@ -75,7 +75,7 @@ The extension cannot rebind shortcuts. `Manage browser shortcuts` opens:
 ## Clearing stored sessions
 
 `Clear all sessions` requires confirmation. Confirming clears the IndexedDB `sessions` store in one
-transaction and removes `activeSessionId`, `displayedSessionId`, and `sessionRevision` from
+transaction and removes `activeSessionId`, `displaySessionId`, and `sessionRevision` from
 `storage.local`. The settings record is retained.
 
 A load, save, shortcut-navigation, or clear failure remains on the options page as an alert. A
