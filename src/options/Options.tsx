@@ -3,13 +3,11 @@
 import type { ComponentChildren, JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type {
-  ExportSizeBudget,
   ExtensionSettings,
   ScreenshotMaxDimension,
   ScreenshotQuality,
 } from "../shared/settings.ts";
 import {
-  EXPORT_SIZE_BUDGET_OPTIONS,
   SCREENSHOT_MAX_DIMENSION_OPTIONS,
   SCREENSHOT_QUALITY_OPTIONS,
 } from "../shared/settings.ts";
@@ -60,22 +58,12 @@ function SettingRow({ children, help, label }: SettingRowProps): JSX.Element {
   );
 }
 
-function formatMegabytes(bytes: number): string {
-  return `${bytes / 1_000_000} MB`;
-}
-
 function qualityLabel(quality: number): string {
   return `${Math.round(quality * 100)}%`;
 }
 
 function selectedTheme(value: string): ThemeOverride {
   return value === "dark" || value === "light" ? value : "auto";
-}
-
-function selectedExportBudget(value: string): ExportSizeBudget {
-  const candidate = Number(value);
-  return EXPORT_SIZE_BUDGET_OPTIONS.find((option) => option === candidate) ??
-    EXPORT_SIZE_BUDGET_OPTIONS[0];
 }
 
 function selectedQuality(value: string): ScreenshotQuality {
@@ -298,25 +286,8 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                 <>
                   <div className="ps-options-section-heading">
                     <h2>Export & privacy</h2>
-                    <p>Set the bundle warning limit and the default treatment of sensitive URLs.</p>
+                    <p>Set the default treatment of sensitive URLs.</p>
                   </div>
-                  <SettingRow
-                    help="Exports above this measured agent-ingestion threshold remain available with a warning."
-                    label="Export warning threshold"
-                  >
-                    <Select
-                      onChange={(value) =>
-                        update({
-                          ...settings,
-                          exportSizeBudgetBytes: selectedExportBudget(value),
-                        })}
-                      options={EXPORT_SIZE_BUDGET_OPTIONS.map((bytes) => ({
-                        label: formatMegabytes(bytes),
-                        value: String(bytes),
-                      }))}
-                      value={String(settings.exportSizeBudgetBytes)}
-                    />
-                  </SettingRow>
                   <SettingRow
                     help="Default new notes to removing queries whose names look like credentials."
                     label="Strip sensitive query strings"

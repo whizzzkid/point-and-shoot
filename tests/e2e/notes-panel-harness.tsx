@@ -85,7 +85,6 @@ function fixtureScreenshot(index: number): string {
 function renderPanel(
   theme: "dark" | "light",
   selectedRepository: NotesRepository,
-  sizeBudgetBytes?: number,
 ): void {
   document.documentElement.dataset.theme = theme;
   render(
@@ -100,15 +99,14 @@ function renderPanel(
       notePreview={notePreview}
       repository={selectedRepository}
       version="0.1.0"
-      {...(sizeBudgetBytes === undefined ? {} : { sizeBudgetBytes })}
     />,
     mount,
   );
 }
 
 const harness = {
-  mount(theme: "dark" | "light", sizeBudgetBytes?: number) {
-    renderPanel(theme, repository, sizeBudgetBytes);
+  mount(theme: "dark" | "light") {
+    renderPanel(theme, repository);
   },
   mountWithLoadError(theme: "dark" | "light", message: string) {
     renderPanel(theme, {

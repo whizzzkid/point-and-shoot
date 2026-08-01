@@ -12,9 +12,11 @@ const OPTIONS_HARNESS = new URL("tests/e2e/options-harness.tsx", ROOT);
 
 interface OptionsHarness {
   readonly actionLog: { clears: number; shortcutSettings: number };
+  exportSizeBudgetBytes(): number;
   failNextSaves(count?: number): void;
   mount(theme: "dark" | "light"): void;
   reset(): void;
+  setExportSizeBudgetBytes(value: number): void;
   unmount(): void;
 }
 
@@ -52,6 +54,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
         pointShootOptionsTest: OptionsHarness;
       }).pointShootOptionsTest;
       harness.reset();
+      harness.setExportSizeBudgetBytes(8_000_000);
       harness.mount("dark");
     });
 
@@ -67,9 +70,18 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     await page.getByLabel("Screenshot quality").selectOption("0.85");
     await page.getByLabel("Maximum screenshot dimension").selectOption("2048");
     await page.getByRole("tab", { name: "Export & privacy" }).click();
-    await page.getByLabel("Export warning threshold").selectOption("8000000");
+    assertEquals(await page.getByLabel("Export warning threshold").count(), 0);
     await page.getByRole("switch", { name: "Strip sensitive query strings" }).click();
     await page.getByText("Saved.").waitFor();
+    assertEquals(
+      await page.evaluate(() => {
+        const harness = (globalThis as unknown as {
+          pointShootOptionsTest: OptionsHarness;
+        }).pointShootOptionsTest;
+        return harness.exportSizeBudgetBytes();
+      }),
+      8_000_000,
+    );
 
     await page.evaluate(() => {
       const harness = (globalThis as unknown as {
@@ -97,7 +109,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     assertEquals(await page.getByLabel("Screenshot quality").inputValue(), "0.85");
     assertEquals(await page.getByLabel("Maximum screenshot dimension").inputValue(), "2048");
     await page.getByRole("tab", { name: "Export & privacy" }).click();
-    assertEquals(await page.getByLabel("Export warning threshold").inputValue(), "8000000");
+    assertEquals(await page.getByLabel("Export warning threshold").count(), 0);
     assertEquals(
       await page.getByRole("switch", { name: "Strip sensitive query strings" }).getAttribute(
         "aria-checked",

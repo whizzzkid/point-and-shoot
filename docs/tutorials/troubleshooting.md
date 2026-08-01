@@ -75,13 +75,12 @@ exporting.
 
 ## Export is disabled
 
-The plan view disables copy and download when:
+The plan view disables every export action when no notes are included and temporarily disables the
+export actions while one runs. Malformed screenshot data can disable the bundle download and
+surfaces an error, but bundle size never disables copy or download.
 
-- no notes are included; or
-- the exact ZIP size exceeds the configured export budget.
-
-Include at least one note. For an oversized bundle, exclude notes or lower **Screenshot quality** or
-**Maximum screenshot dimensions** in the options page. The default budget is 2,000,000 bytes.
+Include at least one note. If bundle creation reports malformed screenshot data, capture the
+affected note again before downloading the bundle.
 
 ## Query parameters are missing from the export
 

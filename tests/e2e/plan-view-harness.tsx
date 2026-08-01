@@ -81,7 +81,6 @@ function actions(fail: boolean, pending: boolean): PlanViewActions {
 
 function mountPlan(
   theme: "dark" | "light",
-  sizeBudgetBytes: number,
   fail: boolean,
   pending: boolean,
   archiveFails: boolean,
@@ -104,7 +103,6 @@ function mountPlan(
             ),
           }
           : SESSION_WITH_IMAGES}
-        sizeBudgetBytes={sizeBudgetBytes}
       />
     </IconSpriteProvider>,
     mount,
@@ -115,12 +113,11 @@ const harness = {
   actionLog,
   mount(
     theme: "dark" | "light",
-    sizeBudgetBytes = 2_000_000,
     fail = false,
     pending = false,
     archiveFails = false,
   ) {
-    mountPlan(theme, sizeBudgetBytes, fail, pending, archiveFails);
+    mountPlan(theme, fail, pending, archiveFails);
   },
   resolveActions() {
     const resolvers = pendingResolvers;
