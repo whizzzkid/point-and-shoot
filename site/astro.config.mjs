@@ -8,8 +8,8 @@ import { remarkDocsLinks } from "./src/markdown/remark-docs-links.mjs";
 import { remarkStaticMermaid } from "./src/markdown/remark-static-mermaid.mjs";
 
 export default defineConfig({
-  site: "https://whizzzkid.github.io",
-  base: "/point-and-shoot",
+  site: "https://pointandshoot.app",
+  base: "/",
   output: "static",
   publicDir: ".generated/public",
   markdown: {

@@ -9,7 +9,7 @@ const docsRoot = "/repository/docs";
 test("docs links preserve published routes and repository-only references", () => {
   assert.equal(
     testing.rewriteRelativeUrl("../design.md#tokens", sourcePath, docsRoot),
-    "/point-and-shoot/docs/design/#tokens",
+    "/docs/design/#tokens",
   );
   assert.equal(
     testing.rewriteRelativeUrl("../adr/0001-example.md", sourcePath, docsRoot),

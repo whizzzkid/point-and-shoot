@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 
 import { startBuiltSite } from "./serve-built.mjs";
 
-const siteBase = "/point-and-shoot";
+const siteBase = "";
 const surfaces = [
   { name: "marketing", path: "/" },
   { name: "documentation", path: "/docs/" },

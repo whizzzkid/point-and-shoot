@@ -9,7 +9,7 @@ import { startBuiltSite } from "./serve-built.mjs";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const reportRoot = resolve(siteRoot, ".lighthouse");
-const siteBase = "/point-and-shoot";
+const siteBase = "";
 const surfaces = [
   { name: "marketing", path: "/" },
   { name: "documentation", path: "/docs/" },

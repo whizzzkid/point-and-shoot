@@ -5,7 +5,7 @@ import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const siteBase = "/point-and-shoot";
+const siteBase = "";
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -44,7 +44,7 @@ async function responsePath(distRoot, requestUrl) {
 }
 
 /**
- * Starts a static server that mirrors GitHub Pages' repository base path.
+ * Starts a static server that mirrors the custom-domain root path.
  *
  * @param options - Optional host, port, and built-output path.
  * @returns The listening server and its origin.

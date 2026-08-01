@@ -15,7 +15,7 @@ async function fixture() {
   await writeFile(resolve(distRoot, "index.html"), '<h1 id="home">Home</h1>');
   await writeFile(
     resolve(distRoot, "docs/index.html"),
-    '<h1 id="docs">Docs</h1><a href="/point-and-shoot/#home">Home</a>',
+    '<h1 id="docs">Docs</h1><a href="/#home">Home</a>',
   );
   await writeFile(resolve(docsRoot, "README.md"), "# Docs\n");
   return { distRoot, docsRoot, root };
@@ -35,11 +35,24 @@ test("site integrity accepts a complete published set", async () => {
 test("site integrity rejects a broken internal anchor", async () => {
   const paths = await fixture();
   try {
-    await writeFile(
-      resolve(paths.distRoot, "docs/index.html"),
-      '<a href="/point-and-shoot/#missing">Broken</a>',
-    );
+    await writeFile(resolve(paths.distRoot, "docs/index.html"), '<a href="/#missing">Broken</a>');
     await assert.rejects(checkSite(paths), /missing anchor #missing/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity rejects the obsolete repository prefix on assets", async () => {
+  const paths = await fixture();
+  try {
+    await mkdir(resolve(paths.distRoot, "brand"));
+    await writeFile(resolve(paths.distRoot, "brand/icon.svg"), "<svg></svg>");
+    await writeFile(
+      resolve(paths.distRoot, "index.html"),
+      '<img src="/point-and-shoot/brand/icon.svg" alt="">',
+    );
+    await writeFile(resolve(paths.distRoot, "docs/index.html"), "<h1>Docs</h1>");
+    await assert.rejects(checkSite(paths), /missing target \/point-and-shoot\/brand\/icon\.svg/);
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
@@ -116,7 +129,7 @@ test("site integrity reports a malformed anchor encoding", async () => {
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
-      '<a href="/point-and-shoot/#%E0%A4%A">Bad anchor</a>',
+      '<a href="/#%E0%A4%A">Bad anchor</a>',
     );
     await assert.rejects(checkSite(paths), /malformed anchor #%E0%A4%A/);
   } finally {

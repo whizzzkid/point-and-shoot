@@ -9,7 +9,7 @@ import { docsRoute, isPublishedDoc } from "../src/lib/docs-manifest.ts";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
-const siteBase = "/point-and-shoot";
+const siteBase = "";
 const localOrigin = "https://point-and-shoot.invalid";
 const execFileAsync = promisify(execFile);
 

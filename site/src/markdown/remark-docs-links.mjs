@@ -2,7 +2,7 @@ import { dirname, extname, relative, resolve, sep } from "node:path";
 import { visit } from "unist-util-visit";
 
 const repositoryUrl = "https://github.com/whizzzkid/point-and-shoot";
-const siteBase = "/point-and-shoot";
+const siteBase = "";
 const publishedRoots = new Set(["README.md", "design.md", "specs", "tutorials"]);
 const excludedRoots = new Set(["adr", "plans"]);
 
