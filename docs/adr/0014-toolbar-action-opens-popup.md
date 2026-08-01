@@ -5,9 +5,8 @@
 
 ## Context
 
-The Wave 3 plan assigned two incompatible behaviors to the extension's toolbar action: W3.8 said the
-icon opens the session launcher, while W3.10 said the same click directly toggles the injected
-overlay.
+The original delivery requirements assigned two incompatible behaviors to the extension's toolbar
+action: open the session launcher and directly toggle the injected overlay.
 
 Manifest V3 does not dispatch both behaviors. Chrome states that `action.onClicked` is not sent when
 the action has a popup, and Firefox documents the same rule. The popup and click listener are

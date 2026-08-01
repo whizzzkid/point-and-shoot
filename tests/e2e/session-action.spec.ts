@@ -2,7 +2,7 @@
 
 /**
  * Drives the real built Chromium extension through the browser toolbar action. This focused tier
- * proves the product-level session toggle and badge/tooltip contract before W4.1 expands the same
+ * proves the product-level session toggle and badge/tooltip contract before the full-flow suite expands the same
  * flow into multi-page capture and export coverage.
  *
  * Run with `deno task e2e:session`.

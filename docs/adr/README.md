@@ -19,7 +19,7 @@ have one behind them.
 | [0005](0005-safari-deferred.md)                                 | Safari is deferred past v1, but the code stays convertible       | Accepted 2026-07-24 |
 | [0006](0006-closed-shadow-dom-for-injected-ui.md)               | Mount injected UI in a closed shadow root                        | Accepted 2026-07-24 |
 | [0007](0007-playwright-chromium-plus-web-ext-coverage-split.md) | Chromium E2E via Playwright, Firefox via a web-ext smoke check   | Accepted 2026-07-24 |
-| [0008](0008-preact-for-extension-ui-astro-for-marketing.md)     | Preact for the extension UI; Astro only for marketing            | Accepted 2026-07-24 |
+| [0008](0008-preact-for-extension-ui-astro-for-marketing.md)     | Preact for the extension UI; Astro only for marketing            | Superseded by 0018  |
 | [0009](0009-no-remote-assets-vendored-fonts-and-icons.md)       | No remote assets: fonts subset locally, icons vendored           | Accepted 2026-07-24 |
 | [0010](0010-backdrop-luminance-theming-with-override.md)        | Theme by sampling backdrop luminance, with a user override       | Accepted 2026-07-24 |
 | [0011](0011-generated-design-tokens-with-drift-check.md)        | Generate design tokens from the bundle, fail CI on drift         | Accepted 2026-07-24 |
@@ -29,6 +29,7 @@ have one behind them.
 | [0015](0015-main-world-framework-probes.md)                     | Run opt-in framework probes in a constrained main-world call     | Accepted 2026-07-28 |
 | [0016](0016-toolbar-action-controls-session.md)                 | Let the toolbar action control the session                       | Accepted 2026-07-30 |
 | [0017](0017-release-please-with-calendar-versions.md)           | Use Release Please with calendar versions                        | Accepted 2026-07-31 |
+| [0018](0018-astro-for-marketing-and-documentation.md)           | Astro for the marketing and documentation site                   | Accepted 2026-07-31 |
 
 Six of these are load-bearing constraints rather than preferences, and reversing one by accident is
 easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no

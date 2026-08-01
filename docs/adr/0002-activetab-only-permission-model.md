@@ -33,7 +33,7 @@ surface.
   no pre-warming a content script before the user asks. Any such feature requires revisiting this
   ADR, and revisiting it means changing the install prompt users already accepted.
 - The content script must be injectable and initialisable mid-session, on a page that has already
-  finished loading, with no guarantee it ran at document start. Wave 2 onward must not assume
+  finished loading, with no guarantee it ran at document start. Runtime code must not assume
   document-start timing.
 - `activeTab` does not cover the browser's own privileged pages, extension gallery pages, or (in
   Firefox) certain restricted domains. Those failures are permanent, not bugs; the UI must say so

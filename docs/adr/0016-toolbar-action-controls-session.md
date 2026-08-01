@@ -7,7 +7,7 @@
 
 [ADR-0014](0014-toolbar-action-opens-popup.md) made the toolbar icon open a launcher popup because
 Manifest V3 cannot dispatch `action.onClicked` while an action popup is declared. That resolved the
-Wave 3 conflict, but it made the primary capture path require a second click inside the popup.
+entry-point conflict, but it made the primary capture path require a second click inside the popup.
 
 The notes side panel now carries session review, editing, plan compilation, and export. Keeping a
 separate launcher between the toolbar gesture and that workspace duplicates session state without

@@ -1,7 +1,7 @@
 /**
  * Captures a full-page screenshot of every fixture page into `docs/assets/wave-1/`.
  *
- * Wave 1 ships no extension, so the fixture app is the only visible artifact a PR can show. This
+ * The fixture app is an independently reviewable browser artifact. This
  * task shoots it, and in doing so proves the Playwright plumbing works before waves 2 and 4 depend
  * on it for real E2E coverage.
  *

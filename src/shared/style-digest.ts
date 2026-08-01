@@ -16,8 +16,8 @@
 /**
  * Ceiling on distinct style properties a single {@link ElementDigest} may report. The fixed field
  * list below (14 box-model + 5 typography + 6 color = 25) is already under this cap by design — the
- * constant exists so every consumer reads the same number from {@link ../../docs/plans/README.md}'s
- * settled-numbers table rather than each picking its own.
+ * constant exists so every consumer reads the same number documented in
+ * {@link ../../docs/specs/runtime-limits.md} rather than each picking its own.
  */
 export const MAX_STYLE_PROPERTIES = 40;
 

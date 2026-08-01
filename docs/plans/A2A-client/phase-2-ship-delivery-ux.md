@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-01
 epic: null
 reviewers:
   - Nishant Arora
@@ -18,8 +18,8 @@ related:
     path: README.md
   - title: Phase 1 - Build foundations
     path: phase-1-build-foundations.md
-  - title: UI and capture delivery plan
-    path: ../wave-3-ui-and-capture.md
+  - title: Extension runtime specification
+    path: ../../specs/extension-runtime.md
   - title: Design guide
     path: ../../design.md
 ---

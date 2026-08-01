@@ -48,7 +48,7 @@ interface AxeRuntime {
 }
 
 /**
- * Keeps axe findings that fail Wave 4's serious-or-critical release threshold.
+ * Keeps axe findings that fail the serious-or-critical release threshold.
  *
  * @param violations Serializable axe violations from one surface.
  * @returns Only serious and critical violations.

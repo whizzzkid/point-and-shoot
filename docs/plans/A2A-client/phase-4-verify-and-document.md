@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-01
 epic: null
 reviewers:
   - Nishant Arora
@@ -18,8 +18,8 @@ related:
     path: README.md
   - title: Phase 3 - Expand enterprise support
     path: phase-3-expand-enterprise-support.md
-  - title: Verification and release plan
-    path: ../wave-4-verification.md
+  - title: Build, release, and verification specification
+    path: ../../specs/build-release-and-verification.md
 ---
 
 # Phase 4 - Verify and document
