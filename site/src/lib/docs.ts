@@ -22,12 +22,11 @@ export function docsTitle(body: string | undefined, fallback: string): string {
  * Creates the published URL for a documentation entry.
  *
  * @param id - The collection entry ID.
- * @param base - Astro's base URL.
  * @returns An absolute pathname within the deployed site.
  */
-export function docsUrl(id: string, base: string): string {
+export function docsUrl(id: string): string {
   const route = docsRoute(id);
-  return `${base}docs/${route.length > 0 ? `${route}/` : ""}`;
+  return `/docs/${route.length > 0 ? `${route}/` : ""}`;
 }
 
 /**

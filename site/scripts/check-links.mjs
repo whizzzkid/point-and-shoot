@@ -9,7 +9,6 @@ import { docsRoute, isPublishedDoc } from "../src/lib/docs-manifest.ts";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
-const siteBase = "/point-and-shoot";
 const localOrigin = "https://point-and-shoot.invalid";
 const execFileAsync = promisify(execFile);
 
@@ -44,6 +43,7 @@ function cssResourceLinks(css) {
 
 function inspectHtml(html) {
   const document = parse(html);
+  const canonicalUrls = [];
   const ids = new Set();
   const links = [];
   let mermaidCount = 0;
@@ -75,8 +75,12 @@ function inspectHtml(html) {
       attrs.has("src")
     ) {
       links.push({ kind: "asset", url: attrs.get("src") });
-    } else if (node.tagName === "link" && attrs.get("rel") !== "canonical" && attrs.has("href")) {
-      links.push({ kind: "asset", url: attrs.get("href") });
+    } else if (node.tagName === "link" && attrs.has("href")) {
+      if (attrs.get("rel") === "canonical") {
+        canonicalUrls.push(attrs.get("href"));
+      } else {
+        links.push({ kind: "asset", url: attrs.get("href") });
+      }
     } else if (node.tagName === "use" && attrs.has("href")) {
       links.push({ kind: "asset", url: attrs.get("href") });
     }
@@ -87,7 +91,7 @@ function inspectHtml(html) {
   }
 
   visitNode(document);
-  return { ids, links, mermaidCount };
+  return { canonicalUrls, ids, links, mermaidCount };
 }
 
 function pageRoute(distRoot, filePath) {
@@ -96,20 +100,6 @@ function pageRoute(distRoot, filePath) {
     return "/";
   }
   return `/${relativePath.replace(/index\.html$/, "")}`;
-}
-
-function deployedPath(route) {
-  return `${siteBase}${route === "/" ? "/" : route}`;
-}
-
-function localRoute(pathname) {
-  if (pathname === siteBase || pathname === `${siteBase}/`) {
-    return "/";
-  }
-  if (!pathname.startsWith(`${siteBase}/`)) {
-    return null;
-  }
-  return pathname.slice(siteBase.length);
 }
 
 /**
@@ -177,6 +167,7 @@ export async function checkSite({
   distRoot = resolve(siteRoot, "dist"),
   docsRoot = resolve(repositoryRoot, "docs"),
   checkExternal = false,
+  siteUrl = process.env.SITE_URL ?? "http://localhost:4321",
 } = {}) {
   const htmlFiles = await walk(distRoot, (path) => path.endsWith(".html"));
   const pages = new Map();
@@ -189,7 +180,16 @@ export async function checkSite({
   const problems = [];
   const externalUrls = new Set();
   for (const [route, page] of pages) {
-    const sourceUrl = `${localOrigin}${deployedPath(route)}`;
+    const expectedCanonical = new URL(route, siteUrl).href;
+    if (page.canonicalUrls.length !== 1) {
+      problems.push(`${route}: expected one canonical link, found ${page.canonicalUrls.length}`);
+    } else if (page.canonicalUrls[0] !== expectedCanonical) {
+      problems.push(
+        `${route}: unexpected canonical ${page.canonicalUrls[0]}; expected ${expectedCanonical}`,
+      );
+    }
+
+    const sourceUrl = `${localOrigin}${route}`;
     for (const link of page.links) {
       let url;
       try {
@@ -209,11 +209,7 @@ export async function checkSite({
         continue;
       }
 
-      const targetRoute = localRoute(url.pathname);
-      if (targetRoute === null) {
-        problems.push(`${route}: link escapes the configured site base: ${link.url}`);
-        continue;
-      }
+      const targetRoute = url.pathname;
 
       const targetPage = pages.get(targetRoute);
       if (targetPage !== undefined) {
