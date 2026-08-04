@@ -196,6 +196,24 @@ async function currentGitBranch(): Promise<string> {
 }
 
 /**
+ * Resolves the branch identifying a development build without requiring git in GitHub Actions.
+ *
+ * @param environment Environment reader supplying GitHub's branch metadata when available.
+ * @param readGitBranch Fallback that reads the current branch from the local git checkout.
+ * @returns The pull-request head, workflow ref, or local git branch in that order.
+ */
+export async function currentDevelopmentBranch(
+  environment: { readonly get: (name: string) => string | undefined } = Deno.env,
+  readGitBranch: () => Promise<string> = currentGitBranch,
+): Promise<string> {
+  for (const name of ["GITHUB_HEAD_REF", "GITHUB_REF_NAME"] as const) {
+    const branch = environment.get(name)?.trim();
+    if (branch !== undefined && branch !== "") return branch;
+  }
+  return await readGitBranch();
+}
+
+/**
  * Builds both targets into `options.outDir` (default `dist/`), wiping it first.
  *
  * `outDir` exists so the build tests can point at a temp directory. They cannot run against the
@@ -292,6 +310,6 @@ if (import.meta.main) {
   if (Deno.args.includes("--release")) {
     await build({ release: true });
   } else {
-    await build({ release: false, branch: await currentGitBranch() });
+    await build({ release: false, branch: await currentDevelopmentBranch() });
   }
 }

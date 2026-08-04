@@ -3,6 +3,7 @@ import { toFileUrl } from "@std/path";
 import {
   build,
   collectRemoteUrlOffenders,
+  currentDevelopmentBranch,
   developmentVersionName,
   esbuildTargetFrom,
 } from "./build.ts";
@@ -42,6 +43,38 @@ Deno.test("developmentVersionName - rejects a missing branch", () => {
     Error,
     "build: cannot label a development build without a git branch",
   );
+});
+
+Deno.test("currentDevelopmentBranch - prefers the GitHub PR head without reading git", async () => {
+  let readGit = false;
+  const branch = await currentDevelopmentBranch(
+    { get: (name) => name === "GITHUB_HEAD_REF" ? TEST_BRANCH : undefined },
+    () => {
+      readGit = true;
+      return Promise.resolve("wrong-branch");
+    },
+  );
+
+  assertEquals(branch, TEST_BRANCH);
+  assertFalse(readGit);
+});
+
+Deno.test("currentDevelopmentBranch - uses the workflow ref when the PR head is empty", async () => {
+  const branch = await currentDevelopmentBranch(
+    { get: (name) => name === "GITHUB_HEAD_REF" ? "" : TEST_BRANCH },
+    () => Promise.resolve("wrong-branch"),
+  );
+
+  assertEquals(branch, TEST_BRANCH);
+});
+
+Deno.test("currentDevelopmentBranch - falls back to git outside GitHub Actions", async () => {
+  const branch = await currentDevelopmentBranch(
+    { get: () => undefined },
+    () => Promise.resolve(TEST_BRANCH),
+  );
+
+  assertEquals(branch, TEST_BRANCH);
 });
 
 Deno.test("collectRemoteUrlOffenders - flags an injected http(s) literal, ignores a clean file", async () => {
