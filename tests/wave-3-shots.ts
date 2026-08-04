@@ -186,10 +186,7 @@ async function installHeadlessSidePanelStub(serviceWorker: Worker): Promise<void
     const extensionGlobal = globalThis as unknown as {
       readonly chrome: {
         readonly sidePanel?: {
-          readonly open?: (
-            options: { readonly tabId: number },
-            callback?: () => void,
-          ) => void;
+          readonly open?: (options: { readonly tabId: number }) => Promise<void>;
         };
       };
     };
@@ -198,8 +195,8 @@ async function installHeadlessSidePanelStub(serviceWorker: Worker): Promise<void
     Object.defineProperty(extensionGlobal.chrome, "sidePanel", {
       configurable: true,
       value: {
-        open(_options: { readonly tabId: number }, callback?: () => void): void {
-          callback?.();
+        open(_options: { readonly tabId: number }): Promise<void> {
+          return Promise.resolve();
         },
       },
     });

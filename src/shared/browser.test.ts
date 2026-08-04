@@ -14,7 +14,7 @@ interface FakeChrome {
   setLastError(message: string | undefined): void;
 }
 
-/** Chrome-shaped fake: callback-based for asynchronous calls, modeled on the real MV3 signatures. */
+/** Chrome-shaped fake that preserves each asynchronous MV3 API's callback or Promise signature. */
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();

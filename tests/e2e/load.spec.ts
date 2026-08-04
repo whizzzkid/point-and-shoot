@@ -85,7 +85,7 @@ async function injectBuiltContent(page: Page, serviceWorker: Worker): Promise<vo
         sendMessage: noOp,
       },
       scripting: { executeScript: noOp },
-      sidePanel: { open: noOp },
+      sidePanel: { open: () => Promise.resolve() },
       storage: {
         local: {
           get(_keys: unknown, callback: (items: Record<string, unknown>) => void) {
