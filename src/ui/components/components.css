@@ -733,11 +733,6 @@ button.ps-capture-minimap:focus-visible {
   position: fixed;
 }
 
-.ps-version-label[data-inline="true"] {
-  margin-inline-start: var(--space-1);
-  position: static;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .ps-switch,
   .ps-switch__thumb,

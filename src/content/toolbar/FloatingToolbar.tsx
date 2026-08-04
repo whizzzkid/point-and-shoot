@@ -2,14 +2,7 @@
 
 import type { JSX } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import {
-  Badge,
-  Button,
-  Icon,
-  IconButton,
-  IconSpriteProvider,
-  VersionLabel,
-} from "../../ui/components/index.ts";
+import { Badge, Button, Icon, IconButton, IconSpriteProvider } from "../../ui/components/index.ts";
 import {
   type PlacementRect,
   placeToolbar,
@@ -37,7 +30,6 @@ export interface FloatingToolbarProps {
   readonly onToolChange?: (tool: ToolbarTool) => void;
   readonly ownerDocument?: Document;
   readonly ownerWindow?: Window;
-  readonly version: string;
 }
 
 interface Point {
@@ -255,7 +247,6 @@ export function FloatingToolbar(
     ownerDocument = document,
     ownerWindow = window,
     selection,
-    version,
   }: FloatingToolbarProps,
 ): JSX.Element {
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -311,7 +302,6 @@ export function FloatingToolbar(
         >
           Send to agent
         </Button>
-        <VersionLabel inline version={version} />
       </div>
     </IconSpriteProvider>
   );
