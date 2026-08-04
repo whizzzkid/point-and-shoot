@@ -70,6 +70,12 @@ into a green check.
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
 
+Before handing off any change that can affect the shipped extension, run
+`mise exec -- deno task build` after every other command that may write `dist/`. The final local
+state must leave `dist/chrome/` and `dist/firefox/` matching the branch tip so the unpacked
+extension can be reloaded and validated immediately. A prior CI run is not a substitute for this
+final development build because build tests may leave different artifacts in `dist/`.
+
 `lint:design` is deliberately **not** part of `ci`: it checks _adherence to the design bundle's own
 conventions_ (`.claude-design/point-and-shoot/_adherence.oxlintrc.json`), a design-system concern,
 not a correctness one. `tokens:check` already makes token drift a hard CI failure; adding

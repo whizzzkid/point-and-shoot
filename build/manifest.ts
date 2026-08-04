@@ -34,7 +34,7 @@ export const SUPPORTED = {
  */
 export const FIREFOX_EXTENSION_ID = "pointandshoot@whizzzkid.dev";
 
-/** The extension's five permission grants, per ADR-0002 and the extension-runtime spec. No more. */
+/** Permission grants shared by both browser targets, per ADR-0002 and the runtime spec. */
 const PERMISSIONS = [
   "activeTab",
   "storage",
@@ -137,6 +137,7 @@ export const manifestBase: ManifestBase = {
 export function forChrome(): Record<string, unknown> {
   return {
     ...manifestBase,
+    permissions: [...manifestBase.permissions, "sidePanel"],
     web_accessible_resources: manifestBase.web_accessible_resources.map((rule) => ({
       ...rule,
       use_dynamic_url: true,
