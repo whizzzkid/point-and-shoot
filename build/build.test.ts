@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import {
   build,
@@ -75,6 +75,14 @@ Deno.test("currentDevelopmentBranch - falls back to git outside GitHub Actions",
   );
 
   assertEquals(branch, TEST_BRANCH);
+});
+
+Deno.test("currentDevelopmentBranch - rejects a detached local checkout", async () => {
+  await assertRejects(
+    () => currentDevelopmentBranch({ get: () => undefined }, () => Promise.resolve("HEAD")),
+    Error,
+    "build: cannot label a development build from a detached HEAD",
+  );
 });
 
 Deno.test("collectRemoteUrlOffenders - flags an injected http(s) literal, ignores a clean file", async () => {

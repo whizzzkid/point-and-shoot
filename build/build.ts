@@ -210,7 +210,11 @@ export async function currentDevelopmentBranch(
     const branch = environment.get(name)?.trim();
     if (branch !== undefined && branch !== "") return branch;
   }
-  return await readGitBranch();
+  const branch = await readGitBranch();
+  if (branch === "HEAD") {
+    throw new Error("build: cannot label a development build from a detached HEAD");
+  }
+  return branch;
 }
 
 /**
