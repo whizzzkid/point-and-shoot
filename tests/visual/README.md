@@ -4,10 +4,10 @@ The visual suite captures the component gallery, injected toolbar, notes panel, 
 and options page in forced dark and light themes. It compares each PNG with its committed baseline
 and allows at most 0.1% of pixels to differ.
 
-Before capture, the runner temporarily replaces the built Chrome manifest's mutable package version
-with the fixed visual fixture version, then restores the exact manifest after success or failure.
-Release validation still checks the real version in both browser packages; this normalization only
-prevents expected release bumps from moving visual controls.
+Before capture, the runner temporarily replaces the built Chrome manifest's mutable numeric and
+descriptive versions with fixed visual-fixture values, then restores the exact manifest after
+success or failure. Release validation still checks the real version in both browser packages; this
+normalization prevents release bumps and development branch names from moving visual controls.
 
 ## Run comparisons
 
