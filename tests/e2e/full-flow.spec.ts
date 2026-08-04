@@ -91,6 +91,11 @@ async function endSession(
 ): Promise<Session> {
   await triggerExtensionAction(context, page, extensionId);
   await waitForHostCount(page, 0);
+  const tabId = await tabIdForPage(context, page);
+  await waitForActionState(serviceWorker, tabId, {
+    badgeText: "",
+    title: "Point and Shoot — Start session",
+  });
   const pointers = await readSessionPointers(serviceWorker);
   assertEquals(pointers.activeId, undefined);
   assertEquals(pointers.displayId, sessionId);
