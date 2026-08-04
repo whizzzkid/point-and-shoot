@@ -90,6 +90,7 @@ flowchart TD
 
 ```bash
 mise exec -- deno task test build/manifest.test.ts
+mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
 mise exec -- deno task build

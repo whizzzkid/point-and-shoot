@@ -42,9 +42,11 @@ session and agent-run history without losing the current copy and download paths
 
 **Architecture:** The visible side panel owns live A2A streams. Extension-owned repositories keep
 agent profiles, immutable outbound requests, task snapshots, and ordered events in IndexedDB;
-credentials live only in `storage.session`. The official A2A JavaScript SDK owns protocol parsing
-and the JSON-RPC or HTTP+JSON transport, while a small project adapter owns runtime permissions,
-authentication, persistence, and lifecycle recovery.
+extension-owned credential material lives only in `storage.session`. Cookie and mTLS material stays
+in browser- or OS-managed stores, follows those stores' lifecycle, and is never copied into
+extension storage. The official A2A JavaScript SDK owns protocol parsing and the JSON-RPC or
+HTTP+JSON transport, while a small project adapter owns runtime permissions, authentication,
+persistence, and lifecycle recovery.
 
 **Tech stack:** Manifest V3, Chrome service worker, Firefox event page, Preact, IndexedDB,
 `storage.session`, the exact-pinned `@a2a-js/sdk` client, JSON-RPC or HTTP+JSON, and SSE.

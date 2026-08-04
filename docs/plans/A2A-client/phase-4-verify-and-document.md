@@ -198,8 +198,8 @@ mise exec -- deno task ci
    history flow in a real Firefox extension runtime.
 2. Exercise one interactive OAuth or OIDC path if automation can safely control the browser flow;
    otherwise run the already-authorized path and identify the grant boundary as shim-covered.
-3. Exercise permission revocation, browser restart with cleared credentials, disconnect after task
-   id, and recovery through task lookup or subscription.
+3. Exercise permission revocation, browser restart with cleared extension-owned credentials,
+   disconnect after task id, and recovery through task lookup or subscription.
 4. Run the cookie and mTLS decision fixtures that phase 3 marked supported. For externally managed
    outcomes, verify detection and user guidance without overstating handshake control.
 5. Keep Playwright claims Chromium-only. Do not describe the representative Firefox smoke as full
@@ -330,9 +330,11 @@ owns user-facing docs only.
    disconnect, remove, and permission revocation as task-oriented workflows.
 3. Document no-auth, Bearer, API-key, OAuth, OIDC, signed-card, cookie, and mTLS states exactly as
    phase 3 implemented or constrained them.
-4. Explain that credentials clear on browser restart, local history persists until user deletion or
-   storage exhaustion, individual deletion and Clear all sessions remove associated prompts and
-   responses, incomplete history is explicit, and unknown initial delivery is not retried.
+4. Explain that extension-owned credentials clear on browser restart. Local history persists until
+   explicit user deletion; storage exhaustion preserves existing records but may leave the affected
+   run's newly arriving history incomplete. Individual deletion and Clear all sessions remove
+   associated prompts and responses, and unknown initial delivery is not retried. Document any
+   supported browser- or OS-managed cookie or certificate lifecycle separately.
 5. Keep local copy and download behavior first-class. Do not imply that A2A is required to use or
    export Point & Shoot.
 
@@ -372,9 +374,11 @@ mise exec -- deno task ci
 3. Add diagnosis for permission denial or revocation, invalid cards, unsupported transport or auth,
    `401`, `403`, certificate failures, network errors, task purge, storage exhaustion, and unknown
    delivery.
-4. Publish the data inventory: public cards and run history on disk; credentials, extended cards,
-   codes, and verifiers in session-only storage; exact Markdown sent only after review; session
-   deletion and Clear all sessions cascade through stored prompts, responses, runs, and events.
+4. Publish the data inventory: public cards and run history on disk; extension-owned credentials,
+   extended cards, codes, and verifiers in session-only storage; browser- or OS-managed cookie and
+   certificate material never copied into extension stores; exact Markdown sent only after review;
+   session deletion and Clear all sessions cascade through stored prompts, responses, runs, and
+   events.
 5. Keep accepted ADR-0019 immutable except for the status-only update the ADR policy permits. Record
    operational observations in the spec and tutorial. If measured browser behavior changes the
    accepted decision, create the next numbered ADR, mark it as superseding ADR-0019, change only
@@ -452,10 +456,12 @@ mise exec -- deno task smoke:firefox
 mise exec -- deno task a11y
 mise exec -- deno task visual
 mise exec -- deno task build
+mise exec -- deno task lint:firefox
+mise exec -- deno task build
 ```
 
-Run `visual` on the pinned Linux platform and verify `lint:firefox` through the aggregate or
-directly. The final `build` must leave branch-labeled Chrome and Firefox development packages in
+Run `visual` on the pinned Linux platform. The first `build` gives `lint:firefox` a current Firefox
+package; the final `build` must leave branch-labeled Chrome and Firefox development packages in
 `dist/`. Attach the exact final output to the PR.
 
 **Commit:** `chore(a2a): close the client delivery plan`

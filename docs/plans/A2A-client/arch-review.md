@@ -51,7 +51,8 @@ related:
 - **Environment:** Chrome and Firefox Manifest V3 extension contexts, local IndexedDB and
   `storage.session`, plus user-configured external A2A servers and identity providers.
 - **Hard constraints:** Preserve `activeTab`-only access to inspected pages; no required
-  `<all_urls>`; no persisted credentials; no remote code or HTML execution; local copy and download
+  `<all_urls>`; no extension-persisted credential material; browser- and OS-managed authentication
+  material never enters extension stores; no remote code or HTML execution; local copy and download
   paths remain available; Deno-first exact-pinned toolchain; Chrome and Firefox are first-class.
 - **Timeline:** Five barrier phases. No fixed date or supplied effort estimate; each phase exits
   only after its executable evidence passes.

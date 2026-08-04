@@ -117,6 +117,7 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
 
 ```bash
 mise exec -- deno task test src/shared/a2a/sdk.test.ts build/build.test.ts
+mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
 mise exec -- deno task build
@@ -196,6 +197,7 @@ and the cookie methods needed for a later feasibility decision.
 
 ```bash
 mise exec -- deno task test build/manifest.test.ts src/shared/browser.test.ts src/shared/a2a/remote-access.test.ts
+mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
 mise exec -- deno task build
