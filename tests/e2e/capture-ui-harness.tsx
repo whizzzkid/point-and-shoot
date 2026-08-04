@@ -18,7 +18,7 @@ const shadowHost = createShadowHost({
   styles: [pickerStyles, toolbarStyles],
   theme: "dark",
 });
-render(<CaptureOverlay iconSpriteUrl="" version="0.1.0" />, shadowHost.mount);
+render(<CaptureOverlay iconSpriteUrl="" />, shadowHost.mount);
 
 let captureComplete: Promise<string> | undefined;
 let captureReady = false;

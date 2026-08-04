@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-04
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -88,6 +88,11 @@ creation, deletion, and non-fast-forward updates; and pull requests merge with m
 The packaged version uses UTC CalVer `YYYY.MMDD.N`. `0.1.0` is the one permitted bootstrap value;
 the first release calculation replaces it with CalVer. Multiple releases on one UTC date increment
 `N`; a later UTC date resets it to `0`.
+
+Local builds retain that numeric value in `version` and add
+`version_name: "<version>-dev-<current-git-branch>"`. The descriptive value identifies a loaded
+development package without violating browser update-version syntax. Release builds omit
+`version_name`.
 
 `.release-please-manifest.json`, `version.txt`, and `manifestBase.version` in `build/manifest.ts`
 must agree. Release Please updates all three in lockstep, both browser manifests derive from

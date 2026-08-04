@@ -42,7 +42,8 @@ Open a normal `http://` or `https://` page, then select the Point and Shoot brow
 One gesture does all of the following:
 
 - opens the notes side panel or Firefox sidebar;
-- starts an `Untitled session`;
+- starts a session named from the active tab title and local creation time, such as
+  `Checkout-2026-08-04-09-05-06`;
 - injects the capture overlay into the current tab; and
 - changes the action tooltip to **End session**, with a `0` badge.
 
@@ -78,6 +79,9 @@ the session lifecycle and ends the current session when selected again.
 
 The side panel groups notes by page. You can edit, delete, reorder, and choose whether each note's
 query string is included in an export.
+
+The generated session name is a starting point. Select **Edit session name** in the side panel to
+replace it at any time.
 
 ## Review and export
 

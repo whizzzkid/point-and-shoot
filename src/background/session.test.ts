@@ -103,6 +103,36 @@ Deno.test("session service starts, resumes, ends, and starts fresh", async () =>
   }
 });
 
+Deno.test("session service names a new session from the page title and local creation time", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "named-session",
+    now: () => new Date(2026, 7, 4, 9, 5, 6),
+    openDatabase: openStore,
+  });
+
+  const started = await service.start("Checkout — Example Store");
+
+  assertEquals(started.name, "Checkout — Example Store-2026-08-04-09-05-06");
+  await resetDatabase();
+});
+
+Deno.test("session service falls back when the page title is blank", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "fallback-session",
+    now: () => new Date(2026, 7, 4, 9, 5, 6),
+    openDatabase: openStore,
+  });
+
+  const started = await service.start("   ");
+
+  assertEquals(started.name, "Untitled page-2026-08-04-09-05-06");
+  await resetDatabase();
+});
+
 Deno.test("session service replaces a stale or already-ended active pointer", async () => {
   await resetDatabase();
   const storage = createStorage({ [ACTIVE_SESSION_ID_STORAGE_KEY]: "ended-session" });

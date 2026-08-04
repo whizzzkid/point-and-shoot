@@ -86,7 +86,7 @@ function deterministicService(
       if (id === undefined) throw new Error("deterministic id sequence exhausted");
       return id;
     },
-    now: () => new Date("2026-07-28T12:00:00.000Z"),
+    now: () => new Date(2026, 6, 28, 12, 0, 0),
     openDatabase: openStore,
   });
 }
@@ -109,6 +109,7 @@ Deno.test("captured note service creates an active session and preserves full UR
     assertEquals(pointers[ACTIVE_SESSION_ID_STORAGE_KEY], "session-1");
     assertEquals(pointers[DISPLAY_SESSION_ID_STORAGE_KEY], "session-1");
     assertEquals(pointers[SESSION_REVISION_STORAGE_KEY], 1);
+    assertEquals(session?.name, "Checkout-2026-07-28-12-00-00");
     assertEquals(session?.notes[0]?.pageUrl, REQUEST.pageUrl);
     assertEquals(session?.notes[0]?.stripQuery, true);
     assertEquals(session?.notes[0]?.elements, REQUEST.elements);

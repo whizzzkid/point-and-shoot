@@ -729,13 +729,12 @@ button.ps-capture-minimap:focus-visible {
   inset-block-end: var(--space-1);
   inset-inline-end: var(--space-2);
   line-height: var(--leading-tight);
+  max-inline-size: calc(100% - var(--space-4));
+  overflow: hidden;
   pointer-events: none;
   position: fixed;
-}
-
-.ps-version-label[data-inline="true"] {
-  margin-inline-start: var(--space-1);
-  position: static;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {

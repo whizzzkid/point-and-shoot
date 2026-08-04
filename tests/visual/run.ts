@@ -23,12 +23,17 @@ import {
 import { compareVisualSnapshot } from "./compare.ts";
 
 const BASELINE_DIRECTORY = fromFileUrl(new URL("./baselines/", import.meta.url));
+const BUILT_CHROME_MANIFEST = fromFileUrl(
+  new URL("../../dist/chrome/manifest.json", import.meta.url),
+);
 const REPORT_DIRECTORY = "playwright-report/visual";
 const ACTUAL_DIRECTORY = `${REPORT_DIRECTORY}/actual`;
 const DIFF_ARTIFACT_DIRECTORY = `${REPORT_DIRECTORY}/diffs`;
 const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
+const VISUAL_FIXTURE_VERSION = "0.1.0";
+const VISUAL_FIXTURE_VERSION_NAME = `${VISUAL_FIXTURE_VERSION}-dev-visual-fixture`;
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
@@ -53,6 +58,62 @@ export function supportsBaselineUpdates(
   return operatingSystem === "linux" &&
     architecture === "x86_64" &&
     marker === BASELINE_UPDATE_PLATFORM_MARKER;
+}
+
+/**
+ * Replaces a built Chrome manifest's mutable version metadata for deterministic screenshots.
+ *
+ * @param manifestSource Serialized Chrome extension manifest.
+ * @returns The complete manifest serialized with the visual fixture version metadata.
+ * @throws When the source is invalid JSON or not an object with a string version.
+ */
+export function normalizeVisualManifestVersions(manifestSource: string): string {
+  const manifest: unknown = JSON.parse(manifestSource);
+  if (
+    typeof manifest !== "object" ||
+    manifest === null ||
+    Array.isArray(manifest) ||
+    typeof (manifest as Record<string, unknown>)["version"] !== "string"
+  ) {
+    throw new Error("visual manifest must contain a string version");
+  }
+
+  const normalizedVersionName = typeof (manifest as Record<string, unknown>)["version_name"] ===
+      "string"
+    ? { version_name: VISUAL_FIXTURE_VERSION_NAME }
+    : {};
+  return `${
+    JSON.stringify(
+      {
+        ...manifest,
+        version: VISUAL_FIXTURE_VERSION,
+        ...normalizedVersionName,
+      },
+      null,
+      2,
+    )
+  }\n`;
+}
+
+/**
+ * Runs a visual operation with fixture package metadata, then restores the exact source.
+ *
+ * @param manifestPath Path to the built Chrome manifest.
+ * @param operation Visual operation that reads the normalized manifest.
+ * @returns The operation's result after restoring the manifest.
+ * @throws When manifest I/O, validation, or the visual operation fails.
+ */
+export async function withNormalizedVisualManifestVersions<T>(
+  manifestPath: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const manifestSource = await Deno.readTextFile(manifestPath);
+  await Deno.writeTextFile(manifestPath, normalizeVisualManifestVersions(manifestSource));
+  try {
+    return await operation();
+  } finally {
+    await Deno.writeTextFile(manifestPath, manifestSource);
+  }
 }
 
 function snapshotName(surface: Surface, theme: Wave3ShotTheme): string {
@@ -147,13 +208,15 @@ async function main(): Promise<void> {
       "visual baseline updates require the documented Ubuntu 24.04 Playwright container",
     );
   }
-  await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  await withNormalizedVisualManifestVersions(BUILT_CHROME_MANIFEST, async () => {
+    await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    });
+    await Deno.mkdir(ACTUAL_DIRECTORY, { recursive: true });
+    await captureWave3Shots(ACTUAL_DIRECTORY);
+    await captureGallery();
+    await compareSnapshots({ update });
   });
-  await Deno.mkdir(ACTUAL_DIRECTORY, { recursive: true });
-  await captureWave3Shots(ACTUAL_DIRECTORY);
-  await captureGallery();
-  await compareSnapshots({ update });
 }
 
 if (import.meta.main) {

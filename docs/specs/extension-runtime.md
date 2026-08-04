@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-04
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -42,10 +42,11 @@ or verification pipeline.
 `build/manifest.ts` is the only manifest source. Chrome `116` and Firefox `109` are the minimum
 versions; `build/build.ts` derives its esbuild targets from the same `SUPPORTED` constant.
 
-Both manifests grant exactly `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`.
-They declare no `host_permissions` and no static `content_scripts`. The background injects
-`content/content.js` only after a toolbar click, keyboard command, or popup action supplies an
-eligible active tab. A restricted page returns an unavailable state and does not create a session.
+Both manifests grant `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`. Chrome
+also grants `sidePanel`, which is required to call `chrome.sidePanel.open()`. They declare no
+`host_permissions` and no static `content_scripts`. The background injects `content/content.js` only
+after a toolbar click, keyboard command, or popup action supplies an eligible active tab. A
+restricted page returns an unavailable state and does not create a session.
 
 Chrome uses a module service worker and `side_panel`; Firefox uses an event-page script and
 `sidebar_action`. Application code accesses both through the promise-based shim in
@@ -127,8 +128,10 @@ data.
 | Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                                                                                                                                                            |
 | Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                                                                                                                                                                    |
 
-All extension surfaces show the packaged manifest version. The component gallery is a development
-surface and does not ship as an extension page.
+The popup, notes side panel, and options page show the packaged manifest's human-facing version.
+Development builds use the descriptive local label from `version_name`; release builds fall back to
+the numeric `version`. The injected toolbar does not show a version. The component gallery is a
+development surface and does not ship as an extension page.
 
 ## Capture flow
 

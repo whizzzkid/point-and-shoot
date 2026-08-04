@@ -3,6 +3,7 @@ import {
   type ChromeGlobalShape,
   type CommandInfo,
   createBrowserShim,
+  displayVersion,
   type FirefoxGlobalShape,
   type StorageChangedListener,
 } from "./browser.ts";
@@ -14,7 +15,7 @@ interface FakeChrome {
   setLastError(message: string | undefined): void;
 }
 
-/** Chrome-shaped fake: callback-based for asynchronous calls, modeled on the real MV3 signatures. */
+/** Chrome-shaped fake that preserves each asynchronous MV3 API's callback or Promise signature. */
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
@@ -139,9 +140,9 @@ function createFakeChrome(): FakeChrome {
       },
     },
     sidePanel: {
-      open(_options, callback) {
+      open(_options) {
         calls.push("sidePanel.open");
-        queueMicrotask(() => callback());
+        return Promise.resolve();
       },
     },
   };
@@ -324,6 +325,17 @@ Deno.test("browser shim - getManifest exposes the packaged version on each engin
   );
 });
 
+Deno.test("displayVersion - prefers a descriptive local version name", () => {
+  assertEquals(
+    displayVersion({ version: "2026.801.0", version_name: "2026.801.0-dev-fix/calver-display" }),
+    "2026.801.0-dev-fix/calver-display",
+  );
+});
+
+Deno.test("displayVersion - falls back to the numeric release version", () => {
+  assertEquals(displayVersion({ version: "2026.801.0" }), "2026.801.0");
+});
+
 Deno.test("browser shim - firefox is checked before chrome (109+ ships a chrome-alias global)", () => {
   const { chromeGlobal } = createFakeChrome();
   const { firefoxGlobal } = createFakeFirefox();
@@ -403,6 +415,27 @@ Deno.test("browser shim - openPanel agrees across engines via divergent underlyi
 
   assertEquals(chromeCalls, ["sidePanel.open"]);
   assertEquals(firefoxCalls, ["sidebarAction.open"]);
+});
+
+Deno.test("browser shim - chrome openPanel uses the Promise-only sidePanel signature", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const calls: string[] = [];
+  const promiseOnlyChrome = {
+    ...chromeGlobal,
+    sidePanel: {
+      open(options: { readonly tabId?: number }): Promise<void> {
+        calls.push(`sidePanel.open:${options.tabId}:${arguments.length}`);
+        if (arguments.length !== 1) {
+          throw new TypeError("sidePanel.open accepts only its options argument");
+        }
+        return Promise.resolve();
+      },
+    },
+  } as unknown as ChromeGlobalShape;
+
+  await createBrowserShim({ chrome: promiseOnlyChrome }).openPanel(7);
+
+  assertEquals(calls, ["sidePanel.open:7:1"]);
 });
 
 Deno.test("browser shim - callback-style chrome storage resolves through a promise", async () => {

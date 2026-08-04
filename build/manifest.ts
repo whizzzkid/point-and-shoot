@@ -34,7 +34,7 @@ export const SUPPORTED = {
  */
 export const FIREFOX_EXTENSION_ID = "pointandshoot@whizzzkid.dev";
 
-/** The extension's five permission grants, per ADR-0002 and the extension-runtime spec. No more. */
+/** Permission grants shared by both browser targets, per ADR-0002 and the runtime spec. */
 const PERMISSIONS = [
   "activeTab",
   "storage",
@@ -93,7 +93,7 @@ interface ManifestBase {
 export const manifestBase: ManifestBase = {
   manifest_version: 3,
   name: "Point and Shoot",
-  version: "0.1.0", // x-release-please-version
+  version: "2026.801.0", // x-release-please-version
   description: "Point at or drag a box around a broken element, add a note, export a fix prompt.",
   icons: EXTENSION_ICONS,
   permissions: PERMISSIONS,
@@ -137,6 +137,7 @@ export const manifestBase: ManifestBase = {
 export function forChrome(): Record<string, unknown> {
   return {
     ...manifestBase,
+    permissions: [...manifestBase.permissions, "sidePanel"],
     web_accessible_resources: manifestBase.web_accessible_resources.map((rule) => ({
       ...rule,
       use_dynamic_url: true,

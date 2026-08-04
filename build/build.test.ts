@@ -1,7 +1,15 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
-import { build, collectRemoteUrlOffenders, esbuildTargetFrom } from "./build.ts";
+import {
+  build,
+  collectRemoteUrlOffenders,
+  currentDevelopmentBranch,
+  developmentVersionName,
+  esbuildTargetFrom,
+} from "./build.ts";
 import { SUPPORTED } from "./manifest.ts";
+
+const TEST_BRANCH = "fix/calver-display";
 
 /**
  * Every `build()` call here writes to a fresh temp directory, never the repo's `dist/`. `deno task
@@ -20,6 +28,61 @@ async function withTempOutDir(run: (outDir: URL) => Promise<void>): Promise<void
 
 Deno.test("esbuildTargetFrom - derives esbuild target strings from SUPPORTED, not literals", () => {
   assertEquals(esbuildTargetFrom(SUPPORTED), ["chrome116", "firefox109"]);
+});
+
+Deno.test("developmentVersionName - preserves a slash-delimited branch in the local label", () => {
+  assertEquals(
+    developmentVersionName("2026.801.0", TEST_BRANCH),
+    "2026.801.0-dev-fix/calver-display",
+  );
+});
+
+Deno.test("developmentVersionName - rejects a missing branch", () => {
+  assertThrows(
+    () => developmentVersionName("2026.801.0", ""),
+    Error,
+    "build: cannot label a development build without a git branch",
+  );
+});
+
+Deno.test("currentDevelopmentBranch - prefers the GitHub PR head without reading git", async () => {
+  let readGit = false;
+  const branch = await currentDevelopmentBranch(
+    { get: (name) => name === "GITHUB_HEAD_REF" ? TEST_BRANCH : undefined },
+    () => {
+      readGit = true;
+      return Promise.resolve("wrong-branch");
+    },
+  );
+
+  assertEquals(branch, TEST_BRANCH);
+  assertFalse(readGit);
+});
+
+Deno.test("currentDevelopmentBranch - uses the workflow ref when the PR head is empty", async () => {
+  const branch = await currentDevelopmentBranch(
+    { get: (name) => name === "GITHUB_HEAD_REF" ? "" : TEST_BRANCH },
+    () => Promise.resolve("wrong-branch"),
+  );
+
+  assertEquals(branch, TEST_BRANCH);
+});
+
+Deno.test("currentDevelopmentBranch - falls back to git outside GitHub Actions", async () => {
+  const branch = await currentDevelopmentBranch(
+    { get: () => undefined },
+    () => Promise.resolve(TEST_BRANCH),
+  );
+
+  assertEquals(branch, TEST_BRANCH);
+});
+
+Deno.test("currentDevelopmentBranch - rejects a detached local checkout", async () => {
+  await assertRejects(
+    () => currentDevelopmentBranch({ get: () => undefined }, () => Promise.resolve("HEAD")),
+    Error,
+    "build: cannot label a development build from a detached HEAD",
+  );
 });
 
 Deno.test("collectRemoteUrlOffenders - flags an injected http(s) literal, ignores a clean file", async () => {
@@ -63,11 +126,12 @@ Deno.test("collectRemoteUrlOffenders - scans .svg, and a namespace declaration a
 
 Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bundles for both targets", async () => {
   await withTempOutDir(async (outDir) => {
-    await build({ release: false, outDir });
+    await build({ release: false, branch: TEST_BRANCH, outDir });
     for (const target of ["chrome", "firefox"] as const) {
       const targetDir = new URL(`${target}/`, outDir);
       const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
       assertEquals(manifest.manifest_version, 3);
+      assertEquals(manifest.version_name, "2026.801.0-dev-fix/calver-display");
       await Deno.stat(new URL("background/background.js", targetDir));
       await Deno.stat(new URL("content/content.js", targetDir));
       await Deno.stat(new URL("sidepanel/sidepanel.js", targetDir));
@@ -89,8 +153,13 @@ Deno.test("build({ release: true }) - minifies, drops sourcemaps, and zips both 
   await withTempOutDir(async (outDir) => {
     await build({ release: true, outDir });
     const chromeDir = new URL("chrome/", outDir);
+    const firefoxDir = new URL("firefox/", outDir);
     const bg = await Deno.readTextFile(new URL("background/background.js", chromeDir));
     assert(!bg.includes("sourceMappingURL"));
+    for (const targetDir of [chromeDir, firefoxDir]) {
+      const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
+      assertFalse("version_name" in manifest);
+    }
 
     let mapExists = true;
     try {

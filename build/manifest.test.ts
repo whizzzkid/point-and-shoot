@@ -64,6 +64,18 @@ Deno.test("manifest - permissions contain only browser capabilities that require
   assertEquals(Object.keys(manifestBase.commands), ["toggle-capture"]);
 });
 
+Deno.test("manifest - chrome grants sidePanel while firefox omits the chrome-only permission", () => {
+  assertEquals(forChrome().permissions, [
+    "activeTab",
+    "storage",
+    "scripting",
+    "downloads",
+    "clipboardWrite",
+    "sidePanel",
+  ]);
+  assertEquals(forFirefox().permissions, manifestBase.permissions);
+});
+
 Deno.test("manifest - neither target declares host_permissions", () => {
   assertFalse("host_permissions" in forChrome());
   assertFalse("host_permissions" in forFirefox());

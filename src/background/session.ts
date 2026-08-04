@@ -25,8 +25,13 @@ export interface CapturedNoteResult {
 export interface SessionService {
   /** Returns the current unended session, or `null` for a stale, ended, or absent pointer. */
   loadActive(): Promise<Session | null>;
-  /** Resumes the active session or creates and displays a fresh session. */
-  start(): Promise<Session>;
+  /**
+   * Resumes the active session or creates and displays a fresh session named for the page.
+   *
+   * @param pageTitle Current page title used only when creating a session.
+   * @returns The resumed or newly created session.
+   */
+  start(pageTitle?: string): Promise<Session>;
   /** Ends the active session while retaining it as the side panel's displayed session. */
   end(): Promise<Session | null>;
   /** Appends one capture to the active session, creating a session defensively when absent. */
@@ -46,12 +51,30 @@ const DEFAULT_DEPENDENCIES: SessionServiceDependencies = {
   openDatabase: openStore,
 };
 
-function createSession(id: string, createdAt: string): Session {
+function twoDigits(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function defaultSessionName(pageTitle: string | undefined, createdAt: Date): string {
+  const trimmedTitle = pageTitle?.trim() ?? "";
+  const title = trimmedTitle.length === 0 ? "Untitled page" : trimmedTitle;
+  const timestamp = [
+    createdAt.getFullYear(),
+    twoDigits(createdAt.getMonth() + 1),
+    twoDigits(createdAt.getDate()),
+    twoDigits(createdAt.getHours()),
+    twoDigits(createdAt.getMinutes()),
+    twoDigits(createdAt.getSeconds()),
+  ].join("-");
+  return `${title}-${timestamp}`;
+}
+
+function createSession(id: string, createdAt: Date, pageTitle?: string): Session {
   return {
-    createdAt,
+    createdAt: createdAt.toISOString(),
     endedAt: null,
     id,
-    name: "Untitled session",
+    name: defaultSessionName(pageTitle, createdAt),
     notes: [],
     schemaVersion: SCHEMA_VERSION,
   };
@@ -85,16 +108,14 @@ async function pointAtSession(
 async function startSession(
   storage: BrowserShim["storage"]["local"],
   dependencies: SessionServiceDependencies,
+  pageTitle?: string,
 ): Promise<Session> {
   const database = await dependencies.openDatabase();
   try {
     const active = await loadActiveFrom(storage, database);
     if (active !== null) return active;
 
-    const session = createSession(
-      dependencies.createId(),
-      dependencies.now().toISOString(),
-    );
+    const session = createSession(dependencies.createId(), dependencies.now(), pageTitle);
     await putSession(database, session);
     await pointAtSession(storage, session.id);
     return session;
@@ -144,14 +165,14 @@ async function appendCapturedNote(
   const settings = await loadSettings(storage);
   const database = await dependencies.openDatabase();
   try {
-    const createdAt = dependencies.now().toISOString();
+    const createdAt = dependencies.now();
     const active = await loadActiveFrom(storage, database);
-    const session = active ?? createSession(dependencies.createId(), createdAt);
+    const session = active ?? createSession(dependencies.createId(), createdAt, request.pageTitle);
     const noteId = dependencies.createId();
     const next: Session = {
       ...session,
       notes: [...session.notes, {
-        createdAt,
+        createdAt: createdAt.toISOString(),
         elements: request.elements,
         id: noteId,
         pageTitle: request.pageTitle,
@@ -205,7 +226,7 @@ export function createSessionService(
           database.close();
         }
       }),
-    start: () => enqueue(() => startSession(storage, dependencies)),
+    start: (pageTitle) => enqueue(() => startSession(storage, dependencies, pageTitle)),
     end: () => enqueue(() => endSession(storage, dependencies)),
     append: (request) => enqueue(() => appendCapturedNote(storage, dependencies, request)),
   };
