@@ -2,7 +2,7 @@
 /** Options-page entry point for typed settings and stored-session controls. */
 
 import { render } from "preact";
-import { browser } from "../shared/browser.ts";
+import { browser, displayVersion } from "../shared/browser.ts";
 import componentStyles from "../ui/components/components.css" with { type: "text" };
 import { Options } from "./Options.tsx";
 import optionsStyles from "./options.css" with { type: "text" };
@@ -18,7 +18,7 @@ render(
   <Options
     autoTheme={matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"}
     repository={createOptionsRepository(browser)}
-    version={browser.runtime.getManifest().version}
+    version={displayVersion(browser.runtime.getManifest())}
   />,
   root,
 );

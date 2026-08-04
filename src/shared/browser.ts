@@ -27,6 +27,17 @@ export interface RuntimeInfo {
 /** Minimal extension-manifest shape read at runtime. */
 export interface ExtensionManifest {
   readonly version: string;
+  readonly version_name?: string;
+}
+
+/**
+ * Returns the human-facing packaged version, including a development label when present.
+ *
+ * @param manifest Minimal extension manifest returned by the browser runtime.
+ * @returns The descriptive version name, or the numeric version for release builds.
+ */
+export function displayVersion(manifest: ExtensionManifest): string {
+  return manifest.version_name ?? manifest.version;
 }
 
 /** Options accepted by {@link BrowserShim.tabs}'s `captureVisibleTab`. */

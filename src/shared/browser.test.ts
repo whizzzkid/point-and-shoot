@@ -3,6 +3,7 @@ import {
   type ChromeGlobalShape,
   type CommandInfo,
   createBrowserShim,
+  displayVersion,
   type FirefoxGlobalShape,
   type StorageChangedListener,
 } from "./browser.ts";
@@ -322,6 +323,17 @@ Deno.test("browser shim - getManifest exposes the packaged version on each engin
     createBrowserShim({ browser: firefoxGlobal }).runtime.getManifest().version,
     "0.1.0",
   );
+});
+
+Deno.test("displayVersion - prefers a descriptive local version name", () => {
+  assertEquals(
+    displayVersion({ version: "2026.801.0", version_name: "2026.801.0-dev-fix/calver-display" }),
+    "2026.801.0-dev-fix/calver-display",
+  );
+});
+
+Deno.test("displayVersion - falls back to the numeric release version", () => {
+  assertEquals(displayVersion({ version: "2026.801.0" }), "2026.801.0");
 });
 
 Deno.test("browser shim - firefox is checked before chrome (109+ ships a chrome-alias global)", () => {

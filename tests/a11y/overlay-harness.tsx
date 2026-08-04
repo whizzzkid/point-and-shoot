@@ -57,7 +57,7 @@ const shadowHost = createShadowHost({
   theme: document.documentElement.dataset.a11yTheme === "light" ? "light" : "dark",
 });
 
-render(<CaptureOverlay iconSpriteUrl="" noteCount={1} version="0.1.0" />, shadowHost.mount);
+render(<CaptureOverlay iconSpriteUrl="" noteCount={1} />, shadowHost.mount);
 
 // axe-core cannot traverse a production closed shadow root even when the test retains its
 // ShadowRoot handle. This open audit tree renders the same production toolbar solely for semantic

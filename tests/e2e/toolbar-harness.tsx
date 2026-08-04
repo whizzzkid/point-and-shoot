@@ -22,7 +22,6 @@ let composer: PlacementRect | undefined;
 function renderToolbar(): void {
   const props: FloatingToolbarProps = {
     iconSpriteUrl: "",
-    version: "0.1.0",
     ...(composer === undefined ? {} : { composer }),
     ...(selection === undefined ? {} : { selection }),
   };
