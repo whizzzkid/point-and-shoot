@@ -105,9 +105,10 @@ async function resumeSession(
   context: BrowserContext,
   page: Page,
   extensionId: string,
+  expectedSessionName: string,
 ): Promise<void> {
   const popup = await openExtensionPage(context, extensionId, "popup/popup.html");
-  await popup.getByRole("heading", { name: ORDINARY_SESSION_NAME }).waitFor();
+  await popup.getByRole("heading", { name: expectedSessionName }).waitFor();
   await page.bringToFront();
   await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
     (element as HTMLButtonElement).click();
@@ -265,7 +266,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       assertEquals(firstCapture.notes[0]?.pageUrl, `${fixture.base}/index.html`);
 
       await page.goto(`${fixture.base}/dark.html`);
-      await resumeSession(context, page, extensionId);
+      await resumeSession(context, page, extensionId, firstCapture.name);
       await capture(page.getByTestId("dark-action"));
       const secondCapture = validatedSession(
         await waitForStoredSession(serviceWorker, 2, sessionId),
@@ -543,7 +544,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       });
       await page.keyboard.press("Escape");
       await waitForHostCount(page, 0);
-      await resumeSession(context, page, extensionId);
+      await resumeSession(context, page, extensionId, afterQuotaFailure.name);
       await capture(page.getByTestId("light-action"));
       const emptyNoteSession = validatedSession(
         await waitForStoredSession(serviceWorker, 1, sessionId),
