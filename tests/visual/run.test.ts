@@ -24,10 +24,15 @@ Deno.test("visual baseline updates reject other hosts and missing markers", () =
   assertEquals(supportsBaselineUpdates("linux", "x86_64", undefined), false);
 });
 
-Deno.test("visual manifest normalization fixes the version and preserves package metadata", () => {
+Deno.test("visual manifest normalization fixes version metadata and preserves other fields", () => {
   const normalized = JSON.parse(
     normalizeVisualManifestVersion(
-      JSON.stringify({ manifest_version: 3, name: "Point and Shoot", version: "2026.801.0" }),
+      JSON.stringify({
+        manifest_version: 3,
+        name: "Point and Shoot",
+        version: "2026.801.0",
+        version_name: "2026.801.0-dev-another-branch",
+      }),
     ),
   );
 
@@ -35,6 +40,7 @@ Deno.test("visual manifest normalization fixes the version and preserves package
     manifest_version: 3,
     name: "Point and Shoot",
     version: "0.1.0",
+    version_name: "2026.801.0-dev-fix/calver-display",
   });
 });
 
@@ -58,13 +64,15 @@ Deno.test("visual manifest normalization is stable for the fixture version", () 
 Deno.test("visual manifest scope exposes the fixture version and restores the source", async () => {
   const temporaryRoot = await Deno.makeTempDir();
   const manifestPath = `${temporaryRoot}/manifest.json`;
-  const originalManifest = '{"manifest_version":3,"version":"2026.801.0"}\n';
+  const originalManifest =
+    '{"manifest_version":3,"version":"2026.801.0","version_name":"2026.801.0-dev-another-branch"}\n';
   try {
     await Deno.writeTextFile(manifestPath, originalManifest);
 
     const result = await withNormalizedVisualManifestVersion(manifestPath, async () => {
       const activeManifest = JSON.parse(await Deno.readTextFile(manifestPath));
       assertEquals(activeManifest.version, "0.1.0");
+      assertEquals(activeManifest.version_name, "2026.801.0-dev-fix/calver-display");
       return "captured";
     });
 

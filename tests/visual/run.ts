@@ -33,6 +33,7 @@ const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
 const VISUAL_FIXTURE_VERSION = "0.1.0";
+const VISUAL_FIXTURE_VERSION_NAME = "2026.801.0-dev-fix/calver-display";
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
@@ -60,10 +61,11 @@ export function supportsBaselineUpdates(
 }
 
 /**
- * Replaces a built Chrome manifest's release-dependent version for deterministic screenshots.
+ * Replaces a built Chrome manifest's release- and branch-dependent version metadata for
+ * deterministic screenshots.
  *
  * @param manifestSource Serialized Chrome extension manifest.
- * @returns The complete manifest serialized with the visual fixture version.
+ * @returns The complete manifest serialized with the visual fixture version metadata.
  * @throws When the source is invalid JSON or not an object with a string version.
  */
 export function normalizeVisualManifestVersion(manifestSource: string): string {
@@ -77,7 +79,17 @@ export function normalizeVisualManifestVersion(manifestSource: string): string {
     throw new Error("visual manifest must contain a string version");
   }
 
-  return `${JSON.stringify({ ...manifest, version: VISUAL_FIXTURE_VERSION }, null, 2)}\n`;
+  return `${
+    JSON.stringify(
+      {
+        ...manifest,
+        version: VISUAL_FIXTURE_VERSION,
+        version_name: VISUAL_FIXTURE_VERSION_NAME,
+      },
+      null,
+      2,
+    )
+  }\n`;
 }
 
 /**
