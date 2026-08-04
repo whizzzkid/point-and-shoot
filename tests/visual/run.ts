@@ -33,6 +33,7 @@ const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
 const VISUAL_FIXTURE_VERSION = "0.1.0";
+const VISUAL_FIXTURE_VERSION_NAME = `${VISUAL_FIXTURE_VERSION}-dev-visual-fixture`;
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
@@ -60,13 +61,13 @@ export function supportsBaselineUpdates(
 }
 
 /**
- * Replaces a built Chrome manifest's release-dependent version for deterministic screenshots.
+ * Replaces a built Chrome manifest's mutable version metadata for deterministic screenshots.
  *
  * @param manifestSource Serialized Chrome extension manifest.
- * @returns The complete manifest serialized with the visual fixture version.
+ * @returns The complete manifest serialized with the visual fixture version metadata.
  * @throws When the source is invalid JSON or not an object with a string version.
  */
-export function normalizeVisualManifestVersion(manifestSource: string): string {
+export function normalizeVisualManifestVersions(manifestSource: string): string {
   const manifest: unknown = JSON.parse(manifestSource);
   if (
     typeof manifest !== "object" ||
@@ -77,7 +78,21 @@ export function normalizeVisualManifestVersion(manifestSource: string): string {
     throw new Error("visual manifest must contain a string version");
   }
 
-  return `${JSON.stringify({ ...manifest, version: VISUAL_FIXTURE_VERSION }, null, 2)}\n`;
+  const normalizedVersionName = typeof (manifest as Record<string, unknown>)["version_name"] ===
+      "string"
+    ? { version_name: VISUAL_FIXTURE_VERSION_NAME }
+    : {};
+  return `${
+    JSON.stringify(
+      {
+        ...manifest,
+        version: VISUAL_FIXTURE_VERSION,
+        ...normalizedVersionName,
+      },
+      null,
+      2,
+    )
+  }\n`;
 }
 
 /**
@@ -88,12 +103,12 @@ export function normalizeVisualManifestVersion(manifestSource: string): string {
  * @returns The operation's result after restoring the manifest.
  * @throws When manifest I/O, validation, or the visual operation fails.
  */
-export async function withNormalizedVisualManifestVersion<T>(
+export async function withNormalizedVisualManifestVersions<T>(
   manifestPath: string,
   operation: () => Promise<T>,
 ): Promise<T> {
   const manifestSource = await Deno.readTextFile(manifestPath);
-  await Deno.writeTextFile(manifestPath, normalizeVisualManifestVersion(manifestSource));
+  await Deno.writeTextFile(manifestPath, normalizeVisualManifestVersions(manifestSource));
   try {
     return await operation();
   } finally {
@@ -193,7 +208,7 @@ async function main(): Promise<void> {
       "visual baseline updates require the documented Ubuntu 24.04 Playwright container",
     );
   }
-  await withNormalizedVisualManifestVersion(BUILT_CHROME_MANIFEST, async () => {
+  await withNormalizedVisualManifestVersions(BUILT_CHROME_MANIFEST, async () => {
     await Deno.remove(REPORT_DIRECTORY, { recursive: true }).catch((error: unknown) => {
       if (!(error instanceof Deno.errors.NotFound)) throw error;
     });
