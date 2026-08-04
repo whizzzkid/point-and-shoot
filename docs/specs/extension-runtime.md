@@ -42,10 +42,11 @@ or verification pipeline.
 `build/manifest.ts` is the only manifest source. Chrome `116` and Firefox `109` are the minimum
 versions; `build/build.ts` derives its esbuild targets from the same `SUPPORTED` constant.
 
-Both manifests grant exactly `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`.
-They declare no `host_permissions` and no static `content_scripts`. The background injects
-`content/content.js` only after a toolbar click, keyboard command, or popup action supplies an
-eligible active tab. A restricted page returns an unavailable state and does not create a session.
+Both manifests grant `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`. Chrome
+also grants `sidePanel`, which is required to call `chrome.sidePanel.open()`. They declare no
+`host_permissions` and no static `content_scripts`. The background injects `content/content.js` only
+after a toolbar click, keyboard command, or popup action supplies an eligible active tab. A
+restricted page returns an unavailable state and does not create a session.
 
 Chrome uses a module service worker and `side_panel`; Firefox uses an event-page script and
 `sidebar_action`. Application code accesses both through the promise-based shim in
