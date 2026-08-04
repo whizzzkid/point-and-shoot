@@ -31,6 +31,7 @@ import {
 
 const FIRST_NOTE = "The save action needs clearer visual hierarchy.";
 const SECOND_NOTE = "The dark-page action needs a stronger focus treatment.";
+const ORDINARY_SESSION_NAME = /^Fixture: ordinary page-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 
 function validatedSession(candidate: unknown): Session {
   const result = validateSession(candidate);
@@ -106,7 +107,7 @@ async function resumeSession(
   extensionId: string,
 ): Promise<void> {
   const popup = await openExtensionPage(context, extensionId, "popup/popup.html");
-  await popup.getByRole("heading", { name: "Untitled session" }).waitFor();
+  await popup.getByRole("heading", { name: ORDINARY_SESSION_NAME }).waitFor();
   await page.bringToFront();
   await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
     (element as HTMLButtonElement).click();
@@ -276,7 +277,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       ]);
 
       const panel = await openExtensionPage(context, extensionId, "sidepanel/sidepanel.html");
-      await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+      await panel.getByRole("heading", { name: ORDINARY_SESSION_NAME }).waitFor();
       await editVisibleNote(panel, FIRST_NOTE);
       await panel.locator("[data-page-key]").filter({ hasText: "Fixture: dark page" }).click();
       const darkNoteCard = panel.locator("[data-note-id]").first();
@@ -384,7 +385,7 @@ Deno.test("session survives a real Chromium restart before end and fresh start",
           firstLaunch.extensionId,
           "sidepanel/sidepanel.html",
         );
-        await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+        await panel.getByRole("heading", { name: resumed.name, exact: true }).waitFor();
         const notes = panel.locator("[data-note-id]");
         await notes.first().waitFor();
         assertEquals(await notes.count(), 1);

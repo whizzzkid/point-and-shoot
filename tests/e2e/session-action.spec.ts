@@ -26,6 +26,7 @@ interface StoredSessionState {
   readonly activeId: string | undefined;
   readonly displayId: string | undefined;
   readonly endedAt: string | null | undefined;
+  readonly name: string | undefined;
 }
 
 async function readStoredSession(
@@ -53,7 +54,9 @@ async function readStoredSession(
       ? stored.displaySessionId
       : undefined;
     const selectedId = requestedSessionId ?? activeId;
-    if (selectedId === undefined) return { activeId, displayId, endedAt: undefined };
+    if (selectedId === undefined) {
+      return { activeId, displayId, endedAt: undefined, name: undefined };
+    }
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("point-and-shoot");
       request.onsuccess = () => resolve(request.result);
@@ -70,7 +73,10 @@ async function readStoredSession(
       const endedAt = typeof record === "object" && record !== null && "endedAt" in record
         ? (record as { readonly endedAt: string | null }).endedAt
         : undefined;
-      return { activeId, displayId, endedAt };
+      const name = typeof record === "object" && record !== null && "name" in record
+        ? (record as { readonly name: string }).name
+        : undefined;
+      return { activeId, displayId, endedAt, name };
     } finally {
       database.close();
     }
@@ -137,6 +143,28 @@ Deno.test("browser toolbar starts, counts, ends, and starts a fresh session", as
   }
 });
 
+Deno.test("browser toolbar names a fresh session from the active tab and current time", async () => {
+  const { context, extensionId, serviceWorker } = await launchExtension();
+  const fixture = startFixtureServer();
+
+  try {
+    const page = await context.newPage();
+    await page.goto(`${fixture.base}/light.html`);
+
+    await triggerExtensionAction(context, page, extensionId);
+    await waitForHostCount(page, 1);
+    const started = await readStoredSession(serviceWorker);
+
+    assertEquals(
+      /^Fixture: light page-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(started.name ?? ""),
+      true,
+    );
+  } finally {
+    await fixture.close();
+    await context.close();
+  }
+});
+
 Deno.test("browser toolbar refuses to start a session on a restricted page", async () => {
   const { context, extensionId, serviceWorker } = await launchExtension();
 
@@ -159,6 +187,7 @@ Deno.test("browser toolbar refuses to start a session on a restricted page", asy
         activeId: undefined,
         displayId: undefined,
         endedAt: undefined,
+        name: undefined,
       });
     });
   } finally {

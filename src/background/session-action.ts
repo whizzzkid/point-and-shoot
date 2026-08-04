@@ -35,9 +35,10 @@ export interface SessionActionController {
    * Starts a fresh session or ends the active one for the clicked tab.
    *
    * @param tabId Browser tab whose overlay should mount or unmount.
+   * @param pageTitle Current tab title used when a fresh session is created.
    * @returns The resulting lifecycle state.
    */
-  toggle(tabId: number): Promise<SessionActionResult>;
+  toggle(tabId: number, pageTitle?: string): Promise<SessionActionResult>;
   /** Rehydrates the global badge and tooltip from durable active-session state. */
   synchronize(): Promise<void>;
   /** Reads the canonical active session state for injected UI. */
@@ -136,7 +137,7 @@ export function createSessionActionController(
         }
         await showActive(browser, active.notes.length);
       }),
-    toggle: (tabId) =>
+    toggle: (tabId, pageTitle) =>
       enqueue(async () => {
         const active = await sessions.loadActive();
         if (active !== null) {
@@ -162,7 +163,7 @@ export function createSessionActionController(
           return { state: "unavailable" };
         }
         try {
-          const started = await sessions.start();
+          const started = await sessions.start(pageTitle);
           await showActive(browser, started.notes.length);
           return {
             noteCount: started.notes.length,
@@ -223,7 +224,7 @@ export function registerSessionActionHandler(
   browser.action.onClicked.addListener((tab) => {
     if (tab.id === undefined) return;
     void browser.openPanel(tab.id).catch(reportError);
-    void controller.toggle(tab.id).catch(reportError);
+    void controller.toggle(tab.id, tab.title).catch(reportError);
   });
   void controller.synchronize().catch(reportError);
 }
