@@ -242,9 +242,12 @@ visual manifests and generated baselines, not component behavior.
 2. Capture every state in forced light and dark themes on the repository's pinned Linux platform.
 3. Keep remote names and response text deterministic. Include empty, long, error, disconnected,
    removed-agent, browser-managed, and unsupported states.
-4. Inspect diffs for sentence case, mono technical values, one accent action, semantic status color,
+4. Extend `withNormalizedVisualManifestVersions` rather than replacing it. Keep the fixture
+   `version` and `version_name` deterministic during capture, retain tests for exact manifest
+   restoration after both success and failure, and restore the exact built manifest in either case.
+5. Inspect diffs for sentence case, mono technical values, one accent action, semantic status color,
    border-defined edges, and non-darkening hover behavior.
-5. Commit only intentional baselines and the stable fixture inputs that produced them.
+6. Commit only intentional baselines and the stable fixture inputs that produced them.
 
 **Verification:**
 
@@ -419,6 +422,8 @@ mise exec -- deno task ci
 2. Audit built Chrome and Firefox manifests for required permissions, optional host eligibility, and
    optional API declarations. Verify Firefox's minimum is 115 and compare both manifests with the
    current governing A2A ADR named by `docs/adr/README.md` and the published privacy guidance.
+   Verify development manifests retain branch-labeled `version_name` values and release manifests
+   omit `version_name`.
 3. Audit bundles for Node-only imports, gRPC, remote code, secrets, fixture credentials, and an
    unpinned SDK dependency.
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
@@ -446,10 +451,12 @@ mise exec -- deno task smoke:a2a-firefox
 mise exec -- deno task smoke:firefox
 mise exec -- deno task a11y
 mise exec -- deno task visual
+mise exec -- deno task build
 ```
 
 Run `visual` on the pinned Linux platform and verify `lint:firefox` through the aggregate or
-directly. Attach the exact final output to the PR.
+directly. The final `build` must leave branch-labeled Chrome and Firefox development packages in
+`dist/`. Attach the exact final output to the PR.
 
 **Commit:** `chore(a2a): close the client delivery plan`
 

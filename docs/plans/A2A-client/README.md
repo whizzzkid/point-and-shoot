@@ -391,7 +391,9 @@ Agents executing an item must:
 4. Use `wk-pr` and the repository's stack tooling. Verify the live PR base, remote head, CI rollup,
    and tree identity rather than trusting cached stack metadata.
 5. Keep one logical change per PR and commit. Every PR must pass `mise exec -- deno task ci` and its
-   focused tests independently.
+   focused tests independently. For any change that can affect the shipped extension, finish local
+   verification with `mise exec -- deno task build` after every other command that may write
+   `dist/`, leaving development packages labeled for the branch tip.
 6. Keep lane files disjoint. If implementation reveals an undeclared shared-file dependency, stop
    that lane, add the dependency to the phase guide, and rebase it onto the owning lane instead of
    racing edits.
@@ -406,7 +408,8 @@ Agents executing an item must:
 Every implementation PR must cover happy, sad, and edge paths, update affected specs or ADRs in the
 same commit, and run the focused command listed by its item followed by `mise exec -- deno task ci`.
 Visible changes also require live browser inspection and updated visual or accessibility evidence
-where applicable.
+where applicable. Any PR that affects the shipped extension must leave a final development build in
+`dist/chrome/` and `dist/firefox/` after all other commands that can write those directories.
 
 The final phase additionally runs `mise exec -- deno task e2e:full`, the Firefox smoke task, the
 accessibility task, and the pinned Linux visual task. A result is claimed only for a command that

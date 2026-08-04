@@ -95,8 +95,11 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
    compatibility, or gRPC subpaths into an extension entry point.
 3. Wrap `ClientFactory` construction in `src/shared/a2a/sdk.ts`, inject `fetch`, and restrict
    browser transport preference to JSON-RPC and HTTP+JSON.
-4. Add a build test that bundles the new client module into Chrome and Firefox artifacts, scans for
-   unresolved Node built-ins and gRPC peers, and records the minified byte delta in the test output.
+4. Add a build test that bundles the new client module into Chrome and Firefox artifacts using a
+   temporary output directory and an explicit fixture branch, scans for unresolved Node built-ins
+   and gRPC peers, and records the minified byte delta in the test output. Unit tests must not
+   replace the branch-labeled development packages in the repository's `dist/` directory. Assert
+   that adding the SDK preserves the existing numeric `version` and branch-specific `version_name`.
 5. Inventory and test the SDK's v1 client, authentication hook, stream, task lookup/subscription,
    and Agent Card signature-verification surfaces. Prove whether authentication can contribute
    headers, query parameters, request credentials, and browser-managed preconditions. Inspect the
@@ -114,9 +117,9 @@ export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactor
 
 ```bash
 mise exec -- deno task test src/shared/a2a/sdk.test.ts build/build.test.ts
-mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
+mise exec -- deno task build
 ```
 
 Inspect `dist/chrome/` and `dist/firefox/` for Node-only imports. Record the exact SDK version and
@@ -175,7 +178,8 @@ and the cookie methods needed for a later feasibility decision.
 3. Do not declare optional `identity` or `cookies` API permissions yet. Phase 3 owns those
    declarations after the initial delivery slice is complete.
 4. Extend the existing Chrome and Firefox adapters instead of reading `chrome.*` or `browser.*`
-   elsewhere. Keep `storage.session` hidden from content scripts.
+   elsewhere. Keep `storage.session` hidden from content scripts, and preserve Chrome's native
+   promise-returning `sidePanel.open()` path instead of wrapping it as a callback API.
 5. Normalize a user URL to an exact client origin plus the narrowest Chrome and Firefox permission
    patterns. Preserve a Chrome port restriction; omit the port for Firefox and enforce it in the
    client allowlist. Reject credentials in URLs, fragments, unsupported schemes, non-loopback HTTP,
@@ -184,19 +188,21 @@ and the cookie methods needed for a later feasibility decision.
    Firefox's host-wide port grant, loopback hosts, and every rejected URL class against both fake
    browser globals.
 7. Update the manifest permission assertion so it distinguishes required permissions, optional host
-   eligibility, and runtime grants. Assert that optional API permissions remain absent and both the
-   shared support constant and generated Firefox manifest require 115.
+   eligibility, and runtime grants. Preserve Chrome's existing `sidePanel` grant while Firefox keeps
+   the shared required-permission list. Assert that optional API permissions remain absent and both
+   the shared support constant and generated Firefox manifest require 115.
 
 **Verification:**
 
 ```bash
 mise exec -- deno task test build/manifest.test.ts src/shared/browser.test.ts src/shared/a2a/remote-access.test.ts
-mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
+mise exec -- deno task build
 ```
 
-Inspect both built manifests. The required permission list must remain unchanged.
+Inspect both built manifests. Required permissions must remain unchanged per target: Chrome retains
+`sidePanel`, and Firefox does not gain it.
 
 **Commit:** `feat(extension): add optional A2A origin grants`
 

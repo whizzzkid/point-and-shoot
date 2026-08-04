@@ -362,16 +362,19 @@ update time and run creation time.
 1. Extend the shared store with a bounded cursor API that returns valid records and typed corrupt
    entries rather than relying on the existing `listSessions()` path, which silently skips invalid
    records. Keep the existing `load()` behavior for current-session startup.
-2. Join sessions and runs in the model, not IndexedDB. Preserve orphaned run summaries with their
-   stored target snapshot if a session record is corrupt or manually removed.
+2. Join sessions and runs in the model, not IndexedDB. Preserve each session's generated
+   page-title-and-timestamp name without deriving a replacement in A2A history. Preserve orphaned
+   run summaries with their stored target snapshot if a session record is corrupt or manually
+   removed.
 3. Never auto-delete or truncate history. Surface validation and quota errors per affected entry so
    one corrupt record does not hide valid sessions. Load bounded summary pages and lazy run events;
    never load all retained sessions, runs, or events during startup.
 4. Individual deletion and the existing Clear all sessions action abort active work and
    transactionally cascade through matching runs and events before refreshing the history cursor.
 5. Test active and completed sessions, empty and multi-page history, cursor ties, multiple runs,
-   removed agent, missing session, corrupt session, corrupt run, concurrent save during list,
-   deletion during an active stream, rollback, and stable ordering.
+   generated, edited, and blank-title-fallback session names, removed agent, missing session,
+   corrupt session, corrupt run, concurrent save during list, deletion during an active stream,
+   rollback, and stable ordering.
 
 **Verification:**
 
@@ -400,9 +403,9 @@ mise exec -- deno task ci
 
 **Implementation:**
 
-1. Render a history view with a bounded page of retained sessions, note count, capture status, and
-   nested A2A run summaries. Add Load more without replacing the visible page. Completed local
-   sessions remain openable and exportable.
+1. Render a history view with a bounded page of retained sessions, their persisted names, note
+   count, capture status, and nested A2A run summaries. Add Load more without replacing the visible
+   page. Completed local sessions remain openable and exportable.
 2. Render run detail from the immutable request and ordered event ledger, including target snapshot,
    remote identifiers, two-axis status, message and text-artifact responses, other artifact
    metadata, and safe errors.
@@ -455,15 +458,18 @@ land; it is not assigned concurrently with a lane.
 1. Add notes, plan, history, and run-detail navigation without discarding unsaved local note edits.
 2. Consume and clear the pending target from `storage.session` exactly once when opening plan
    review.
-3. Drive the complete path: add agent, grant card and interface origins, connect Bearer or API key,
+3. Preserve the side-panel entry point's `displayVersion()` projection when adding navigation. In
+   end-to-end fixtures, read the created session's generated name, verify a user edit persists, and
+   never restore a fixed `Untitled session` expectation.
+4. Drive the complete path: add agent, grant card and interface origins, connect Bearer or API key,
    capture notes, choose target in the toolbar, review selection, send, stream terminal response,
    reopen history, and inspect the exact request and result.
-4. Add sad paths for denied permission, revoked permission, `401`, `403`, stale security revision,
+5. Add sad paths for denied permission, revoked permission, `401`, `403`, stale security revision,
    disconnect after task id, disconnect before task id, panel close/reopen, invalid event,
    persistence failure, session deletion during a stream, and Clear all sessions with A2A history.
-5. Update visual-manifest expectations for Agents options, split toolbar, remote plan, history, and
+6. Update visual-manifest expectations for Agents options, split toolbar, remote plan, history, and
    run detail. Phase 4 captures final baselines after enterprise auth UI settles.
-6. Extend the real-Firefox A2A smoke path from phase 0 through agent setup, reviewed send, terminal
+7. Extend the real-Firefox A2A smoke path from phase 0 through agent setup, reviewed send, terminal
    response, panel reopen, and history. Keep permission-prompt boundaries explicit when automation
    can drive only the already-granted runtime path.
 

@@ -90,12 +90,13 @@ flowchart TD
 
 ```bash
 mise exec -- deno task test build/manifest.test.ts
-mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
+mise exec -- deno task build
 ```
 
-Inspect both built manifests and confirm that required permissions remain unchanged.
+Inspect both built manifests and confirm that required permissions remain unchanged per target,
+including Chrome's existing `sidePanel` grant.
 
 **Commit:** `feat(extension): declare optional enterprise auth APIs`
 

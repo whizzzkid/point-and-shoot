@@ -4,7 +4,7 @@ type: plan
 status: accepted
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -64,7 +64,9 @@ header-only adapters, silent alternative selection, and credentials keyed withou
 could not safely implement the A2A v1 security model. The revised plan uses explicit requirement
 selection, revision-bound credentials, composable request contributions, and fail-closed collision
 checks. Phase 0 still blocks product implementation until the SDK, browser permission, pre-parse
-input limits, streaming lifecycle, and cross-browser assumptions have executable evidence.
+input limits, streaming lifecycle, and cross-browser assumptions have executable evidence. The
+2026-08-04 reconciliation against `main` found no superseded phase or new architecture finding; it
+tightened preservation and verification contracts for behavior merged after the original review.
 
 ## Critical Findings
 
@@ -266,6 +268,27 @@ input limits, streaming lifecycle, and cross-browser assumptions have executable
 | F - Operability and observability | Two-axis status, ids, redacted errors, corrupt entries, incomplete persistence, and unknown delivery remain visible.              |
 | G - Cost and efficiency           | No hosted service exists; bounded browser work and explicit local quota are the relevant cost controls.                           |
 | H - Delivery risk                 | Phase barriers prove the SDK and browser model before UI; PR-stack lanes own disjoint files with convergence points.              |
+
+## Latest-main reconciliation
+
+**Delta reviewed:** changes merged to `main` after the plan's original merge base, plus the plan
+updates that preserve their contracts.
+
+- **A - Single points of failure:** None observed. The delta adds no component, remote dependency,
+  or state owner.
+- **B - Unhappy paths:** Visual verification now preserves and restores the exact built manifest
+  after success and failure; history verification retains generated, edited, and fallback names.
+- **C - Underlying assumptions:** Current implementation and tests confirm Chrome's required
+  `sidePanel` permission, native promise-only `sidePanel.open()`, branch-specific development
+  `version_name`, release omission of `version_name`, and durable generated session names.
+- **D - Scalability and performance:** None observed. No work bound or retention contract changed.
+- **E - Security and trust boundaries:** The plan preserves target-specific required permissions; it
+  does not widen Chrome or Firefox host access.
+- **F - Operability and observability:** Extension-affecting PRs now finish with a development build
+  so checked artifacts identify the branch tip after commands that rewrite `dist/`.
+- **G - Cost and efficiency:** None observed. The delta adds no network, storage, or compute path.
+- **H - Delivery risk:** No item is obsolete. Phase owners and parallel lanes remain disjoint, and
+  the new checks prevent later work from regressing merged runtime and build contracts.
 
 ## Underlying Assumptions
 
