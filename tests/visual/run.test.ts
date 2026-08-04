@@ -1,8 +1,8 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import {
-  normalizeVisualManifestVersion,
+  normalizeVisualManifestVersions,
   supportsBaselineUpdates,
-  withNormalizedVisualManifestVersion,
+  withNormalizedVisualManifestVersions,
 } from "./run.ts";
 
 Deno.test("visual baseline updates accept the documented Linux container", () => {
@@ -24,35 +24,44 @@ Deno.test("visual baseline updates reject other hosts and missing markers", () =
   assertEquals(supportsBaselineUpdates("linux", "x86_64", undefined), false);
 });
 
-Deno.test("visual manifest normalization fixes the version and preserves package metadata", () => {
-  const normalized = JSON.parse(
-    normalizeVisualManifestVersion(
-      JSON.stringify({ manifest_version: 3, name: "Point and Shoot", version: "2026.801.0" }),
-    ),
-  );
-
-  assertEquals(normalized, {
+Deno.test("visual manifest normalization fixes mutable version metadata across branches", () => {
+  const normalize = (versionName: string): unknown =>
+    JSON.parse(
+      normalizeVisualManifestVersions(
+        JSON.stringify({
+          manifest_version: 3,
+          name: "Point and Shoot",
+          version: "2026.801.0",
+          version_name: versionName,
+        }),
+      ),
+    );
+  const expected = {
     manifest_version: 3,
     name: "Point and Shoot",
     version: "0.1.0",
-  });
+    version_name: "0.1.0-dev-visual-fixture",
+  };
+
+  assertEquals(normalize("2026.801.0-dev-fix/calver-display"), expected);
+  assertEquals(normalize("2026.801.0-dev-main"), expected);
 });
 
 Deno.test("visual manifest normalization rejects a missing packaged version", () => {
-  assertThrows(() => normalizeVisualManifestVersion("{"), SyntaxError);
+  assertThrows(() => normalizeVisualManifestVersions("{"), SyntaxError);
   assertThrows(
-    () => normalizeVisualManifestVersion(JSON.stringify({ manifest_version: 3 })),
+    () => normalizeVisualManifestVersions(JSON.stringify({ manifest_version: 3 })),
     Error,
     "visual manifest must contain a string version",
   );
 });
 
 Deno.test("visual manifest normalization is stable for the fixture version", () => {
-  const first = normalizeVisualManifestVersion(
+  const first = normalizeVisualManifestVersions(
     JSON.stringify({ manifest_version: 3, version: "0.1.0" }),
   );
 
-  assertEquals(normalizeVisualManifestVersion(first), first);
+  assertEquals(normalizeVisualManifestVersions(first), first);
 });
 
 Deno.test("visual manifest scope exposes the fixture version and restores the source", async () => {
@@ -62,7 +71,7 @@ Deno.test("visual manifest scope exposes the fixture version and restores the so
   try {
     await Deno.writeTextFile(manifestPath, originalManifest);
 
-    const result = await withNormalizedVisualManifestVersion(manifestPath, async () => {
+    const result = await withNormalizedVisualManifestVersions(manifestPath, async () => {
       const activeManifest = JSON.parse(await Deno.readTextFile(manifestPath));
       assertEquals(activeManifest.version, "0.1.0");
       return "captured";
@@ -84,7 +93,7 @@ Deno.test("visual manifest scope restores the source after capture failure", asy
 
     await assertRejects(
       () =>
-        withNormalizedVisualManifestVersion(
+        withNormalizedVisualManifestVersions(
           manifestPath,
           () => Promise.reject(new Error("capture failed")),
         ),
