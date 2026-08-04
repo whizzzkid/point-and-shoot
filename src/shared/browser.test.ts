@@ -139,9 +139,9 @@ function createFakeChrome(): FakeChrome {
       },
     },
     sidePanel: {
-      open(_options, callback) {
+      open(_options) {
         calls.push("sidePanel.open");
-        queueMicrotask(() => callback());
+        return Promise.resolve();
       },
     },
   };
@@ -403,6 +403,27 @@ Deno.test("browser shim - openPanel agrees across engines via divergent underlyi
 
   assertEquals(chromeCalls, ["sidePanel.open"]);
   assertEquals(firefoxCalls, ["sidebarAction.open"]);
+});
+
+Deno.test("browser shim - chrome openPanel uses the Promise-only sidePanel signature", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const calls: string[] = [];
+  const promiseOnlyChrome = {
+    ...chromeGlobal,
+    sidePanel: {
+      open(options: { readonly tabId?: number }): Promise<void> {
+        calls.push(`sidePanel.open:${options.tabId}:${arguments.length}`);
+        if (arguments.length !== 1) {
+          throw new TypeError("sidePanel.open accepts only its options argument");
+        }
+        return Promise.resolve();
+      },
+    },
+  } as unknown as ChromeGlobalShape;
+
+  await createBrowserShim({ chrome: promiseOnlyChrome }).openPanel(7);
+
+  assertEquals(calls, ["sidePanel.open:7:1"]);
 });
 
 Deno.test("browser shim - callback-style chrome storage resolves through a promise", async () => {

@@ -5,11 +5,11 @@
  * This is the single seam where Chrome and Firefox differ. Firefox exposes a `browser.*` global
  * whose methods return promises natively. Chrome exposes only `chrome.*`, and in MV3 that global
  * returns promises for some methods when the callback is omitted, but not uniformly — so every
- * asynchronous Chrome call in this module goes through {@link promisifyWithResult} or
- * {@link promisifyVoid} regardless of whether that particular method happens to support a promise
- * on its own. The synchronous `runtime.getURL` stays synchronous in both engines. Detection of
- * which global is present happens once, on first access to {@link browser}, and every method on the
- * resulting object delegates to that one detected adapter — never a per-call-site branch.
+ * asynchronous callback-based Chrome call in this module goes through {@link promisifyWithResult}
+ * or {@link promisifyVoid}. Promise-only APIs, such as `sidePanel.open`, return their native
+ * promise directly. The synchronous `runtime.getURL` stays synchronous in both engines. Detection
+ * of which global is present happens once, on first access to {@link browser}, and every method on
+ * the resulting object delegates to that one detected adapter — never a per-call-site branch.
  *
  * Nothing outside this module should reference `chrome.*` or `browser.*` directly.
  *
@@ -203,7 +203,7 @@ export interface BrowserShim {
   openPanel(tabId?: number): Promise<void>;
 }
 
-/** Shape of Chrome's MV3 global this module depends on — callback-based for asynchronous calls. */
+/** Shape of Chrome's MV3 global this module depends on. */
 export interface ChromeGlobalShape {
   readonly tabs: {
     captureVisibleTab(
@@ -260,7 +260,7 @@ export interface ChromeGlobalShape {
     setTitle(details: ActionTitleDetails, callback: () => void): void;
   };
   readonly sidePanel: {
-    open(options: { readonly tabId?: number }, callback: () => void): void;
+    open(options: { readonly tabId?: number }): Promise<void>;
   };
 }
 
@@ -450,7 +450,7 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
     },
     openPanel(tabId) {
       const options = tabId === undefined ? {} : { tabId };
-      return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.sidePanel.open(options, cb));
+      return chromeGlobal.sidePanel.open(options);
     },
   };
 }
