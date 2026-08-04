@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-04
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -128,8 +128,10 @@ data.
 | Popup document   | Can toggle capture, start or resume a session, open notes, and open options. It is built but is not the toolbar action's `default_popup`.                                                                                                                                                            |
 | Options page     | Edits validated settings, opens browser-owned shortcut management, and clears stored sessions after confirmation.                                                                                                                                                                                    |
 
-All extension surfaces show the packaged manifest version. The component gallery is a development
-surface and does not ship as an extension page.
+The popup, notes side panel, and options page show the packaged manifest's human-facing version.
+Development builds use the descriptive local label from `version_name`; release builds fall back to
+the numeric `version`. The injected toolbar does not show a version. The component gallery is a
+development surface and does not ship as an extension page.
 
 ## Capture flow
 

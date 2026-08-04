@@ -2,7 +2,7 @@
 /** Popup entry point for session and active-tab launcher actions. */
 
 import { render } from "preact";
-import { browser } from "../shared/browser.ts";
+import { browser, displayVersion } from "../shared/browser.ts";
 import componentStyles from "../ui/components/components.css" with { type: "text" };
 import { IconSpriteProvider } from "../ui/components/index.ts";
 import { createPopupActions } from "./actions.ts";
@@ -22,7 +22,7 @@ render(
       actions={createPopupActions(browser)}
       repository={createPopupSessionRepository(browser.storage.local)}
       theme="dark"
-      version={browser.runtime.getManifest().version}
+      version={displayVersion(browser.runtime.getManifest())}
     />
   </IconSpriteProvider>,
   root,

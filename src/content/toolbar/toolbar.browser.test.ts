@@ -145,7 +145,7 @@ Deno.test("floating toolbar - exposes selection, count, and plan navigation only
       noteCount: "0 notes",
       sendDisabled: true,
       sendVariant: "primary",
-      version: "v0.1.0",
+      version: undefined,
     });
   } finally {
     await browser.close();
