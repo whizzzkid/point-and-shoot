@@ -67,13 +67,15 @@ Deno.test("visual manifest normalization is stable for the fixture version", () 
 Deno.test("visual manifest scope exposes the fixture version and restores the source", async () => {
   const temporaryRoot = await Deno.makeTempDir();
   const manifestPath = `${temporaryRoot}/manifest.json`;
-  const originalManifest = '{"manifest_version":3,"version":"2026.801.0"}\n';
+  const originalManifest =
+    '{"manifest_version":3,"version":"2026.801.0","version_name":"2026.801.0-dev-main"}\n';
   try {
     await Deno.writeTextFile(manifestPath, originalManifest);
 
     const result = await withNormalizedVisualManifestVersions(manifestPath, async () => {
       const activeManifest = JSON.parse(await Deno.readTextFile(manifestPath));
       assertEquals(activeManifest.version, "0.1.0");
+      assertEquals(activeManifest.version_name, "0.1.0-dev-visual-fixture");
       return "captured";
     });
 
@@ -87,7 +89,8 @@ Deno.test("visual manifest scope exposes the fixture version and restores the so
 Deno.test("visual manifest scope restores the source after capture failure", async () => {
   const temporaryRoot = await Deno.makeTempDir();
   const manifestPath = `${temporaryRoot}/manifest.json`;
-  const originalManifest = '{"manifest_version":3,"version":"2026.801.0"}\n';
+  const originalManifest =
+    '{"manifest_version":3,"version":"2026.801.0","version_name":"2026.801.0-dev-main"}\n';
   try {
     await Deno.writeTextFile(manifestPath, originalManifest);
 
@@ -95,7 +98,12 @@ Deno.test("visual manifest scope restores the source after capture failure", asy
       () =>
         withNormalizedVisualManifestVersions(
           manifestPath,
-          () => Promise.reject(new Error("capture failed")),
+          async () => {
+            const activeManifest = JSON.parse(await Deno.readTextFile(manifestPath));
+            assertEquals(activeManifest.version, "0.1.0");
+            assertEquals(activeManifest.version_name, "0.1.0-dev-visual-fixture");
+            throw new Error("capture failed");
+          },
         ),
       Error,
       "capture failed",

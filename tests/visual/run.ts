@@ -33,7 +33,7 @@ const GALLERY_VIEWPORT = { height: 800, width: 1_280 };
 const MAXIMUM_DIFF_PIXEL_RATIO = 0.001;
 const BASELINE_UPDATE_PLATFORM_MARKER = "ubuntu-24.04-playwright-1.62.0";
 const VISUAL_FIXTURE_VERSION = "0.1.0";
-const VISUAL_FIXTURE_VERSION_NAME = "0.1.0-dev-visual-fixture";
+const VISUAL_FIXTURE_VERSION_NAME = `${VISUAL_FIXTURE_VERSION}-dev-visual-fixture`;
 
 const SURFACES = ["gallery", ...WAVE_3_SHOT_SURFACES] as const;
 type Surface = typeof SURFACES[number];
@@ -64,7 +64,7 @@ export function supportsBaselineUpdates(
  * Replaces a built Chrome manifest's mutable version metadata for deterministic screenshots.
  *
  * @param manifestSource Serialized Chrome extension manifest.
- * @returns The complete manifest serialized with the visual fixture version.
+ * @returns The complete manifest serialized with the visual fixture version metadata.
  * @throws When the source is invalid JSON or not an object with a string version.
  */
 export function normalizeVisualManifestVersions(manifestSource: string): string {
