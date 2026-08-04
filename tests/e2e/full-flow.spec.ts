@@ -31,6 +31,7 @@ import {
 
 const FIRST_NOTE = "The save action needs clearer visual hierarchy.";
 const SECOND_NOTE = "The dark-page action needs a stronger focus treatment.";
+const ORDINARY_SESSION_NAME = /^Fixture: ordinary page-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 
 function validatedSession(candidate: unknown): Session {
   const result = validateSession(candidate);
@@ -90,6 +91,11 @@ async function endSession(
 ): Promise<Session> {
   await triggerExtensionAction(context, page, extensionId);
   await waitForHostCount(page, 0);
+  const tabId = await tabIdForPage(context, page);
+  await waitForActionState(serviceWorker, tabId, {
+    badgeText: "",
+    title: "Point and Shoot — Start session",
+  });
   const pointers = await readSessionPointers(serviceWorker);
   assertEquals(pointers.activeId, undefined);
   assertEquals(pointers.displayId, sessionId);
@@ -104,9 +110,10 @@ async function resumeSession(
   context: BrowserContext,
   page: Page,
   extensionId: string,
+  expectedSessionName: string,
 ): Promise<void> {
   const popup = await openExtensionPage(context, extensionId, "popup/popup.html");
-  await popup.getByRole("heading", { name: "Untitled session" }).waitFor();
+  await popup.getByRole("heading", { name: expectedSessionName }).waitFor();
   await page.bringToFront();
   await popup.getByRole("button", { name: "Resume session" }).evaluate((element) => {
     (element as HTMLButtonElement).click();
@@ -264,7 +271,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       assertEquals(firstCapture.notes[0]?.pageUrl, `${fixture.base}/index.html`);
 
       await page.goto(`${fixture.base}/dark.html`);
-      await resumeSession(context, page, extensionId);
+      await resumeSession(context, page, extensionId, firstCapture.name);
       await capture(page.getByTestId("dark-action"));
       const secondCapture = validatedSession(
         await waitForStoredSession(serviceWorker, 2, sessionId),
@@ -276,7 +283,7 @@ Deno.test("full flow captures two pages in one validated export bundle", async (
       ]);
 
       const panel = await openExtensionPage(context, extensionId, "sidepanel/sidepanel.html");
-      await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+      await panel.getByRole("heading", { name: ORDINARY_SESSION_NAME }).waitFor();
       await editVisibleNote(panel, FIRST_NOTE);
       await panel.locator("[data-page-key]").filter({ hasText: "Fixture: dark page" }).click();
       const darkNoteCard = panel.locator("[data-note-id]").first();
@@ -384,7 +391,7 @@ Deno.test("session survives a real Chromium restart before end and fresh start",
           firstLaunch.extensionId,
           "sidepanel/sidepanel.html",
         );
-        await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+        await panel.getByRole("heading", { name: resumed.name, exact: true }).waitFor();
         const notes = panel.locator("[data-note-id]");
         await notes.first().waitFor();
         assertEquals(await notes.count(), 1);
@@ -542,7 +549,7 @@ Deno.test("quota failure, empty note, zero-note export, and restricted page stay
       });
       await page.keyboard.press("Escape");
       await waitForHostCount(page, 0);
-      await resumeSession(context, page, extensionId);
+      await resumeSession(context, page, extensionId, afterQuotaFailure.name);
       await capture(page.getByTestId("light-action"));
       const emptyNoteSession = validatedSession(
         await waitForStoredSession(serviceWorker, 1, sessionId),

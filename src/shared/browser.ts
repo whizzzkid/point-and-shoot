@@ -51,6 +51,8 @@ export interface TabInfo {
   readonly id?: number;
   readonly windowId?: number;
   readonly active?: boolean;
+  /** Current document title when the active-tab grant makes it available. */
+  readonly title?: string;
   readonly url?: string;
 }
 

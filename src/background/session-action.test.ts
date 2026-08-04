@@ -45,7 +45,7 @@ function createFakes(initial: Session | null = null): {
   readonly browser: SessionActionBrowser;
   readonly calls: string[];
   readonly service: SessionService;
-  click(tabId: number): void;
+  click(tabId: number, title?: string): void;
   setMountOutcome(outcome: ActivationOutcome): void;
 } {
   const calls: string[] = [];
@@ -96,8 +96,8 @@ function createFakes(initial: Session | null = null): {
       calls.push("session.load");
       return Promise.resolve(active);
     },
-    start() {
-      calls.push("session.start");
+    start(pageTitle?: string) {
+      calls.push(`session.start:${pageTitle ?? ""}`);
       active = session(0);
       return Promise.resolve(active);
     },
@@ -106,8 +106,9 @@ function createFakes(initial: Session | null = null): {
     activation,
     browser,
     calls,
-    click(tabId) {
-      clickListener?.({ id: tabId });
+    click(tabId, title) {
+      const tab = title === undefined ? { id: tabId } : { id: tabId, title };
+      clickListener?.(tab);
     },
     service,
     setMountOutcome(outcome) {
@@ -121,11 +122,12 @@ Deno.test("session action toolbar click opens the panel and toggles the session"
   const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
   registerSessionActionHandler(fake.browser, controller);
 
-  fake.click(7);
+  fake.click(7, "Checkout");
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
   assertEquals(fake.calls.includes("panel.open:7"), true);
   assertEquals(fake.calls.includes("activation.mount:7"), true);
+  assertEquals(fake.calls.includes("session.start:Checkout"), true);
   assertEquals(fake.calls.at(-2), "action.badge:0");
   assertEquals(fake.calls.at(-1), "action.title:Point and Shoot — End session (0 notes)");
 });
@@ -134,7 +136,7 @@ Deno.test("session action starts capture and renders a zero-note badge and toolt
   const fake = createFakes();
   const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
 
-  assertEquals(await controller.toggle(7), {
+  assertEquals(await controller.toggle(7, "Checkout"), {
     noteCount: 0,
     sessionId: "session-1",
     state: "started",
@@ -142,7 +144,7 @@ Deno.test("session action starts capture and renders a zero-note badge and toolt
   assertEquals(fake.calls, [
     "session.load",
     "activation.mount:7",
-    "session.start",
+    "session.start:Checkout",
     "action.badge:0",
     "action.title:Point and Shoot — End session (0 notes)",
   ]);

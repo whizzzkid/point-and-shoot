@@ -26,7 +26,8 @@ When no active session exists, a toolbar click:
 
 1. Opens the browser side panel or sidebar from the direct user gesture.
 2. Ensures the overlay is mounted on the clicked tab.
-3. Creates one schema-valid `Untitled session` record in IndexedDB.
+3. Creates one schema-valid session in IndexedDB named `<tab-title>-<YYYY-MM-DD-HH-MM-SS>` using the
+   active tab title and local creation time. A missing or blank title becomes `Untitled page`.
 4. Stores its ID as both `activeSessionId` and `displaySessionId`.
 5. Updates the action badge and title.
 
@@ -63,6 +64,9 @@ before the separate display pointer existed. It labels unended data `Current ses
 
 Edits and exports remain available after a session ends. Clearing all sessions from options removes
 the IndexedDB records plus `activeSessionId`, `displaySessionId`, and `sessionRevision`.
+
+The generated name is only the initial value. The existing side-panel session-name editor can
+replace it before or after the session ends.
 
 ## Failure behavior
 

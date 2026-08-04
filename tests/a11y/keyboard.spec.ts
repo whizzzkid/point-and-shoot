@@ -26,6 +26,7 @@ import {
 } from "./browser.ts";
 
 const NOTE_TEXT = "The save action needs a clearer keyboard focus treatment.";
+const SESSION_NAME = /^Fixture: ordinary page-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 
 Deno.test("keyboard-only flow activates, captures, annotates, reviews, and exports", async () => {
   const fixture = startFixtureServer();
@@ -72,7 +73,7 @@ Deno.test("keyboard-only flow activates, captures, annotates, reviews, and expor
 
     const panel = await openExtensionPage(context, extensionId, "sidepanel/sidepanel.html");
     await trackPointerInput(panel);
-    await panel.getByRole("heading", { name: "Untitled session" }).waitFor();
+    await panel.getByRole("heading", { name: SESSION_NAME }).waitFor();
 
     await panel.getByText(NOTE_TEXT).waitFor();
 
