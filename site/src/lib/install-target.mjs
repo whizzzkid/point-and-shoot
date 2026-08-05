@@ -4,8 +4,9 @@
 
 const mobileUserAgent = /Android|iPhone|iPad|iPod|Mobile/iu;
 const botUserAgent = /bot|crawler|spider|slurp/iu;
+const legacyEdgeUserAgent = /Edge\//u;
 const firefoxUserAgent = /Firefox|LibreWolf|Waterfox|Floorp/iu;
-const chromiumUserAgent = /Chrome|Chromium|Edg(?:e|A|iOS)?|OPR|Opera|Vivaldi|Brave|Arc/iu;
+const chromiumUserAgent = /Chrome|Chromium|Edg(?:A|iOS)?|OPR|Opera|Vivaldi|Brave|Arc/iu;
 const chromiumBrand = /Chromium|Chrome|Edge|Opera|Vivaldi|Brave|Arc/iu;
 
 /**
@@ -31,6 +32,10 @@ export function classifyInstallTarget(environment) {
   }
 
   if (botUserAgent.test(userAgent)) {
+    return "unknown";
+  }
+
+  if (legacyEdgeUserAgent.test(userAgent)) {
     return "unknown";
   }
 

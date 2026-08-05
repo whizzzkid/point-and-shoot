@@ -77,11 +77,12 @@ Classification priority is:
 2. Gecko engine capability, then Firefox-family UA evidence.
 3. A Chromium brand in User-Agent Client Hints.
 4. Chromium-family UA evidence.
-5. Unknown, including desktop Safari/WebKit and bots.
+5. Unknown, including desktop Safari/WebKit, legacy EdgeHTML, and bots.
 
 The classifier must not maintain a closed list as its primary mechanism. Representative fixtures
-must cover Chrome, Chromium, Edge, Brave, Opera, Vivaldi, Arc, Firefox, LibreWolf, Waterfox, Floorp,
-Firefox for Android, Chrome for Android, iOS wrappers, Safari, and an empty user agent.
+must cover Chrome, Chromium, modern Edge across desktop/Android/iOS, legacy EdgeHTML, Brave, Opera,
+Vivaldi, Arc, Firefox, LibreWolf, Waterfox, Floorp, Firefox for Android, Chrome for Android, iOS
+wrappers, Safari, and an empty user agent.
 
 ## Interaction contract
 

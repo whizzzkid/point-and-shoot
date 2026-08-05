@@ -19,7 +19,14 @@ test("classifies desktop Chromium-family browsers from capabilities and browser 
   const cases = [
     ["Chrome", desktopChromium],
     ["Chromium", { ...desktopChromium, brands: [{ brand: "Chromium" }] }],
-    ["Edge", { ...desktopChromium, brands: [{ brand: "Microsoft Edge" }] }],
+    [
+      "Edge",
+      {
+        ...desktopChromium,
+        brands: [{ brand: "Microsoft Edge" }],
+        userAgent: "Mozilla/5.0 Chrome/140.0 Safari/537.36 Edg/140.0",
+      },
+    ],
     ["Brave", { ...desktopChromium, userAgent: "Mozilla/5.0 Chrome/140.0 Brave/1.80" }],
     ["Opera", { ...desktopChromium, userAgent: "Mozilla/5.0 Chrome/140.0 OPR/121.0" }],
     ["Vivaldi", { ...desktopChromium, userAgent: "Mozilla/5.0 Chrome/140.0 Vivaldi/7.5" }],
@@ -74,6 +81,13 @@ test("prioritizes mobile evidence over desktop browser wrapper tokens", () => {
       { ...desktopChromium, userAgent: "Mozilla/5.0 (Linux; Android 15) Chrome/140.0 Mobile" },
     ],
     [
+      "Edge Android",
+      {
+        ...desktopChromium,
+        userAgent: "Mozilla/5.0 (Linux; Android 15) Chrome/140.0 Mobile EdgA/140.0",
+      },
+    ],
+    [
       "iOS Chrome",
       {
         ...desktopChromium,
@@ -84,6 +98,14 @@ test("prioritizes mobile evidence over desktop browser wrapper tokens", () => {
     [
       "iOS Firefox",
       { ...desktopGecko, platform: "iPad", userAgent: "Mozilla/5.0 (iPad) FxiOS/142.0 Mobile" },
+    ],
+    [
+      "Edge iOS",
+      {
+        ...desktopChromium,
+        platform: "iPhone",
+        userAgent: "Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 EdgiOS/140.0 Mobile",
+      },
     ],
     ["iPadOS desktop UA", { ...desktopChromium, platform: "MacIntel", maxTouchPoints: 5 }],
   ];
@@ -123,6 +145,10 @@ test("leaves Safari, WebKit-only strings, malformed evidence, and empty UAs unkn
   const cases = [
     { platform: "macOS", userAgent: "Mozilla/5.0 Version/18.6 Safari/605.1.15" },
     { platform: "macOS", userAgent: "Mozilla/5.0 AppleWebKit/605.1.15" },
+    {
+      platform: "Windows",
+      userAgent: "Mozilla/5.0 Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763",
+    },
     { brands: [{ brand: "Not A;Brand" }], userAgent: "" },
     {},
   ];
