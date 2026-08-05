@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: null
 reviewers:
   - Nishant Arora
@@ -22,6 +22,10 @@ related:
     path: ../../specs/settings.md
   - title: ActiveTab permission decision
     path: ../../adr/0002-activetab-only-permission-model.md
+  - title: Optional host permissions for A2A agents
+    path: ../../adr/0019-optional-host-permissions-for-a2a.md
+  - title: A2A browser client platform
+    path: ../../specs/a2a-client.md
   - title: A2A protocol specification
     url: https://a2a-protocol.org/latest/specification/
   - title: Canonical A2A v1 protocol definition
@@ -65,6 +69,24 @@ HTTP+JSON, and SSE.
 
 The [architecture review](arch-review.md) records the failure analysis already folded into this
 plan. It is rationale, not a second backlog.
+
+## Phase 0 result
+
+The four delivery layers are one linear review stack rooted in the SDK failure proof:
+
+1. [PR #68](https://github.com/whizzzkid/point-and-shoot/pull/68) builds the portable browser-native
+   client after [PR #66](https://github.com/whizzzkid/point-and-shoot/pull/66) proved the official
+   client runtime fails on browser `Buffer` use.
+2. [PR #71](https://github.com/whizzzkid/point-and-shoot/pull/71) adds optional origin grants,
+   session-only storage, and the Firefox 115 floor.
+3. [PR #72](https://github.com/whizzzkid/point-and-shoot/pull/72) proves two-origin discovery,
+   authenticated streaming, bounded remote input, and lifecycle recovery.
+4. P0.4 records the accepted permission ADR, portable client spec, settled limits, and browser
+   automation boundaries.
+
+Phase 1's nine delivery items are technically unblocked by the evidence and begin after the complete
+Phase 0 stack merges. The [Phase 0 guide](phase-0-prove-the-platform.md) is the authoritative status
+and commit ledger.
 
 ## Context and goals
 
@@ -386,7 +408,7 @@ flowchart TD
 
 | Phase | Guide                                                             | Stack structure                                       | Exit result                                              |
 | ----- | ----------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
-| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | One four-PR proof stack                               | Evidence-backed architecture and successor ADR           |
+| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | Four-PR stack ready for combined review               | Evidence-backed architecture and successor ADR           |
 | 1     | [Build foundations](phase-1-build-foundations.md)                 | Catalog, ledger, authentication, extension adapter    | Tested non-UI A2A client foundation                      |
 | 2     | [Ship delivery UX](phase-2-ship-delivery-ux.md)                   | Options, toolbar, delivery, history                   | Bearer/API-key send, stream, status, and history         |
 | 3     | [Expand enterprise support](phase-3-expand-enterprise-support.md) | OAuth/OIDC, HTTP/API key, mTLS/card trust, recovery   | Full declared-scheme negotiation or explicit constraints |
