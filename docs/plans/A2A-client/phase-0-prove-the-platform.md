@@ -41,32 +41,36 @@ stream in the background context to bypass a failed proof. Protocol contracts mu
 an official v1 schema snapshot derived from the pinned normative proto and remain inside the
 portable client boundary.
 
-**Phase base:** The merged planning PR on `main`.
+**Phase base:** The merged planning PR on `main`, followed by PR #66's executable official-SDK
+failure proof and portable-client replanning. The delivery stack targets PR #66 until it merges;
+stack sync then retargets P0.1 to `main` without rewriting a delivery commit.
 
 **Stack shape:** One linear four-PR stack. P0.1 establishes the portable client, P0.2 layers the
 browser platform APIs onto that reviewed base, P0.3 proves their combined runtime path, and P0.4
 records the evidence-backed decisions.
 
-P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR is their base, not a fifth
-delivery PR. Only P0.1 is currently open; later branch slots are initialized together, but each PR
-opens only after its first real owning commit.
+P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR and PR #66 are their evidence
+base, not delivery PRs. Branch slots may be initialized together, but each delivery PR opens only
+after its first real owning commit.
 
-| Position | Item | Branch                              | PR target                           | Current state             |
-| -------- | ---- | ----------------------------------- | ----------------------------------- | ------------------------- |
-| 1        | P0.1 | `feat/a2a-p0-1-sdk-proof`           | `main`                              | Draft PR #66              |
-| 2        | P0.2 | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-sdk-proof`           | Planned branch; no PR yet |
-| 3        | P0.3 | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | Planned branch; no PR yet |
-| 4        | P0.4 | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Planned branch; no PR yet |
+| Position | Role          | Branch                              | PR target                           | Current state             |
+| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------- |
+| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review  |
+| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | Implementation branch     |
+| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | Planned branch; no PR yet |
+| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | Planned branch; no PR yet |
+| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Planned branch; no PR yet |
 
 ```mermaid
 flowchart TD
   Base["Phase base"]
+  Proof["PR #66: SDK failure proof and replanning"]
   P01["P0.1 Portable browser client proof"]
   P02["P0.2 Browser shim and optional origins"]
   P03["P0.3 Cross-origin stream and lifecycle proof"]
   P04["P0.4 Architecture decisions and phase exit"]
 
-  Base --> P01 --> P02 --> P03 --> P04
+  Base --> Proof --> P01 --> P02 --> P03 --> P04
 ```
 
 ## Delivery items
@@ -77,8 +81,9 @@ flowchart TD
 
 **Stack safety:** First stack layer. It does not edit manifest or browser-shim files owned by P0.2.
 
-**Branch and PR:** `feat/a2a-p0-1-sdk-proof`, targeting the phase base. Retain the existing branch
-name so the failed official-client proof and the browser-native replacement remain one audit trail.
+**Branch and PR:** `feat/a2a-p0-1-portable-client`, targeting `feat/a2a-p0-1-sdk-proof`. The parent
+PR preserves the failed official-client proof and decision trail; this delivery PR contains only the
+browser-native replacement.
 
 **Files:**
 
@@ -256,7 +261,7 @@ schema digest, generator version, bundle delta, and browser runtime evidence in 
 **Stack safety:** Second stack layer. P0.1 owns the portable client and build imports; P0.2 owns the
 manifest and browser shim.
 
-**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting `feat/a2a-p0-1-sdk-proof`.
+**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting `feat/a2a-p0-1-portable-client`.
 
 **Files:**
 
