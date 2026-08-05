@@ -1,0 +1,65 @@
+---
+import storeListing from "../../.generated/store-listing.json";
+import { createInstallActionsModel } from "../lib/install-actions.mjs";
+
+interface Props {
+  enhance?: boolean;
+  variant: "closing" | "hero";
+}
+
+const { enhance = false, variant } = Astro.props;
+const install = createInstallActionsModel(storeListing);
+---
+
+<section class:list={["install-actions", `install-actions--${variant}`]} data-install-actions>
+  <div class="install-options">
+    {
+      install.actions.map((action) => (
+        <div class="install-store">
+          <p class="install-store-copy">
+            Open the browser-extension listing to install Point & Shoot. {install.singlePurpose}
+          </p>
+          <a
+            class="button button-secondary"
+            data-install-target={action.target}
+            data-store-action={action.target}
+            href={action.url}
+          >
+            Install from {action.name}
+          </a>
+        </div>
+      ))
+    }
+    <div class="install-source">
+      <p class="install-source-copy">Build Point & Shoot locally from the repository source.</p>
+      <a
+        class:list={["button", install.sourceIsPrimary ? "button-primary" : "button-secondary"]}
+        data-source-install
+        href={install.sourceInstallUrl}
+      >
+        Build from source
+      </a>
+    </div>
+  </div>
+  <p class="install-status" data-install-status role="status" aria-live="polite">
+    {
+      install.statuses.length > 0
+        ? install.statuses.join(" ")
+        : "Choose the compatible desktop browser store or build from source."
+    }
+  </p>
+  <noscript>
+    <p class="install-no-script" data-no-script>
+      JavaScript is not required. Choose a published browser-extension listing or build from source.
+    </p>
+  </noscript>
+</section>
+
+{
+  enhance && (
+    <script>
+      import {enhanceInstallActions} from "../lib/install-recommendation";
+      enhanceInstallActions(document);
+    </script>
+  )
+}

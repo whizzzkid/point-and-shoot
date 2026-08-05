@@ -1,10 +1,10 @@
 ---
 title: "PR 3: Browser-aware website install flow"
 type: plan
-status: draft
+status: in progress
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -30,8 +30,8 @@ Gecko-engine browsers while preserving visible choices, accessible fallback, and
 
 ## Coordination
 
-- Status: pending
-- Owner: unassigned
+- Status: in progress
+- Owner: Codex
 - Depends on: PR 2 complete
 - PR base: PR 2 branch until PR 2 merges
 - PR boundary: site install components, browser-family classification, website tests, and website
@@ -137,9 +137,9 @@ whose behavior differs from the contract.
 
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: in progress
+- Owner: Codex
+- Started: 2026-08-05T06:41:35Z
 - Completed: not completed
 - PR: none
 - Commits: none

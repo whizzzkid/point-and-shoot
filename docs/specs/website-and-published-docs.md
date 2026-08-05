@@ -48,9 +48,25 @@ styles may add layout compositions but must not duplicate the palette, font fami
 motion values. The site copies the extension's subset WOFF2 files into its build and makes no
 third-party font request.
 
-Install calls to action link to working store listings when they exist; otherwise they link to the
-repository's install-from-source instructions. Placeholder and fragment-only destinations are not
-valid install links.
+Install calls to action use only the generated `site/.generated/store-listing.json` projection.
+Server-rendered HTML always communicates Chrome, Firefox, and source-install choices. A published
+store renders its canonical official listing as a user-activated navigation; an unpublished store is
+plain status text, never a disabled or dummy control. Source installation remains available in every
+state. Hero and closing sections share the same install component and URL source.
+
+The progressive-enhancement classifier receives only User-Agent Client Hint brands, user-agent text,
+platform and touch/mobile evidence, and Gecko-specific `-moz-appearance` capability support. It
+classifies mobile iOS, iPadOS, and Android first; then Gecko capability and Firefox-family evidence;
+then Chromium UA-CH brands and Chromium-family UA evidence. Safari, WebKit-only strings, bots, and
+unrecognized evidence remain unknown. It changes recommendation labels, attributes, and the one
+accent treatment only: it never redirects, hides a choice, opens a store protocol, or attempts
+inline installation. Unknown and Safari states recommend neither store and explain that Safari is
+deferred; mobile states explain that desktop extension installation is unavailable.
+
+From the website, **installable** means a user activates a link to a published official
+browser-store listing. It does not mean the website can install the extension inline. The
+no-JavaScript fallback keeps every available action and publication status available without focus
+changes.
 
 ### Published documentation scope
 
