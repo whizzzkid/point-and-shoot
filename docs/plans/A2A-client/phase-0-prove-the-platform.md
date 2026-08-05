@@ -28,8 +28,7 @@ related:
 ## How to read this phase
 
 - **Phase contract** defines what must be proven before product implementation begins.
-- **Parallel stack map** assigns file-disjoint work to the protocol-client and browser-platform
-  lanes.
+- **Stack map** defines the review ancestry while preserving file-disjoint item ownership.
 - **Delivery items** provide exact artifacts, interfaces, verification, and PR boundaries.
 - **Exit gate** prevents an unverified client, permission, or lifecycle assumption from entering
   phase 1.
@@ -44,8 +43,20 @@ portable client boundary.
 
 **Phase base:** The merged planning PR on `main`.
 
-**Maximum parallel width:** Two stack lanes. P0.1 and P0.2 start together. P0.3 starts after both
-proof foundations land, and P0.4 records the combined decision.
+**Stack shape:** One linear four-PR stack. P0.1 establishes the portable client, P0.2 layers the
+browser platform APIs onto that reviewed base, P0.3 proves their combined runtime path, and P0.4
+records the evidence-backed decisions.
+
+P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR is their base, not a fifth
+delivery PR. Only P0.1 is currently open; later branch slots are initialized together, but each PR
+opens only after its first real owning commit.
+
+| Position | Item | Branch                              | PR target                           | Current state             |
+| -------- | ---- | ----------------------------------- | ----------------------------------- | ------------------------- |
+| 1        | P0.1 | `feat/a2a-p0-1-sdk-proof`           | `main`                              | Draft PR #66              |
+| 2        | P0.2 | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-sdk-proof`           | Planned branch; no PR yet |
+| 3        | P0.3 | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | Planned branch; no PR yet |
+| 4        | P0.4 | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Planned branch; no PR yet |
 
 ```mermaid
 flowchart TD
@@ -55,8 +66,7 @@ flowchart TD
   P03["P0.3 Cross-origin stream and lifecycle proof"]
   P04["P0.4 Architecture decisions and phase exit"]
 
-  Base --> P01 --> P03 --> P04
-  Base --> P02 --> P03
+  Base --> P01 --> P02 --> P03 --> P04
 ```
 
 ## Delivery items
@@ -65,8 +75,7 @@ flowchart TD
 
 **Marker:** `[AGENT-GUIDED]` - report measured bundle and runtime evidence in the PR before P0.4.
 
-**Parallel safety:** Starts immediately in the protocol-client lane. It does not edit manifest or
-browser-shim files owned by P0.2.
+**Stack safety:** First stack layer. It does not edit manifest or browser-shim files owned by P0.2.
 
 **Branch and PR:** `feat/a2a-p0-1-sdk-proof`, targeting the phase base. Retain the existing branch
 name so the failed official-client proof and the browser-native replacement remain one audit trail.
@@ -244,10 +253,10 @@ schema digest, generator version, bundle delta, and browser runtime evidence in 
 
 **Marker:** `[AGENT-READY]`.
 
-**Parallel safety:** Starts immediately in the browser-platform lane. P0.1 owns the portable client
-and build imports; P0.2 owns the manifest and browser shim.
+**Stack safety:** Second stack layer. P0.1 owns the portable client and build imports; P0.2 owns the
+manifest and browser shim.
 
-**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting the phase base.
+**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting `feat/a2a-p0-1-sdk-proof`.
 
 **Files:**
 
@@ -325,11 +334,10 @@ Inspect both built manifests. Required permissions must remain unchanged per tar
 **Marker:** `[AGENT-GUIDED]` - record Chrome and Firefox results and any browser-specific
 limitation.
 
-**Depends on:** P0.1 and P0.2. Start after both parallel proofs land so the fixture can use the
-portable client and permission shim without copying either lane.
+**Depends on:** P0.1 and P0.2. Start after both proof layers are reviewable so the fixture can use
+the portable client and permission shim without copying either item's implementation.
 
-**Branch and PR:** `feat/a2a-p0-3-network-proof`, targeting the merged phase base after P0.1 and
-P0.2 land.
+**Branch and PR:** `feat/a2a-p0-3-network-proof`, targeting `feat/a2a-p0-2-browser-permissions`.
 
 **Files:**
 
@@ -383,11 +391,9 @@ mise exec -- deno task ci
 
 **Marker:** `[AGENT-READY]`.
 
-**Depends on:** P0.1 and P0.3. Start only after both lane tips are available on the convergence
-branch.
+**Depends on:** P0.1-P0.3. Start only after the network proof is reviewable on its parent branch.
 
-**Branch and PR:** `feat/a2a-p0-4-architecture`, targeting the merged phase base after both stacks
-land.
+**Branch and PR:** `feat/a2a-p0-4-architecture`, targeting `feat/a2a-p0-3-network-proof`.
 
 **Files:**
 
