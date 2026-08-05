@@ -1,12 +1,14 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import {
+  generateStoreAssets,
   inspectPng,
   refreshStoreBadges,
   renderPromoTile,
   STORE_ARTWORK,
   validateStoreAssets,
 } from "./store-assets.ts";
+import { parseStoreListing } from "./store-listing.ts";
 
 Deno.test("store assets - artwork contract has five screenshots followed by two promo tiles", () => {
   assertEquals(
@@ -20,6 +22,20 @@ Deno.test("store assets - artwork contract has five screenshots followed by two 
       { fileName: "small-promo.png", height: 280, width: 440 },
       { fileName: "marquee-promo.png", height: 560, width: 1_400 },
     ],
+  );
+});
+
+Deno.test("store assets - canonical listing names every generated artwork file", async () => {
+  const listing = parseStoreListing(
+    JSON.parse(await Deno.readTextFile(new URL("../store-listing.json", import.meta.url))),
+  );
+  assertEquals(
+    [
+      ...listing.artwork.screenshots.map(({ fileName }) => fileName),
+      listing.artwork.smallPromoFileName,
+      listing.artwork.marqueePromoFileName,
+    ],
+    STORE_ARTWORK.map(({ fileName }) => fileName),
   );
 });
 
@@ -60,6 +76,42 @@ Deno.test("store assets - explicit badge refresh rejects changed upstream bytes"
       Error,
       "official badge changed upstream",
     );
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
+});
+
+Deno.test("store assets - capture failure leaves committed outputs unchanged", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));
+  const assetDirectory = new URL("docs/assets/store/", root);
+  try {
+    await Deno.mkdir(assetDirectory, { recursive: true });
+    for (const fileName of ["chrome-web-store-badge.png", "firefox-add-ons-badge.png"]) {
+      await Deno.copyFile(
+        new URL(`../docs/assets/store/${fileName}`, import.meta.url),
+        new URL(fileName, assetDirectory),
+      );
+    }
+    await Deno.writeTextFile(new URL("small-promo.png", assetDirectory), "original\n");
+
+    await assertRejects(
+      () =>
+        generateStoreAssets(root, () => {
+          throw new Error("capture failed");
+        }),
+      Error,
+      "capture failed",
+    );
+    assertEquals(
+      await Deno.readTextFile(new URL("small-promo.png", assetDirectory)),
+      "original\n",
+    );
+    const assetParentEntries = [];
+    for await (const entry of Deno.readDir(new URL("docs/assets/", root))) {
+      assetParentEntries.push(entry.name);
+    }
+    assertEquals(assetParentEntries.sort(), ["store"]);
   } finally {
     await Deno.remove(temporaryDirectory, { recursive: true });
   }

@@ -106,7 +106,8 @@ screenshots are opaque 24-bit RGB PNG files at 1280×800. The small and marquee 
 24-bit RGB PNG files at 440×280 and 1400×560. `deno task store:assets:check` rejects missing files,
 dimensions or color modes outside this contract, modified vendor badges, output hash drift,
 source-fingerprint drift, or a current-version summary that was not recorded when the assets were
-regenerated.
+regenerated. Generation stages the complete asset set before promotion, and browser or fixture
+failures close their resources without modifying the committed outputs.
 
 The checker compares the privacy explanation keys with the union of the permissions generated for
 Chrome and Firefox. Adding or removing a permission therefore requires the manifest, contract,

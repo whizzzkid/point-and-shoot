@@ -207,29 +207,32 @@ export async function captureStoreScreenshots(root: URL, outputDirectory: URL): 
   const extensionDirectory = fromFileUrl(new URL("dist/chrome/", root));
   await Deno.stat(new URL("dist/chrome/manifest.json", root));
   const fixture = startFixtureServer();
-  const context = await chromium.launchPersistentContext("", {
-    channel: "chromium",
-    args: [
-      `--disable-extensions-except=${extensionDirectory}`,
-      `--load-extension=${extensionDirectory}`,
-    ],
-  });
   try {
-    const serviceWorker = await extensionWorker(context);
-    await seedExtension(serviceWorker);
-    const extensionId = new URL(serviceWorker.url()).host;
-    const toolbarBytes = await Deno.readFile(
-      new URL("tests/visual/baselines/toolbar-dark.png", root),
-    );
-    await Deno.writeFile(
-      new URL("01-capture-toolbar.png", outputDirectory),
-      encodeOpaquePng(toolbarBytes),
-    );
-    await captureNotesAndPlan(context, extensionId, outputDirectory);
-    await captureNotePreview(context, fixture.base, root, outputDirectory);
-    await captureOptions(context, extensionId, outputDirectory);
+    const context = await chromium.launchPersistentContext("", {
+      channel: "chromium",
+      args: [
+        `--disable-extensions-except=${extensionDirectory}`,
+        `--load-extension=${extensionDirectory}`,
+      ],
+    });
+    try {
+      const serviceWorker = await extensionWorker(context);
+      await seedExtension(serviceWorker);
+      const extensionId = new URL(serviceWorker.url()).host;
+      const toolbarBytes = await Deno.readFile(
+        new URL("tests/visual/baselines/toolbar-dark.png", root),
+      );
+      await Deno.writeFile(
+        new URL("01-capture-toolbar.png", outputDirectory),
+        encodeOpaquePng(toolbarBytes),
+      );
+      await captureNotesAndPlan(context, extensionId, outputDirectory);
+      await captureNotePreview(context, fixture.base, root, outputDirectory);
+      await captureOptions(context, extensionId, outputDirectory);
+    } finally {
+      await context.close();
+    }
   } finally {
-    await context.close();
     await fixture.close();
   }
 }

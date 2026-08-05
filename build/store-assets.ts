@@ -1,4 +1,4 @@
-import { fromFileUrl, relative } from "@std/path";
+import { fromFileUrl, relative, toFileUrl } from "@std/path";
 import { PNG } from "pngjs";
 import { parseStoreListing } from "./store-listing.ts";
 
@@ -64,6 +64,9 @@ interface StoreAssetManifest {
     readonly sha256: string;
   }[];
 }
+
+/** Function that captures the five ordered store screenshots into one output directory. */
+export type StoreScreenshotCapture = (root: URL, outputDirectory: URL) => Promise<void>;
 
 interface RgbColor {
   readonly blue: number;
@@ -536,16 +539,17 @@ export async function refreshStoreBadges(
   }
 }
 
-async function writeManifest(root: URL): Promise<void> {
+async function writeManifest(root: URL, outputDirectory: URL): Promise<void> {
   const sourcePaths = await collectFiles(root, SOURCE_ROOTS);
   const listing = parseStoreListing(
     JSON.parse(await Deno.readTextFile(new URL("store-listing.json", root))),
   );
   const assets = [];
   for (const path of expectedAssetPaths()) {
+    const fileName = path.slice(`${STORE_ASSET_DIRECTORY}/`.length);
     assets.push({
-      fileName: path.slice(`${STORE_ASSET_DIRECTORY}/`.length),
-      sha256: await sha256(await Deno.readFile(new URL(path, root))),
+      fileName,
+      sha256: await sha256(await Deno.readFile(new URL(fileName, outputDirectory))),
     });
   }
   const manifest: StoreAssetManifest = {
@@ -556,34 +560,71 @@ async function writeManifest(root: URL): Promise<void> {
     assets,
   };
   await Deno.writeTextFile(
-    new URL(STORE_ASSET_MANIFEST, root),
+    new URL("manifest.json", outputDirectory),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
+}
+
+async function removeDirectoryIfPresent(directory: URL): Promise<void> {
+  try {
+    await Deno.remove(directory, { recursive: true });
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
 }
 
 /**
  * Captures current product scenes and generates vendor-facing artwork with pinned badges.
  *
  * @param root - Repository root receiving generated assets.
+ * @param captureScreenshots - Screenshot capture implementation, injectable for failure testing.
  * @returns Nothing after all outputs and freshness metadata are written.
  * @throws {Error} When a fixture or capture fails, or a pinned badge is missing or modified.
  */
-export async function generateStoreAssets(root = new URL("../", import.meta.url)): Promise<void> {
-  await Deno.mkdir(new URL(`${STORE_ASSET_DIRECTORY}/`, root), { recursive: true });
+export async function generateStoreAssets(
+  root = new URL("../", import.meta.url),
+  captureScreenshots?: StoreScreenshotCapture,
+): Promise<void> {
+  const assetDirectory = new URL(`${STORE_ASSET_DIRECTORY}/`, root);
+  await Deno.mkdir(assetDirectory, { recursive: true });
   const badgeIssues = await validateBadges(root);
   if (badgeIssues.length > 0) printIssues(badgeIssues);
-  const { captureStoreScreenshots } = await import("./store-screenshots.ts");
-  await captureStoreScreenshots(root, new URL(`${STORE_ASSET_DIRECTORY}/`, root));
-  for (const kind of ["small", "marquee"] as const) {
-    await Deno.writeFile(
-      new URL(
-        `${STORE_ASSET_DIRECTORY}/${kind === "small" ? "small-promo.png" : "marquee-promo.png"}`,
-        root,
-      ),
-      await renderPromoTile(kind, root),
+  const stagingPath = await Deno.makeTempDir({
+    dir: fromFileUrl(new URL("docs/assets/", root)),
+    prefix: ".store-assets-",
+  });
+  const stagingDirectory = toFileUrl(`${stagingPath}/`);
+  try {
+    for (const specification of STORE_BADGES) {
+      await Deno.copyFile(
+        new URL(specification.fileName, assetDirectory),
+        new URL(specification.fileName, stagingDirectory),
+      );
+    }
+    const capture = captureScreenshots ??
+      (await import("./store-screenshots.ts")).captureStoreScreenshots;
+    await capture(root, stagingDirectory);
+    for (const kind of ["small", "marquee"] as const) {
+      await Deno.writeFile(
+        new URL(kind === "small" ? "small-promo.png" : "marquee-promo.png", stagingDirectory),
+        await renderPromoTile(kind, root),
+      );
+    }
+    await writeManifest(root, stagingDirectory);
+    for (const path of expectedAssetPaths()) {
+      const fileName = path.slice(`${STORE_ASSET_DIRECTORY}/`.length);
+      await Deno.rename(
+        new URL(fileName, stagingDirectory),
+        new URL(fileName, assetDirectory),
+      );
+    }
+    await Deno.rename(
+      new URL("manifest.json", stagingDirectory),
+      new URL("manifest.json", assetDirectory),
     );
+  } finally {
+    await removeDirectoryIfPresent(stagingDirectory);
   }
-  await writeManifest(root);
 }
 
 function printIssues(issues: readonly StoreAssetIssue[]): never {
