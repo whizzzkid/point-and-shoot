@@ -121,12 +121,14 @@ export function enhanceInstallActions(documentRoot: Document): void {
     return;
   }
 
-  const recommendedActions = documentRoot.querySelectorAll<HTMLAnchorElement>(
+  const recommendedAction = documentRoot.querySelector<HTMLAnchorElement>(
     `[data-store-action="${recommendation.actionTarget}"]`,
   );
-  for (const action of recommendedActions) {
-    action.classList.add("is-recommended");
-    action.setAttribute("aria-label", recommendation.label ?? action.textContent ?? "");
-    action.setAttribute("data-recommended", "true");
-  }
+  if (recommendedAction === null) return;
+  recommendedAction.classList.add("is-recommended");
+  recommendedAction.setAttribute(
+    "aria-label",
+    recommendation.label ?? recommendedAction.textContent ?? "",
+  );
+  recommendedAction.setAttribute("data-recommended", "true");
 }

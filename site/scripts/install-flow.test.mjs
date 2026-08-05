@@ -271,7 +271,7 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
           assert.equal(
             await page.locator('[data-store-action="chromium"][data-recommended]').count(),
-            2,
+            1,
           );
           assert.equal(
             await page.locator('[data-store-action="gecko"][data-recommended]').count(),
@@ -308,7 +308,7 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           await page.goto(`${both.origin}/`, { waitUntil: "networkidle" });
           assert.equal(
             await page.locator('[data-store-action="gecko"][data-recommended]').count(),
-            2,
+            1,
           );
           assert.equal(
             await page.locator('[data-store-action="chromium"][data-recommended]').count(),
