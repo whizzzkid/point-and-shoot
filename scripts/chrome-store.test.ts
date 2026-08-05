@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 
 import {
+  authenticatedHeaders,
   ChromeStoreClient,
   type ChromeStoreClientOptions,
   reconcileChromeStatus,
@@ -51,6 +52,50 @@ Deno.test("chrome store reconciliation recognizes an exact public version", () =
       state: "published",
     },
   );
+});
+
+Deno.test("chrome store reconciliation ignores malformed distribution channels", () => {
+  assertEquals(
+    reconcileChromeStatus({
+      expectedVersion: "2026.805.0",
+      listingUrl: undefined,
+      now: NOW,
+      status: {
+        publishedItemRevisionStatus: {
+          distributionChannels: [null, "invalid", { crxVersion: "2026.805.0" }],
+          state: "PUBLISHED",
+        },
+      },
+    }).state,
+    "published",
+  );
+  assertEquals(
+    reconcileChromeStatus({
+      expectedVersion: "2026.805.0",
+      listingUrl: undefined,
+      now: NOW,
+      status: {
+        publishedItemRevisionStatus: {
+          distributionChannels: [null, 42, {}],
+          state: "PUBLISHED",
+        },
+      },
+    }).state,
+    "unpublished",
+  );
+});
+
+Deno.test("chrome store authentication overrides every supported header shape", () => {
+  const inputs: HeadersInit[] = [
+    { authorization: "Bearer wrong", "x-test": "object" },
+    [["Authorization", "Bearer wrong"], ["x-test", "tuples"]],
+    new Headers({ authorization: "Bearer wrong", "x-test": "headers" }),
+  ];
+  for (const input of inputs) {
+    const headers = authenticatedHeaders("chrome-secret-token", input);
+    assertEquals(headers.get("authorization"), "Bearer chrome-secret-token");
+    assertEquals(headers.has("x-test"), true);
+  }
 });
 
 Deno.test("chrome store reconciliation surfaces approval and policy warnings", () => {

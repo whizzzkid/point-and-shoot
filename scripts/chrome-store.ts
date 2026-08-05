@@ -5,7 +5,7 @@ const DEFAULT_MAX_POLL_ATTEMPTS = 6;
 const DEFAULT_POLL_DELAY_MS = 5_000;
 
 interface ChromeRevisionStatus {
-  readonly distributionChannels?: ReadonlyArray<{ readonly crxVersion?: unknown }>;
+  readonly distributionChannels?: readonly unknown[];
   readonly state?: unknown;
 }
 
@@ -49,9 +49,11 @@ function recordOf(value: unknown): Record<string, unknown> {
 }
 
 function revisionVersion(revision: ChromeRevisionStatus | undefined): string | undefined {
-  return revision?.distributionChannels?.find(
-    (channel) => typeof channel.crxVersion === "string",
-  )?.crxVersion as string | undefined;
+  for (const channel of revision?.distributionChannels ?? []) {
+    const version = recordOf(channel).crxVersion;
+    if (typeof version === "string") return version;
+  }
+  return undefined;
 }
 
 function revisionState(revision: ChromeRevisionStatus | undefined): string | undefined {
@@ -153,6 +155,22 @@ async function defaultSleep(milliseconds: number): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 }
 
+/**
+ * Copies request headers and replaces any caller-supplied authorization value.
+ *
+ * @param accessToken Short-lived Chrome Web Store access token.
+ * @param headers Optional headers in any Fetch API-supported shape.
+ * @returns A fresh header collection with the authoritative bearer token.
+ */
+export function authenticatedHeaders(
+  accessToken: string,
+  headers: HeadersInit | undefined,
+): Headers {
+  const authenticated = new Headers(headers);
+  authenticated.set("authorization", `Bearer ${accessToken}`);
+  return authenticated;
+}
+
 /** Chrome Web Store API v2 client with bounded polling and idempotent reconciliation. */
 export class ChromeStoreClient {
   readonly #accessToken: string;
@@ -186,10 +204,7 @@ export class ChromeStoreClient {
   async #request(path: string, init: RequestInit = {}): Promise<unknown> {
     const response = await this.#fetch(`${API_ROOT}${path}`, {
       ...init,
-      headers: {
-        authorization: `Bearer ${this.#accessToken}`,
-        ...(init.headers ?? {}),
-      },
+      headers: authenticatedHeaders(this.#accessToken, init.headers),
     });
     let decoded: unknown = {};
     try {

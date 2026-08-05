@@ -13,6 +13,12 @@ const AUTOMATION_NOTICE_START = "<!-- point-and-shoot-store-automation:start -->
 const AUTOMATION_NOTICE_END = "<!-- point-and-shoot-store-automation:end -->";
 const STATUS_START = "<!-- point-and-shoot-store-status:start -->";
 const STATUS_END = "<!-- point-and-shoot-store-status:end -->";
+const USAGE = [
+  "Usage:",
+  "  store-release.ts disabled <version> <ISO timestamp> <input body> <output body>",
+  "  store-release.ts <submit|reconcile> <version> <ISO timestamp> <input body> " +
+  "<output body> <assets directory>",
+].join("\n");
 
 /** Independently callable store operations for submit or reconcile mode. */
 export interface StoreOperations {
@@ -195,17 +201,14 @@ export async function runStoreReleaseCommand(args: readonly string[]): Promise<s
   if (
     (operation !== "disabled" && operation !== "submit" && operation !== "reconcile") ||
     version === undefined || version === "" || now === undefined || Number.isNaN(Date.parse(now)) ||
-    inputBodyPath === undefined || outputBodyPath === undefined || rest.length > 0 ||
-    (operation !== "disabled" && assetsDir === undefined)
+    inputBodyPath === undefined || outputBodyPath === undefined || rest.length > 0
   ) {
-    throw new Error(
-      "Usage: store-release.ts <disabled|submit|reconcile> <version> <ISO timestamp> " +
-        "<input body> <output body> [assets directory]",
-    );
+    throw new Error(USAGE);
   }
 
   const readReleaseBody = () => Deno.readTextFile(inputBodyPath);
   if (operation === "disabled") {
+    if (assetsDir !== undefined) throw new Error(USAGE);
     const result = await runStoreRelease({
       enabled: false,
       expectedVersion: version,
@@ -220,6 +223,7 @@ export async function runStoreReleaseCommand(args: readonly string[]): Promise<s
     await Deno.writeTextFile(outputBodyPath, result.releaseBody);
     return `${JSON.stringify({ failed: result.failed })}\n`;
   }
+  if (assetsDir === undefined || assetsDir === "") throw new Error(USAGE);
 
   const listing = parseStoreListing(JSON.parse(await Deno.readTextFile("store-listing.json")));
   const chromeExtensionId = assertIdentity(
@@ -240,7 +244,7 @@ export async function runStoreReleaseCommand(args: readonly string[]): Promise<s
   const chromeAccessToken = requiredEnvironment("CHROME_ACCESS_TOKEN");
   const firefoxApiKey = requiredEnvironment("WEB_EXT_API_KEY");
   const firefoxApiSecret = requiredEnvironment("WEB_EXT_API_SECRET");
-  const assetRoot = assetsDir as string;
+  const assetRoot = assetsDir;
   await validateFirefoxManifest(
     `${assetRoot}/firefox/manifest.json`,
     firefoxExtensionId,

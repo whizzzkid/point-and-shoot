@@ -86,6 +86,32 @@ Deno.test("disabled workflow command needs no asset directory or vendor environm
   }
 });
 
+Deno.test("workflow command enforces mode-specific asset directory arguments", async () => {
+  const common = [
+    "2026.805.0",
+    "2026-08-05T17:00:00Z",
+    "input.md",
+    "output.md",
+  ];
+  await assertRejects(
+    () => runStoreReleaseCommand(["disabled", ...common, "release-assets"]),
+    Error,
+    "store-release.ts disabled",
+  );
+  for (const operation of ["submit", "reconcile"] as const) {
+    await assertRejects(
+      () => runStoreReleaseCommand([operation, ...common]),
+      Error,
+      "<assets directory>",
+    );
+    await assertRejects(
+      () => runStoreReleaseCommand([operation, ...common, ""]),
+      Error,
+      "<assets directory>",
+    );
+  }
+});
+
 Deno.test("store publication refuses to overwrite a different release version", async () => {
   await assertRejects(
     () =>
