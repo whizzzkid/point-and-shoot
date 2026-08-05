@@ -14,7 +14,7 @@ related:
   - title: ActiveTab-only permission model
     path-or-url: ../adr/0002-activetab-only-permission-model.md
   - title: Optional host permissions for A2A agents
-    path-or-url: ../adr/0019-optional-host-permissions-for-a2a.md
+    path-or-url: ../adr/0020-optional-host-permissions-for-a2a.md
   - title: Closed shadow DOM
     path-or-url: ../adr/0006-closed-shadow-dom-for-injected-ui.md
   - title: Toolbar session control

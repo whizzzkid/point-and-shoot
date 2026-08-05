@@ -15,7 +15,7 @@ labels:
   - security
 related:
   - title: Optional host permissions for A2A agents
-    path-or-url: ../adr/0019-optional-host-permissions-for-a2a.md
+    path-or-url: ../adr/0020-optional-host-permissions-for-a2a.md
   - title: Extension runtime
     path-or-url: extension-runtime.md
   - title: Runtime limits
@@ -142,7 +142,7 @@ product must present the configured origin as user-supplied and must not label a
 
 ## Network access
 
-[ADR-0019](../adr/0019-optional-host-permissions-for-a2a.md) governs origin access.
+[ADR-0020](../adr/0020-optional-host-permissions-for-a2a.md) governs origin access.
 
 ```mermaid
 sequenceDiagram
@@ -295,7 +295,7 @@ on that runtime grant and can remain for later correction or extraction.
 
 ## Architecture review
 
-`wk-arch-review` evaluated this spec and ADR-0019 on 2026-08-05. Verdict: **accepted after blockers
+`wk-arch-review` evaluated this spec and ADR-0020 on 2026-08-05. Verdict: **accepted after blockers
 were folded in**. The review found no server-side scalability or cost SPOF because the design adds
 no hosted component. The material risks were browser permission-width divergence, unbounded remote
 input, background-lifecycle assumptions, credential loss during recovery, duplicate delivery after

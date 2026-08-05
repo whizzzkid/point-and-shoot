@@ -23,7 +23,7 @@ related:
   - title: ActiveTab permission decision
     path: ../../adr/0002-activetab-only-permission-model.md
   - title: Optional host permissions for A2A agents
-    path: ../../adr/0019-optional-host-permissions-for-a2a.md
+    path: ../../adr/0020-optional-host-permissions-for-a2a.md
   - title: A2A browser client platform
     path: ../../specs/a2a-client.md
   - title: A2A protocol specification

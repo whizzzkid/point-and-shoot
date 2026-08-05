@@ -1,6 +1,6 @@
 import type { CollectionEntry } from "astro:content";
 
-import { docsRoute } from "./docs-manifest";
+import { docsRoute } from "./docs-manifest.ts";
 
 export { docsRoute };
 

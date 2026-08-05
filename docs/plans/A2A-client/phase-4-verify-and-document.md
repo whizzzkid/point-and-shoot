@@ -361,7 +361,7 @@ mise exec -- deno task ci
 - Create: `docs/tutorials/a2a-enterprise-setup.md`
 - Modify: `docs/specs/a2a-client.md`
 - Create if the accepted decision changes: the next numbered successor ADR
-- Modify if a successor ADR is created: ADR-0019's status line only
+- Modify if a successor ADR is created: ADR-0020's status line only
 - Modify if a successor ADR is created: `docs/adr/README.md`
 
 **Implementation:**
@@ -379,10 +379,10 @@ mise exec -- deno task ci
    certificate material never copied into extension stores; exact Markdown sent only after review;
    session deletion and Clear all sessions cascade through stored prompts, responses, runs, and
    events.
-5. Keep accepted ADR-0019 immutable except for the status-only update the ADR policy permits. Record
+5. Keep accepted ADR-0020 immutable except for the status-only update the ADR policy permits. Record
    operational observations in the spec and tutorial. If measured browser behavior changes the
-   accepted decision, create the next numbered ADR, mark it as superseding ADR-0019, change only
-   ADR-0019's status to `Superseded by ADR-NNNN`, and update the ADR index.
+   accepted decision, create the next numbered ADR, mark it as superseding ADR-0020, change only
+   ADR-0020's status to `Superseded by ADR-NNNN`, and update the ADR index.
 
 **Verification:**
 

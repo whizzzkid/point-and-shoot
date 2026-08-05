@@ -22,7 +22,7 @@ related:
     path-or-url: ../plans/A2A-client/phase-0-prove-the-platform.md
 ---
 
-# ADR-0019 — Use optional host permissions for A2A agents
+# ADR-0020 — Use optional host permissions for A2A agents
 
 - **Status:** Accepted
 - **Date:** 2026-08-05

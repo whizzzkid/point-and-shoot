@@ -13,9 +13,9 @@ have one behind them.
 | #                                                               | Title                                                            | Status                                               |
 | --------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
 | [0001](0001-offscreencanvas-over-chrome-offscreen.md)           | Use OffscreenCanvas for image work, not the Chrome offscreen API | Accepted 2026-07-24                                  |
-| [0002](0002-activetab-only-permission-model.md)                 | Request activeTab only, never broad host permissions             | Accepted; optional-host rejection superseded by 0019 |
+| [0002](0002-activetab-only-permission-model.md)                 | Request activeTab only, never broad host permissions             | Accepted; optional-host rejection superseded by 0020 |
 | [0003](0003-json-canonical-markdown-projection.md)              | Versioned JSON is canonical; Markdown is a projection            | Accepted 2026-07-24                                  |
-| [0004](0004-deno-first-toolchain-npm-specifiers.md)             | Deno owns the dev loop; Node tooling via npm: specifiers         | Accepted 2026-07-24                                  |
+| [0004](0004-deno-first-toolchain-npm-specifiers.md)             | Deno owns the dev loop; Node tooling via npm: specifiers         | Superseded by 0019                                   |
 | [0005](0005-safari-deferred.md)                                 | Safari is deferred past v1, but the code stays convertible       | Accepted 2026-07-24                                  |
 | [0006](0006-closed-shadow-dom-for-injected-ui.md)               | Mount injected UI in a closed shadow root                        | Accepted 2026-07-24                                  |
 | [0007](0007-playwright-chromium-plus-web-ext-coverage-split.md) | Chromium E2E via Playwright, Firefox via a web-ext smoke check   | Accepted 2026-07-24                                  |
@@ -29,15 +29,17 @@ have one behind them.
 | [0015](0015-main-world-framework-probes.md)                     | Run opt-in framework probes in a constrained main-world call     | Accepted 2026-07-28                                  |
 | [0016](0016-toolbar-action-controls-session.md)                 | Let the toolbar action control the session                       | Accepted 2026-07-30                                  |
 | [0017](0017-release-please-with-calendar-versions.md)           | Use Release Please with calendar versions                        | Accepted 2026-07-31                                  |
-| [0018](0018-astro-for-marketing-and-documentation.md)           | Astro for the marketing and documentation site                   | Accepted 2026-07-31                                  |
-| [0019](0019-optional-host-permissions-for-a2a.md)               | Use optional host permissions for A2A agents                     | Accepted 2026-08-05                                  |
+| [0018](0018-astro-for-marketing-and-documentation.md)           | Astro for the marketing and documentation site                   | Superseded by 0019                                   |
+| [0019](0019-deno-owned-repository-toolchain.md)                 | Deno owns the repository toolchain                               | Accepted 2026-08-05                                  |
+| [0020](0020-optional-host-permissions-for-a2a.md)               | Use optional host permissions for A2A agents                     | Accepted 2026-08-05                                  |
 
-Six of these are load-bearing constraints rather than preferences, and reversing one by accident is
-easy: **0001** (no `chrome.offscreen`), **0002** (no required broad host permissions), **0005** (no
-Chrome-only APIs), **0009** (no remote fetches, including fonts), **0012** (no stable Chrome
-resource URLs), **0015** (no page-world bridge carrying extension data or APIs), and **0019**
-(remote A2A origins require optional eligibility, runtime consent, and an exact client allowlist).
-`AGENTS.md` restates the product-wide rules; this is where the reasoning lives.
+Eight of these are load-bearing constraints rather than preferences, and reversing one by accident
+is easy: **0001** (no `chrome.offscreen`), **0002** (no required broad host permissions), **0005**
+(no Chrome-only APIs), **0009** (no remote fetches, including fonts), **0012** (no stable Chrome
+resource URLs), **0015** (no page-world bridge carrying extension data or APIs), **0019** (Deno owns
+every repository tool), and **0020** (remote A2A origins require optional eligibility, runtime
+consent, and an exact client allowlist). `AGENTS.md` restates the product-wide rules; this is where
+the reasoning lives.
 
 ## Filing a new one
 
