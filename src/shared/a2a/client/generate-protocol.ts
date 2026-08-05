@@ -7,7 +7,18 @@ const CLIENT_DIRECTORY = new URL(".", import.meta.url).pathname;
 const DENO_CONFIG_PATH = new URL("../../../../deno.json", import.meta.url).pathname;
 const EXACT_PROPERTY_PATTERN = /^\^\((?<name>[A-Za-z0-9_]+)\)\$$/;
 const REFERENCE_SUFFIX = ".jsonschema.json";
-const SCHEMA_IDENTIFIER = "https://point-and-shoot.invalid/schemas/a2a/v1";
+const SCHEMA_IDENTIFIER = "point-and-shoot://schemas/a2a/v1";
+const VALIDATOR_ANNOTATIONS = new Set([
+  "$comment",
+  "$schema",
+  "default",
+  "deprecated",
+  "description",
+  "examples",
+  "readOnly",
+  "title",
+  "writeOnly",
+]);
 const STANDALONE_CODE = standaloneModule.default;
 
 const VALIDATORS = {
@@ -74,8 +85,37 @@ export async function generateProtocolArtifacts(
   });
 
   await Deno.writeTextFile(protocolPath, protocolTypes);
-  await Deno.writeTextFile(validationPath, generateStandaloneValidators(normalizedSchema));
+  const validationSchema = stripSchemaAnnotations(normalizedSchema);
+  await Deno.writeTextFile(validationPath, generateStandaloneValidators(validationSchema));
   await formatGeneratedFiles([protocolPath, validationPath]);
+}
+
+function stripSchemaAnnotations(value: unknown): Record<string, unknown> {
+  const visit = (item: unknown, keysAreNames = false): unknown => {
+    if (Array.isArray(item)) {
+      return item.map((nestedItem) => visit(nestedItem));
+    }
+    if (!isRecord(item)) {
+      return item;
+    }
+    return Object.fromEntries(
+      Object.entries(item)
+        .filter(([key]) => keysAreNames || !VALIDATOR_ANNOTATIONS.has(key))
+        .map(([key, nestedItem]) => [
+          key,
+          visit(
+            nestedItem,
+            key === "$defs" || key === "definitions" || key === "patternProperties" ||
+              key === "properties",
+          ),
+        ]),
+    );
+  };
+  const schema = visit(value);
+  if (!isRecord(schema)) {
+    throw new Error("Validator schema must remain an object");
+  }
+  return schema;
 }
 
 function expandPatternProperties(value: unknown): Record<string, unknown> {

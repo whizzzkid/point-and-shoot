@@ -14,188 +14,75 @@
 "use strict";
 export const validateAgentCard = validate20;
 const schema31 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateAgentCard",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Agent Card",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateAgentCard",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Agent Card",
 };
 const schema33 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "A self-describing manifest for an agent. It provides essential\n metadata including the agent's identity, capabilities, skills, supported\n communication methods, and security requirements.\n Next ID: 20",
   "patternProperties": {
-    "^(default_input_modes)$": {
-      "description":
-        "The set of interaction modes that the agent supports across all skills.\n This can be overridden per skill. Defined as media types.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "^(default_output_modes)$": {
-      "description": "The media types supported as outputs from this agent.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "^(documentation_url)$": {
-      "description": "A URL providing additional documentation about the agent.",
-      "type": "string",
-    },
-    "^(icon_url)$": {
-      "description": "Optional. A URL to an icon for the agent.",
-      "type": "string",
-    },
+    "^(default_input_modes)$": { "items": { "type": "string" }, "type": "array" },
+    "^(default_output_modes)$": { "items": { "type": "string" }, "type": "array" },
+    "^(documentation_url)$": { "type": "string" },
+    "^(icon_url)$": { "type": "string" },
     "^(security_requirements)$": {
-      "description": "Security requirements for contacting the agent.",
       "items": { "$ref": "#/definitions/Security Requirement" },
       "type": "array",
     },
     "^(security_schemes)$": {
       "additionalProperties": { "$ref": "#/definitions/Security Scheme" },
-      "description": "The security scheme details used for authenticating with this agent.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
     "^(supported_interfaces)$": {
-      "description": "Ordered list of supported interfaces. The first entry is preferred.",
       "items": { "$ref": "#/definitions/Agent Interface" },
       "type": "array",
     },
   },
   "properties": {
-    "capabilities": {
-      "$ref": "#/definitions/Agent Capabilities",
-      "description": "A2A Capability set supported by the agent.",
-    },
-    "defaultInputModes": {
-      "description":
-        "The set of interaction modes that the agent supports across all skills.\n This can be overridden per skill. Defined as media types.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "defaultOutputModes": {
-      "description": "The media types supported as outputs from this agent.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "description": {
-      "default": "",
-      "description":
-        'A human-readable description of the agent, assisting users and other agents\n in understanding its purpose.\n Example: "Agent that helps users with recipes and cooking."',
-      "type": "string",
-    },
-    "documentationUrl": {
-      "description": "A URL providing additional documentation about the agent.",
-      "type": "string",
-    },
-    "iconUrl": { "description": "Optional. A URL to an icon for the agent.", "type": "string" },
-    "name": {
-      "default": "",
-      "description": 'A human readable name for the agent.\n Example: "Recipe Agent"',
-      "type": "string",
-    },
-    "provider": {
-      "$ref": "#/definitions/Agent Provider",
-      "description": "The service provider of the agent.",
-    },
+    "capabilities": { "$ref": "#/definitions/Agent Capabilities" },
+    "defaultInputModes": { "items": { "type": "string" }, "type": "array" },
+    "defaultOutputModes": { "items": { "type": "string" }, "type": "array" },
+    "description": { "type": "string" },
+    "documentationUrl": { "type": "string" },
+    "iconUrl": { "type": "string" },
+    "name": { "type": "string" },
+    "provider": { "$ref": "#/definitions/Agent Provider" },
     "securityRequirements": {
-      "description": "Security requirements for contacting the agent.",
       "items": { "$ref": "#/definitions/Security Requirement" },
       "type": "array",
     },
     "securitySchemes": {
       "additionalProperties": { "$ref": "#/definitions/Security Scheme" },
-      "description": "The security scheme details used for authenticating with this agent.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
-    "signatures": {
-      "description": "JSON Web Signatures computed for this `AgentCard`.",
-      "items": { "$ref": "#/definitions/Agent Card Signature" },
-      "type": "array",
-    },
-    "skills": {
-      "description":
-        "Skills represent the abilities of an agent.\n It is largely a descriptive concept but represents a more focused set of behaviors that the\n agent is likely to succeed at.",
-      "items": { "$ref": "#/definitions/Agent Skill" },
-      "type": "array",
-    },
+    "signatures": { "items": { "$ref": "#/definitions/Agent Card Signature" }, "type": "array" },
+    "skills": { "items": { "$ref": "#/definitions/Agent Skill" }, "type": "array" },
     "supportedInterfaces": {
-      "description": "Ordered list of supported interfaces. The first entry is preferred.",
       "items": { "$ref": "#/definitions/Agent Interface" },
       "type": "array",
     },
-    "version": {
-      "default": "",
-      "description": 'The version of the agent.\n Example: "1.0.0"',
-      "type": "string",
-    },
+    "version": { "type": "string" },
   },
-  "title": "Agent Card",
   "type": "object",
 };
 const schema37 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Represents the service provider of an agent.",
-  "properties": {
-    "organization": {
-      "default": "",
-      "description": 'The name of the agent provider\'s organization.\n Example: "Google"',
-      "type": "string",
-    },
-    "url": {
-      "default": "",
-      "description":
-        'A URL for the agent provider\'s website or relevant documentation.\n Example: "https://ai.google.dev"',
-      "type": "string",
-    },
-  },
-  "title": "Agent Provider",
+  "properties": { "organization": { "type": "string" }, "url": { "type": "string" } },
   "type": "object",
 };
 const schema62 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "Declares a combination of a target URL, transport and protocol version for interacting with the agent.\n This allows agents to expose the same functionality over multiple protocol binding mechanisms.",
   "patternProperties": {
-    "^(protocol_binding)$": {
-      "default": "",
-      "description":
-        "The protocol binding supported at this URL. This is an open form string, to be\n easily extended for other protocol bindings. The core ones officially\n supported are `JSONRPC`, `GRPC` and `HTTP+JSON`.",
-      "type": "string",
-    },
-    "^(protocol_version)$": {
-      "default": "",
-      "description":
-        'The version of the A2A protocol this interface exposes.\n Use the latest supported minor version per major version.\n Examples: "0.3", "1.0"',
-      "type": "string",
-    },
+    "^(protocol_binding)$": { "type": "string" },
+    "^(protocol_version)$": { "type": "string" },
   },
   "properties": {
-    "protocolBinding": {
-      "default": "",
-      "description":
-        "The protocol binding supported at this URL. This is an open form string, to be\n easily extended for other protocol bindings. The core ones officially\n supported are `JSONRPC`, `GRPC` and `HTTP+JSON`.",
-      "type": "string",
-    },
-    "protocolVersion": {
-      "default": "",
-      "description":
-        'The version of the A2A protocol this interface exposes.\n Use the latest supported minor version per major version.\n Examples: "0.3", "1.0"',
-      "type": "string",
-    },
-    "tenant": {
-      "default": "",
-      "description": "Tenant ID to be used in the request when calling the agent.",
-      "type": "string",
-    },
-    "url": {
-      "default": "",
-      "description":
-        'The URL where this interface is available. Must be a valid absolute HTTPS URL in production.\n Example: "https://api.example.com/a2a/v1", "https://grpc.example.com/a2a"',
-      "type": "string",
-    },
+    "protocolBinding": { "type": "string" },
+    "protocolVersion": { "type": "string" },
+    "tenant": { "type": "string" },
+    "url": { "type": "string" },
   },
-  "title": "Agent Interface",
   "type": "object",
 };
 const func1 = Object.prototype.hasOwnProperty;
@@ -209,81 +96,32 @@ const pattern10 = new RegExp("^(supported_interfaces)$", "u");
 const pattern91 = new RegExp("^(protocol_binding)$", "u");
 const pattern92 = new RegExp("^(protocol_version)$", "u");
 const schema34 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines optional capabilities supported by an agent.",
   "patternProperties": {
-    "^(extended_agent_card)$": {
-      "description":
-        "Indicates if the agent supports providing an extended agent card when authenticated.",
-      "type": "boolean",
-    },
-    "^(push_notifications)$": {
-      "description":
-        "Indicates if the agent supports sending push notifications for asynchronous task updates.",
-      "type": "boolean",
-    },
+    "^(extended_agent_card)$": { "type": "boolean" },
+    "^(push_notifications)$": { "type": "boolean" },
   },
   "properties": {
-    "extendedAgentCard": {
-      "description":
-        "Indicates if the agent supports providing an extended agent card when authenticated.",
-      "type": "boolean",
-    },
-    "extensions": {
-      "description": "A list of protocol extensions supported by the agent.",
-      "items": { "$ref": "#/definitions/Agent Extension" },
-      "type": "array",
-    },
-    "pushNotifications": {
-      "description":
-        "Indicates if the agent supports sending push notifications for asynchronous task updates.",
-      "type": "boolean",
-    },
-    "streaming": {
-      "description": "Indicates if the agent supports streaming responses.",
-      "type": "boolean",
-    },
+    "extendedAgentCard": { "type": "boolean" },
+    "extensions": { "items": { "$ref": "#/definitions/Agent Extension" }, "type": "array" },
+    "pushNotifications": { "type": "boolean" },
+    "streaming": { "type": "boolean" },
   },
-  "title": "Agent Capabilities",
   "type": "object",
 };
 const pattern11 = new RegExp("^(extended_agent_card)$", "u");
 const pattern12 = new RegExp("^(push_notifications)$", "u");
 const schema35 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A declaration of a protocol extension supported by an Agent.",
   "properties": {
-    "description": {
-      "default": "",
-      "description": "A human-readable description of how this agent uses the extension.",
-      "type": "string",
-    },
-    "params": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. Extension-specific configuration parameters.",
-    },
-    "required": {
-      "default": false,
-      "description":
-        "If true, the client must understand and comply with the extension's requirements.",
-      "type": "boolean",
-    },
-    "uri": {
-      "default": "",
-      "description": "The unique URI identifying the extension.",
-      "type": "string",
-    },
+    "description": { "type": "string" },
+    "params": { "$ref": "#/definitions/Struct" },
+    "required": { "type": "boolean" },
+    "uri": { "type": "string" },
   },
-  "title": "Agent Extension",
   "type": "object",
 };
-const schema36 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Struct",
-  "type": "object",
-};
+const schema36 = { "type": "object" };
 
 function validate24(
   data,
@@ -587,32 +425,19 @@ function validate23(
 validate23.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema38 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines the security requirements for an agent.",
   "properties": {
     "schemes": {
       "additionalProperties": { "$ref": "#/definitions/String List" },
-      "description": "A map of security schemes to the required scopes.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
   },
-  "title": "Security Requirement",
   "type": "object",
 };
 const schema39 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A list of strings.",
-  "properties": {
-    "list": {
-      "description": "The individual string values.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-  },
-  "title": "String List",
+  "properties": { "list": { "items": { "type": "string" }, "type": "array" } },
   "type": "object",
 };
 
@@ -799,156 +624,53 @@ function validate27(
 validate27.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema40 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "Defines a security scheme that can be used to secure an agent's endpoints.\n This is a discriminated union type based on the OpenAPI 3.2 Security Scheme Object.\n See: https://spec.openapis.org/oas/v3.2.0.html#security-scheme-object",
   "patternProperties": {
-    "^(api_key_security_scheme)$": {
-      "$ref": "#/definitions/API Key Security Scheme",
-      "description": "API key-based authentication.",
-    },
-    "^(http_auth_security_scheme)$": {
-      "$ref": "#/definitions/HTTP Auth Security Scheme",
-      "description": "HTTP authentication (Basic, Bearer, etc.).",
-    },
-    "^(mtls_security_scheme)$": {
-      "$ref": "#/definitions/Mutual Tls Security Scheme",
-      "description": "Mutual TLS authentication.",
-    },
-    "^(oauth2_security_scheme)$": {
-      "$ref": "#/definitions/O Auth2 Security Scheme",
-      "description": "OAuth 2.0 authentication.",
-    },
+    "^(api_key_security_scheme)$": { "$ref": "#/definitions/API Key Security Scheme" },
+    "^(http_auth_security_scheme)$": { "$ref": "#/definitions/HTTP Auth Security Scheme" },
+    "^(mtls_security_scheme)$": { "$ref": "#/definitions/Mutual Tls Security Scheme" },
+    "^(oauth2_security_scheme)$": { "$ref": "#/definitions/O Auth2 Security Scheme" },
     "^(open_id_connect_security_scheme)$": {
       "$ref": "#/definitions/Open Id Connect Security Scheme",
-      "description": "OpenID Connect authentication.",
     },
   },
   "properties": {
-    "apiKeySecurityScheme": {
-      "$ref": "#/definitions/API Key Security Scheme",
-      "description": "API key-based authentication.",
-    },
-    "httpAuthSecurityScheme": {
-      "$ref": "#/definitions/HTTP Auth Security Scheme",
-      "description": "HTTP authentication (Basic, Bearer, etc.).",
-    },
-    "mtlsSecurityScheme": {
-      "$ref": "#/definitions/Mutual Tls Security Scheme",
-      "description": "Mutual TLS authentication.",
-    },
-    "oauth2SecurityScheme": {
-      "$ref": "#/definitions/O Auth2 Security Scheme",
-      "description": "OAuth 2.0 authentication.",
-    },
-    "openIdConnectSecurityScheme": {
-      "$ref": "#/definitions/Open Id Connect Security Scheme",
-      "description": "OpenID Connect authentication.",
-    },
+    "apiKeySecurityScheme": { "$ref": "#/definitions/API Key Security Scheme" },
+    "httpAuthSecurityScheme": { "$ref": "#/definitions/HTTP Auth Security Scheme" },
+    "mtlsSecurityScheme": { "$ref": "#/definitions/Mutual Tls Security Scheme" },
+    "oauth2SecurityScheme": { "$ref": "#/definitions/O Auth2 Security Scheme" },
+    "openIdConnectSecurityScheme": { "$ref": "#/definitions/Open Id Connect Security Scheme" },
   },
-  "title": "Security Scheme",
   "type": "object",
 };
 const schema41 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines a security scheme using an API key.",
   "properties": {
-    "description": {
-      "default": "",
-      "description": "An optional description for the security scheme.",
-      "type": "string",
-    },
-    "location": {
-      "default": "",
-      "description":
-        'The location of the API key. Valid values are "query", "header", or "cookie".',
-      "type": "string",
-    },
-    "name": {
-      "default": "",
-      "description": "The name of the header, query, or cookie parameter to be used.",
-      "type": "string",
-    },
+    "description": { "type": "string" },
+    "location": { "type": "string" },
+    "name": { "type": "string" },
   },
-  "title": "API Key Security Scheme",
   "type": "object",
 };
 const schema42 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines a security scheme using HTTP authentication.",
-  "patternProperties": {
-    "^(bearer_format)$": {
-      "default": "",
-      "description":
-        'A hint to the client to identify how the bearer token is formatted (e.g., "JWT").\n Primarily for documentation purposes.',
-      "type": "string",
-    },
-  },
+  "patternProperties": { "^(bearer_format)$": { "type": "string" } },
   "properties": {
-    "bearerFormat": {
-      "default": "",
-      "description":
-        'A hint to the client to identify how the bearer token is formatted (e.g., "JWT").\n Primarily for documentation purposes.',
-      "type": "string",
-    },
-    "description": {
-      "default": "",
-      "description": "An optional description for the security scheme.",
-      "type": "string",
-    },
-    "scheme": {
-      "default": "",
-      "description":
-        'The name of the HTTP Authentication scheme to be used in the Authorization header,\n as defined in RFC7235 (e.g., "Bearer").\n This value should be registered in the IANA Authentication Scheme registry.',
-      "type": "string",
-    },
+    "bearerFormat": { "type": "string" },
+    "description": { "type": "string" },
+    "scheme": { "type": "string" },
   },
-  "title": "HTTP Auth Security Scheme",
   "type": "object",
 };
 const schema43 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines a security scheme using mTLS authentication.",
-  "properties": {
-    "description": {
-      "default": "",
-      "description": "An optional description for the security scheme.",
-      "type": "string",
-    },
-  },
-  "title": "Mutual Tls Security Scheme",
+  "properties": { "description": { "type": "string" } },
   "type": "object",
 };
 const schema54 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines a security scheme using OpenID Connect.",
-  "patternProperties": {
-    "^(open_id_connect_url)$": {
-      "default": "",
-      "description":
-        "The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.",
-      "type": "string",
-    },
-  },
-  "properties": {
-    "description": {
-      "default": "",
-      "description": "An optional description for the security scheme.",
-      "type": "string",
-    },
-    "openIdConnectUrl": {
-      "default": "",
-      "description":
-        "The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.",
-      "type": "string",
-    },
-  },
-  "title": "Open Id Connect Security Scheme",
+  "patternProperties": { "^(open_id_connect_url)$": { "type": "string" } },
+  "properties": { "description": { "type": "string" }, "openIdConnectUrl": { "type": "string" } },
   "type": "object",
 };
 const pattern15 = new RegExp("^(api_key_security_scheme)$", "u");
@@ -959,308 +681,121 @@ const pattern19 = new RegExp("^(open_id_connect_security_scheme)$", "u");
 const pattern20 = new RegExp("^(bearer_format)$", "u");
 const pattern74 = new RegExp("^(open_id_connect_url)$", "u");
 const schema44 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines a security scheme using OAuth 2.0.",
-  "patternProperties": {
-    "^(oauth2_metadata_url)$": {
-      "default": "",
-      "description":
-        "URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).\n TLS is required.",
-      "type": "string",
-    },
-  },
+  "patternProperties": { "^(oauth2_metadata_url)$": { "type": "string" } },
   "properties": {
-    "description": {
-      "default": "",
-      "description": "An optional description for the security scheme.",
-      "type": "string",
-    },
-    "flows": {
-      "$ref": "#/definitions/O Auth Flows",
-      "description":
-        "An object containing configuration information for the supported OAuth 2.0 flows.",
-    },
-    "oauth2MetadataUrl": {
-      "default": "",
-      "description":
-        "URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).\n TLS is required.",
-      "type": "string",
-    },
+    "description": { "type": "string" },
+    "flows": { "$ref": "#/definitions/O Auth Flows" },
+    "oauth2MetadataUrl": { "type": "string" },
   },
-  "title": "O Auth2 Security Scheme",
   "type": "object",
 };
 const pattern22 = new RegExp("^(oauth2_metadata_url)$", "u");
 const schema45 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines the configuration for the supported OAuth 2.0 flows.",
   "patternProperties": {
-    "^(authorization_code)$": {
-      "$ref": "#/definitions/Authorization CodeO Auth Flow",
-      "description": "Configuration for the OAuth Authorization Code flow.",
-    },
-    "^(client_credentials)$": {
-      "$ref": "#/definitions/Client CredentialsO Auth Flow",
-      "description": "Configuration for the OAuth Client Credentials flow.",
-    },
-    "^(device_code)$": {
-      "$ref": "#/definitions/Device CodeO Auth Flow",
-      "description": "Configuration for the OAuth Device Code flow.",
-    },
+    "^(authorization_code)$": { "$ref": "#/definitions/Authorization CodeO Auth Flow" },
+    "^(client_credentials)$": { "$ref": "#/definitions/Client CredentialsO Auth Flow" },
+    "^(device_code)$": { "$ref": "#/definitions/Device CodeO Auth Flow" },
   },
   "properties": {
-    "authorizationCode": {
-      "$ref": "#/definitions/Authorization CodeO Auth Flow",
-      "description": "Configuration for the OAuth Authorization Code flow.",
-    },
-    "clientCredentials": {
-      "$ref": "#/definitions/Client CredentialsO Auth Flow",
-      "description": "Configuration for the OAuth Client Credentials flow.",
-    },
-    "deviceCode": {
-      "$ref": "#/definitions/Device CodeO Auth Flow",
-      "description": "Configuration for the OAuth Device Code flow.",
-    },
-    "implicit": {
-      "$ref": "#/definitions/ImplicitO Auth Flow",
-      "description": "Deprecated: Use Authorization Code + PKCE instead.",
-    },
-    "password": {
-      "$ref": "#/definitions/PasswordO Auth Flow",
-      "description": "Deprecated: Use Authorization Code + PKCE or Device Code.",
-    },
+    "authorizationCode": { "$ref": "#/definitions/Authorization CodeO Auth Flow" },
+    "clientCredentials": { "$ref": "#/definitions/Client CredentialsO Auth Flow" },
+    "deviceCode": { "$ref": "#/definitions/Device CodeO Auth Flow" },
+    "implicit": { "$ref": "#/definitions/ImplicitO Auth Flow" },
+    "password": { "$ref": "#/definitions/PasswordO Auth Flow" },
   },
-  "title": "O Auth Flows",
   "type": "object",
 };
 const schema46 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines configuration details for the OAuth 2.0 Authorization Code flow.",
   "patternProperties": {
-    "^(authorization_url)$": {
-      "default": "",
-      "description": "The authorization URL to be used for this flow.",
-      "type": "string",
-    },
-    "^(pkce_required)$": {
-      "default": false,
-      "description":
-        "Indicates if PKCE (RFC 7636) is required for this flow.\n PKCE should always be used for public clients and is recommended for all clients.",
-      "type": "boolean",
-    },
-    "^(refresh_url)$": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
-    "^(token_url)$": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "^(authorization_url)$": { "type": "string" },
+    "^(pkce_required)$": { "type": "boolean" },
+    "^(refresh_url)$": { "type": "string" },
+    "^(token_url)$": { "type": "string" },
   },
   "properties": {
-    "authorizationUrl": {
-      "default": "",
-      "description": "The authorization URL to be used for this flow.",
-      "type": "string",
-    },
-    "pkceRequired": {
-      "default": false,
-      "description":
-        "Indicates if PKCE (RFC 7636) is required for this flow.\n PKCE should always be used for public clients and is recommended for all clients.",
-      "type": "boolean",
-    },
-    "refreshUrl": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
+    "authorizationUrl": { "type": "string" },
+    "pkceRequired": { "type": "boolean" },
+    "refreshUrl": { "type": "string" },
     "scopes": {
       "additionalProperties": { "type": "string" },
-      "description": "The available scopes for the OAuth2 security scheme.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
-    "tokenUrl": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "tokenUrl": { "type": "string" },
   },
-  "title": "Authorization CodeO Auth Flow",
   "type": "object",
 };
 const schema47 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Defines configuration details for the OAuth 2.0 Client Credentials flow.",
   "patternProperties": {
-    "^(refresh_url)$": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
-    "^(token_url)$": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "^(refresh_url)$": { "type": "string" },
+    "^(token_url)$": { "type": "string" },
   },
   "properties": {
-    "refreshUrl": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
+    "refreshUrl": { "type": "string" },
     "scopes": {
       "additionalProperties": { "type": "string" },
-      "description": "The available scopes for the OAuth2 security scheme.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
-    "tokenUrl": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "tokenUrl": { "type": "string" },
   },
-  "title": "Client CredentialsO Auth Flow",
   "type": "object",
 };
 const schema48 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "Defines configuration details for the OAuth 2.0 Device Code flow (RFC 8628).\n This flow is designed for input-constrained devices such as IoT devices,\n and CLI tools where the user authenticates on a separate device.",
   "patternProperties": {
-    "^(device_authorization_url)$": {
-      "default": "",
-      "description": "The device authorization endpoint URL.",
-      "type": "string",
-    },
-    "^(refresh_url)$": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
-    "^(token_url)$": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "^(device_authorization_url)$": { "type": "string" },
+    "^(refresh_url)$": { "type": "string" },
+    "^(token_url)$": { "type": "string" },
   },
   "properties": {
-    "deviceAuthorizationUrl": {
-      "default": "",
-      "description": "The device authorization endpoint URL.",
-      "type": "string",
-    },
-    "refreshUrl": {
-      "default": "",
-      "description": "The URL to be used for obtaining refresh tokens.",
-      "type": "string",
-    },
+    "deviceAuthorizationUrl": { "type": "string" },
+    "refreshUrl": { "type": "string" },
     "scopes": {
       "additionalProperties": { "type": "string" },
-      "description": "The available scopes for the OAuth2 security scheme.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
-    "tokenUrl": {
-      "default": "",
-      "description": "The token URL to be used for this flow.",
-      "type": "string",
-    },
+    "tokenUrl": { "type": "string" },
   },
-  "title": "Device CodeO Auth Flow",
   "type": "object",
 };
 const schema49 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Deprecated: Use Authorization Code + PKCE instead.",
   "patternProperties": {
-    "^(authorization_url)$": {
-      "default": "",
-      "description":
-        "The authorization URL to be used for this flow. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS",
-      "type": "string",
-    },
-    "^(refresh_url)$": {
-      "default": "",
-      "description":
-        "The URL to be used for obtaining refresh tokens. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
+    "^(authorization_url)$": { "type": "string" },
+    "^(refresh_url)$": { "type": "string" },
   },
   "properties": {
-    "authorizationUrl": {
-      "default": "",
-      "description":
-        "The authorization URL to be used for this flow. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS",
-      "type": "string",
-    },
-    "refreshUrl": {
-      "default": "",
-      "description":
-        "The URL to be used for obtaining refresh tokens. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
+    "authorizationUrl": { "type": "string" },
+    "refreshUrl": { "type": "string" },
     "scopes": {
       "additionalProperties": { "type": "string" },
-      "description":
-        "The available scopes for the OAuth2 security scheme. A map between the\n scope name and a short description for it. The map MAY be empty.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
   },
-  "title": "ImplicitO Auth Flow",
   "type": "object",
 };
 const schema50 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Deprecated: Use Authorization Code + PKCE or Device Code.",
   "patternProperties": {
-    "^(refresh_url)$": {
-      "default": "",
-      "description":
-        "The URL to be used for obtaining refresh tokens. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
-    "^(token_url)$": {
-      "default": "",
-      "description":
-        "The token URL to be used for this flow. This MUST be in the form of a URL.\n The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
+    "^(refresh_url)$": { "type": "string" },
+    "^(token_url)$": { "type": "string" },
   },
   "properties": {
-    "refreshUrl": {
-      "default": "",
-      "description":
-        "The URL to be used for obtaining refresh tokens. This MUST be in the\n form of a URL. The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
+    "refreshUrl": { "type": "string" },
     "scopes": {
       "additionalProperties": { "type": "string" },
-      "description":
-        "The available scopes for the OAuth2 security scheme. A map between the\n scope name and a short description for it. The map MAY be empty.",
       "propertyNames": { "type": "string" },
       "type": "object",
     },
-    "tokenUrl": {
-      "default": "",
-      "description":
-        "The token URL to be used for this flow. This MUST be in the form of a URL.\n The OAuth2 standard requires the use of TLS.",
-      "type": "string",
-    },
+    "tokenUrl": { "type": "string" },
   },
-  "title": "PasswordO Auth Flow",
   "type": "object",
 };
 const pattern23 = new RegExp("^(authorization_code)$", "u");
@@ -4043,28 +3578,12 @@ function validate29(
 validate29.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema59 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "AgentCardSignature represents a JWS signature of an AgentCard.\n This follows the JSON format of an RFC 7515 JSON Web Signature (JWS).",
   "properties": {
-    "header": {
-      "$ref": "#/definitions/Struct",
-      "description": "The unprotected JWS header values.",
-    },
-    "protected": {
-      "default": "",
-      "description":
-        "(-- api-linter: core::0140::reserved-words=disabled\n     aip.dev/not-precedent: Backwards compatibility --)\n Required. The protected JWS header for the signature. This is always a\n base64url-encoded JSON object.",
-      "type": "string",
-    },
-    "signature": {
-      "default": "",
-      "description": "Required. The computed signature, base64url-encoded.",
-      "type": "string",
-    },
+    "header": { "$ref": "#/definitions/Struct" },
+    "protected": { "type": "string" },
+    "signature": { "type": "string" },
   },
-  "title": "Agent Card Signature",
   "type": "object",
 };
 
@@ -4172,73 +3691,28 @@ function validate36(
 validate36.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema61 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Represents a distinct capability or function that an agent can perform.",
   "patternProperties": {
-    "^(input_modes)$": {
-      "description":
-        "The set of supported input media types for this skill, overriding the agent's defaults.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "^(output_modes)$": {
-      "description":
-        "The set of supported output media types for this skill, overriding the agent's defaults.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
+    "^(input_modes)$": { "items": { "type": "string" }, "type": "array" },
+    "^(output_modes)$": { "items": { "type": "string" }, "type": "array" },
     "^(security_requirements)$": {
-      "description": "Security schemes necessary for this skill.",
       "items": { "$ref": "#/definitions/Security Requirement" },
       "type": "array",
     },
   },
   "properties": {
-    "description": {
-      "default": "",
-      "description": "A detailed description of the skill.",
-      "type": "string",
-    },
-    "examples": {
-      "description": "Example prompts or scenarios that this skill can handle.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "id": {
-      "default": "",
-      "description": "A unique identifier for the agent's skill.",
-      "type": "string",
-    },
-    "inputModes": {
-      "description":
-        "The set of supported input media types for this skill, overriding the agent's defaults.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "name": {
-      "default": "",
-      "description": "A human-readable name for the skill.",
-      "type": "string",
-    },
-    "outputModes": {
-      "description":
-        "The set of supported output media types for this skill, overriding the agent's defaults.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
+    "description": { "type": "string" },
+    "examples": { "items": { "type": "string" }, "type": "array" },
+    "id": { "type": "string" },
+    "inputModes": { "items": { "type": "string" }, "type": "array" },
+    "name": { "type": "string" },
+    "outputModes": { "items": { "type": "string" }, "type": "array" },
     "securityRequirements": {
-      "description": "Security schemes necessary for this skill.",
       "items": { "$ref": "#/definitions/Security Requirement" },
       "type": "array",
     },
-    "tags": {
-      "description": "A set of keywords describing the skill's capabilities.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
+    "tags": { "items": { "type": "string" }, "type": "array" },
   },
-  "title": "Agent Skill",
   "type": "object",
 };
 const pattern85 = new RegExp("^(input_modes)$", "u");
@@ -5701,7 +5175,7 @@ function validate20(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateAgentCard" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateAgentCard" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate20.evaluated;
@@ -5724,104 +5198,38 @@ validate20.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateArtifact = validate45;
 const schema64 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateArtifact",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Artifact",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateArtifact",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Artifact",
 };
 const schema65 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Artifacts represent task outputs.",
-  "patternProperties": {
-    "^(artifact_id)$": {
-      "default": "",
-      "description":
-        "Unique identifier (e.g. UUID) for the artifact. It must be unique within a task.",
-      "type": "string",
-    },
-  },
+  "patternProperties": { "^(artifact_id)$": { "type": "string" } },
   "properties": {
-    "artifactId": {
-      "default": "",
-      "description":
-        "Unique identifier (e.g. UUID) for the artifact. It must be unique within a task.",
-      "type": "string",
-    },
-    "description": {
-      "default": "",
-      "description": "Optional. A human readable description of the artifact.",
-      "type": "string",
-    },
-    "extensions": {
-      "description": "The URIs of extensions that are present or contributed to this Artifact.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. Metadata included with the artifact.",
-    },
-    "name": {
-      "default": "",
-      "description": "A human readable name for the artifact.",
-      "type": "string",
-    },
-    "parts": {
-      "description": "The content of the artifact. Must contain at least one part.",
-      "items": { "$ref": "#/definitions/Part" },
-      "type": "array",
-    },
+    "artifactId": { "type": "string" },
+    "description": { "type": "string" },
+    "extensions": { "items": { "type": "string" }, "type": "array" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "name": { "type": "string" },
+    "parts": { "items": { "$ref": "#/definitions/Part" }, "type": "array" },
   },
-  "title": "Artifact",
   "type": "object",
 };
 const pattern106 = new RegExp("^(artifact_id)$", "u");
 const schema67 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "`Part` represents a container for a section of communication content.\n Parts can be purely textual, some sort of file (image, video, etc) or\n a structured data blob (i.e. JSON).",
-  "patternProperties": {
-    "^(media_type)$": {
-      "default": "",
-      "description":
-        'The `media_type` (MIME type) of the part content (e.g., "text/plain", "application/json", "image/png").\n This field is available for all part types.',
-      "type": "string",
-    },
-  },
+  "patternProperties": { "^(media_type)$": { "type": "string" } },
   "properties": {
-    "data": {
-      "$ref": "#/definitions/Value",
-      "description":
-        "Arbitrary structured `data` as a JSON value (object, array, string, number, boolean, or null).",
-    },
-    "filename": {
-      "default": "",
-      "description": 'An optional `filename` for the file (e.g., "document.pdf").',
-      "type": "string",
-    },
-    "mediaType": {
-      "default": "",
-      "description":
-        'The `media_type` (MIME type) of the part content (e.g., "text/plain", "application/json", "image/png").\n This field is available for all part types.',
-      "type": "string",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. metadata associated with this part.",
-    },
-    "raw": {
-      "description":
-        "The `raw` byte content of a file. In JSON serialization, this is encoded as a base64 string.",
-      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
-      "type": "string",
-    },
-    "text": { "description": "The string content of the `text` part.", "type": "string" },
-    "url": { "description": "A `url` pointing to the file's content.", "type": "string" },
+    "data": { "$ref": "#/definitions/Value" },
+    "filename": { "type": "string" },
+    "mediaType": { "type": "string" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "raw": { "pattern": "^[A-Za-z0-9+/]*={0,2}$", "type": "string" },
+    "text": { "type": "string" },
+    "url": { "type": "string" },
   },
-  "title": "Part",
   "type": "object",
 };
-const schema68 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Value" };
+const schema68 = {};
 const pattern107 = new RegExp("^(media_type)$", "u");
 const pattern108 = new RegExp("^[A-Za-z0-9+/]*={0,2}$", "u");
 
@@ -6237,7 +5645,7 @@ function validate45(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateArtifact" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateArtifact" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate45.evaluated;
@@ -6260,88 +5668,32 @@ validate45.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateMessage = validate50;
 const schema70 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateMessage",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Message",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateMessage",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Message",
 };
 const schema71 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "`Message` is one unit of communication between client and server. It can be\n associated with a context and/or a task. For server messages, `context_id` must\n be provided, and `task_id` only if a task was created. For client messages, both\n fields are optional, with the caveat that if both are provided, they have to\n match (the `context_id` has to be the one that is set on the task). If only\n `task_id` is provided, the server will infer `context_id` from it.",
   "patternProperties": {
-    "^(context_id)$": {
-      "default": "",
-      "description":
-        "Optional. The context id of the message. If set, the message will be associated with the given context.",
-      "type": "string",
-    },
-    "^(message_id)$": {
-      "default": "",
-      "description":
-        "The unique identifier (e.g. UUID) of the message. This is created by the message creator.",
-      "type": "string",
-    },
-    "^(reference_task_ids)$": {
-      "description": "A list of task IDs that this message references for additional context.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "^(task_id)$": {
-      "default": "",
-      "description":
-        "Optional. The task id of the message. If set, the message will be associated with the given task.",
-      "type": "string",
-    },
+    "^(context_id)$": { "type": "string" },
+    "^(message_id)$": { "type": "string" },
+    "^(reference_task_ids)$": { "items": { "type": "string" }, "type": "array" },
+    "^(task_id)$": { "type": "string" },
   },
   "properties": {
-    "contextId": {
-      "default": "",
-      "description":
-        "Optional. The context id of the message. If set, the message will be associated with the given context.",
-      "type": "string",
-    },
-    "extensions": {
-      "description": "The URIs of extensions that are present or contributed to this Message.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
-    "messageId": {
-      "default": "",
-      "description":
-        "The unique identifier (e.g. UUID) of the message. This is created by the message creator.",
-      "type": "string",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. Any metadata to provide along with the message.",
-    },
-    "parts": {
-      "description": "Parts is the container of the message content.",
-      "items": { "$ref": "#/definitions/Part" },
-      "type": "array",
-    },
-    "referenceTaskIds": {
-      "description": "A list of task IDs that this message references for additional context.",
-      "items": { "type": "string" },
-      "type": "array",
-    },
+    "contextId": { "type": "string" },
+    "extensions": { "items": { "type": "string" }, "type": "array" },
+    "messageId": { "type": "string" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "parts": { "items": { "$ref": "#/definitions/Part" }, "type": "array" },
+    "referenceTaskIds": { "items": { "type": "string" }, "type": "array" },
     "role": {
       "anyOf": [{ "pattern": "^ROLE_UNSPECIFIED$", "type": "string" }, {
         "enum": ["ROLE_USER", "ROLE_AGENT"],
         "type": "string",
       }, { "maximum": 2147483647, "minimum": -2147483648, "type": "integer" }],
-      "default": 0,
-      "description": "Identifies the sender of the message.",
-      "title": "Role",
     },
-    "taskId": {
-      "default": "",
-      "description":
-        "Optional. The task id of the message. If set, the message will be associated with the given task.",
-      "type": "string",
-    },
+    "taskId": { "type": "string" },
   },
-  "title": "Message",
   "type": "object",
 };
 const pattern111 = new RegExp("^(context_id)$", "u");
@@ -6830,7 +6182,7 @@ function validate50(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateMessage" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateMessage" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate50.evaluated;
@@ -6853,8 +6205,8 @@ validate50.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validatePart = validate54;
 const schema73 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validatePart",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Part",
+  "$id": "point-and-shoot://schemas/a2a/v1/validatePart",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Part",
 };
 
 function validate55(
@@ -7055,7 +6407,7 @@ function validate54(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validatePart" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validatePart" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate54.evaluated;
@@ -7078,21 +6430,15 @@ validate54.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateSendMessageResponse = validate57;
 const schema77 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateSendMessageResponse",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Send Message Response",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateSendMessageResponse",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Send Message Response",
 };
 const schema78 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Represents the response for the `SendMessage` method.",
   "properties": {
-    "message": { "$ref": "#/definitions/Message", "description": "A message from the agent." },
-    "task": {
-      "$ref": "#/definitions/Task",
-      "description": "The task created or updated by the message.",
-    },
+    "message": { "$ref": "#/definitions/Message" },
+    "task": { "$ref": "#/definitions/Task" },
   },
-  "title": "Send Message Response",
   "type": "object",
 };
 
@@ -7573,51 +6919,16 @@ function validate59(
 validate59.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema81 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "`Task` is the core unit of action for A2A. It has a current status\n and when results are created for the task they are stored in the\n artifact. If there are multiple turns for a task, these are stored in\n history.",
-  "patternProperties": {
-    "^(context_id)$": {
-      "default": "",
-      "description":
-        "Unique identifier (e.g. UUID) for the contextual collection of interactions\n (tasks and messages).",
-      "type": "string",
-    },
-  },
+  "patternProperties": { "^(context_id)$": { "type": "string" } },
   "properties": {
-    "artifacts": {
-      "description": "A set of output artifacts for a `Task`.",
-      "items": { "$ref": "#/definitions/Artifact" },
-      "type": "array",
-    },
-    "contextId": {
-      "default": "",
-      "description":
-        "Unique identifier (e.g. UUID) for the contextual collection of interactions\n (tasks and messages).",
-      "type": "string",
-    },
-    "history": {
-      "description": "The history of interactions from a `Task`.",
-      "items": { "$ref": "#/definitions/Message" },
-      "type": "array",
-    },
-    "id": {
-      "default": "",
-      "description":
-        "Unique identifier (e.g. UUID) for the task, generated by the server for a\n new task.",
-      "type": "string",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "A key/value object to store custom metadata about a task.",
-    },
-    "status": {
-      "$ref": "#/definitions/Task Status",
-      "description": "The current status of a `Task`, including `state` and a `message`.",
-    },
+    "artifacts": { "items": { "$ref": "#/definitions/Artifact" }, "type": "array" },
+    "contextId": { "type": "string" },
+    "history": { "items": { "$ref": "#/definitions/Message" }, "type": "array" },
+    "id": { "type": "string" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "status": { "$ref": "#/definitions/Task Status" },
   },
-  "title": "Task",
   "type": "object",
 };
 
@@ -7836,14 +7147,9 @@ function validate63(
 validate63.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema85 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A container for the status of a task",
   "properties": {
-    "message": {
-      "$ref": "#/definitions/Message",
-      "description": "A message associated with the status.",
-    },
+    "message": { "$ref": "#/definitions/Message" },
     "state": {
       "anyOf": [{ "pattern": "^TASK_STATE_UNSPECIFIED$", "type": "string" }, {
         "enum": [
@@ -7858,25 +7164,12 @@ const schema85 = {
         ],
         "type": "string",
       }, { "maximum": 2147483647, "minimum": -2147483648, "type": "integer" }],
-      "default": 0,
-      "description": "The current state of this task.",
-      "title": "Task State",
     },
-    "timestamp": {
-      "$ref": "#/definitions/Timestamp",
-      "description":
-        'ISO 8601 Timestamp when the status was recorded.\n Example: "2023-10-27T10:00:00Z"',
-    },
+    "timestamp": { "$ref": "#/definitions/Timestamp" },
   },
-  "title": "Task Status",
   "type": "object",
 };
-const schema86 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "format": "date-time",
-  "title": "Timestamp",
-  "type": "string",
-};
+const schema86 = { "format": "date-time", "type": "string" };
 const pattern135 = new RegExp("^TASK_STATE_UNSPECIFIED$", "u");
 
 function validate67(
@@ -8403,7 +7696,7 @@ function validate57(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateSendMessageResponse" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateSendMessageResponse" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate57.evaluated;
@@ -8426,100 +7719,40 @@ validate57.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateStreamResponse = validate72;
 const schema87 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateStreamResponse",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Stream Response",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateStreamResponse",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Stream Response",
 };
 const schema88 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description":
-    "A wrapper object used in streaming operations to encapsulate different types of response data.",
   "patternProperties": {
-    "^(artifact_update)$": {
-      "$ref": "#/definitions/Task Artifact Update Event",
-      "description": "An event indicating a task artifact update.",
-    },
-    "^(status_update)$": {
-      "$ref": "#/definitions/Task Status Update Event",
-      "description": "An event indicating a task status update.",
-    },
+    "^(artifact_update)$": { "$ref": "#/definitions/Task Artifact Update Event" },
+    "^(status_update)$": { "$ref": "#/definitions/Task Status Update Event" },
   },
   "properties": {
-    "artifactUpdate": {
-      "$ref": "#/definitions/Task Artifact Update Event",
-      "description": "An event indicating a task artifact update.",
-    },
-    "message": {
-      "$ref": "#/definitions/Message",
-      "description": "A Message object containing a message from the agent.",
-    },
-    "statusUpdate": {
-      "$ref": "#/definitions/Task Status Update Event",
-      "description": "An event indicating a task status update.",
-    },
-    "task": {
-      "$ref": "#/definitions/Task",
-      "description": "A Task object containing the current state of the task.",
-    },
+    "artifactUpdate": { "$ref": "#/definitions/Task Artifact Update Event" },
+    "message": { "$ref": "#/definitions/Message" },
+    "statusUpdate": { "$ref": "#/definitions/Task Status Update Event" },
+    "task": { "$ref": "#/definitions/Task" },
   },
-  "title": "Stream Response",
   "type": "object",
 };
 const pattern137 = new RegExp("^(artifact_update)$", "u");
 const pattern138 = new RegExp("^(status_update)$", "u");
 const schema89 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A task delta where an artifact has been generated.",
   "patternProperties": {
-    "^(context_id)$": {
-      "default": "",
-      "description": "The ID of the context that this task belongs to.",
-      "type": "string",
-    },
-    "^(last_chunk)$": {
-      "default": false,
-      "description": "If true, this is the final chunk of the artifact.",
-      "type": "boolean",
-    },
-    "^(task_id)$": {
-      "default": "",
-      "description": "The ID of the task for this artifact.",
-      "type": "string",
-    },
+    "^(context_id)$": { "type": "string" },
+    "^(last_chunk)$": { "type": "boolean" },
+    "^(task_id)$": { "type": "string" },
   },
   "properties": {
-    "append": {
-      "default": false,
-      "description":
-        "If true, the content of this artifact should be appended to a previously\n sent artifact with the same ID.",
-      "type": "boolean",
-    },
-    "artifact": {
-      "$ref": "#/definitions/Artifact",
-      "description": "The artifact that was generated or updated.",
-    },
-    "contextId": {
-      "default": "",
-      "description": "The ID of the context that this task belongs to.",
-      "type": "string",
-    },
-    "lastChunk": {
-      "default": false,
-      "description": "If true, this is the final chunk of the artifact.",
-      "type": "boolean",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. Metadata associated with the artifact update.",
-    },
-    "taskId": {
-      "default": "",
-      "description": "The ID of the task for this artifact.",
-      "type": "string",
-    },
+    "append": { "type": "boolean" },
+    "artifact": { "$ref": "#/definitions/Artifact" },
+    "contextId": { "type": "string" },
+    "lastChunk": { "type": "boolean" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "taskId": { "type": "string" },
   },
-  "title": "Task Artifact Update Event",
   "type": "object",
 };
 const pattern140 = new RegExp("^(last_chunk)$", "u");
@@ -8737,39 +7970,17 @@ function validate74(
 validate74.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 
 const schema91 = {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "An event sent by the agent to notify the client of a change in a task's status.",
   "patternProperties": {
-    "^(context_id)$": {
-      "default": "",
-      "description": "The ID of the context that the task belongs to.",
-      "type": "string",
-    },
-    "^(task_id)$": {
-      "default": "",
-      "description": "The ID of the task that has changed.",
-      "type": "string",
-    },
+    "^(context_id)$": { "type": "string" },
+    "^(task_id)$": { "type": "string" },
   },
   "properties": {
-    "contextId": {
-      "default": "",
-      "description": "The ID of the context that the task belongs to.",
-      "type": "string",
-    },
-    "metadata": {
-      "$ref": "#/definitions/Struct",
-      "description": "Optional. Metadata associated with the task update.",
-    },
-    "status": { "$ref": "#/definitions/Task Status", "description": "The new status of the task." },
-    "taskId": {
-      "default": "",
-      "description": "The ID of the task that has changed.",
-      "type": "string",
-    },
+    "contextId": { "type": "string" },
+    "metadata": { "$ref": "#/definitions/Struct" },
+    "status": { "$ref": "#/definitions/Task Status" },
+    "taskId": { "type": "string" },
   },
-  "title": "Task Status Update Event",
   "type": "object",
 };
 
@@ -9077,7 +8288,7 @@ function validate72(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateStreamResponse" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateStreamResponse" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate72.evaluated;
@@ -9100,8 +8311,8 @@ validate72.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateTask = validate85;
 const schema93 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateTask",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Task",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateTask",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Task",
 };
 
 function validate86(
@@ -9316,7 +8527,7 @@ function validate85(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateTask" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateTask" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate85.evaluated;
@@ -9339,8 +8550,8 @@ validate85.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateTaskArtifactUpdateEvent = validate91;
 const schema96 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateTaskArtifactUpdateEvent",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Task Artifact Update Event",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateTaskArtifactUpdateEvent",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Task Artifact Update Event",
 };
 
 function validate92(
@@ -9559,7 +8770,7 @@ function validate91(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateTaskArtifactUpdateEvent" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateTaskArtifactUpdateEvent" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate91.evaluated;
@@ -9582,8 +8793,8 @@ validate91.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": f
 
 export const validateTaskStatusUpdateEvent = validate95;
 const schema99 = {
-  "$id": "https://point-and-shoot.invalid/schemas/a2a/v1/validateTaskStatusUpdateEvent",
-  "$ref": "https://point-and-shoot.invalid/schemas/a2a/v1#/definitions/Task Status Update Event",
+  "$id": "point-and-shoot://schemas/a2a/v1/validateTaskStatusUpdateEvent",
+  "$ref": "point-and-shoot://schemas/a2a/v1#/definitions/Task Status Update Event",
 };
 
 function validate96(
@@ -9748,7 +8959,7 @@ function validate95(
   data,
   { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {},
 ) {
-  /*# sourceURL="https://point-and-shoot.invalid/schemas/a2a/v1/validateTaskStatusUpdateEvent" */
+  /*# sourceURL="point-and-shoot://schemas/a2a/v1/validateTaskStatusUpdateEvent" */
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate95.evaluated;
