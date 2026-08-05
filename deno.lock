@@ -5,10 +5,12 @@
     "jsr:@std/internal@^1.0.10": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1.1.6": "1.1.6",
+    "npm:@a2a-js/sdk@1.0.1": "1.0.1",
     "npm:@types/pngjs@6.0.5": "6.0.5",
     "npm:axe-core@4.12.1": "4.12.1",
     "npm:esbuild@0.28.1": "0.28.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
+    "npm:jose@6.2.4": "6.2.4",
     "npm:loose-envify@1.4.0": "1.4.0",
     "npm:oxlint@1.76.0": "1.76.0",
     "npm:pixelmatch@7.2.0": "7.2.0",
@@ -41,6 +43,13 @@
     }
   },
   "npm": {
+    "@a2a-js/sdk@1.0.1": {
+      "integrity": "sha512-CJQdh3Wzwo8qIx5UUkSJ7+7BEI16PB+MXMHHNSmx8JQsQed2HlQgvx1ENOiKUfYA3PlcEvxIwv14dBblhDuPmw==",
+      "dependencies": [
+        "jose@6.2.4",
+        "uuid"
+      ]
+    },
     "@babel/code-frame@7.29.7": {
       "integrity": "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==",
       "dependencies": [
@@ -1699,6 +1708,9 @@
     "jose@5.9.6": {
       "integrity": "sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ=="
     },
+    "jose@6.2.4": {
+      "integrity": "sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA=="
+    },
     "js-tokens@4.0.0": {
       "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
     },
@@ -2691,6 +2703,10 @@
     "util-deprecate@1.0.2": {
       "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="
     },
+    "uuid@11.1.1": {
+      "integrity": "sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==",
+      "bin": true
+    },
     "validate-npm-package-license@3.0.4": {
       "integrity": "sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==",
       "dependencies": [
@@ -2741,7 +2757,7 @@
         "firefox-profile",
         "fx-runner",
         "https-proxy-agent",
-        "jose",
+        "jose@5.9.6",
         "jszip",
         "multimatch",
         "open",
@@ -2910,9 +2926,11 @@
     "dependencies": [
       "jsr:@std/assert@1.0.14",
       "jsr:@std/path@1.1.6",
+      "npm:@a2a-js/sdk@1.0.1",
       "npm:@types/pngjs@6.0.5",
       "npm:axe-core@4.12.1",
       "npm:fake-indexeddb@6.2.5",
+      "npm:jose@6.2.4",
       "npm:loose-envify@1.4.0",
       "npm:pixelmatch@7.2.0",
       "npm:playwright@1.62.0",

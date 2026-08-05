@@ -9,7 +9,17 @@ import {
 } from "./build.ts";
 import { SUPPORTED } from "./manifest.ts";
 
-const TEST_BRANCH = "fix/calver-display";
+const TEST_BRANCH = "feat/a2a-sdk-proof-fixture";
+const A2A_SDK_BUNDLE_PATH = "shared/a2a/sdk.js";
+const FORBIDDEN_A2A_BUNDLE_REFERENCES = [
+  "node:",
+  "@grpc/grpc-js",
+  "@bufbuild/protobuf",
+] as const;
+
+function forbiddenA2ABundleReferences(bundle: string): string[] {
+  return FORBIDDEN_A2A_BUNDLE_REFERENCES.filter((reference) => bundle.includes(reference));
+}
 
 /**
  * Every `build()` call here writes to a fresh temp directory, never the repo's `dist/`. `deno task
@@ -33,7 +43,7 @@ Deno.test("esbuildTargetFrom - derives esbuild target strings from SUPPORTED, no
 Deno.test("developmentVersionName - preserves a slash-delimited branch in the local label", () => {
   assertEquals(
     developmentVersionName("2026.801.0", TEST_BRANCH),
-    "2026.801.0-dev-fix/calver-display",
+    "2026.801.0-dev-feat/a2a-sdk-proof-fixture",
   );
 });
 
@@ -131,7 +141,8 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       const targetDir = new URL(`${target}/`, outDir);
       const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
       assertEquals(manifest.manifest_version, 3);
-      assertEquals(manifest.version_name, "2026.801.0-dev-fix/calver-display");
+      assertEquals(manifest.version, "2026.801.0");
+      assertEquals(manifest.version_name, "2026.801.0-dev-feat/a2a-sdk-proof-fixture");
       await Deno.stat(new URL("background/background.js", targetDir));
       await Deno.stat(new URL("content/content.js", targetDir));
       await Deno.stat(new URL("sidepanel/sidepanel.js", targetDir));
@@ -143,6 +154,8 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       await Deno.stat(new URL("icons/icon-16.png", targetDir));
       await Deno.stat(new URL("src/shared/design/tokens.css", targetDir));
       await Deno.stat(new URL("src/shared/design/icons.svg", targetDir));
+      const a2aSdkBundle = await Deno.readTextFile(new URL(A2A_SDK_BUNDLE_PATH, targetDir));
+      assertEquals(forbiddenA2ABundleReferences(a2aSdkBundle), []);
       const bg = await Deno.readTextFile(new URL("background/background.js", targetDir));
       assert(bg.includes("sourceMappingURL"));
     }
@@ -154,6 +167,15 @@ Deno.test("build({ release: true }) - minifies, drops sourcemaps, and zips both 
     await build({ release: true, outDir });
     const chromeDir = new URL("chrome/", outDir);
     const firefoxDir = new URL("firefox/", outDir);
+    const chromeA2ASdkBundle = await Deno.stat(new URL(A2A_SDK_BUNDLE_PATH, chromeDir));
+    const firefoxA2ASdkBundle = await Deno.stat(new URL(A2A_SDK_BUNDLE_PATH, firefoxDir));
+    const minifiedA2ASdkBundle = await Deno.readTextFile(
+      new URL(A2A_SDK_BUNDLE_PATH, chromeDir),
+    );
+    assert(chromeA2ASdkBundle.size > 0);
+    assertEquals(firefoxA2ASdkBundle.size, chromeA2ASdkBundle.size);
+    assertEquals(forbiddenA2ABundleReferences(minifiedA2ASdkBundle), []);
+    console.log(`build: A2A SDK minified bundle delta ${chromeA2ASdkBundle.size} bytes`);
     const bg = await Deno.readTextFile(new URL("background/background.js", chromeDir));
     assert(!bg.includes("sourceMappingURL"));
     for (const targetDir of [chromeDir, firefoxDir]) {
