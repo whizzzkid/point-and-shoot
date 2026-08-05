@@ -394,9 +394,10 @@ flowchart TD
 
 ### Delivery PR inventory
 
-The delivery plan contains 41 implementation PRs. The merged planning PR established the phase base
-and is not an additional delivery PR. In particular, P0.1-P0.4 are the four Phase 0 PRs; they are
-not four PRs added to an earlier Phase 0 set.
+The delivery plan contains 41 implementation PRs. The merged planning PR and the Phase 0
+SDK-proof/replanning PR establish the implementation base; neither is an additional delivery PR. In
+particular, P0.1-P0.4 are the four Phase 0 delivery PRs stacked after that proof, not replacements
+for or additions to an earlier Phase 0 delivery set.
 
 | Phase | Delivery items | Planned PRs | Topology                    |
 | ----- | -------------- | ----------: | --------------------------- |
@@ -409,10 +410,11 @@ not four PRs added to an earlier Phase 0 set.
 
 ## Stack execution contract
 
-Phase 0 uses one linear stack because P0.3 consumes both proof foundations and P0.4 records their
-combined evidence. Later phases may use a **stack forest**: one linear PR stack per lane, with
-multiple lanes rooted at the same confirmed phase base. File-disjoint ownership still applies when
-items share a linear stack; stacking determines review ancestry, not permission to mix concerns.
+Phase 0 uses one linear four-PR delivery stack rooted in its SDK-proof/replanning PR because P0.3
+consumes both proof foundations and P0.4 records their combined evidence. Later phases may use a
+**stack forest**: one linear PR stack per lane, with multiple lanes rooted at the same confirmed
+phase base. File-disjoint ownership still applies when items share a linear stack; stacking
+determines review ancestry, not permission to mix concerns.
 
 The phase coordinator hands each executor this plan, the current phase guide, and one item id. One
 executor stays with a lane's linear PR stack; sibling executors work only on other currently

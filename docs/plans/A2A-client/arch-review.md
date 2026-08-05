@@ -69,8 +69,9 @@ pre-parse input limits, streaming lifecycle, and cross-browser assumptions have 
 The 2026-08-04 reconciliation against `main` and the failed official-client proof produced no
 superseded phase; they replace the SDK assumption with a portable browser-client boundary and
 tighten preservation and verification contracts for behavior merged after the original review. The
-four-PR Phase 0 stack changes review ancestry without changing component, trust, state, or runtime
-boundaries, so it introduces no new architecture blocker.
+four-PR Phase 0 delivery stack is rooted in the SDK-proof/replanning PR. That separation changes
+review ancestry without changing component, trust, state, or runtime boundaries, so it introduces no
+new architecture blocker.
 
 ## Critical Findings
 
@@ -291,7 +292,7 @@ boundaries, so it introduces no new architecture blocker.
 | E - Security and trust            | Exact origins, explicit auth choice, revision-bound credentials, OIDC claims, text rendering, and cascading deletion bound trust. |
 | F - Operability and observability | Two-axis status, ids, redacted errors, corrupt entries, incomplete persistence, and unknown delivery remain visible.              |
 | G - Cost and efficiency           | No hosted service exists; bounded browser work and explicit local quota are the relevant cost controls.                           |
-| H - Delivery risk                 | Phase barriers prove the portable client and browser model before UI; Phase 0 uses one reviewable four-PR stack.                  |
+| H - Delivery risk                 | Phase 0 separates the SDK proof from one reviewable four-PR delivery stack before UI work begins.                                 |
 
 ## Latest-main reconciliation
 
@@ -315,9 +316,10 @@ stack.
 - **G - Cost and efficiency:** None observed. The delta adds no network, storage, or compute path.
 - **H - Delivery risk:** No phase is obsolete. P0.1 now owns a package-shaped portable subtree and
   dependency guard; extension-specific policy remains in later adapters so extraction cannot widen
-  the current implementation scope. A single Phase 0 stack makes P0.3's combined proof and P0.4's
-  evidence record direct descendants of both foundations, while P0.1 and P0.2 retain disjoint file
-  ownership.
+  the current implementation scope. A separate proof/replanning parent keeps the failed SDK evidence
+  reviewable without counting it as delivery; the Phase 0 stack makes P0.3's combined proof and
+  P0.4's evidence record direct descendants of both delivery foundations, while P0.1 and P0.2 retain
+  disjoint file ownership.
 
 ## Underlying Assumptions
 
