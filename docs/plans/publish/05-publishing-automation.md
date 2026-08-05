@@ -1,7 +1,7 @@
 ---
 title: "PR 5: Store publishing automation"
 type: plan
-status: in progress
+status: complete
 author: Point & Shoot maintainers
 created: 2026-08-04
 last_updated: 2026-08-05
@@ -32,7 +32,7 @@ establish live identities and credentials.
 
 ## Coordination
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Depends on: PR 4 complete
 - PR base: PR 4 branch until PR 4 merges
@@ -117,33 +117,33 @@ any subprocess starts, and caught errors must never serialize request headers or
 
 ## Checklist
 
-- [ ] Verify every external endpoint, status field, action version, and `web-ext` flag against the
+- [x] Verify every external endpoint, status field, action version, and `web-ext` flag against the
       current official vendor documentation and each CLI's help output.
-- [ ] Write Chrome HTTP fixtures before implementing the client.
-- [ ] Implement Chrome upload, blocking publish, status polling with bounded backoff, and version
+- [x] Write Chrome HTTP fixtures before implementing the client.
+- [x] Implement Chrome upload, blocking publish, status polling with bounded backoff, and version
       reconciliation.
-- [ ] Write Firefox process/API fixtures before implementing the client.
-- [ ] Implement listed submission with reviewer source, metadata, release notes, and review-state
+- [x] Write Firefox process/API fixtures before implementing the client.
+- [x] Implement listed submission with reviewer source, metadata, release notes, and review-state
       reconciliation.
-- [ ] Write orchestrator tests for exact tag/SHA/version binding, partial success, safe retry,
+- [x] Write orchestrator tests for exact tag/SHA/version binding, partial success, safe retry,
       disabled mode, missing credentials, timeout, and redacted errors.
-- [ ] Implement the reusable workflow with minimal permissions and the protected environment.
-- [ ] Call the reusable workflow directly from the current release workflow after final asset
+- [x] Implement the reusable workflow with minimal permissions and the protected environment.
+- [x] Call the reusable workflow directly from the current release workflow after final asset
       verification; do not depend on a `GITHUB_TOKEN`-created release event starting another
       workflow.
-- [ ] Keep automatic submission disabled and prove a release completes without accessing secrets.
-- [ ] Add a scheduled or manually dispatchable reconciliation operation that performs no upload.
-- [ ] Update release status after each store changes state and preserve the other store's last known
+- [x] Keep automatic submission disabled and prove a release completes without accessing secrets.
+- [x] Add a scheduled or manually dispatchable reconciliation operation that performs no upload.
+- [x] Update release status after each store changes state and preserve the other store's last known
       result.
-- [ ] Preserve and surface the manual Chrome listing-copy action without blocking package upload or
+- [x] Preserve and surface the manual Chrome listing-copy action without blocking package upload or
       silently marking copy parity complete.
-- [ ] Document Google service-account/OIDC setup, AMO API credential setup, GitHub configuration,
+- [x] Document Google service-account/OIDC setup, AMO API credential setup, GitHub configuration,
       enablement, rotation, retry, rejection, and emergency disablement.
-- [ ] Add tests proving pull-request workflows and forked contexts cannot access publication
+- [x] Add tests proving pull-request workflows and forked contexts cannot access publication
       secrets.
-- [ ] Run focused script tests, action linting, `mise exec -- deno task ci`, and a disabled-mode
+- [x] Run focused script tests, action linting, `mise exec -- deno task ci`, and a disabled-mode
       workflow exercise against a test release or controlled fixture.
-- [ ] Commit in the two boundaries listed in the parent plan and open PR 5.
+- [x] Commit in the two boundaries listed in the parent plan and open PR 5.
 
 ## Acceptance evidence
 
@@ -156,16 +156,39 @@ any subprocess starts, and caught errors must never serialize request headers or
 
 ## Incoming handoff
 
-Record final workflow inputs, action versions, environment/variable names, API status mapping, retry
-bounds, and any vendor behavior that differs from this contract.
+- Inputs: exact `tag_name`, exact `release_sha`, and `submit | reconcile`; manual dispatch exposes
+  the same interface.
+- Actions: `actions/checkout@v7`, `jdx/mise-action@v4`, and `google-github-actions/auth@v3` on
+  `ubuntu-24.04`.
+- Repository configuration: `STORE_PUBLISH_ENABLED`, `CHROME_EXTENSION_ID`, `CHROME_PUBLISHER_ID`,
+  `GCP_WORKLOAD_IDENTITY_PROVIDER`, and `GCP_SERVICE_ACCOUNT` variables; `WEB_EXT_API_KEY` and
+  `WEB_EXT_API_SECRET` secrets in the protected `browser-stores` environment.
+- Chrome: API v2 upload accepts `SUCCEEDED | IN_PROGRESS | FAILED`; revision states map
+  `PENDING_REVIEW` to submitted, `STAGED | PUBLISHED | PUBLISHED_TO_TESTERS` to reviewed or public,
+  and `REJECTED | CANCELLED` to actionable failure. Unknown states and malformed successful JSON
+  fail closed. Upload and publish polling use at most six attempts separated by five seconds.
+- Firefox: every version-detail reconciliation carries a fresh 60-second HS256 AMO JWT. `public`,
+  `unreviewed`, and `disabled` map to published, submitted, and rejected. A duplicate-like `web-ext`
+  failure succeeds only after authenticated reconciliation finds the exact version.
+- `web-ext` runs with an empty inherited environment and receives only the two AMO credentials.
+  Chrome uses a short-lived OIDC access token; no long-lived Google credential is supported.
+- Disabled mode validates tag, checkout, and requested SHA, preserves existing same-version vendor
+  state, adds a separate disabled notice, and resolves no vendor secret.
+- Chrome listing-summary follow-up is derived by comparing the current tagged contract with the
+  preceding `v*` tag. A missing prior contract fails safe as changed.
 
 ## Completion record
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Started: 2026-08-05T16:29:26Z
-- Completed: not completed
-- PR: none
-- Commits: none
-- Verification: not run
-- Deviations: none
+- Completed: 2026-08-05T16:58:14Z
+- PR: https://github.com/whizzzkid/point-and-shoot/pull/77
+- Commits: `c444f47`, `c8897a4`, `a20ccc4`, `c051962`
+- Verification: current official Chrome Web Store API v2, Chrome service-account, Google OIDC, AMO
+  API v5/JWT, and Mozilla `web-ext` documentation; `web-ext` 10.5.0 `sign --help`; 27 focused tests;
+  Ruby YAML parse of both release workflows; `mise exec -- deno task ci` with 398 passing tests;
+  independent adversarial re-review clear; exact-head GitHub CI and site workflows green.
+- Deviations: the pinned toolchain has no local `actionlint`, so local workflow validation used a
+  YAML parse and the exact-head GitHub run. Disabled mode was exercised through the controlled CLI
+  fixture rather than by mutating a disposable GitHub release. No live vendor request was made.
