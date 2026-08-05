@@ -1,10 +1,10 @@
 ---
 title: "PR 4: Exact release artifacts and install status"
 type: plan
-status: in progress
+status: complete
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -31,7 +31,7 @@ installs.
 
 ## Coordination
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Depends on: PR 3 complete
 - PR base: PR 3 branch until PR 3 merges
@@ -95,27 +95,27 @@ metadata through `web-ext` when supported.
 
 ## Checklist
 
-- [ ] Write failing archive tests for deterministic ordering, normalized timestamps, required source
+- [x] Write failing archive tests for deterministic ordering, normalized timestamps, required source
       files, prohibited paths, symlinks, secrets, and a clean rebuild.
-- [ ] Implement the reviewer source archive and generated build-instructions file.
-- [ ] Extend release validation to bind all artifacts to the same manifest version and commit.
-- [ ] Write failing release-status tests for unpublished, submitted, reviewed, published, partial,
+- [x] Implement the reviewer source archive and generated build-instructions file.
+- [x] Extend release validation to bind all artifacts to the same manifest version and commit.
+- [x] Write failing release-status tests for unpublished, submitted, reviewed, published, partial,
       rejected, and public-version-mismatch states.
-- [ ] Implement the status renderer with a stable HTML comment marker for idempotent updates.
-- [ ] Extend the release PR artifact comment with filenames, SHA, version, loading instructions,
+- [x] Implement the status renderer with a stable HTML comment marker for idempotent updates.
+- [x] Extend the release PR artifact comment with filenames, SHA, version, loading instructions,
       source archive purpose, and expiry.
-- [ ] Attach all four artifacts to the final GitHub release and verify all four names.
-- [ ] Seed the final release body with expected version and unpublished store states.
-- [ ] Add an explicit Chrome listing-copy action when the canonical current-version summary differs
+- [x] Attach all four artifacts to the final GitHub release and verify all four names.
+- [x] Seed the final release body with expected version and unpublished store states.
+- [x] Add an explicit Chrome listing-copy action when the canonical current-version summary differs
       from the last confirmed live summary.
-- [ ] Preserve existing release notes outside the marked status section.
-- [ ] Update the release spec and tutorial with exact artifact meanings and Mozilla review steps.
-- [ ] Add failure tests proving a branch race, wrong tag, missing source file, or mismatched version
+- [x] Preserve existing release notes outside the marked status section.
+- [x] Update the release spec and tutorial with exact artifact meanings and Mozilla review steps.
+- [x] Add failure tests proving a branch race, wrong tag, missing source file, or mismatched version
       blocks release output.
-- [ ] Run focused release tests, `mise exec -- deno task ci`, and a local release build/validation.
-- [ ] Download the locally produced source archive into a temporary clean checkout and reproduce the
+- [x] Run focused release tests, `mise exec -- deno task ci`, and a local release build/validation.
+- [x] Download the locally produced source archive into a temporary clean checkout and reproduce the
       Firefox release package byte-for-byte or document the normalized equivalence rule.
-- [ ] Commit in the two boundaries listed in the parent plan and open PR 4.
+- [x] Commit the planned implementation boundaries and open PR 4.
 
 ## Acceptance evidence
 
@@ -127,15 +127,24 @@ metadata through `web-ext` when supported.
 
 ## Incoming handoff
 
-Record final artifact names, the source-archive allowlist, status marker, and renderer interface.
+PR 5 receives four exact asset names: `chrome.zip`, `firefox.zip`, `firefox-source.zip`, and
+`firefox-build-instructions.md`. The reviewer archive permits the required root files plus `build/`
+and `src/`, rejects tracked input drift from `HEAD`, and is bound to the release commit and version.
+Release status uses the `point-and-shoot-store-status` marker pair and
+`projectReleaseStatus(releaseBody, status)`; seeding preserves an existing same-version section.
 
 ## Completion record
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Started: 2026-08-05T15:40:09Z
-- Completed: not completed
-- PR: none
-- Commits: none
-- Verification: not run
-- Deviations: none
+- Completed: 2026-08-05T16:22:45Z
+- PR: https://github.com/whizzzkid/point-and-shoot/pull/75
+- Commits: `5f0c2f8`, `ca6b1ee`, `d4879ff`, `d757a59`, `38393f4`, `c12337f`
+- Verification: focused release tests passed; `mise exec -- deno task ci` passed 374 tests;
+  `mise exec -- deno task release:artifacts` and `mise exec -- deno task release:validate` passed at
+  `c12337fe55070fc6280621a0e63d61fdc349026b`; `mise exec -- deno task build` restored development
+  packages.
+- Deviations: review findings required four additional small fix commits beyond the two planned
+  implementation boundaries. Reproducibility compares sorted paths and uncompressed bytes because
+  ZIP container metadata may differ across tools.
