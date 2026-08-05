@@ -113,6 +113,27 @@ Deno.test("JSON-RPC client rejects mismatched response IDs", async () => {
   assertEquals(error.transport, "JSONRPC");
 });
 
+Deno.test("JSON-RPC client classifies request serialization failures as invalid requests", async () => {
+  const circularMetadata: Record<string, unknown> = {};
+  circularMetadata.self = circularMetadata;
+  const client = createJsonRpcClient(
+    () => Promise.reject(new Error("fetch must not run for an invalid request")),
+    TARGET,
+    LIMITS,
+  );
+
+  const error = await assertRejects(
+    () =>
+      client.sendMessage({ ...SEND_REQUEST, metadata: circularMetadata }, {
+        signal: new AbortController().signal,
+      }),
+    A2AClientError,
+  );
+
+  assertEquals(error.code, "invalid-request");
+  assertEquals(error.transport, "JSONRPC");
+});
+
 Deno.test("JSON-RPC client preserves protocol error codes without remote text", async () => {
   const client = createJsonRpcClient(
     () =>

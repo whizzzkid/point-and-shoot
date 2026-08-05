@@ -154,7 +154,7 @@ function createRequest(
     body = JSON.stringify({ jsonrpc: "2.0", method, params, id });
   } catch (cause) {
     throw new A2AClientError("A2A JSON-RPC request is not serializable", {
-      code: "invalid-response",
+      code: "invalid-request",
       transport: "JSONRPC",
       cause,
     });
