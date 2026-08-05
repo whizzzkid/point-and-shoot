@@ -306,10 +306,21 @@ test("browser enhancement preserves unavailable-store status and keeps store cho
           await zoomed.close();
         }
 
-        const mobile = await browser.newContext({ viewport: { height: 844, width: 320 } });
+        const mobile = await browser.newContext({
+          hasTouch: true,
+          isMobile: true,
+          userAgent:
+            "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36",
+          viewport: { height: 844, width: 320 },
+        });
         try {
           const page = await mobile.newPage();
           await page.goto(`${both.origin}/`, { waitUntil: "networkidle" });
+          assert.match(
+            await page.locator("[data-install-status]").first().textContent(),
+            /Desktop browser extension installation is unavailable on mobile/,
+          );
+          assert.equal(await page.locator("[data-recommended]").count(), 0);
           assert.equal(
             await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
             true,
