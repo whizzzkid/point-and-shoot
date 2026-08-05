@@ -1,7 +1,7 @@
 ---
 title: "PR 4: Exact release artifacts and install status"
 type: plan
-status: draft
+status: in progress
 author: Point & Shoot maintainers
 created: 2026-08-04
 last_updated: 2026-08-04
@@ -31,8 +31,8 @@ installs.
 
 ## Coordination
 
-- Status: pending
-- Owner: unassigned
+- Status: in progress
+- Owner: Codex
 - Depends on: PR 3 complete
 - PR base: PR 3 branch until PR 3 merges
 - PR boundary: release artifacts, comments, release body/status, validation, and release docs; no
@@ -131,9 +131,9 @@ Record final artifact names, the source-archive allowlist, status marker, and re
 
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: in progress
+- Owner: Codex
+- Started: 2026-08-05T15:40:09Z
 - Completed: not completed
 - PR: none
 - Commits: none
