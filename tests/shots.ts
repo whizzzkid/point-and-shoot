@@ -9,7 +9,7 @@
  * varied by machine would produce a diff on every run and the images would stop being reviewable.
  *
  * Run with `deno task shots`. Needs the browser binary once:
- * `deno run -A npm:playwright@1.62.0 install chromium`.
+ * `deno task playwright:install chromium`.
  *
  * @module
  */

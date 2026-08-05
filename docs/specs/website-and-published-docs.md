@@ -4,15 +4,15 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-07-31
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
   - website
   - documentation
 related:
-  - title: UI framework decision
-    path-or-url: ../adr/0018-astro-for-marketing-and-documentation.md
+  - title: Site framework and repository toolchain decision
+    path-or-url: ../adr/0019-deno-owned-repository-toolchain.md
   - title: Generated design tokens
     path-or-url: ../adr/0011-generated-design-tokens-with-drift-check.md
   - title: Documentation index
@@ -84,6 +84,10 @@ when visually truncated.
 The `Site` workflow builds and checks the site on relevant pull requests and pushes to `main`.
 Independent jobs run the build, link and published-scope checker, axe scan, and Lighthouse. A push
 deploys only after all four jobs pass.
+
+Every site command is a root-level `deno task site:*` command. Astro and its npm dependencies are
+resolved by Deno from `deno.json` and `deno.lock`; the workflow does not install or invoke Node or
+npm.
 
 GitHub Pages uses workflow deployment with the custom domain `pointandshoot.app`. The build derives
 its canonical origin and base path from Pages metadata supplied by CI; local builds use localhost.
