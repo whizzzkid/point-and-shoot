@@ -153,6 +153,57 @@ test("site integrity accepts contact links", async () => {
   }
 });
 
+test("site integrity resolves same-repository main links from the checked worktree", async () => {
+  const paths = await fixture();
+  try {
+    await mkdir(resolve(paths.docsRoot, "adr"));
+    await writeFile(resolve(paths.docsRoot, "adr/0019-new.md"), "# New ADR\n");
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<link rel="canonical" href="https://pages.example.test/docs/">' +
+        '<a href="https://github.com/whizzzkid/point-and-shoot/blob/main/docs/adr/0019-new.md">' +
+        "New ADR</a>",
+    );
+
+    const summary = await checkSite(paths);
+    assert.equal(summary.externalLinks, 0);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity rejects a missing same-repository main target locally", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<link rel="canonical" href="https://pages.example.test/docs/">' +
+        '<a href="https://github.com/whizzzkid/point-and-shoot/blob/main/docs/adr/missing.md">' +
+        "Missing ADR</a>",
+    );
+
+    await assert.rejects(checkSite(paths), /missing repository target docs\/adr\/missing\.md/);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+test("site integrity keeps unrelated GitHub links in the external set", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<link rel="canonical" href="https://pages.example.test/docs/">' +
+        '<a href="https://github.com/a2aproject/A2A">A2A</a>',
+    );
+
+    const summary = await checkSite(paths);
+    assert.equal(summary.externalLinks, 1);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
 test("site integrity reports a malformed anchor encoding", async () => {
   const paths = await fixture();
   try {
