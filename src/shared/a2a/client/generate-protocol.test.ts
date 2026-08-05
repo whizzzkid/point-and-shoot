@@ -67,6 +67,14 @@ Deno.test("generated browser contracts contain no Node or gRPC dependencies", as
   }
 });
 
+Deno.test("standalone validators omit fetchable schema annotation URLs from runtime strings", async () => {
+  const validationSource = await Deno.readTextFile(
+    join(CLIENT_DIRECTORY, "validation.generated.ts"),
+  );
+
+  assertFalse(/["']https?:\/\//.test(validationSource));
+});
+
 Deno.test("generated types represent accepted protobuf JSON field aliases", async () => {
   const outputDirectory = await Deno.makeTempDir();
 
