@@ -174,7 +174,7 @@ table in the same commit that changes a packet's status.
 | 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | complete | Codex        |
 | 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | complete | Codex        |
 | 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | pending  | user         |
-| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | pending  | unassigned   |
+| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | blocked  | Codex        |
 | 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending  | user + agent |
 
 Allowed statuses are `pending`, `in progress`, `blocked`, and `complete`. Replace `unassigned` with
