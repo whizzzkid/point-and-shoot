@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -429,7 +429,7 @@ mise exec -- deno task ci
    Verify development manifests retain branch-labeled `version_name` values and release manifests
    omit `version_name`.
 3. Audit bundles for Node-only imports, gRPC, remote code, secrets, fixture credentials, and an
-   unpinned SDK dependency.
+   unpinned protocol, code-generation, or client dependency.
 4. Re-run `wk-arch-review` against the delivered architecture. Resolve blockers in the owning code
    or docs; do not close the plan with accepted high-severity debt.
 5. Move the supported and constrained authentication paths, known browser limitations, and final

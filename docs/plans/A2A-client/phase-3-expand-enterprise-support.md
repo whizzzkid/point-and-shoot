@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -289,18 +289,23 @@ mise exec -- deno task ci
 
 **Files:**
 
+- Create: `src/shared/a2a/client/card-signature.ts`
+- Create: `src/shared/a2a/client/card-signature.test.ts`
 - Create: `src/shared/a2a/card-signature.ts`
 - Create: `src/shared/a2a/card-signature.test.ts`
 - Modify: `tests/fixtures/a2a/cards.ts`
 
 **Implementation:**
 
-1. Use the SDK's Agent Card canonicalization and signature verification helpers. Do not implement a
-   second JCS or JWS stack.
-2. Require an explicit host grant before fetching a JWS key-set URL from a protected header. Reject
-   key locations supplied only by an unprotected header, non-HTTPS key sets, origin redirects,
-   unsupported algorithms, missing key ids, expired keys, and signatures that do not cover the
-   parsed card.
+1. Add the sole Agent Card canonicalization and JWS verification implementation to the portable
+   client subtree and export it through `client/mod.ts`. Use the generated card contract, RFC 8785
+   canonicalization, Web Crypto, and an exact-pinned browser-safe JOSE dependency. Verify against
+   official A2A signature vectors and do not import or copy the SDK helper.
+2. Keep permissioned key-set retrieval, cache policy, and trust presentation in the extension
+   adapter outside the portable subtree. Require an explicit host grant before fetching a JWS
+   key-set URL from a protected header. Reject key locations supplied only by an unprotected header,
+   non-HTTPS key sets, origin redirects, unsupported algorithms, missing key ids, expired keys, and
+   signatures that do not cover the parsed card.
 3. Show signature valid, unsigned, and signature invalid states plus the key origin. Never translate
    a cryptographically valid signature into “trusted agent” without an external trust policy.
    Unsigned cards remain usable because A2A signatures are optional; invalid present signatures
@@ -314,7 +319,7 @@ mise exec -- deno task ci
 **Verification:**
 
 ```bash
-mise exec -- deno task test src/shared/a2a/card-signature.test.ts
+mise exec -- deno task test src/shared/a2a/client/card-signature.test.ts src/shared/a2a/card-signature.test.ts
 mise exec -- deno task ci
 ```
 
@@ -476,8 +481,8 @@ mise exec -- deno task ci
    satisfiable requirement automatically, but require explicit user choice when multiple
    alternatives are satisfiable; persist its fingerprint and never silently switch after failure.
 2. Register the independently tested OAuth/OIDC, HTTP/query, cookie-decision, signed-card, and mTLS
-   adapters. Integrate signed-card validation into discovery without duplicating SDK
-   canonicalization or JWS logic.
+   adapters. Integrate signed-card validation into discovery without duplicating the portable
+   client's canonicalization or JWS logic.
 3. Render supported, connected, missing-credential, deprecated, browser-managed, and unsupported
    states from the same typed result in options and run authentication UI.
 4. Verify a card with alternative requirements preserves the user's selected fingerprint and a card
@@ -511,6 +516,6 @@ Phase 4 starts only when:
 - Authorization-code with PKCE, device code, client credentials, and OIDC clear credentials on
   browser restart and never persist secrets to disk.
 - Query and cookie decisions are documented with their measured browser behavior and leakage risks.
-- Signed cards verify through the SDK and untrusted key-set origins require grants.
+- Signed cards verify through the portable client and untrusted key-set origins require grants.
 - `AUTH_REQUIRED`, disconnect, task purge, and missed-stream recovery retain durable history without
   replaying initial delivery.
