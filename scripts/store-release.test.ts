@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 
 import { runStoreRelease, runStoreReleaseCommand } from "./store-release.ts";
 
@@ -21,8 +21,46 @@ Deno.test("disabled store publication reads no secret and records visible status
 
   assertEquals(secretReads, 0);
   assertStringIncludes(result.releaseBody, "Automatic store publishing is disabled");
-  assertStringIncludes(result.releaseBody, "Chrome: Automatic store publishing is disabled");
-  assertStringIncludes(result.releaseBody, "Firefox: Automatic store publishing is disabled");
+  assertEquals(result.releaseBody.includes("Browser store publication"), false);
+});
+
+Deno.test("disabled publication preserves an existing same-version store status", async () => {
+  const existing = [
+    "# Release notes",
+    "",
+    "<!-- point-and-shoot-store-status:start -->",
+    "## Browser store publication",
+    "",
+    "GitHub release version: `2026.805.0`",
+    "",
+    "Chrome | `2026.805.0` | **published** | — | — | `2026.805.0` · [Install from Chrome](https://chromewebstore.google.com/detail/point-shoot/abcdefghijklmnopabcdefghijklmnop) | 2026-08-05T17:00:00Z",
+    "Firefox | `2026.805.0` | **submitted** | `2026.805.0` at 2026-08-05T17:00:00Z | — | — | 2026-08-05T17:00:00Z",
+    "<!-- point-and-shoot-store-status:end -->",
+    "",
+  ].join("\n");
+  const result = await runStoreRelease({
+    enabled: false,
+    expectedVersion: "2026.805.0",
+    listingSummaryChanged: false,
+    now: "2026-08-05T18:00:00Z",
+    readReleaseBody: () => Promise.resolve(existing),
+    readSecrets: () => ({ values: [] }),
+    stores: undefined,
+  });
+
+  assertStringIncludes(result.releaseBody, "Chrome | `2026.805.0` | **published**");
+  assertStringIncludes(result.releaseBody, "Firefox | `2026.805.0` | **submitted**");
+  assertStringIncludes(result.releaseBody, "Automatic store publishing is disabled");
+  const repeated = await runStoreRelease({
+    enabled: false,
+    expectedVersion: "2026.805.0",
+    listingSummaryChanged: false,
+    now: "2026-08-05T19:00:00Z",
+    readReleaseBody: () => Promise.resolve(result.releaseBody),
+    readSecrets: () => ({ values: [] }),
+    stores: undefined,
+  });
+  assertEquals(repeated.releaseBody, result.releaseBody);
 });
 
 Deno.test("disabled workflow command needs no asset directory or vendor environment", async () => {
@@ -46,6 +84,28 @@ Deno.test("disabled workflow command needs no asset directory or vendor environm
   } finally {
     await Deno.remove(directory, { recursive: true });
   }
+});
+
+Deno.test("store publication refuses to overwrite a different release version", async () => {
+  await assertRejects(
+    () =>
+      runStoreRelease({
+        enabled: false,
+        expectedVersion: "2026.805.1",
+        listingSummaryChanged: false,
+        now: "2026-08-05T19:00:00Z",
+        readReleaseBody: () =>
+          Promise.resolve([
+            "<!-- point-and-shoot-store-status:start -->",
+            "GitHub release version: `2026.805.0`",
+            "<!-- point-and-shoot-store-status:end -->",
+          ].join("\n")),
+        readSecrets: () => ({ values: [] }),
+        stores: undefined,
+      }),
+    Error,
+    "different release version",
+  );
 });
 
 Deno.test("enabled publication preserves partial success and redacts secrets", async () => {
@@ -73,4 +133,26 @@ Deno.test("enabled publication preserves partial success and redacts secrets", a
   assertStringIncludes(result.releaseBody, "Firefox | `2026.805.0` | **rejected**");
   assertStringIncludes(result.releaseBody, "vendor rejected [REDACTED] [REDACTED]");
   assertEquals(result.releaseBody.includes("firefox-secret"), false);
+});
+
+Deno.test("enabled publication fails when a vendor reconciles a rejection", async () => {
+  const rejected = {
+    expectedVersion: "2026.805.0",
+    failure: "Vendor rejected the submission.",
+    reconciledAt: "2026-08-05T17:00:00Z",
+    state: "rejected" as const,
+  };
+  const result = await runStoreRelease({
+    enabled: true,
+    expectedVersion: "2026.805.0",
+    listingSummaryChanged: false,
+    now: "2026-08-05T17:00:00Z",
+    readReleaseBody: () => Promise.resolve(INITIAL_BODY),
+    readSecrets: () => ({ values: [] }),
+    stores: {
+      chrome: () => Promise.resolve(rejected),
+      firefox: () => Promise.resolve(rejected),
+    },
+  });
+  assertEquals(result.failed, true);
 });

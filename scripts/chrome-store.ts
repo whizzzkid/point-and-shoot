@@ -100,11 +100,18 @@ export function reconcileChromeStatus(
   }
   if (submittedVersion === options.expectedVersion) {
     const state = revisionState(options.status.submittedItemRevisionStatus);
-    const rejected = state?.includes("REJECT") === true || state?.includes("FAILED") === true;
-    const reviewed = state === "STAGED" || state === "PUBLISHED_TO_TESTERS";
+    if (
+      state !== "PENDING_REVIEW" && state !== "STAGED" && state !== "PUBLISHED" &&
+      state !== "PUBLISHED_TO_TESTERS" && state !== "REJECTED" && state !== "CANCELLED"
+    ) {
+      throw new Error(`Chrome returned unsupported submission state ${String(state)}`);
+    }
+    const rejected = state === "REJECTED" || state === "CANCELLED";
+    const reviewed = state === "STAGED" || state === "PUBLISHED" ||
+      state === "PUBLISHED_TO_TESTERS";
     return {
       expectedVersion: options.expectedVersion,
-      ...(rejected ? { failure: `Chrome reports submission state ${state}.` } : {}),
+      ...(rejected ? { failure: `Chrome reports terminal submission state ${state}.` } : {}),
       ...(publicVersion === undefined ? {} : { publicVersion }),
       reconciledAt: options.now,
       ...(reviewed ? { reviewedAt: options.now } : {}),
@@ -188,6 +195,7 @@ export class ChromeStoreClient {
     try {
       decoded = await response.json();
     } catch {
+      if (response.ok) throw new Error("Chrome response was not valid JSON");
       decoded = {};
     }
     if (!response.ok) {

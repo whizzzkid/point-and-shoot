@@ -182,6 +182,16 @@ Deno.test("chrome store polling is bounded", async () => {
   assertEquals(call, 4);
 });
 
+Deno.test("chrome store rejects a successful response with malformed JSON", async () => {
+  const fetch: typeof globalThis.fetch = () =>
+    Promise.resolve(new Response("not-json", { status: 200 }));
+  await assertRejects(
+    () => new ChromeStoreClient(options(fetch)).reconcile("2026.805.0"),
+    Error,
+    "not valid JSON",
+  );
+});
+
 Deno.test("chrome store rejects a conflicting submitted version", () => {
   assertThrows(
     () =>
@@ -199,4 +209,41 @@ Deno.test("chrome store rejects a conflicting submitted version", () => {
     Error,
     "expected 2026.805.0",
   );
+});
+
+Deno.test("chrome store fails closed on cancelled and unknown submission states", () => {
+  for (const state of ["CANCELLED", "A_NEW_VENDOR_STATE"]) {
+    if (state === "CANCELLED") {
+      const status = reconcileChromeStatus({
+        expectedVersion: "2026.805.0",
+        listingUrl: undefined,
+        now: NOW,
+        status: {
+          submittedItemRevisionStatus: {
+            distributionChannels: [{ crxVersion: "2026.805.0" }],
+            state,
+          },
+        },
+      });
+      assertEquals(status.state, "rejected");
+      assertStringIncludes(status.failure ?? "", "CANCELLED");
+      continue;
+    }
+    assertThrows(
+      () =>
+        reconcileChromeStatus({
+          expectedVersion: "2026.805.0",
+          listingUrl: undefined,
+          now: NOW,
+          status: {
+            submittedItemRevisionStatus: {
+              distributionChannels: [{ crxVersion: "2026.805.0" }],
+              state,
+            },
+          },
+        }),
+      Error,
+      "unsupported submission state",
+    );
+  }
 });

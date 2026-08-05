@@ -133,6 +133,7 @@ Deno.test("store publishing workflow is disabled by default and protects vendor 
 
   assertStringIncludes(workflow, "workflow_call:");
   assertStringIncludes(workflow, "workflow_dispatch:");
+  assertEquals(workflow.includes("pull_request:"), false);
   assertStringIncludes(workflow, "operation:");
   assertStringIncludes(workflow, "vars.STORE_PUBLISH_ENABLED != 'true'");
   assertStringIncludes(workflow, "vars.STORE_PUBLISH_ENABLED == 'true'");
@@ -149,6 +150,10 @@ Deno.test("store publishing workflow is disabled by default and protects vendor 
   assertStringIncludes(workflow, 'deno task store:release "${OPERATION}"');
   assertStringIncludes(workflow, "WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}");
   assertStringIncludes(workflow, "WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}");
+  assertStringIncludes(workflow, 'git rev-parse "${TAG_NAME}^{commit}"');
+  assertStringIncludes(workflow, "git rev-parse HEAD");
+  assertStringIncludes(workflow, "export LISTING_SUMMARY_CHANGED=true");
+  assertStringIncludes(workflow, "export LISTING_SUMMARY_CHANGED=false");
 
   const disabledJob = workflow.slice(
     workflow.indexOf("  disabled:"),
@@ -156,4 +161,10 @@ Deno.test("store publishing workflow is disabled by default and protects vendor 
   );
   assertEquals(disabledJob.includes("secrets."), false);
   assertEquals(disabledJob.includes("CHROME_ACCESS_TOKEN"), false);
+  assertStringIncludes(disabledJob, 'git rev-parse "${TAG_NAME}^{commit}"');
+  assertStringIncludes(disabledJob, "git rev-parse HEAD");
+
+  const releaseWorkflow = await Deno.readTextFile(new URL(".github/workflows/release.yml", ROOT));
+  const reusableCall = releaseWorkflow.slice(releaseWorkflow.indexOf("  store_publish:"));
+  assertEquals(reusableCall.includes("secrets:"), false);
 });

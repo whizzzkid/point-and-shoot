@@ -1,6 +1,7 @@
-import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 
 import {
+  createAmoJwt,
   FirefoxStoreClient,
   type FirefoxStoreClientOptions,
   reconcileFirefoxStatus,
@@ -23,10 +24,36 @@ function options(overrides: Partial<FirefoxStoreClientOptions> = {}): FirefoxSto
     extensionId: EXTENSION_ID,
     fetch: () => Promise.resolve(response({}, 404)),
     now: () => NOW,
+    randomUUID: () => "12345678-1234-1234-1234-123456789abc",
     run: () => Promise.resolve({ code: 0, stderr: "", stdout: "submitted" }),
     ...overrides,
   };
 }
+
+function decodeJwtPart(value: string): Record<string, unknown> {
+  const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(
+    Math.ceil(value.length / 4) * 4,
+    "=",
+  );
+  return JSON.parse(atob(padded));
+}
+
+Deno.test("firefox AMO JWT uses bounded HS256 claims without exposing the secret", async () => {
+  const token = await createAmoJwt(
+    "firefox-key",
+    "firefox-secret",
+    NOW,
+    "12345678-1234-1234-1234-123456789abc",
+  );
+  const [header, payload, signature] = token.split(".");
+  assertEquals(decodeJwtPart(header ?? ""), { alg: "HS256", typ: "JWT" });
+  const claims = decodeJwtPart(payload ?? "");
+  assertEquals(claims.exp, Number(claims.iat) + 60);
+  assertEquals(claims.iss, "firefox-key");
+  assertEquals(claims.jti, "12345678-1234-1234-1234-123456789abc");
+  assertEquals((signature ?? "").length > 0, true);
+  assertEquals(token.includes("firefox-secret"), false);
+});
 
 Deno.test("firefox store reconciliation maps public and rejected states", () => {
   assertEquals(
@@ -60,8 +87,12 @@ Deno.test("firefox store reconciliation maps public and rejected states", () => 
 Deno.test("firefox matching retry does not invoke web-ext", async () => {
   let runs = 0;
   const client = new FirefoxStoreClient(options({
-    fetch: () =>
-      Promise.resolve(response({ file: { status: "unreviewed" }, version: "2026.805.0" })),
+    fetch: (_input, init) => {
+      assertStringIncludes(new Headers(init?.headers).get("authorization") ?? "", "JWT ");
+      return Promise.resolve(
+        response({ file: { status: "unreviewed" }, version: "2026.805.0" }),
+      );
+    },
     run: () => {
       runs += 1;
       return Promise.resolve({ code: 0, stderr: "", stdout: "" });
@@ -115,14 +146,26 @@ Deno.test("firefox submission keeps credentials out of process arguments", async
   assertStringIncludes(args, "--upload-source-code /tmp/firefox-source.zip");
   assertEquals(args.includes("firefox-key"), false);
   assertEquals(args.includes("firefox-secret"), false);
+  assertEquals(invocation?.clearEnv, true);
   assertEquals(invocation?.env.WEB_EXT_API_KEY, "firefox-key");
   assertEquals(invocation?.env.WEB_EXT_API_SECRET, "firefox-secret");
+  assertEquals("GH_TOKEN" in (invocation?.env ?? {}), false);
+  assertEquals("CHROME_ACCESS_TOKEN" in (invocation?.env ?? {}), false);
   const metadata = JSON.parse(await Deno.readTextFile("/tmp/metadata.json"));
   assertEquals(metadata.version.release_notes, { "en-US": "Current release notes." });
 });
 
 Deno.test("firefox duplicate submission is an idempotent matching retry", async () => {
+  let fetches = 0;
   const client = new FirefoxStoreClient(options({
+    fetch: () => {
+      fetches += 1;
+      return Promise.resolve(
+        fetches === 1
+          ? response({}, 404)
+          : response({ file: { status: "unreviewed" }, version: "2026.805.0" }),
+      );
+    },
     run: () => Promise.resolve({ code: 1, stderr: "HTTP 409: version already exists", stdout: "" }),
   }));
 
@@ -137,6 +180,44 @@ Deno.test("firefox duplicate submission is an idempotent matching retry", async 
   });
   assertEquals(result.state, "submitted");
   assertEquals(result.submittedVersion, "2026.805.0");
+});
+
+Deno.test("firefox duplicate is rejected when authenticated AMO reconciliation finds no version", async () => {
+  const client = new FirefoxStoreClient(options({
+    run: () => Promise.resolve({ code: 1, stderr: "HTTP 409: duplicate upload", stdout: "" }),
+  }));
+
+  await assertRejects(
+    () =>
+      client.submit({
+        approvalNotes: "No remote code.",
+        artifactsDir: "/tmp/artifacts",
+        expectedVersion: "2026.805.0",
+        metadataPath: "/tmp/metadata.json",
+        releaseNotes: "Current release notes.",
+        sourceArchivePath: "/tmp/firefox-source.zip",
+        sourceDir: "/tmp/firefox",
+      }),
+    Error,
+    "does not expose the expected version",
+  );
+});
+
+Deno.test("firefox authenticated reconciliation fails closed on authorization errors", async () => {
+  for (const status of [401, 403]) {
+    const client = new FirefoxStoreClient(options({
+      fetch: (_input, init) => {
+        assertStringIncludes(new Headers(init?.headers).get("authorization") ?? "", "JWT ");
+        return Promise.resolve(response({ detail: "invalid token" }, status));
+      },
+    }));
+    const error = await assertRejects(
+      () => client.reconcile("2026.805.0"),
+      Error,
+      `HTTP ${status}`,
+    );
+    assertEquals(error.message.includes("firefox-secret"), false);
+  }
 });
 
 Deno.test("firefox store rejects a conflicting version", () => {

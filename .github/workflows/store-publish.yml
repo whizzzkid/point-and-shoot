@@ -48,6 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           ref: ${{ inputs.release_sha }}
       - uses: jdx/mise-action@v4
 
@@ -62,6 +63,11 @@ jobs:
           body_file="$(mktemp "${RUNNER_TEMP}/release-body.XXXXXX")"
           updated_file="$(mktemp "${RUNNER_TEMP}/release-body-updated.XXXXXX")"
           trap 'rm -f -- "${body_file}" "${updated_file}"' EXIT INT TERM
+          tag_commit="$(git rev-parse "${TAG_NAME}^{commit}")"
+          if [[ "${tag_commit}" != "${RELEASE_SHA}" || "$(git rev-parse HEAD)" != "${RELEASE_SHA}" ]]; then
+            echo "Release tag, requested SHA, and checkout must identify one commit." >&2
+            exit 1
+          fi
           version="${TAG_NAME#v}"
           reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           gh release view "${TAG_NAME}" --json body --jq '.body | @base64' |
@@ -149,6 +155,19 @@ jobs:
 
           version="${TAG_NAME#v}"
           reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          previous_tag="$(git describe --tags --match 'v*' --abbrev=0 "${TAG_NAME}^{commit}^" 2>/dev/null || true)"
+          current_summary="$(jq -er '.listing.currentVersionSummary' store-listing.json)"
+          previous_summary=""
+          if [[ -n "${previous_tag}" ]] && git cat-file -e "${previous_tag}:store-listing.json" 2>/dev/null; then
+            previous_summary="$(git show "${previous_tag}:store-listing.json" | jq -er '.listing.currentVersionSummary')"
+          else
+            previous_tag=""
+          fi
+          if [[ -z "${previous_tag}" || "${current_summary}" != "${previous_summary}" ]]; then
+            export LISTING_SUMMARY_CHANGED=true
+          else
+            export LISTING_SUMMARY_CHANGED=false
+          fi
           gh release view "${TAG_NAME}" --json body --jq '.body | @base64' |
             base64 --decode > "${body_file}"
           deno task store:release "${OPERATION}" "${version}" "${reconciled_at}" \

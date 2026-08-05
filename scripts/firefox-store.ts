@@ -11,6 +11,7 @@ interface FirefoxVersionResponse {
 /** One subprocess invocation, injectable so credentials and arguments can be asserted in tests. */
 export interface ProcessInvocation {
   readonly args: readonly string[];
+  readonly clearEnv: true;
   readonly command: string;
   readonly env: Readonly<Record<string, string>>;
 }
@@ -30,6 +31,7 @@ export interface FirefoxStoreClientOptions {
   readonly fetch?: typeof globalThis.fetch;
   readonly listingUrl?: string;
   readonly now?: () => string;
+  readonly randomUUID?: () => string;
   readonly run?: (invocation: ProcessInvocation) => Promise<ProcessResult>;
 }
 
@@ -53,6 +55,55 @@ interface ReconcileFirefoxStatusOptions {
 
 function optionalListingUrl(listingUrl: string | undefined): { readonly listingUrl?: string } {
   return listingUrl === undefined ? {} : { listingUrl };
+}
+
+function base64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function base64UrlJson(value: unknown): string {
+  return base64Url(new TextEncoder().encode(JSON.stringify(value)));
+}
+
+/**
+ * Creates the short-lived HS256 token required for one authenticated AMO API request.
+ *
+ * @param apiKey AMO JWT issuer.
+ * @param apiSecret AMO JWT signing secret.
+ * @param issuedAt ISO timestamp used for the UTC iat and exp claims.
+ * @param jwtId Cryptographically unique replay-prevention identifier.
+ * @returns A signed compact JWT without the Authorization scheme prefix.
+ */
+export async function createAmoJwt(
+  apiKey: string,
+  apiSecret: string,
+  issuedAt: string,
+  jwtId: string,
+): Promise<string> {
+  const issuedAtSeconds = Math.floor(Date.parse(issuedAt) / 1_000);
+  if (!Number.isFinite(issuedAtSeconds)) throw new Error("AMO JWT requires a valid timestamp");
+  const header = base64UrlJson({ alg: "HS256", typ: "JWT" });
+  const payload = base64UrlJson({
+    exp: issuedAtSeconds + 60,
+    iat: issuedAtSeconds,
+    iss: apiKey,
+    jti: jwtId,
+  });
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(apiSecret),
+    { hash: "SHA-256", name: "HMAC" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${header}.${payload}`),
+  );
+  return `${header}.${payload}.${base64Url(new Uint8Array(signature))}`;
 }
 
 /**
@@ -114,6 +165,7 @@ export function reconcileFirefoxStatus(
 async function defaultRun(invocation: ProcessInvocation): Promise<ProcessResult> {
   const output = await new Deno.Command(invocation.command, {
     args: [...invocation.args],
+    clearEnv: invocation.clearEnv,
     env: { ...invocation.env },
     stderr: "piped",
     stdout: "piped",
@@ -134,6 +186,7 @@ export class FirefoxStoreClient {
   readonly #fetch: typeof globalThis.fetch;
   readonly #listingUrl: string | undefined;
   readonly #now: () => string;
+  readonly #randomUUID: () => string;
   readonly #run: (invocation: ProcessInvocation) => Promise<ProcessResult>;
 
   /**
@@ -151,14 +204,22 @@ export class FirefoxStoreClient {
     this.#fetch = options.fetch ?? globalThis.fetch;
     this.#listingUrl = options.listingUrl;
     this.#now = options.now ?? (() => new Date().toISOString().replace(/\.\d{3}Z$/, "Z"));
+    this.#randomUUID = options.randomUUID ?? (() => crypto.randomUUID());
     this.#run = options.run ?? defaultRun;
   }
 
   async #version(expectedVersion: string): Promise<FirefoxVersionResponse | undefined> {
+    const authorization = `JWT ${await createAmoJwt(
+      this.#apiKey,
+      this.#apiSecret,
+      this.#now(),
+      this.#randomUUID(),
+    )}`;
     const response = await this.#fetch(
       `${AMO_API_ROOT}/${encodeURIComponent(this.#extensionId)}/versions/v${
         encodeURIComponent(expectedVersion)
       }/`,
+      { headers: { authorization } },
     );
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`Firefox status request failed: HTTP ${response.status}`);
@@ -234,6 +295,7 @@ export class FirefoxStoreClient {
         "300000",
         "--no-input",
       ],
+      clearEnv: true,
       command: Deno.execPath(),
       env: {
         WEB_EXT_API_KEY: this.#apiKey,
@@ -242,13 +304,11 @@ export class FirefoxStoreClient {
     });
     if (result.code !== 0) {
       if (/\b(?:already exists|duplicate|409)\b/i.test(result.stderr)) {
-        return {
-          expectedVersion: submission.expectedVersion,
-          reconciledAt: this.#now(),
-          state: "submitted",
-          submittedAt: this.#now(),
-          submittedVersion: submission.expectedVersion,
-        };
+        const duplicate = await this.reconcile(submission.expectedVersion);
+        if (duplicate.state !== "unpublished") return duplicate;
+        throw new Error(
+          "Firefox reported a duplicate, but AMO does not expose the expected version.",
+        );
       }
       throw new Error(`Firefox submission failed: ${result.stderr.trim() || "web-ext failed"}`);
     }
