@@ -4,7 +4,7 @@ type: plan
 status: blocked
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -105,8 +105,8 @@ manual gate supplies all of the following:
 - Owner: Codex
 - Started: 2026-08-05T16:58:14Z
 - Completed: not completed
-- PR: draft `[DNM]`; URL recorded after creation
-- Commit: scaffold commit recorded after creation
+- PR: [#78](https://github.com/whizzzkid/point-and-shoot/pull/78), draft `[DNM]`
+- Commit: `92c283fef71a8c0f080927f11ac93c28ba8b3714` (coordination scaffold only)
 - Live-link verification: not run
 - Browser installation verification: not run
 - Automation enablement: disabled
