@@ -1,10 +1,10 @@
 ---
 title: "PR 5: Store publishing automation"
 type: plan
-status: draft
+status: in progress
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -32,8 +32,8 @@ establish live identities and credentials.
 
 ## Coordination
 
-- Status: pending
-- Owner: unassigned
+- Status: in progress
+- Owner: Codex
 - Depends on: PR 4 complete
 - PR base: PR 4 branch until PR 4 merges
 - PR boundary: vendor clients, reusable workflow, tests, status reconciliation, and operator docs;
@@ -161,9 +161,9 @@ bounds, and any vendor behavior that differs from this contract.
 
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: in progress
+- Owner: Codex
+- Started: 2026-08-05T16:29:26Z
 - Completed: not completed
 - PR: none
 - Commits: none
