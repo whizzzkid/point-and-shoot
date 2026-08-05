@@ -369,8 +369,9 @@ does not silently fall back to another scheme or expand into native messaging.
 
 ## Delivery phases
 
-Phases are barriers. Independent stack lanes inside a phase run concurrently; a later phase begins
-only after every required lane tip is merged and the phase exit gate passes.
+Phases are barriers. Each phase guide defines whether its delivery PRs form one linear stack or a
+stack forest. A later phase begins only after every required PR is merged and the phase exit gate
+passes.
 
 ```mermaid
 flowchart TD
@@ -383,19 +384,35 @@ flowchart TD
   P0 --> P1 --> P2 --> P3 --> P4
 ```
 
-| Phase | Guide                                                             | Parallel stack lanes                                | Exit result                                              |
-| ----- | ----------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------- |
-| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | Portable client and browser platform                | Evidence-backed architecture and successor ADR           |
-| 1     | [Build foundations](phase-1-build-foundations.md)                 | Catalog, ledger, authentication, extension adapter  | Tested non-UI A2A client foundation                      |
-| 2     | [Ship delivery UX](phase-2-ship-delivery-ux.md)                   | Options, toolbar, delivery, history                 | Bearer/API-key send, stream, status, and history         |
-| 3     | [Expand enterprise support](phase-3-expand-enterprise-support.md) | OAuth/OIDC, HTTP/API key, mTLS/card trust, recovery | Full declared-scheme negotiation or explicit constraints |
-| 4     | [Verify and document](phase-4-verify-and-document.md)             | Protocol tests, browser tests, quality, docs        | Cross-browser release evidence and current public docs   |
+| Phase | Guide                                                             | Stack structure                                       | Exit result                                              |
+| ----- | ----------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | One four-PR proof stack                               | Evidence-backed architecture and successor ADR           |
+| 1     | [Build foundations](phase-1-build-foundations.md)                 | Catalog, ledger, authentication, extension adapter    | Tested non-UI A2A client foundation                      |
+| 2     | [Ship delivery UX](phase-2-ship-delivery-ux.md)                   | Options, toolbar, delivery, history                   | Bearer/API-key send, stream, status, and history         |
+| 3     | [Expand enterprise support](phase-3-expand-enterprise-support.md) | OAuth/OIDC, HTTP/API key, mTLS/card trust, recovery   | Full declared-scheme negotiation or explicit constraints |
+| 4     | [Verify and document](phase-4-verify-and-document.md)             | Protocol tests, browser tests, quality, documentation | Cross-browser release evidence and current public docs   |
+
+### Delivery PR inventory
+
+The delivery plan contains 41 implementation PRs. The merged planning PR established the phase base
+and is not an additional delivery PR. In particular, P0.1-P0.4 are the four Phase 0 PRs; they are
+not four PRs added to an earlier Phase 0 set.
+
+| Phase | Delivery items | Planned PRs | Topology                    |
+| ----- | -------------- | ----------: | --------------------------- |
+| 0     | P0.1-P0.4      |           4 | One linear stack            |
+| 1     | P1.1-P1.9      |           9 | Phase-specific stack forest |
+| 2     | P2.1-P2.9      |           9 | Phase-specific stack forest |
+| 3     | P3.1-P3.10     |          10 | Phase-specific stack forest |
+| 4     | P4.1-P4.9      |           9 | Phase-specific stack forest |
+| Total | P0.1-P4.9      |          41 | Five phase barriers         |
 
 ## Stack execution contract
 
-Each phase uses a **stack forest**: one linear PR stack per lane, with multiple lanes rooted at the
-same confirmed phase base. This keeps related commits reviewable without serializing file-disjoint
-work.
+Phase 0 uses one linear stack because P0.3 consumes both proof foundations and P0.4 records their
+combined evidence. Later phases may use a **stack forest**: one linear PR stack per lane, with
+multiple lanes rooted at the same confirmed phase base. File-disjoint ownership still applies when
+items share a linear stack; stacking determines review ancestry, not permission to mix concerns.
 
 The phase coordinator hands each executor this plan, the current phase guide, and one item id. One
 executor stays with a lane's linear PR stack; sibling executors work only on other currently
@@ -423,8 +440,9 @@ Agents executing an item must:
 1. Read this file and the item's phase guide before changing code.
 2. Confirm every declared dependency is merged or present in the parent branch. Never copy an
    unmerged sibling's code into another lane.
-3. Name branches `feat/a2a-p<phase>-<item>-<slug>`. A lane's first PR targets the confirmed phase
-   base; each child PR targets its immediate parent branch.
+3. Name branches `feat/a2a-p<phase>-<item>-<slug>`. A stack's first PR targets the confirmed phase
+   base; each child PR targets its immediate parent branch. Initialize planned branch slots when a
+   stack begins, but open each PR only after that layer has a real owning commit.
 4. Use `wk-pr` and the repository's stack tooling. Verify the live PR base, remote head, CI rollup,
    and tree identity rather than trusting cached stack metadata.
 5. Keep one logical change per PR and commit. Every PR must pass `mise exec -- deno task ci` and its

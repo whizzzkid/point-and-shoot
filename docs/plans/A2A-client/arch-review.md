@@ -68,7 +68,9 @@ checks. Phase 0 still blocks product implementation until the portable client, b
 pre-parse input limits, streaming lifecycle, and cross-browser assumptions have executable evidence.
 The 2026-08-04 reconciliation against `main` and the failed official-client proof produced no
 superseded phase; they replace the SDK assumption with a portable browser-client boundary and
-tighten preservation and verification contracts for behavior merged after the original review.
+tighten preservation and verification contracts for behavior merged after the original review. The
+four-PR Phase 0 stack changes review ancestry without changing component, trust, state, or runtime
+boundaries, so it introduces no new architecture blocker.
 
 ## Critical Findings
 
@@ -289,12 +291,13 @@ tighten preservation and verification contracts for behavior merged after the or
 | E - Security and trust            | Exact origins, explicit auth choice, revision-bound credentials, OIDC claims, text rendering, and cascading deletion bound trust. |
 | F - Operability and observability | Two-axis status, ids, redacted errors, corrupt entries, incomplete persistence, and unknown delivery remain visible.              |
 | G - Cost and efficiency           | No hosted service exists; bounded browser work and explicit local quota are the relevant cost controls.                           |
-| H - Delivery risk                 | Phase barriers prove the portable client and browser model before UI; stack lanes remain file-disjoint until convergence.         |
+| H - Delivery risk                 | Phase barriers prove the portable client and browser model before UI; Phase 0 uses one reviewable four-PR stack.                  |
 
 ## Latest-main reconciliation
 
 **Delta reviewed:** changes merged to `main` after the plan's original merge base, the failed
-official-client proof, and the plan updates that preserve their contracts.
+official-client proof, the plan updates that preserve their contracts, and Phase 0's four-PR linear
+stack.
 
 - **A - Single points of failure:** None observed. The delta adds no component, remote dependency,
   or state owner.
@@ -312,7 +315,9 @@ official-client proof, and the plan updates that preserve their contracts.
 - **G - Cost and efficiency:** None observed. The delta adds no network, storage, or compute path.
 - **H - Delivery risk:** No phase is obsolete. P0.1 now owns a package-shaped portable subtree and
   dependency guard; extension-specific policy remains in later adapters so extraction cannot widen
-  the current implementation scope.
+  the current implementation scope. A single Phase 0 stack makes P0.3's combined proof and P0.4's
+  evidence record direct descendants of both foundations, while P0.1 and P0.2 retain disjoint file
+  ownership.
 
 ## Underlying Assumptions
 
