@@ -37,6 +37,11 @@ export type TaskState =
  */
 export type Timestamp1 = string;
 /**
+ * Filter tasks which have a status updated after the provided timestamp in ISO 8601 format (e.g., "2023-10-27T10:00:00Z").
+ *  Only tasks with a status timestamp time greater than or equal to this value will be returned.
+ */
+export type Timestamp2 = string;
+/**
  * Identifies the sender of the message.
  */
 export type Role = string | ("ROLE_USER" | "ROLE_AGENT") | number;
@@ -60,7 +65,7 @@ export type TaskState1 =
  * ISO 8601 Timestamp when the status was recorded.
  *  Example: "2023-10-27T10:00:00Z"
  */
-export type Timestamp2 = string;
+export type Timestamp3 = string;
 
 /**
  * Non-normative JSON Schema bundle extracted from proto definitions.
@@ -125,6 +130,14 @@ export interface AgentCapabilities {
    * Indicates if the agent supports streaming responses.
    */
   streaming?: boolean;
+  /**
+   * Indicates if the agent supports providing an extended agent card when authenticated.
+   */
+  extended_agent_card?: boolean;
+  /**
+   * Indicates if the agent supports sending push notifications for asynchronous task updates.
+   */
+  push_notifications?: boolean;
 }
 /**
  * A declaration of a protocol extension supported by an Agent.
@@ -222,6 +235,37 @@ export interface AgentCard {
    *  Example: "1.0.0"
    */
   version?: string;
+  /**
+   * The set of interaction modes that the agent supports across all skills.
+   *  This can be overridden per skill. Defined as media types.
+   */
+  default_input_modes?: string[];
+  /**
+   * The media types supported as outputs from this agent.
+   */
+  default_output_modes?: string[];
+  /**
+   * A URL providing additional documentation about the agent.
+   */
+  documentation_url?: string;
+  /**
+   * Optional. A URL to an icon for the agent.
+   */
+  icon_url?: string;
+  /**
+   * Security requirements for contacting the agent.
+   */
+  security_requirements?: SecurityRequirement[];
+  /**
+   * The security scheme details used for authenticating with this agent.
+   */
+  security_schemes?: {
+    [k: string]: SecurityScheme;
+  };
+  /**
+   * Ordered list of supported interfaces. The first entry is preferred.
+   */
+  supported_interfaces?: AgentInterface[];
 }
 /**
  * A2A Capability set supported by the agent.
@@ -243,6 +287,14 @@ export interface AgentCapabilities1 {
    * Indicates if the agent supports streaming responses.
    */
   streaming?: boolean;
+  /**
+   * Indicates if the agent supports providing an extended agent card when authenticated.
+   */
+  extended_agent_card?: boolean;
+  /**
+   * Indicates if the agent supports sending push notifications for asynchronous task updates.
+   */
+  push_notifications?: boolean;
 }
 /**
  * The service provider of the agent.
@@ -299,6 +351,11 @@ export interface SecurityScheme {
   mtlsSecurityScheme?: MutualTlsSecurityScheme;
   oauth2SecurityScheme?: OAuth2SecurityScheme;
   openIdConnectSecurityScheme?: OpenIdConnectSecurityScheme;
+  api_key_security_scheme?: APIKeySecurityScheme2;
+  http_auth_security_scheme?: HTTPAuthSecurityScheme1;
+  mtls_security_scheme?: MutualTlsSecurityScheme1;
+  oauth2_security_scheme?: OAuth2SecurityScheme1;
+  open_id_connect_security_scheme?: OpenIdConnectSecurityScheme1;
 }
 /**
  * API key-based authentication.
@@ -336,6 +393,11 @@ export interface HTTPAuthSecurityScheme {
    *  This value should be registered in the IANA Authentication Scheme registry.
    */
   scheme?: string;
+  /**
+   * A hint to the client to identify how the bearer token is formatted (e.g., "JWT").
+   *  Primarily for documentation purposes.
+   */
+  bearer_format?: string;
 }
 /**
  * Mutual TLS authentication.
@@ -360,6 +422,11 @@ export interface OAuth2SecurityScheme {
    *  TLS is required.
    */
   oauth2MetadataUrl?: string;
+  /**
+   * URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).
+   *  TLS is required.
+   */
+  oauth2_metadata_url?: string;
 }
 /**
  * An object containing configuration information for the supported OAuth 2.0 flows.
@@ -370,6 +437,9 @@ export interface OAuthFlows {
   deviceCode?: DeviceCodeOAuthFlow;
   implicit?: ImplicitOAuthFlow;
   password?: PasswordOAuthFlow;
+  authorization_code?: AuthorizationCodeOAuthFlow1;
+  client_credentials?: ClientCredentialsOAuthFlow1;
+  device_code?: DeviceCodeOAuthFlow1;
 }
 /**
  * Configuration for the OAuth Authorization Code flow.
@@ -398,6 +468,23 @@ export interface AuthorizationCodeOAuthFlow {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The authorization URL to be used for this flow.
+   */
+  authorization_url?: string;
+  /**
+   * Indicates if PKCE (RFC 7636) is required for this flow.
+   *  PKCE should always be used for public clients and is recommended for all clients.
+   */
+  pkce_required?: boolean;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Configuration for the OAuth Client Credentials flow.
@@ -417,6 +504,14 @@ export interface ClientCredentialsOAuthFlow {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Configuration for the OAuth Device Code flow.
@@ -440,6 +535,18 @@ export interface DeviceCodeOAuthFlow {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The device authorization endpoint URL.
+   */
+  device_authorization_url?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Deprecated: Use Authorization Code + PKCE instead.
@@ -462,6 +569,16 @@ export interface ImplicitOAuthFlow {
   scopes?: {
     [k: string]: string;
   };
+  /**
+   * The authorization URL to be used for this flow. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS
+   */
+  authorization_url?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS.
+   */
+  refresh_url?: string;
 }
 /**
  * Deprecated: Use Authorization Code + PKCE or Device Code.
@@ -484,6 +601,123 @@ export interface PasswordOAuthFlow {
    *  The OAuth2 standard requires the use of TLS.
    */
   tokenUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow. This MUST be in the form of a URL.
+   *  The OAuth2 standard requires the use of TLS.
+   */
+  token_url?: string;
+}
+/**
+ * Configuration for the OAuth Authorization Code flow.
+ */
+export interface AuthorizationCodeOAuthFlow1 {
+  /**
+   * The authorization URL to be used for this flow.
+   */
+  authorizationUrl?: string;
+  /**
+   * Indicates if PKCE (RFC 7636) is required for this flow.
+   *  PKCE should always be used for public clients and is recommended for all clients.
+   */
+  pkceRequired?: boolean;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refreshUrl?: string;
+  /**
+   * The available scopes for the OAuth2 security scheme.
+   */
+  scopes?: {
+    [k: string]: string;
+  };
+  /**
+   * The token URL to be used for this flow.
+   */
+  tokenUrl?: string;
+  /**
+   * The authorization URL to be used for this flow.
+   */
+  authorization_url?: string;
+  /**
+   * Indicates if PKCE (RFC 7636) is required for this flow.
+   *  PKCE should always be used for public clients and is recommended for all clients.
+   */
+  pkce_required?: boolean;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
+}
+/**
+ * Configuration for the OAuth Client Credentials flow.
+ */
+export interface ClientCredentialsOAuthFlow1 {
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refreshUrl?: string;
+  /**
+   * The available scopes for the OAuth2 security scheme.
+   */
+  scopes?: {
+    [k: string]: string;
+  };
+  /**
+   * The token URL to be used for this flow.
+   */
+  tokenUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
+}
+/**
+ * Configuration for the OAuth Device Code flow.
+ */
+export interface DeviceCodeOAuthFlow1 {
+  /**
+   * The device authorization endpoint URL.
+   */
+  deviceAuthorizationUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refreshUrl?: string;
+  /**
+   * The available scopes for the OAuth2 security scheme.
+   */
+  scopes?: {
+    [k: string]: string;
+  };
+  /**
+   * The token URL to be used for this flow.
+   */
+  tokenUrl?: string;
+  /**
+   * The device authorization endpoint URL.
+   */
+  device_authorization_url?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * OpenID Connect authentication.
@@ -497,6 +731,98 @@ export interface OpenIdConnectSecurityScheme {
    * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
    */
   openIdConnectUrl?: string;
+  /**
+   * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
+   */
+  open_id_connect_url?: string;
+}
+/**
+ * API key-based authentication.
+ */
+export interface APIKeySecurityScheme2 {
+  /**
+   * An optional description for the security scheme.
+   */
+  description?: string;
+  /**
+   * The location of the API key. Valid values are "query", "header", or "cookie".
+   */
+  location?: string;
+  /**
+   * The name of the header, query, or cookie parameter to be used.
+   */
+  name?: string;
+}
+/**
+ * HTTP authentication (Basic, Bearer, etc.).
+ */
+export interface HTTPAuthSecurityScheme1 {
+  /**
+   * A hint to the client to identify how the bearer token is formatted (e.g., "JWT").
+   *  Primarily for documentation purposes.
+   */
+  bearerFormat?: string;
+  /**
+   * An optional description for the security scheme.
+   */
+  description?: string;
+  /**
+   * The name of the HTTP Authentication scheme to be used in the Authorization header,
+   *  as defined in RFC7235 (e.g., "Bearer").
+   *  This value should be registered in the IANA Authentication Scheme registry.
+   */
+  scheme?: string;
+  /**
+   * A hint to the client to identify how the bearer token is formatted (e.g., "JWT").
+   *  Primarily for documentation purposes.
+   */
+  bearer_format?: string;
+}
+/**
+ * Mutual TLS authentication.
+ */
+export interface MutualTlsSecurityScheme1 {
+  /**
+   * An optional description for the security scheme.
+   */
+  description?: string;
+}
+/**
+ * OAuth 2.0 authentication.
+ */
+export interface OAuth2SecurityScheme1 {
+  /**
+   * An optional description for the security scheme.
+   */
+  description?: string;
+  flows?: OAuthFlows;
+  /**
+   * URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).
+   *  TLS is required.
+   */
+  oauth2MetadataUrl?: string;
+  /**
+   * URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).
+   *  TLS is required.
+   */
+  oauth2_metadata_url?: string;
+}
+/**
+ * OpenID Connect authentication.
+ */
+export interface OpenIdConnectSecurityScheme1 {
+  /**
+   * An optional description for the security scheme.
+   */
+  description?: string;
+  /**
+   * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
+   */
+  openIdConnectUrl?: string;
+  /**
+   * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
+   */
+  open_id_connect_url?: string;
 }
 /**
  * AgentCardSignature represents a JWS signature of an AgentCard.
@@ -564,6 +890,18 @@ export interface AgentSkill {
    * A set of keywords describing the skill's capabilities.
    */
   tags?: string[];
+  /**
+   * The set of supported input media types for this skill, overriding the agent's defaults.
+   */
+  input_modes?: string[];
+  /**
+   * The set of supported output media types for this skill, overriding the agent's defaults.
+   */
+  output_modes?: string[];
+  /**
+   * Security schemes necessary for this skill.
+   */
+  security_requirements?: SecurityRequirement[];
 }
 /**
  * Declares a combination of a target URL, transport and protocol version for interacting with the agent.
@@ -594,6 +932,18 @@ export interface AgentInterface {
    *  Example: "https://api.example.com/a2a/v1", "https://grpc.example.com/a2a"
    */
   url?: string;
+  /**
+   * The protocol binding supported at this URL. This is an open form string, to be
+   *  easily extended for other protocol bindings. The core ones officially
+   *  supported are `JSONRPC`, `GRPC` and `HTTP+JSON`.
+   */
+  protocol_binding?: string;
+  /**
+   * The version of the A2A protocol this interface exposes.
+   *  Use the latest supported minor version per major version.
+   *  Examples: "0.3", "1.0"
+   */
+  protocol_version?: string;
 }
 /**
  * Represents the service provider of an agent.
@@ -641,6 +991,10 @@ export interface Artifact {
    * The content of the artifact. Must contain at least one part.
    */
   parts?: Part[];
+  /**
+   * Unique identifier (e.g. UUID) for the artifact. It must be unique within a task.
+   */
+  artifact_id?: string;
 }
 /**
  * Optional. Metadata included with the artifact.
@@ -680,6 +1034,11 @@ export interface Part {
    * A `url` pointing to the file's content.
    */
   url?: string;
+  /**
+   * The `media_type` (MIME type) of the part content (e.g., "text/plain", "application/json", "image/png").
+   *  This field is available for all part types.
+   */
+  media_type?: string;
 }
 /**
  * Arbitrary structured `data` as a JSON value (object, array, string, number, boolean, or null).
@@ -717,7 +1076,7 @@ export interface AuthenticationInfo {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Authorization CodeO Auth Flow".
  */
-export interface AuthorizationCodeOAuthFlow1 {
+export interface AuthorizationCodeOAuthFlow2 {
   /**
    * The authorization URL to be used for this flow.
    */
@@ -741,6 +1100,23 @@ export interface AuthorizationCodeOAuthFlow1 {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The authorization URL to be used for this flow.
+   */
+  authorization_url?: string;
+  /**
+   * Indicates if PKCE (RFC 7636) is required for this flow.
+   *  PKCE should always be used for public clients and is recommended for all clients.
+   */
+  pkce_required?: boolean;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Represents a request for the `CancelTask` method.
@@ -771,7 +1147,7 @@ export interface Struct5 {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Client CredentialsO Auth Flow".
  */
-export interface ClientCredentialsOAuthFlow1 {
+export interface ClientCredentialsOAuthFlow2 {
   /**
    * The URL to be used for obtaining refresh tokens.
    */
@@ -786,6 +1162,14 @@ export interface ClientCredentialsOAuthFlow1 {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Represents a request for the `DeleteTaskPushNotificationConfig` method.
@@ -806,6 +1190,10 @@ export interface DeleteTaskPushNotificationConfigRequest {
    * Optional. Tenant ID, provided as a path parameter.
    */
   tenant?: string;
+  /**
+   * The parent task resource ID.
+   */
+  task_id?: string;
 }
 /**
  * Defines configuration details for the OAuth 2.0 Device Code flow (RFC 8628).
@@ -815,7 +1203,7 @@ export interface DeleteTaskPushNotificationConfigRequest {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Device CodeO Auth Flow".
  */
-export interface DeviceCodeOAuthFlow1 {
+export interface DeviceCodeOAuthFlow2 {
   /**
    * The device authorization endpoint URL.
    */
@@ -834,6 +1222,18 @@ export interface DeviceCodeOAuthFlow1 {
    * The token URL to be used for this flow.
    */
   tokenUrl?: string;
+  /**
+   * The device authorization endpoint URL.
+   */
+  device_authorization_url?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow.
+   */
+  token_url?: string;
 }
 /**
  * Represents a request for the `GetExtendedAgentCard` method.
@@ -866,6 +1266,10 @@ export interface GetTaskPushNotificationConfigRequest {
    * Optional. Tenant ID, provided as a path parameter.
    */
   tenant?: string;
+  /**
+   * The parent task resource ID.
+   */
+  task_id?: string;
 }
 /**
  * Represents a request for the `GetTask` method.
@@ -889,6 +1293,13 @@ export interface GetTaskRequest {
    * Optional. Tenant ID, provided as a path parameter.
    */
   tenant?: string;
+  /**
+   * The maximum number of most recent messages from the task's history to retrieve. An
+   *  unset value means the client does not impose any limit. A value of zero is
+   *  a request to not include any messages. The server MUST NOT return more
+   *  messages than the provided value, but MAY apply a lower limit.
+   */
+  history_length?: number | string;
 }
 /**
  * Defines a security scheme using HTTP authentication.
@@ -896,7 +1307,7 @@ export interface GetTaskRequest {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "HTTP Auth Security Scheme".
  */
-export interface HTTPAuthSecurityScheme1 {
+export interface HTTPAuthSecurityScheme2 {
   /**
    * A hint to the client to identify how the bearer token is formatted (e.g., "JWT").
    *  Primarily for documentation purposes.
@@ -912,6 +1323,11 @@ export interface HTTPAuthSecurityScheme1 {
    *  This value should be registered in the IANA Authentication Scheme registry.
    */
   scheme?: string;
+  /**
+   * A hint to the client to identify how the bearer token is formatted (e.g., "JWT").
+   *  Primarily for documentation purposes.
+   */
+  bearer_format?: string;
 }
 /**
  * Deprecated: Use Authorization Code + PKCE instead.
@@ -937,6 +1353,16 @@ export interface ImplicitOAuthFlow1 {
   scopes?: {
     [k: string]: string;
   };
+  /**
+   * The authorization URL to be used for this flow. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS
+   */
+  authorization_url?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS.
+   */
+  refresh_url?: string;
 }
 /**
  * Represents a request for the `ListTaskPushNotificationConfigs` method.
@@ -961,6 +1387,18 @@ export interface ListTaskPushNotificationConfigsRequest {
    * Optional. Tenant ID, provided as a path parameter.
    */
   tenant?: string;
+  /**
+   * The maximum number of configurations to return.
+   */
+  page_size?: number | string;
+  /**
+   * A page token received from a previous `ListTaskPushNotificationConfigsRequest` call.
+   */
+  page_token?: string;
+  /**
+   * The parent task resource ID.
+   */
+  task_id?: string;
 }
 /**
  * Represents a successful response for the `ListTaskPushNotificationConfigs`
@@ -978,6 +1416,10 @@ export interface ListTaskPushNotificationConfigsResponse {
    * A token to retrieve the next page of results, or empty if there are no more results in the list.
    */
   nextPageToken?: string;
+  /**
+   * A token to retrieve the next page of results, or empty if there are no more results in the list.
+   */
+  next_page_token?: string;
 }
 /**
  * A container associating a push notification configuration with a specific task.
@@ -1008,6 +1450,10 @@ export interface TaskPushNotificationConfig {
    * The URL where the notification should be sent.
    */
   url?: string;
+  /**
+   * The ID of the task this configuration is associated with.
+   */
+  task_id?: string;
 }
 /**
  * Authentication information required to send the notification.
@@ -1063,6 +1509,33 @@ export interface ListTasksRequest {
    * Tenant ID, provided as a path parameter.
    */
   tenant?: string;
+  /**
+   * Filter tasks by context ID to get tasks from a specific conversation or session.
+   */
+  context_id?: string;
+  /**
+   * The maximum number of messages to include in each task's history.
+   */
+  history_length?: number | string;
+  /**
+   * Whether to include artifacts in the returned tasks.
+   *  Defaults to false to reduce payload size.
+   */
+  include_artifacts?: boolean;
+  /**
+   * The maximum number of tasks to return. The service may return fewer than this value.
+   *  If unspecified, at most 50 tasks will be returned.
+   *  The minimum value is 1.
+   *  The maximum value is 100.
+   */
+  page_size?: number | string;
+  /**
+   * A page token, received from a previous `ListTasks` call.
+   *  `ListTasksResponse.next_page_token`.
+   *  Provide this to retrieve the subsequent page.
+   */
+  page_token?: string;
+  status_timestamp_after?: Timestamp2;
 }
 /**
  * Result object for `ListTasks` method containing an array of tasks and pagination information.
@@ -1087,6 +1560,18 @@ export interface ListTasksResponse {
    * Total number of tasks available (before pagination).
    */
   totalSize?: number | string;
+  /**
+   * A token to retrieve the next page of results, or empty if there are no more results in the list.
+   */
+  next_page_token?: string;
+  /**
+   * The page size used for this response.
+   */
+  page_size?: number | string;
+  /**
+   * Total number of tasks available (before pagination).
+   */
+  total_size?: number | string;
 }
 /**
  * `Task` is the core unit of action for A2A. It has a current status
@@ -1118,6 +1603,11 @@ export interface Task {
   id?: string;
   metadata?: Struct7;
   status?: TaskStatus;
+  /**
+   * Unique identifier (e.g. UUID) for the contextual collection of interactions
+   *  (tasks and messages).
+   */
+  context_id?: string;
 }
 /**
  * `Message` is one unit of communication between client and server. It can be
@@ -1157,6 +1647,22 @@ export interface Message {
    * Optional. The task id of the message. If set, the message will be associated with the given task.
    */
   taskId?: string;
+  /**
+   * Optional. The context id of the message. If set, the message will be associated with the given context.
+   */
+  context_id?: string;
+  /**
+   * The unique identifier (e.g. UUID) of the message. This is created by the message creator.
+   */
+  message_id?: string;
+  /**
+   * A list of task IDs that this message references for additional context.
+   */
+  reference_task_ids?: string[];
+  /**
+   * Optional. The task id of the message. If set, the message will be associated with the given task.
+   */
+  task_id?: string;
 }
 /**
  * Optional. Any metadata to provide along with the message.
@@ -1176,7 +1682,7 @@ export interface Struct7 {
 export interface TaskStatus {
   message?: Message1;
   state?: TaskState1;
-  timestamp?: Timestamp2;
+  timestamp?: Timestamp3;
 }
 /**
  * `Message` is one unit of communication between client and server. It can be
@@ -1213,6 +1719,22 @@ export interface Message1 {
    * Optional. The task id of the message. If set, the message will be associated with the given task.
    */
   taskId?: string;
+  /**
+   * Optional. The context id of the message. If set, the message will be associated with the given context.
+   */
+  context_id?: string;
+  /**
+   * The unique identifier (e.g. UUID) of the message. This is created by the message creator.
+   */
+  message_id?: string;
+  /**
+   * A list of task IDs that this message references for additional context.
+   */
+  reference_task_ids?: string[];
+  /**
+   * Optional. The task id of the message. If set, the message will be associated with the given task.
+   */
+  task_id?: string;
 }
 /**
  * Defines a security scheme using mTLS authentication.
@@ -1220,7 +1742,7 @@ export interface Message1 {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Mutual Tls Security Scheme".
  */
-export interface MutualTlsSecurityScheme1 {
+export interface MutualTlsSecurityScheme2 {
   /**
    * An optional description for the security scheme.
    */
@@ -1232,7 +1754,7 @@ export interface MutualTlsSecurityScheme1 {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "O Auth2 Security Scheme".
  */
-export interface OAuth2SecurityScheme1 {
+export interface OAuth2SecurityScheme2 {
   /**
    * An optional description for the security scheme.
    */
@@ -1243,6 +1765,11 @@ export interface OAuth2SecurityScheme1 {
    *  TLS is required.
    */
   oauth2MetadataUrl?: string;
+  /**
+   * URL to the OAuth2 authorization server metadata [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414).
+   *  TLS is required.
+   */
+  oauth2_metadata_url?: string;
 }
 /**
  * Defines the configuration for the supported OAuth 2.0 flows.
@@ -1256,6 +1783,9 @@ export interface OAuthFlows1 {
   deviceCode?: DeviceCodeOAuthFlow;
   implicit?: ImplicitOAuthFlow;
   password?: PasswordOAuthFlow;
+  authorization_code?: AuthorizationCodeOAuthFlow1;
+  client_credentials?: ClientCredentialsOAuthFlow1;
+  device_code?: DeviceCodeOAuthFlow1;
 }
 /**
  * Defines a security scheme using OpenID Connect.
@@ -1263,7 +1793,7 @@ export interface OAuthFlows1 {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Open Id Connect Security Scheme".
  */
-export interface OpenIdConnectSecurityScheme1 {
+export interface OpenIdConnectSecurityScheme2 {
   /**
    * An optional description for the security scheme.
    */
@@ -1272,6 +1802,10 @@ export interface OpenIdConnectSecurityScheme1 {
    * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
    */
   openIdConnectUrl?: string;
+  /**
+   * The [OpenID Connect Discovery URL](https://openid.net/specs/openid-connect-discovery-1_0.html) for the OIDC provider's metadata.
+   */
+  open_id_connect_url?: string;
 }
 /**
  * Deprecated: Use Authorization Code + PKCE or Device Code.
@@ -1297,6 +1831,16 @@ export interface PasswordOAuthFlow1 {
    *  The OAuth2 standard requires the use of TLS.
    */
   tokenUrl?: string;
+  /**
+   * The URL to be used for obtaining refresh tokens. This MUST be in the
+   *  form of a URL. The OAuth2 standard requires the use of TLS.
+   */
+  refresh_url?: string;
+  /**
+   * The token URL to be used for this flow. This MUST be in the form of a URL.
+   *  The OAuth2 standard requires the use of TLS.
+   */
+  token_url?: string;
 }
 /**
  * Configuration of a send message request.
@@ -1326,6 +1870,27 @@ export interface SendMessageConfiguration {
    */
   returnImmediately?: boolean;
   taskPushNotificationConfig?: TaskPushNotificationConfig1;
+  /**
+   * A list of media types the client is prepared to accept for response parts.
+   *  Agents SHOULD use this to tailor their output.
+   */
+  accepted_output_modes?: string[];
+  /**
+   * The maximum number of most recent messages from the task's history to retrieve in
+   *  the response. An unset value means the client does not impose any limit. A
+   *  value of zero is a request to not include any messages. The server MUST NOT
+   *  return more messages than the provided value, but MAY apply a lower limit.
+   */
+  history_length?: number | string;
+  /**
+   * If `true`, the operation returns immediately after creating the task,
+   *  even if processing is still in progress.
+   *  If `false` (default), the operation MUST wait until the task reaches a
+   *  terminal (`COMPLETED`, `FAILED`, `CANCELED`, `REJECTED`) or interrupted
+   *  (`INPUT_REQUIRED`, `AUTH_REQUIRED`) state before returning.
+   */
+  return_immediately?: boolean;
+  task_push_notification_config?: TaskPushNotificationConfig2;
 }
 /**
  * A container associating a push notification configuration with a specific task.
@@ -1353,6 +1918,41 @@ export interface TaskPushNotificationConfig1 {
    * The URL where the notification should be sent.
    */
   url?: string;
+  /**
+   * The ID of the task this configuration is associated with.
+   */
+  task_id?: string;
+}
+/**
+ * A container associating a push notification configuration with a specific task.
+ */
+export interface TaskPushNotificationConfig2 {
+  authentication?: AuthenticationInfo1;
+  /**
+   * The push notification configuration details.
+   *  A unique identifier (e.g. UUID) for this push notification configuration.
+   */
+  id?: string;
+  /**
+   * The ID of the task this configuration is associated with.
+   */
+  taskId?: string;
+  /**
+   * Optional. Tenant ID.
+   */
+  tenant?: string;
+  /**
+   * A token unique for this task or session.
+   */
+  token?: string;
+  /**
+   * The URL where the notification should be sent.
+   */
+  url?: string;
+  /**
+   * The ID of the task this configuration is associated with.
+   */
+  task_id?: string;
 }
 /**
  * Represents a request for the `SendMessage` method.
@@ -1394,6 +1994,27 @@ export interface SendMessageConfiguration1 {
    */
   returnImmediately?: boolean;
   taskPushNotificationConfig?: TaskPushNotificationConfig1;
+  /**
+   * A list of media types the client is prepared to accept for response parts.
+   *  Agents SHOULD use this to tailor their output.
+   */
+  accepted_output_modes?: string[];
+  /**
+   * The maximum number of most recent messages from the task's history to retrieve in
+   *  the response. An unset value means the client does not impose any limit. A
+   *  value of zero is a request to not include any messages. The server MUST NOT
+   *  return more messages than the provided value, but MAY apply a lower limit.
+   */
+  history_length?: number | string;
+  /**
+   * If `true`, the operation returns immediately after creating the task,
+   *  even if processing is still in progress.
+   *  If `false` (default), the operation MUST wait until the task reaches a
+   *  terminal (`COMPLETED`, `FAILED`, `CANCELED`, `REJECTED`) or interrupted
+   *  (`INPUT_REQUIRED`, `AUTH_REQUIRED`) state before returning.
+   */
+  return_immediately?: boolean;
+  task_push_notification_config?: TaskPushNotificationConfig2;
 }
 /**
  * `Message` is one unit of communication between client and server. It can be
@@ -1430,6 +2051,22 @@ export interface Message2 {
    * Optional. The task id of the message. If set, the message will be associated with the given task.
    */
   taskId?: string;
+  /**
+   * Optional. The context id of the message. If set, the message will be associated with the given context.
+   */
+  context_id?: string;
+  /**
+   * The unique identifier (e.g. UUID) of the message. This is created by the message creator.
+   */
+  message_id?: string;
+  /**
+   * A list of task IDs that this message references for additional context.
+   */
+  reference_task_ids?: string[];
+  /**
+   * Optional. The task id of the message. If set, the message will be associated with the given task.
+   */
+  task_id?: string;
 }
 /**
  * A flexible key-value map for passing additional context or parameters.
@@ -1482,6 +2119,22 @@ export interface Message3 {
    * Optional. The task id of the message. If set, the message will be associated with the given task.
    */
   taskId?: string;
+  /**
+   * Optional. The context id of the message. If set, the message will be associated with the given context.
+   */
+  context_id?: string;
+  /**
+   * The unique identifier (e.g. UUID) of the message. This is created by the message creator.
+   */
+  message_id?: string;
+  /**
+   * A list of task IDs that this message references for additional context.
+   */
+  reference_task_ids?: string[];
+  /**
+   * Optional. The task id of the message. If set, the message will be associated with the given task.
+   */
+  task_id?: string;
 }
 /**
  * `Task` is the core unit of action for A2A. It has a current status
@@ -1510,6 +2163,11 @@ export interface Task1 {
   id?: string;
   metadata?: Struct7;
   status?: TaskStatus;
+  /**
+   * Unique identifier (e.g. UUID) for the contextual collection of interactions
+   *  (tasks and messages).
+   */
+  context_id?: string;
 }
 /**
  * A wrapper object used in streaming operations to encapsulate different types of response data.
@@ -1522,6 +2180,8 @@ export interface StreamResponse {
   message?: Message4;
   statusUpdate?: TaskStatusUpdateEvent;
   task?: Task2;
+  artifact_update?: TaskArtifactUpdateEvent1;
+  status_update?: TaskStatusUpdateEvent1;
 }
 /**
  * An event indicating a task artifact update.
@@ -1546,6 +2206,18 @@ export interface TaskArtifactUpdateEvent {
    * The ID of the task for this artifact.
    */
   taskId?: string;
+  /**
+   * The ID of the context that this task belongs to.
+   */
+  context_id?: string;
+  /**
+   * If true, this is the final chunk of the artifact.
+   */
+  last_chunk?: boolean;
+  /**
+   * The ID of the task for this artifact.
+   */
+  task_id?: string;
 }
 /**
  * Artifacts represent task outputs.
@@ -1572,6 +2244,10 @@ export interface Artifact1 {
    * The content of the artifact. Must contain at least one part.
    */
   parts?: Part[];
+  /**
+   * Unique identifier (e.g. UUID) for the artifact. It must be unique within a task.
+   */
+  artifact_id?: string;
 }
 /**
  * Optional. Metadata associated with the artifact update.
@@ -1614,6 +2290,22 @@ export interface Message4 {
    * Optional. The task id of the message. If set, the message will be associated with the given task.
    */
   taskId?: string;
+  /**
+   * Optional. The context id of the message. If set, the message will be associated with the given context.
+   */
+  context_id?: string;
+  /**
+   * The unique identifier (e.g. UUID) of the message. This is created by the message creator.
+   */
+  message_id?: string;
+  /**
+   * A list of task IDs that this message references for additional context.
+   */
+  reference_task_ids?: string[];
+  /**
+   * Optional. The task id of the message. If set, the message will be associated with the given task.
+   */
+  task_id?: string;
 }
 /**
  * An event indicating a task status update.
@@ -1629,6 +2321,14 @@ export interface TaskStatusUpdateEvent {
    * The ID of the task that has changed.
    */
   taskId?: string;
+  /**
+   * The ID of the context that the task belongs to.
+   */
+  context_id?: string;
+  /**
+   * The ID of the task that has changed.
+   */
+  task_id?: string;
 }
 /**
  * Optional. Metadata associated with the task update.
@@ -1642,7 +2342,7 @@ export interface Struct10 {
 export interface TaskStatus1 {
   message?: Message1;
   state?: TaskState1;
-  timestamp?: Timestamp2;
+  timestamp?: Timestamp3;
 }
 /**
  * `Task` is the core unit of action for A2A. It has a current status
@@ -1671,6 +2371,70 @@ export interface Task2 {
   id?: string;
   metadata?: Struct7;
   status?: TaskStatus;
+  /**
+   * Unique identifier (e.g. UUID) for the contextual collection of interactions
+   *  (tasks and messages).
+   */
+  context_id?: string;
+}
+/**
+ * An event indicating a task artifact update.
+ */
+export interface TaskArtifactUpdateEvent1 {
+  /**
+   * If true, the content of this artifact should be appended to a previously
+   *  sent artifact with the same ID.
+   */
+  append?: boolean;
+  artifact?: Artifact1;
+  /**
+   * The ID of the context that this task belongs to.
+   */
+  contextId?: string;
+  /**
+   * If true, this is the final chunk of the artifact.
+   */
+  lastChunk?: boolean;
+  metadata?: Struct9;
+  /**
+   * The ID of the task for this artifact.
+   */
+  taskId?: string;
+  /**
+   * The ID of the context that this task belongs to.
+   */
+  context_id?: string;
+  /**
+   * If true, this is the final chunk of the artifact.
+   */
+  last_chunk?: boolean;
+  /**
+   * The ID of the task for this artifact.
+   */
+  task_id?: string;
+}
+/**
+ * An event indicating a task status update.
+ */
+export interface TaskStatusUpdateEvent1 {
+  /**
+   * The ID of the context that the task belongs to.
+   */
+  contextId?: string;
+  metadata?: Struct10;
+  status?: TaskStatus1;
+  /**
+   * The ID of the task that has changed.
+   */
+  taskId?: string;
+  /**
+   * The ID of the context that the task belongs to.
+   */
+  context_id?: string;
+  /**
+   * The ID of the task that has changed.
+   */
+  task_id?: string;
 }
 /**
  * Represents a request for the `SubscribeToTask` method.
@@ -1694,7 +2458,7 @@ export interface SubscribeToTaskRequest {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Task Artifact Update Event".
  */
-export interface TaskArtifactUpdateEvent1 {
+export interface TaskArtifactUpdateEvent2 {
   /**
    * If true, the content of this artifact should be appended to a previously
    *  sent artifact with the same ID.
@@ -1714,6 +2478,18 @@ export interface TaskArtifactUpdateEvent1 {
    * The ID of the task for this artifact.
    */
   taskId?: string;
+  /**
+   * The ID of the context that this task belongs to.
+   */
+  context_id?: string;
+  /**
+   * If true, this is the final chunk of the artifact.
+   */
+  last_chunk?: boolean;
+  /**
+   * The ID of the task for this artifact.
+   */
+  task_id?: string;
 }
 /**
  * A container for the status of a task
@@ -1724,7 +2500,7 @@ export interface TaskArtifactUpdateEvent1 {
 export interface TaskStatus2 {
   message?: Message1;
   state?: TaskState1;
-  timestamp?: Timestamp2;
+  timestamp?: Timestamp3;
 }
 /**
  * An event sent by the agent to notify the client of a change in a task's status.
@@ -1732,7 +2508,7 @@ export interface TaskStatus2 {
  * This interface was referenced by `A2AProtocolSchemas`'s JSON-Schema
  * via the `definition` "Task Status Update Event".
  */
-export interface TaskStatusUpdateEvent1 {
+export interface TaskStatusUpdateEvent2 {
   /**
    * The ID of the context that the task belongs to.
    */
@@ -1743,4 +2519,12 @@ export interface TaskStatusUpdateEvent1 {
    * The ID of the task that has changed.
    */
   taskId?: string;
+  /**
+   * The ID of the context that the task belongs to.
+   */
+  context_id?: string;
+  /**
+   * The ID of the task that has changed.
+   */
+  task_id?: string;
 }

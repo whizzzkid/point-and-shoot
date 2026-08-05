@@ -1,4 +1,4 @@
-import { assertEquals, assertFalse, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { A2A_PROTOCOL_METADATA, generateProtocolArtifacts } from "./generate-protocol.ts";
 
@@ -64,6 +64,44 @@ Deno.test("generated browser contracts contain no Node or gRPC dependencies", as
 
   for (const source of generatedSource) {
     assertFalse(forbiddenRuntimeReferences.test(source));
+  }
+});
+
+Deno.test("generated types represent accepted protobuf JSON field aliases", async () => {
+  const outputDirectory = await Deno.makeTempDir();
+
+  try {
+    await generateProtocolArtifacts({ schemaPath: SCHEMA_PATH, outputDirectory });
+    await Deno.writeTextFile(
+      join(outputDirectory, "consumer.ts"),
+      `import type { AgentCard, Part } from "./protocol.generated.ts";
+
+const card: AgentCard = {
+  supported_interfaces: [{
+    protocol_binding: "JSONRPC",
+    protocol_version: "1.0",
+    url: "https://agent.example/a2a",
+  }],
+};
+const part: Part = { media_type: "image/png", raw: "AQID" };
+void [card, part];
+`,
+    );
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: [
+        "check",
+        "--config",
+        new URL("../../../../deno.json", import.meta.url).pathname,
+        "consumer.ts",
+      ],
+      cwd: outputDirectory,
+      stderr: "piped",
+      stdout: "piped",
+    }).output();
+
+    assert(result.success, new TextDecoder().decode(result.stderr));
+  } finally {
+    await Deno.remove(outputDirectory, { recursive: true });
   }
 });
 

@@ -5,6 +5,7 @@ import { compile } from "json-schema-to-typescript";
 
 const CLIENT_DIRECTORY = new URL(".", import.meta.url).pathname;
 const DENO_CONFIG_PATH = new URL("../../../../deno.json", import.meta.url).pathname;
+const EXACT_PROPERTY_PATTERN = /^\^\((?<name>[A-Za-z0-9_]+)\)\$$/;
 const REFERENCE_SUFFIX = ".jsonschema.json";
 const SCHEMA_IDENTIFIER = "https://point-and-shoot.invalid/schemas/a2a/v1";
 const STANDALONE_CODE = standaloneModule.default;
@@ -54,8 +55,8 @@ export async function generateProtocolArtifacts(
   const schemaBytes = await Deno.readFile(options.schemaPath);
   const parsedSchema = parseSchema(schemaBytes);
   const normalizedSchema = normalizeSchemaReferences(parsedSchema);
-  // Protobuf's snake_case aliases must stay valid on the wire but become conflicting TS indexes.
-  const typeSchema = omitPatternProperties(normalizedSchema);
+  // Exact protobuf aliases must become named fields instead of conflicting TypeScript indexes.
+  const typeSchema = expandPatternProperties(normalizedSchema);
   await assertPinnedDigest(schemaBytes);
   await Deno.mkdir(options.outputDirectory, { recursive: true });
 
@@ -77,7 +78,7 @@ export async function generateProtocolArtifacts(
   await formatGeneratedFiles([protocolPath, validationPath]);
 }
 
-function omitPatternProperties(value: unknown): Record<string, unknown> {
+function expandPatternProperties(value: unknown): Record<string, unknown> {
   const visit = (item: unknown): unknown => {
     if (Array.isArray(item)) {
       return item.map(visit);
@@ -85,11 +86,24 @@ function omitPatternProperties(value: unknown): Record<string, unknown> {
     if (!isRecord(item)) {
       return item;
     }
-    return Object.fromEntries(
-      Object.entries(item)
-        .filter(([key]) => key !== "patternProperties")
-        .map(([key, nestedItem]) => [key, visit(nestedItem)]),
+    const expanded = Object.fromEntries(
+      Object.entries(item).map(([key, nestedItem]) => [key, visit(nestedItem)]),
     );
+    if (!isRecord(item.patternProperties)) {
+      return expanded;
+    }
+
+    const properties = isRecord(expanded.properties) ? expanded.properties : {};
+    for (const [pattern, propertySchema] of Object.entries(item.patternProperties)) {
+      const propertyName = EXACT_PROPERTY_PATTERN.exec(pattern)?.groups?.name;
+      if (propertyName === undefined) {
+        throw new Error(`Unsupported protocol property pattern: ${pattern}`);
+      }
+      properties[propertyName] = visit(propertySchema);
+    }
+    expanded.properties = properties;
+    delete expanded.patternProperties;
+    return expanded;
   };
 
   const schema = visit(value);
