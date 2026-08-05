@@ -128,11 +128,11 @@ jobs:
         id: package
         shell: bash
         run: |
-          deno task build:release
+          deno task release:artifacts
           deno task release:validate
           echo "version=$(deno task release:current)" >> "${GITHUB_OUTPUT}"
 
-      - name: Upload testable browser packages
+      - name: Upload browser and Firefox reviewer artifacts
         id: upload
         uses: actions/upload-artifact@v7
         with:
@@ -140,6 +140,8 @@ jobs:
           path: |
             dist/chrome.zip
             dist/firefox.zip
+            dist/firefox-source.zip
+            dist/firefox-build-instructions.md
           if-no-files-found: error
           retention-days: 14
 
@@ -163,10 +165,23 @@ jobs:
             const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
             const body = [
               marker,
-              `Testable Chrome and Firefox packages for \`v${process.env.VERSION}\``,
-              `were built from \`${process.env.PR_SHA}\`.`,
+              `Candidate artifacts for \`v${process.env.VERSION}\` were built and validated`,
+              `from the exact release PR commit \`${process.env.PR_SHA}\`.`,
               "",
-              `[Download the release PR artifacts](${process.env.ARTIFACT_URL}).`,
+              `[Download the release PR artifacts](${process.env.ARTIFACT_URL}) within 14 days.`,
+              "These are store-submission candidates, not consumer install links.",
+              "",
+              "- `chrome.zip`: extract it, open `chrome://extensions`, enable Developer mode,",
+              "  choose **Load unpacked**, and select the extracted directory.",
+              "- `firefox.zip`: extract it, open `about:debugging#/runtime/this-firefox`, choose",
+              "  **Load Temporary Add-on**, and select the extracted `manifest.json`.",
+              "- `firefox-source.zip`: the tracked, allowlisted source supplied to Mozilla",
+              "  reviewers so they can reproduce `firefox.zip`.",
+              "- `firefox-build-instructions.md`: pinned setup, build, and normalized comparison",
+              "  commands for Mozilla reviewers.",
+              "",
+              "Temporary browser loads disappear when the browser profile closes. The final",
+              "GitHub release will attach the same four artifact names rebuilt from the tag.",
               "",
               "---",
               `<sup>Generated using [wk-skills](https://github.com/whizzzkid/skills/tree/main@%7B${timestamp}%7D) and multiple agents/models. DM me your feedback.</sup>`,
@@ -211,16 +226,16 @@ jobs:
         env:
           TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
         run: |
-          deno task build:release
+          deno task release:artifacts
           deno task release:validate "${TAG_NAME}"
 
-      - name: Attach Chrome and Firefox packages to the GitHub release
+      - name: Attach browser and reviewer artifacts to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
-        run: gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip --clobber
+        run: gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip dist/firefox-source.zip dist/firefox-build-instructions.md --clobber
 
-      - name: Verify both release assets exist
+      - name: Verify all release assets exist
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
@@ -229,3 +244,5 @@ jobs:
           assets="$(gh release view "${TAG_NAME}" --json assets --jq '.assets[].name')"
           grep -qx "chrome.zip" <<< "${assets}"
           grep -qx "firefox.zip" <<< "${assets}"
+          grep -qx "firefox-source.zip" <<< "${assets}"
+          grep -qx "firefox-build-instructions.md" <<< "${assets}"

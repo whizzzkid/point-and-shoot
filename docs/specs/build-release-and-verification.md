@@ -60,8 +60,9 @@ absolute HTTP or HTTPS URLs in generated JavaScript; `release:validate` provides
 remote-URL guarantee for distributable archives.
 
 `deno task build:release` additionally minifies, omits sourcemaps, and creates `dist/chrome.zip` and
-`dist/firefox.zip`. Tests use temporary output directories and must not delete a developer's
-existing `dist/` tree.
+`dist/firefox.zip`. `deno task release:artifacts` runs that build and also creates
+`dist/firefox-source.zip` plus `dist/firefox-build-instructions.md` for Mozilla reviewers. Tests use
+temporary output directories and must not delete a developer's existing `dist/` tree.
 
 ### Verification tiers
 
@@ -100,7 +101,7 @@ development package without violating browser update-version syntax. Release bui
 `.release-please-manifest.json`, `version.txt`, and `manifestBase.version` in `build/manifest.ts`
 must agree. Release Please updates all three in lockstep, both browser manifests derive from
 `manifestBase.version`, and a final tag must equal `v<manifest-version>`.
-`deno task release:validate` checks both archives for:
+`deno task release:validate` checks both browser archives for:
 
 - a non-empty archive with safe paths and a root `manifest.json`;
 - required common and browser-specific manifest keys;
@@ -108,10 +109,24 @@ must agree. Release Please updates all three in lockstep, both browser manifests
 - no sourcemaps or leaked `dist/` path segment; and
 - no unexpected remote URL in shipped text assets.
 
-The validator reports each archive and total byte size. Release Please maintains one release pull
-request. Its head receives testable Chrome and Firefox ZIP artifacts. When that pull request merges,
-the workflow rebuilds from the tagged SHA, validates against the tag, and attaches both ZIPs to the
-GitHub release. Store submission remains manual.
+It also requires the two Firefox reviewer artifacts. The source ZIP contains only tracked files from
+`build/`, `src/`, and the required root build inputs: `.release-please-manifest.json`, `deno.json`,
+`deno.lock`, `LICENSE`, `mise.toml`, and `version.txt`. It excludes `.git`, `dist/`,
+`node_modules/`, environment files, worktrees, caches, website dependencies, and review scratch by
+construction. Symbolic links and unsafe paths are rejected. A metadata file inside the archive and
+the standalone instructions must both match the checked-out commit SHA and packaged version.
+
+ZIP implementations may encode container metadata differently even when every shipped byte is the
+same. `deno task release:compare <submitted.zip> <rebuilt.zip>` therefore compares sorted entry
+paths and uncompressed file bytes. This normalized comparison is the reproducibility rule used for
+the Firefox package.
+
+The validator reports all four artifacts and their total byte size. Release Please maintains one
+release pull request. Its exact head receives a 14-day candidate bundle containing all four named
+artifacts. When that pull request merges, the workflow rebuilds from the tagged SHA, validates the
+tag and artifact identity, and attaches the same names to the GitHub release.
+
+Store submission remains manual at this layer of the release pipeline.
 
 ## Delivery flow
 
@@ -123,10 +138,10 @@ flowchart TD
     ExtensionCI --> Main[Protected main]
     SiteCI --> Main
     Main --> ReleasePlease[Release Please pull request]
-    ReleasePlease --> Preview[Validated preview ZIPs]
+    ReleasePlease --> Preview[Four validated candidate artifacts]
     Preview --> Tag[Merge and create CalVer tag]
-    Tag --> Final[Rebuild and validate tagged ZIPs]
-    Final --> Release[GitHub release assets]
+    Tag --> Final[Rebuild and validate tagged artifacts]
+    Final --> Release[Four GitHub release assets]
 ```
 
 Every capability claim in a pull request must map to a command or a named remote job that actually

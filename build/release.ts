@@ -2,6 +2,7 @@ import { fromFileUrl, toFileUrl } from "@std/path";
 
 import { collectRemoteUrlOffenders } from "./build.ts";
 import { manifestBase } from "./manifest.ts";
+import { validateReviewerArtifacts } from "./reviewer-source.ts";
 
 /** Browser extension targets emitted by the release build. */
 export type ReleaseTarget = "chrome" | "firefox";
@@ -22,6 +23,7 @@ export interface ValidateReleaseArchiveOptions {
 
 /** Dependencies that make the release command deterministic in tests. */
 export interface ReleaseCommandOptions {
+  readonly commitSha?: string;
   readonly distDir?: URL;
   readonly now?: Date;
 }
@@ -170,6 +172,7 @@ export function validateArchivePaths(paths: readonly string[]): void {
 async function validateReleaseSet(
   distDir: URL,
   version: string,
+  commitSha: string,
   tag: string | undefined,
 ): Promise<string> {
   const sourceRoot = new URL("../", import.meta.url);
@@ -199,11 +202,24 @@ async function validateReleaseSet(
       })
     ),
   );
-  const totalSizeBytes = reports.reduce((sum, report) => sum + report.sizeBytes, 0);
+  const sourceArchivePath = fromFileUrl(new URL("firefox-source.zip", distDir));
+  const instructionsPath = fromFileUrl(new URL("firefox-build-instructions.md", distDir));
+  await validateReviewerArtifacts({
+    expectedCommitSha: commitSha,
+    expectedVersion: version,
+    instructionsPath,
+    sourceArchivePath,
+  });
+  const sourceSizeBytes = (await Deno.stat(sourceArchivePath)).size;
+  const instructionsSizeBytes = (await Deno.stat(instructionsPath)).size;
+  const totalSizeBytes = reports.reduce((sum, report) => sum + report.sizeBytes, 0) +
+    sourceSizeBytes + instructionsSizeBytes;
   return [
     ...reports.map((report) =>
       `${report.target}: ${report.sizeBytes} bytes (version ${report.version})`
     ),
+    `firefox reviewer source: ${sourceSizeBytes} bytes (commit ${commitSha})`,
+    `firefox build instructions: ${instructionsSizeBytes} bytes`,
     `total: ${totalSizeBytes} bytes`,
   ].join("\n");
 }
@@ -227,9 +243,13 @@ export async function runReleaseCommand(
     return nextCalver(value, options.now ?? new Date());
   }
   if (command === "validate" && rest.length === 0) {
+    const sourceRoot = new URL("../", import.meta.url);
+    const commitSha = options.commitSha ??
+      (await commandOutput("git", ["rev-parse", "HEAD"], fromFileUrl(sourceRoot))).trim();
     return await validateReleaseSet(
       options.distDir ?? new URL("../dist/", import.meta.url),
       manifestBase.version,
+      commitSha,
       value,
     );
   }
@@ -238,9 +258,14 @@ export async function runReleaseCommand(
   );
 }
 
-async function commandOutput(command: string, args: readonly string[]): Promise<string> {
+async function commandOutput(
+  command: string,
+  args: readonly string[],
+  cwd?: string,
+): Promise<string> {
   const result = await new Deno.Command(command, {
     args: [...args],
+    ...(cwd === undefined ? {} : { cwd }),
     stdout: "piped",
     stderr: "piped",
   }).output();

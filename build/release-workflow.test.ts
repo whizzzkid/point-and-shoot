@@ -96,9 +96,27 @@ Deno.test("release workflow builds exact preview and release SHAs", async () => 
   assertStringIncludes(workflow, "uses: actions/upload-artifact@v7");
   assertStringIncludes(workflow, "artifact-url");
   assertStringIncludes(workflow, "ref: ${{ needs.release_please.outputs.release_sha }}");
+  assertStringIncludes(workflow, "deno task release:artifacts");
   assertStringIncludes(workflow, 'deno task release:validate "${TAG_NAME}"');
+  assertStringIncludes(workflow, "dist/firefox-source.zip");
+  assertStringIncludes(workflow, "dist/firefox-build-instructions.md");
+  assertStringIncludes(workflow, "14 days");
+  assertStringIncludes(workflow, "Load unpacked");
+  assertStringIncludes(workflow, "Load Temporary Add-on");
+  assertStringIncludes(workflow, "store-submission candidates, not consumer install links");
   assertStringIncludes(
     workflow,
-    'gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip --clobber',
+    'gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip ' +
+      "dist/firefox-source.zip dist/firefox-build-instructions.md --clobber",
   );
+  for (
+    const asset of [
+      "chrome.zip",
+      "firefox.zip",
+      "firefox-source.zip",
+      "firefox-build-instructions.md",
+    ]
+  ) {
+    assertStringIncludes(workflow, `grep -qx "${asset}"`);
+  }
 });
