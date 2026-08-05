@@ -3,6 +3,7 @@ import { toFileUrl } from "@std/path";
 import { forChrome, manifestBase } from "./manifest.ts";
 import {
   assertTagMatchesVersion,
+  assertTagResolvesToCommit,
   assertVersionSources,
   nextCalver,
   runReleaseCommand,
@@ -75,6 +76,15 @@ Deno.test("assertTagMatchesVersion - accepts the matching release tag", () => {
 Deno.test("assertTagMatchesVersion - rejects a missing prefix or version drift", () => {
   assertThrows(() => assertTagMatchesVersion("2026.731.0", "2026.731.0"));
   assertThrows(() => assertTagMatchesVersion("v2026.731.1", "2026.731.0"));
+});
+
+Deno.test("assertTagResolvesToCommit - rejects a same-version tag on another commit", () => {
+  assertTagResolvesToCommit("v2026.731.0", "abc123", "abc123");
+  assertThrows(
+    () => assertTagResolvesToCommit("v2026.731.0", "def456", "abc123"),
+    Error,
+    "resolves to def456 instead of release commit abc123",
+  );
 });
 
 Deno.test("assertVersionSources - accepts aligned release metadata", () => {

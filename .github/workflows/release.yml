@@ -241,11 +241,13 @@ jobs:
           TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
         shell: bash
         run: |
-          assets="$(gh release view "${TAG_NAME}" --json assets --jq '.assets[].name')"
-          grep -qx "chrome.zip" <<< "${assets}"
-          grep -qx "firefox.zip" <<< "${assets}"
-          grep -qx "firefox-source.zip" <<< "${assets}"
-          grep -qx "firefox-build-instructions.md" <<< "${assets}"
+          asset_names="$(gh release view "${TAG_NAME}" --json assets --jq '[.assets[].name] | sort | join("\n")')"
+          expected_assets="$(printf '%s\n' chrome.zip firefox-build-instructions.md firefox-source.zip firefox.zip)"
+          if [[ "${asset_names}" != "${expected_assets}" ]]; then
+            printf 'Expected exactly these release assets:\n%s\nActual release assets:\n%s\n' \
+              "${expected_assets}" "${asset_names}" >&2
+            exit 1
+          fi
 
       - name: Seed browser store publication status
         env:
@@ -258,6 +260,6 @@ jobs:
           trap 'rm -f -- "${body_file}"' EXIT INT TERM
           version="$(deno task release:current)"
           reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          gh release view "${TAG_NAME}" --json body --jq '.body' |
+          gh release view "${TAG_NAME}" --json body --jq '.body | @base64' | base64 --decode |
             deno task release:status seed "${version}" "${reconciled_at}" > "${body_file}"
           gh release edit "${TAG_NAME}" --notes-file "${body_file}"

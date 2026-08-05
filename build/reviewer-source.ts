@@ -78,6 +78,17 @@ function selectSourceFiles(trackedFiles: readonly string[]): string[] {
   return trackedFiles.filter(isIncluded).toSorted();
 }
 
+/**
+ * Rejects reviewer-source creation when tracked build inputs differ from the recorded commit.
+ *
+ * @param statusOutput NUL-delimited `git status --porcelain` output for the selected inputs.
+ */
+export function assertReviewerSourceClean(statusOutput: string): void {
+  if (statusOutput !== "") {
+    throw new Error("reviewer source: tracked build inputs differ from HEAD");
+  }
+}
+
 async function removeIfExists(path: URL): Promise<void> {
   try {
     await Deno.remove(path, { recursive: true });
@@ -340,6 +351,13 @@ export async function runReviewerSourceCommand(args: readonly string[]): Promise
       cwd: fromFileUrl(root),
     });
     const trackedFiles = new TextDecoder().decode(trackedOutput).split("\0").filter(Boolean);
+    const sourceFiles = selectSourceFiles(trackedFiles);
+    const sourceStatus = await runCommand(
+      "git",
+      ["status", "--porcelain=v1", "--untracked-files=no", "-z", "--", ...sourceFiles],
+      { cwd: fromFileUrl(root) },
+    );
+    assertReviewerSourceClean(new TextDecoder().decode(sourceStatus));
     const artifacts = await createReviewerArtifacts({
       commitSha: await repositoryValue(["rev-parse", "HEAD"], root),
       outDir: new URL("dist/", root),

@@ -1,8 +1,9 @@
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import { build } from "./build.ts";
 import { manifestBase } from "./manifest.ts";
 import {
+  assertReviewerSourceClean,
   compareArchiveContents,
   createReviewerArtifacts,
   type ReviewerSourceOptions,
@@ -128,6 +129,15 @@ Deno.test("reviewer source rejects missing required files, unsafe paths, and sym
       "symbolic link build/link.ts",
     );
   });
+});
+
+Deno.test("reviewer source rejects tracked build inputs that differ from HEAD", () => {
+  assertReviewerSourceClean("");
+  assertThrows(
+    () => assertReviewerSourceClean(" M build/build.ts\0"),
+    Error,
+    "tracked build inputs differ from HEAD",
+  );
 });
 
 Deno.test("archive comparison ignores ZIP metadata but rejects content drift", async () => {

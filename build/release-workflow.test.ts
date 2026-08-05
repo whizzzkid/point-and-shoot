@@ -106,19 +106,18 @@ Deno.test("release workflow builds exact preview and release SHAs", async () => 
   assertStringIncludes(workflow, "store-submission candidates, not consumer install links");
   assertStringIncludes(workflow, "deno task release:status seed");
   assertStringIncludes(workflow, 'gh release edit "${TAG_NAME}" --notes-file');
+  assertStringIncludes(workflow, 'asset_names="$(gh release view "${TAG_NAME}" --json assets');
+  assertStringIncludes(workflow, '[[ "${asset_names}" != "${expected_assets}" ]]');
   assertStringIncludes(
     workflow,
     'gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip ' +
       "dist/firefox-source.zip dist/firefox-build-instructions.md --clobber",
   );
-  for (
-    const asset of [
-      "chrome.zip",
-      "firefox.zip",
-      "firefox-source.zip",
-      "firefox-build-instructions.md",
-    ]
-  ) {
-    assertStringIncludes(workflow, `grep -qx "${asset}"`);
-  }
+  assertStringIncludes(
+    workflow,
+    "expected_assets=\"$(printf '%s\\n' chrome.zip firefox-build-instructions.md " +
+      'firefox-source.zip firefox.zip)"',
+  );
+  assertStringIncludes(workflow, ".body | @base64");
+  assertStringIncludes(workflow, "base64 --decode");
 });

@@ -26,6 +26,7 @@ export interface ReleaseCommandOptions {
   readonly commitSha?: string;
   readonly distDir?: URL;
   readonly now?: Date;
+  readonly tagCommitSha?: string;
 }
 
 interface Calver {
@@ -115,6 +116,25 @@ export function assertTagMatchesVersion(tag: string, version: string): void {
   parseCalver(version);
   if (tag !== `v${version}`) {
     throw new Error(`release: tag ${tag} does not match manifest version ${version}`);
+  }
+}
+
+/**
+ * Asserts that a release tag resolves to the commit whose artifacts are being validated.
+ *
+ * @param tag The Git tag being validated.
+ * @param tagCommitSha Commit resolved from the peeled tag.
+ * @param releaseCommitSha Commit recorded in the reviewer source and current checkout.
+ */
+export function assertTagResolvesToCommit(
+  tag: string,
+  tagCommitSha: string,
+  releaseCommitSha: string,
+): void {
+  if (tagCommitSha !== releaseCommitSha) {
+    throw new Error(
+      `release: tag ${tag} resolves to ${tagCommitSha} instead of release commit ${releaseCommitSha}`,
+    );
   }
 }
 
@@ -246,6 +266,15 @@ export async function runReleaseCommand(
     const sourceRoot = new URL("../", import.meta.url);
     const commitSha = options.commitSha ??
       (await commandOutput("git", ["rev-parse", "HEAD"], fromFileUrl(sourceRoot))).trim();
+    if (value !== undefined) {
+      const tagCommitSha = options.tagCommitSha ??
+        (await commandOutput(
+          "git",
+          ["rev-parse", `${value}^{commit}`],
+          fromFileUrl(sourceRoot),
+        )).trim();
+      assertTagResolvesToCommit(value, tagCommitSha, commitSha);
+    }
     return await validateReleaseSet(
       options.distDir ?? new URL("../dist/", import.meta.url),
       manifestBase.version,

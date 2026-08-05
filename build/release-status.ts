@@ -145,6 +145,19 @@ export function renderReleaseStatus(status: ReleaseStatus): string {
  */
 export function projectReleaseStatus(releaseBody: string, status: ReleaseStatus): string {
   const rendered = renderReleaseStatus(status);
+  const range = findStatusRange(releaseBody);
+  if (range === undefined) {
+    const notes = releaseBody.trimEnd();
+    return `${notes === "" ? "" : `${notes}\n\n`}${rendered}\n`;
+  }
+  const before = releaseBody.slice(0, range.start);
+  const after = releaseBody.slice(range.end);
+  return `${before}${rendered}${after}`;
+}
+
+function findStatusRange(
+  releaseBody: string,
+): { readonly end: number; readonly start: number } | undefined {
   const start = releaseBody.indexOf(STATUS_START);
   const end = releaseBody.indexOf(STATUS_END);
   const hasStart = start !== -1;
@@ -155,14 +168,7 @@ export function projectReleaseStatus(releaseBody: string, status: ReleaseStatus)
   ) {
     throw new Error("release status: body must contain both status markers exactly once");
   }
-
-  if (!hasStart) {
-    const notes = releaseBody.trimEnd();
-    return `${notes === "" ? "" : `${notes}\n\n`}${rendered}\n`;
-  }
-  const before = releaseBody.slice(0, start);
-  const after = releaseBody.slice(end + STATUS_END.length);
-  return `${before}${rendered}${after}`;
+  return hasStart ? { end: end + STATUS_END.length, start } : undefined;
 }
 
 function unpublishedStatus(version: string, reconciledAt: string): StoreReleaseStatus {
@@ -195,8 +201,18 @@ export async function runReleaseStatusCommand(
   ) {
     throw new Error("release status: usage: release-status.ts seed <version> <ISO timestamp>");
   }
+  const releaseBody = await readBody();
+  const existingRange = findStatusRange(releaseBody);
+  if (existingRange !== undefined) {
+    const existingStatus = releaseBody.slice(existingRange.start, existingRange.end);
+    const versionMatch = /^GitHub release version: `([^`\n]+)`$/m.exec(existingStatus);
+    if (versionMatch?.[1] !== version) {
+      throw new Error("release status: existing status belongs to a different release version");
+    }
+    return releaseBody;
+  }
   const unpublished = unpublishedStatus(version, reconciledAt);
-  return projectReleaseStatus(await readBody(), {
+  return projectReleaseStatus(releaseBody, {
     chrome: unpublished,
     firefox: unpublished,
     listingSummaryChanged: false,
@@ -206,7 +222,7 @@ export async function runReleaseStatusCommand(
 
 if (import.meta.main) {
   try {
-    console.log(await runReleaseStatusCommand(Deno.args));
+    await Deno.stdout.write(new TextEncoder().encode(await runReleaseStatusCommand(Deno.args)));
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     Deno.exit(1);

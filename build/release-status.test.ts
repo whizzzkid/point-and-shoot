@@ -1,4 +1,5 @@
-import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+import { fromFileUrl } from "@std/path";
 
 import {
   projectReleaseStatus,
@@ -169,4 +170,59 @@ Deno.test("seed command preserves stdin release notes and starts both stores unp
   assertStringIncludes(output, "Existing release notes");
   assertStringIncludes(output, "Chrome | `2026.805.0` | **unpublished**");
   assertStringIncludes(output, "Firefox | `2026.805.0` | **unpublished**");
+});
+
+Deno.test("seed command preserves an existing matching status byte-for-byte", async () => {
+  const existing = projectReleaseStatus(
+    "Existing release notes\n",
+    releaseStatus(
+      storeStatus("published", {
+        listingUrl: "https://example.com/chrome",
+        publicVersion: EXPECTED_VERSION,
+      }),
+      storeStatus("submitted", { submittedVersion: EXPECTED_VERSION }),
+    ),
+  );
+  assertEquals(
+    await runReleaseStatusCommand(
+      ["seed", EXPECTED_VERSION, RECONCILED_AT],
+      () => Promise.resolve(existing),
+    ),
+    existing,
+  );
+  await assertRejects(
+    () =>
+      runReleaseStatusCommand(
+        ["seed", "2026.805.1", RECONCILED_AT],
+        () => Promise.resolve(existing),
+      ),
+    Error,
+    "belongs to a different release version",
+  );
+});
+
+Deno.test("seed CLI writes projected status without adding a second trailing newline", async () => {
+  const runCli = async (input: string): Promise<string> => {
+    const child = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "-A",
+        fromFileUrl(new URL("release-status.ts", import.meta.url)),
+        "seed",
+        EXPECTED_VERSION,
+        RECONCILED_AT,
+      ],
+      stdin: "piped",
+      stdout: "piped",
+    }).spawn();
+    const writer = child.stdin.getWriter();
+    await writer.write(new TextEncoder().encode(input));
+    await writer.close();
+    return new TextDecoder().decode((await child.output()).stdout);
+  };
+  const output = await runCli("Existing release notes\n");
+
+  assertEquals(output.endsWith("\n\n"), false);
+  assertEquals(output.endsWith("\n"), true);
+  assertEquals(await runCli(output), output);
 });
