@@ -81,8 +81,8 @@ The four delivery layers are one linear review stack rooted in the SDK failure p
    session-only storage, and the Firefox 115 floor.
 3. [PR #72](https://github.com/whizzzkid/point-and-shoot/pull/72) proves two-origin discovery,
    authenticated streaming, bounded remote input, and lifecycle recovery.
-4. P0.4 records the accepted permission ADR, portable client spec, settled limits, and browser
-   automation boundaries.
+4. [PR #74](https://github.com/whizzzkid/point-and-shoot/pull/74) records the accepted permission
+   ADR, portable client spec, settled limits, and browser automation boundaries.
 
 Phase 1's nine delivery items are technically unblocked by the evidence and begin after the complete
 Phase 0 stack merges. The [Phase 0 guide](phase-0-prove-the-platform.md) is the authoritative status

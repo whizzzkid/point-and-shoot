@@ -53,13 +53,13 @@ P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR and PR #66 a
 base, not delivery PRs. Branch slots may be initialized together, but each delivery PR opens only
 after its first real owning commit.
 
-| Position | Role          | Branch                              | PR target                           | Current state                        |
-| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------------------ |
-| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review             |
-| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | PR #68, tip `bd866ae`, ready         |
-| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | PR #71, commit `44abed3`, ready      |
-| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | PR #72, commit `0152069`, ready      |
-| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Architecture convergence in progress |
+| Position | Role          | Branch                              | PR target                           | Current state                   |
+| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------------- |
+| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review        |
+| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | PR #68, tip `bd866ae`, ready    |
+| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | PR #71, commit `44abed3`, ready |
+| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | PR #72, commit `0152069`, ready |
+| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | PR #74, commit `d845823`, ready |
 
 ```mermaid
 flowchart TD
@@ -453,6 +453,8 @@ Also re-run every P0.1 and P0.3 proof against the combined head.
 
 **Commit:** `docs(a2a): record the client architecture`
 
+**Delivery evidence:** PR #74; architecture commit `d845823189338cc7db3af461e57764627d97eca4`.
+
 ## Phase exit gate
 
 All statements below have executable evidence on the Phase 0 stack. P1.1-P1.9 are unblocked by the
@@ -471,6 +473,3 @@ proof and may start after the complete Phase 0 stack merges:
 - Remote cards, metadata, key sets, JSON responses, and SSE frames are bounded before parsing or
   whole-body buffering, with measured request, first-byte, and idle timeouts.
 - The successor ADR and A2A client spec contain the proven result, limitations, and rollback path.
-
-The P0.4 PR records its own commit and PR reference after publication so the phase guide points to
-the immutable GitHub review artifact rather than predicting its identifier.
