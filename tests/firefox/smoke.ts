@@ -39,7 +39,8 @@ const WEB_ELEMENT_IDENTIFIER = "element-6066-11e4-a52e-4f735466cecf";
 const ACTION_BUTTON_SELECTOR =
   `.unified-extensions-item-action-button[data-extensionid="${FIREFOX_EXTENSION_ID}"]`;
 
-interface OutputState {
+/** Captured web-ext output plus the background-ready marker. */
+export interface OutputState {
   backgroundReady: boolean;
   readonly lines: string[];
 }
@@ -52,14 +53,16 @@ interface AssetResult {
   readonly url: string;
 }
 
-interface FirefoxProcess {
+/** Running web-ext process and its captured diagnostics. */
+export interface FirefoxProcess {
   readonly child: Deno.ChildProcess;
   readonly output: OutputState;
   readonly outputTasks: readonly Promise<void>[];
   readonly status: Promise<Deno.CommandStatus>;
 }
 
-interface FirefoxRuntime extends FirefoxProcess {
+/** Firefox process with an active Marionette session. */
+export interface FirefoxRuntime extends FirefoxProcess {
   readonly client: MarionetteClient;
 }
 
@@ -128,7 +131,9 @@ async function waitForBackground(
     ]);
     if (outcome !== "poll") {
       throw new Error(
-        `web-ext exited before the Firefox event page booted (${JSON.stringify(outcome.result)})`,
+        `web-ext exited before the Firefox event page booted (${
+          JSON.stringify(outcome.result)
+        }):\n${state.lines.slice(-200).join("\n")}`,
       );
     }
   }
@@ -137,7 +142,15 @@ async function waitForBackground(
   );
 }
 
-async function executeScript(
+/**
+ * Executes synchronous JavaScript in the current Marionette browsing context.
+ *
+ * @param client - Active Marionette client.
+ * @param script - JavaScript source to execute.
+ * @param args - Serializable arguments exposed to the script.
+ * @returns The script result decoded from the WebDriver response.
+ */
+export async function executeScript(
   client: MarionetteClient,
   script: string,
   args: readonly unknown[] = [],
@@ -153,7 +166,15 @@ async function executeScript(
   );
 }
 
-async function executeAsyncScript(
+/**
+ * Executes asynchronous JavaScript in the current Marionette browsing context.
+ *
+ * @param client - Active Marionette client.
+ * @param script - JavaScript source to execute.
+ * @param args - Serializable arguments exposed to the script.
+ * @returns The value supplied to the script's completion callback.
+ */
+export async function executeAsyncScript(
   client: MarionetteClient,
   script: string,
   args: readonly unknown[] = [],
@@ -169,7 +190,16 @@ async function executeAsyncScript(
   );
 }
 
-async function waitForScript(
+/**
+ * Polls a Marionette script until its result satisfies the supplied predicate.
+ *
+ * @param client - Active Marionette client.
+ * @param script - JavaScript source evaluated during each poll.
+ * @param accept - Predicate that identifies the ready result.
+ * @param label - Human-readable state name used in timeout diagnostics.
+ * @returns The first accepted script result.
+ */
+export async function waitForScript(
   client: MarionetteClient,
   script: string,
   accept: (value: unknown) => boolean,
@@ -185,11 +215,25 @@ async function waitForScript(
   throw new Error(`${label} did not become ready; last observed ${JSON.stringify(observed)}`);
 }
 
-async function navigate(client: MarionetteClient, url: string): Promise<void> {
+/**
+ * Navigates the current Marionette tab to an absolute URL.
+ *
+ * @param client - Active Marionette client.
+ * @param url - Absolute destination URL.
+ * @returns A promise that settles after Marionette completes navigation.
+ */
+export async function navigate(client: MarionetteClient, url: string): Promise<void> {
   await client.command("WebDriver:Navigate", { url });
 }
 
-async function clickElement(client: MarionetteClient, selector: string): Promise<void> {
+/**
+ * Clicks one element selected in the current Marionette context.
+ *
+ * @param client - Active Marionette client.
+ * @param selector - CSS selector for the target element.
+ * @returns A promise that settles after Marionette dispatches the click.
+ */
+export async function clickElement(client: MarionetteClient, selector: string): Promise<void> {
   const result = commandValue(
     await client.command("WebDriver:FindElement", {
       using: "css selector",
@@ -251,6 +295,9 @@ function firefoxCommand(
   marionettePort: number,
 ): Deno.Command {
   const firefoxBinary = Deno.env.get("PNS_FIREFOX_BINARY");
+  if (firefoxBinary !== undefined) {
+    console.log(`Firefox smoke binary: ${firefoxBinary}`);
+  }
   const uuidPreference = JSON.stringify({
     [FIREFOX_EXTENSION_ID]: FIREFOX_EXTENSION_UUID,
   }).replaceAll('"', '\\"');
@@ -288,7 +335,14 @@ function firefoxCommand(
   });
 }
 
-async function stopFirefoxProcess(
+/**
+ * Closes Marionette and terminates the associated web-ext process.
+ *
+ * @param process - Running web-ext process to terminate.
+ * @param client - Optional active Marionette session to close first.
+ * @returns A promise that settles after the process and output readers stop.
+ */
+export async function stopFirefoxProcess(
   process: FirefoxProcess,
   client?: MarionetteClient,
 ): Promise<void> {
@@ -349,7 +403,14 @@ async function startFirefoxAttempt(
   }
 }
 
-async function startFirefox(
+/**
+ * Starts the shared web-ext Firefox harness with an active Marionette session.
+ *
+ * @param artifactsDirectory - Directory where web-ext writes browser artifacts.
+ * @param fixtureUrl - Initial URL loaded after the extension starts.
+ * @returns The running Firefox process and connected Marionette client.
+ */
+export async function startFirefox(
   artifactsDirectory: string,
   fixtureUrl: string,
 ): Promise<FirefoxRuntime> {
