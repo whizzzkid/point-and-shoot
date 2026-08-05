@@ -20,7 +20,7 @@ remain normative in the [runtime-limits specification](../specs/runtime-limits.m
 | JavaScript SDK runtime         | `@a2a-js/sdk@1.0.1` rejected; uses `Buffer`   | P0.1  |
 | Portable client boundary       | `src/shared/a2a/client/mod.ts`                | P0.1  |
 | Chrome minimum                 | `116`; unchanged by the current proposal      | P0.2  |
-| Firefox minimum                | `109` currently; proposed `115` after proof   | P0.2  |
+| Firefox minimum                | `115`; required for `storage.session`         | P0.2  |
 | Agent Card byte limit          | Pending measurement                           | P0.3  |
 | OIDC metadata byte limit       | Pending measurement                           | P0.3  |
 | JSON Web Key Set byte limit    | Pending measurement                           | P0.3  |

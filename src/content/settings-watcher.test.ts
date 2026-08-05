@@ -33,6 +33,17 @@ function createStorage(): BrowserShim["storage"] & {
         return Promise.resolve();
       },
     },
+    session: {
+      get() {
+        return Promise.resolve({});
+      },
+      remove() {
+        return Promise.resolve();
+      },
+      set() {
+        return Promise.resolve();
+      },
+    },
     onChanged: {
       addListener(listener) {
         listeners.add(listener);

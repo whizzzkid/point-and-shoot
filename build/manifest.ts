@@ -14,7 +14,8 @@
  * - `chrome: 116` — the first Chrome version whose `chrome.sidePanel.open()` method (used by
  *   {@link "../src/shared/browser.ts" | the browser shim}'s `openPanel`) is available. The
  *   `sidePanel` API itself landed in Chrome 114, but `open()` did not ship until 116.
- * - `firefox: 109` — the first Firefox version where Manifest V3 became generally available.
+ * - `firefox: 115` — the first Firefox version with `storage.session`, which is the client
+ *   credential boundary. Older releases receive no disk-backed or event-page-memory fallback.
  *
  * This is the one place these numbers are written. `build/build.ts` derives its esbuild
  * `target` from this constant instead of a literal, and both manifest builders below assert their
@@ -22,8 +23,16 @@
  */
 export const SUPPORTED = {
   chrome: 116,
-  firefox: 109,
+  firefox: 115,
 } as const;
+
+/** Host patterns eligible for an explicit runtime A2A-origin grant. */
+const OPTIONAL_HOST_PERMISSIONS = [
+  "https://*/*",
+  "http://localhost/*",
+  "http://127.0.0.1/*",
+  "http://[::1]/*",
+] as const;
 
 /**
  * Firefox's stable add-on identity.
@@ -138,6 +147,7 @@ export function forChrome(): Record<string, unknown> {
   return {
     ...manifestBase,
     permissions: [...manifestBase.permissions, "sidePanel"],
+    optional_host_permissions: OPTIONAL_HOST_PERMISSIONS,
     web_accessible_resources: manifestBase.web_accessible_resources.map((rule) => ({
       ...rule,
       use_dynamic_url: true,
@@ -160,6 +170,10 @@ export function forChrome(): Record<string, unknown> {
 export function forFirefox(): Record<string, unknown> {
   return {
     ...manifestBase,
+    // Firefox did not support Chrome's MV3 `optional_host_permissions` key until 128. Firefox 115
+    // accepts host patterns in `optional_permissions`, so preserve the session-storage floor while
+    // keeping API permissions such as `identity` and `cookies` absent until phase 3.
+    optional_permissions: OPTIONAL_HOST_PERMISSIONS,
     background: {
       scripts: ["background/background.js"],
     },
