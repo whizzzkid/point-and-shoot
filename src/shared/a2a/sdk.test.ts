@@ -96,6 +96,52 @@ Deno.test("createA2ASdkFactory - injects fetch for discovery and the preferred b
   ]);
 });
 
+Deno.test("createA2ASdkFactory - injects fetch into the JSON-RPC transport", async () => {
+  const requests: Request[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const request = new Request(input, init);
+    requests.push(request);
+    const body: unknown = await request.clone().json();
+    assertEquals(body, {
+      jsonrpc: "2.0",
+      method: "GetTask",
+      params: { id: "task-jsonrpc", historyLength: 0 },
+      id: 1,
+    });
+    return Response.json({
+      jsonrpc: "2.0",
+      id: 1,
+      result: {
+        id: "task-jsonrpc",
+        contextId: "context-jsonrpc",
+        status: {
+          state: "TASK_STATE_WORKING",
+          timestamp: "2026-08-04T12:00:00.000Z",
+        },
+        artifacts: [],
+        history: [],
+        metadata: {},
+      },
+    });
+  };
+  const jsonRpcInterfaces = browserInterfaces().filter(({ protocolBinding }) =>
+    protocolBinding === "JSONRPC"
+  );
+  const factory = createA2ASdkFactory({
+    fetch: fetchImpl,
+    preferredTransports: ["JSONRPC", "HTTP+JSON"],
+  });
+
+  const client = await factory.createFromAgentCard(agentCard(jsonRpcInterfaces));
+  const task = await client.getTask({ tenant: "", id: "task-jsonrpc", historyLength: 0 });
+
+  assertEquals(client.transport.protocolName, "JSONRPC");
+  assertEquals(task.id, "task-jsonrpc");
+  assertEquals(requests.map(({ url, method }) => ({ url, method })), [
+    { url: JSONRPC_URL, method: "POST" },
+  ]);
+});
+
 Deno.test("createA2ASdkFactory - exposes streaming, lookup, and recovery on the created client", async () => {
   const factory = createA2ASdkFactory({
     fetch,
