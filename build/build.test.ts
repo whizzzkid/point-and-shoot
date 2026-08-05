@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertFalse, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
+import { chromium } from "playwright";
 import {
   build,
   collectRemoteUrlOffenders,
@@ -184,6 +185,22 @@ Deno.test("build({ release: true }) - minifies, drops sourcemaps, and zips both 
     assert(chromeA2AClientBundle.size > 0);
     assertEquals(firefoxA2AClientBundle.size, chromeA2AClientBundle.size);
     assertEquals(forbiddenA2AClientReferences(minifiedA2AClientBundle), []);
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage();
+      const exportedSymbols = await page.evaluate(async (bundle) => {
+        const moduleUrl = URL.createObjectURL(new Blob([bundle], { type: "text/javascript" }));
+        try {
+          return Object.keys(await import(moduleUrl));
+        } finally {
+          URL.revokeObjectURL(moduleUrl);
+        }
+      }, minifiedA2AClientBundle);
+      assert(exportedSymbols.includes("createA2AClientFactory"));
+      assert(exportedSymbols.includes("A2AClientError"));
+    } finally {
+      await browser.close();
+    }
     console.log(
       `build: portable A2A client minified bundle delta ${chromeA2AClientBundle.size} bytes`,
     );
