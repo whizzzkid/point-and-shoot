@@ -75,6 +75,9 @@ into a green check.
 | `deno task lint:firefox`                | Runs `web-ext lint` against `dist/firefox/`                            |
 | `deno task boot:firefox`                | Loads `dist/firefox/` with `web-ext` and asserts it boots              |
 | `deno task smoke:firefox`               | Drives one Firefox capture through Marionette and validates its note   |
+| `deno task a2a:network`                 | Proves two-origin A2A delivery, limits, and recovery in Chromium       |
+| `deno task smoke:a2a-firefox`           | Proves the already-granted A2A runtime path in Firefox                 |
+| `deno task a2a:generate`                | Regenerates the pinned A2A v1 contracts and standalone validators      |
 | `deno task a11y`                        | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks |
 | `deno task visual`                      | Compares every surface and forced theme with its Linux baseline        |
 | `deno task visual:update`               | Replaces visual baselines intentionally on the CI platform             |
@@ -132,12 +135,14 @@ Chrome and Firefox are both first-class. Safari is compatible-by-construction wi
   [ADR-0001](docs/adr/0001-offscreencanvas-over-chrome-offscreen.md).
 - **All extension APIs go through the promise-based `browser.*` shim**, never bare `chrome.*`
   callbacks.
-- **Permissions are minimal and `activeTab`-only: no `<all_urls>`, ever.** The permission set is
-  `activeTab`, `storage`, `scripting`, `downloads`, `clipboardWrite`, plus `sidePanel` (Chrome) /
-  `sidebar_action` (Firefox). `activeTab` is granted only on an explicit user gesture, so the
-  extension cannot read a page the user did not point it at. This is a **user-facing privacy
-  guarantee**, not a convenience — a feature that needs broader host permissions is a decision to
-  revisit [ADR-0002](docs/adr/0002-activetab-only-permission-model.md), not a config change.
+- **Inspected-page permissions are minimal and `activeTab`-only: no `<all_urls>`, ever.** Required
+  permissions are `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`, plus
+  `sidePanel` on Chrome. `activeTab` is granted only on an explicit user gesture, so the extension
+  cannot read a page the user did not point it at. Remote A2A connections use a separate optional
+  eligibility and runtime-grant path: exact user-approved HTTPS origins or enumerated loopback HTTP
+  patterns, with an exact-origin client allowlist and no content-script fetches. See
+  [ADR-0002](docs/adr/0002-activetab-only-permission-model.md) and
+  [ADR-0019](docs/adr/0019-optional-host-permissions-for-a2a.md).
 - Browser-API divergence is covered by unit tests against fakes at the shim seam, not by a second
   end-to-end stack.
 
@@ -304,6 +309,12 @@ Actions pin to the official action's semver major, which is this project's one d
 | `@std/assert`                      | `1.0.14`  | `deno.json` imports                                                    |
 | `@std/path`                        | `1.1.6`   | `deno.json` imports                                                    |
 | `@types/pngjs`                     | `6.0.5`   | `deno.json` imports; visual comparison type declarations               |
+| `@types/express`                   | `5.0.3`   | `deno.json` imports; A2A conformance oracle only                       |
+| `@a2a-js/sdk`                      | `1.0.1`   | `deno.json` imports; test-only server oracle, never production client  |
+| ajv                                | `8.20.0`  | `deno.json` imports; generated A2A standalone validators               |
+| json-schema-to-typescript          | `15.0.4`  | `deno.json` imports; generated A2A protocol types                      |
+| express                            | `5.1.0`   | `deno.json` imports; A2A conformance oracle only                       |
+| protoschema-plugins                | `0.6.0`   | generated A2A metadata; upstream schema generator                      |
 | pixelmatch                         | `7.2.0`   | `deno.json` imports; visual pixel comparison                           |
 | pngjs                              | `7.0.0`   | `deno.json` imports; visual PNG decoding and diff artifacts            |
 | preact                             | `10.29.7` | `deno.json` imports                                                    |
@@ -341,9 +352,9 @@ LEFTHOOK_BIN="$(mise which lefthook)" mise exec -- git commit
 Browser minimums are resolved from each vendor's own MV3 support baseline, not guessed:
 `minimum_chrome_version` is `116` (the first Chrome version whose `chrome.sidePanel.open()` ships —
 `sidePanel` itself landed in Chrome 114, but the shim calls `open()`), and
-`browser_specific_settings.gecko.strict_min_version` is `109.0` (Firefox's Manifest V3 general
-availability). The esbuild `target` derives from the same `SUPPORTED` constant exported by
-`build/manifest.ts` — never a separate literal. See
+`browser_specific_settings.gecko.strict_min_version` is `115.0` (the first Firefox release with
+`storage.session`, required for browser-session-only A2A credentials). The esbuild `target` derives
+from the same `SUPPORTED` constant exported by `build/manifest.ts` — never a separate literal. See
 [`docs/specs/extension-runtime.md`](docs/specs/extension-runtime.md).
 
 ## Docs layout
