@@ -41,13 +41,23 @@ const install = createInstallActionsModel(storeListing);
       </a>
     </div>
   </div>
-  <p class="install-status" data-install-status role="status" aria-live="polite">
+  <p class="install-status" data-install-status>
     {
       install.statuses.length > 0
         ? install.statuses.join(" ")
         : "Choose the compatible desktop browser store or build from source."
     }
   </p>
+  {
+    enhance && (
+      <p
+        class="install-recommendation"
+        data-install-recommendation
+        role="status"
+        aria-live="polite"
+      />
+    )
+  }
   <noscript>
     <p class="install-no-script" data-no-script>
       JavaScript is not required. Choose a published browser-extension listing or build from source.

@@ -95,7 +95,8 @@ Firefox for Android, Chrome for Android, iOS wrappers, Safari, and an empty user
 - Unknown, Safari/WebKit, and iOS states recommend neither store and explain that Safari support is
   deferred or that mobile extension installation is unavailable.
 - JavaScript never redirects, invokes a store protocol, or attempts Chromium inline installation.
-- Recommendation changes must be announced accessibly without stealing focus.
+- Recommendation changes must be announced once in a dedicated polite live region without stealing
+  focus or replacing canonical store-publication status.
 - Hero and closing sections share one component and one source of URLs.
 - Plain text directly above each store action says that the action opens a browser-extension listing
   and states Point & Shoot's single purpose.
@@ -107,7 +108,8 @@ Firefox for Android, Chrome for Android, iOS wrappers, Safari, and an empty user
 - [ ] Write built-page tests for both store actions, source fallback, canonical URLs, no-script
       behavior, mobile states, and a config with one store still under review.
 - [ ] Build `InstallActions.astro` from canonical store data projected by the site preparation step.
-- [ ] Add progressive enhancement that changes recommendation labels and attributes only.
+- [ ] Add progressive enhancement that changes recommendation labels and attributes and writes
+      browser guidance to one dedicated live region without replacing publication status.
 - [ ] Replace both duplicated landing-page source CTAs with the shared install component.
 - [ ] Add responsive states for narrow viewports and 200% zoom without horizontal overflow.
 - [ ] Add keyboard, focus, reduced-motion, and screen-reader assertions.

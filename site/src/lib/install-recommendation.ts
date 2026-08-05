@@ -107,7 +107,10 @@ export function enhanceInstallActions(documentRoot: Document): void {
   );
 
   if (recommendation.announcement !== null) {
-    for (const status of documentRoot.querySelectorAll<HTMLElement>("[data-install-status]")) {
+    const recommendationStatuses = documentRoot.querySelectorAll<HTMLElement>(
+      "[data-install-recommendation]",
+    );
+    for (const status of recommendationStatuses) {
       status.textContent = recommendation.announcement;
     }
   }

@@ -58,10 +58,12 @@ The progressive-enhancement classifier receives only User-Agent Client Hint bran
 platform and touch/mobile evidence, and Gecko-specific `-moz-appearance` capability support. It
 classifies mobile iOS, iPadOS, and Android first; then Gecko capability and Firefox-family evidence;
 then Chromium UA-CH brands and Chromium-family UA evidence. Safari, WebKit-only strings, bots, and
-unrecognized evidence remain unknown. It changes recommendation labels, attributes, and the one
-accent treatment only: it never redirects, hides a choice, opens a store protocol, or attempts
-inline installation. Unknown and Safari states recommend neither store and explain that Safari is
-deferred; mobile states explain that desktop extension installation is unavailable.
+unrecognized evidence remain unknown. The script leaves canonical publication status unchanged and
+writes transient browser guidance to one dedicated polite live region. It changes recommendation
+labels, attributes, and the one accent treatment only: it never redirects, hides a choice, opens a
+store protocol, or attempts inline installation. Unknown and Safari states recommend neither store
+and explain that Safari is deferred; mobile states explain that desktop extension installation is
+unavailable.
 
 From the website, **installable** means a user activates a link to a published official
 browser-store listing. It does not mean the website can install the extension inline. The

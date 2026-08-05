@@ -224,6 +224,7 @@ h3 {
 .install-store-copy,
 .install-source-copy,
 .install-status,
+.install-recommendation,
 .install-no-script {
   max-width: 58ch;
   margin: var(--space-0);
@@ -237,6 +238,7 @@ h3 {
 }
 
 .install-status,
+.install-recommendation,
 .install-no-script {
   color: var(--text-secondary);
 }
@@ -476,6 +478,7 @@ h3 {
 .install-actions--closing .install-store-copy,
 .install-actions--closing .install-source-copy,
 .install-actions--closing .install-status,
+.install-actions--closing .install-recommendation,
 .install-actions--closing .install-no-script {
   text-align: center;
 }

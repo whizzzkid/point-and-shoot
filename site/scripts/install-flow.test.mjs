@@ -162,7 +162,8 @@ test("the built unpublished site provides accessible fallback, focus, motion, an
   assert.match(html, /data-no-script/);
   assert.equal((html.match(/<a[^>]*data-source-install/gu) ?? []).length, 2);
   assert.equal((html.match(/<p[^>]*data-install-status/gu) ?? []).length, 2);
-  assert.match(html, /data-install-status role="status" aria-live="polite"/);
+  assert.equal((html.match(/<p[^>]*data-install-recommendation/gu) ?? []).length, 1);
+  assert.match(html, /data-install-recommendation role="status" aria-live="polite"/);
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /mailto:support@pointandshoot\.app/);
   assert.doesNotMatch(html, /chromewebstore\.google\.com/);
@@ -224,6 +225,26 @@ test("browser enhancement preserves unavailable-store status and keeps store cho
           assert.equal(await page.locator("[data-recommended]").count(), 0);
         } finally {
           await context.close();
+        }
+
+        const compatibleContext = await browser.newContext({
+          userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0",
+        });
+        try {
+          const page = await compatibleContext.newPage();
+          await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
+          assert.match(
+            await page.locator("[data-install-status]").first().textContent(),
+            /Chrome Web Store listing is unpublished/,
+          );
+          assert.equal(await page.locator("[data-install-recommendation]").count(), 1);
+          assert.match(
+            await page.locator("[data-install-recommendation]").textContent(),
+            /Firefox Add-ons is recommended/,
+          );
+          assert.equal(await page.locator('[role="status"]').count(), 1);
+        } finally {
+          await compatibleContext.close();
         }
       } finally {
         await closeBuiltSite(firefoxOnly.server);
@@ -317,7 +338,7 @@ test("browser enhancement preserves unavailable-store status and keeps store cho
           const page = await mobile.newPage();
           await page.goto(`${both.origin}/`, { waitUntil: "networkidle" });
           assert.match(
-            await page.locator("[data-install-status]").first().textContent(),
+            await page.locator("[data-install-recommendation]").textContent(),
             /Desktop browser extension installation is unavailable on mobile/,
           );
           assert.equal(await page.locator("[data-recommended]").count(), 0);
