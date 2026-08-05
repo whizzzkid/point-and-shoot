@@ -9,6 +9,8 @@ import {
   validateStoreAssets,
 } from "./store-assets.ts";
 import { parseStoreListing } from "./store-listing.ts";
+import { storeScreenshotSession } from "./store-screenshots.ts";
+import { EXPORT_FIXTURE_SESSION } from "../src/shared/serialize/fixture.ts";
 
 Deno.test("store assets - artwork contract has five screenshots followed by two promo tiles", () => {
   assertEquals(
@@ -56,13 +58,34 @@ Deno.test("store assets - promo renderers emit deterministic opaque RGB PNGs", a
   }
 });
 
-Deno.test("store assets - PNG inspection rejects malformed and truncated inputs", () => {
+Deno.test("store assets - PNG inspection rejects malformed and truncated inputs", async () => {
   assertThrows(() => inspectPng(new Uint8Array()), Error, "PNG signature");
   assertThrows(
     () => inspectPng(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])),
     Error,
     "IHDR",
   );
+  const completePng = await Deno.readFile(
+    new URL("../docs/assets/store/01-capture-toolbar.png", import.meta.url),
+  );
+  assertThrows(
+    () => inspectPng(completePng.slice(0, 29)),
+    Error,
+    "invalid or truncated",
+  );
+});
+
+Deno.test("store assets - screenshot fixture removes credential-shaped queries", () => {
+  const sanitized = storeScreenshotSession(EXPORT_FIXTURE_SESSION);
+  assertEquals(sanitized.notes.map(({ pageUrl }) => pageUrl), [
+    "https://example.com/checkout",
+    "https://example.com/checkout/summary",
+  ]);
+  assertEquals(
+    /(?:access[_-]?token|api[_-]?key|password|secret)=/i.test(JSON.stringify(sanitized)),
+    false,
+  );
+  assertEquals(EXPORT_FIXTURE_SESSION.notes[0]?.pageUrl.includes("access_token=secret"), true);
 });
 
 Deno.test("store assets - explicit badge refresh rejects changed upstream bytes", async () => {

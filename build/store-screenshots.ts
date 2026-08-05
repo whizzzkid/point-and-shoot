@@ -5,6 +5,7 @@ import { Buffer } from "node:buffer";
 import * as esbuild from "npm:esbuild@0.28.1";
 import { chromium, type Page, type Worker } from "playwright";
 import { PNG } from "pngjs";
+import type { Session } from "../src/shared/schema.ts";
 import { EXPORT_FIXTURE_SESSION } from "../src/shared/serialize/fixture.ts";
 import { DEFAULT_SETTINGS } from "../src/shared/settings.ts";
 import { startFixtureServer } from "../tests/fixtures/app/server.ts";
@@ -25,6 +26,24 @@ interface PreviewHarness {
     readonly textSnippet: string;
     readonly xpath: readonly string[];
   }): boolean;
+}
+
+/**
+ * Removes every query and fragment from the representative session used in public screenshots.
+ *
+ * @param session - Representative session whose private-shaped URL data must not be published.
+ * @returns A new session whose note URLs are safe to display in store artwork.
+ */
+export function storeScreenshotSession(session: Session): Session {
+  return {
+    ...session,
+    notes: session.notes.map((note) => {
+      const pageUrl = new URL(note.pageUrl);
+      pageUrl.search = "";
+      pageUrl.hash = "";
+      return { ...note, pageUrl: pageUrl.href };
+    }),
+  };
 }
 
 async function extensionWorker(
@@ -72,7 +91,7 @@ async function seedExtension(serviceWorker: Worker): Promise<void> {
       database.close();
     }
   }, {
-    session: EXPORT_FIXTURE_SESSION,
+    session: storeScreenshotSession(EXPORT_FIXTURE_SESSION),
     settings: { ...DEFAULT_SETTINGS, themeOverride: "dark" },
   });
 }
@@ -140,6 +159,13 @@ async function captureOptions(
       undefined,
       { timeout: SURFACE_READY_TIMEOUT_MILLISECONDS },
     );
+    const privacyTab = page.getByRole("tab", { name: "Export & privacy" });
+    await privacyTab.click();
+    await page.getByRole("heading", { exact: true, name: "Export & privacy" }).waitFor();
+    await page.getByRole("switch", { name: "Strip sensitive query strings" }).waitFor();
+    if (await privacyTab.getAttribute("aria-selected") !== "true") {
+      throw new Error("Export & privacy tab was not active before store capture");
+    }
     await capturePage(page, new URL("05-privacy-settings.png", outputDirectory));
   } finally {
     await page.close();

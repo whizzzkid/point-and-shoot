@@ -560,7 +560,12 @@ async function validateReadmeProjection(
   try {
     readme = await Deno.readTextFile(new URL(README_FILE, root));
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return [];
+    if (error instanceof Deno.errors.NotFound) {
+      return [{
+        path: "README.md#store-install",
+        message: "is missing; restore README.md and run deno task store:sync",
+      }];
+    }
     throw error;
   }
   try {

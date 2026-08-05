@@ -122,6 +122,7 @@ function validStoreListing(): StoreListing {
 async function validateFixture(
   listing: StoreListing,
   additionalFiles: Readonly<Record<string, string>> = {},
+  includeReadme = true,
 ): Promise<readonly string[]> {
   const temporaryDirectory = await Deno.makeTempDir();
   const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));
@@ -130,8 +131,17 @@ async function validateFixture(
       new URL("store-listing.json", root),
       `${JSON.stringify(listing, null, 2)}\n`,
     );
+    let readme = renderReadmeInstallBlock(validStoreListing());
+    try {
+      readme = renderReadmeInstallBlock(listing);
+    } catch {
+      // Store-validation tests intentionally pass semantically invalid typed fixtures.
+    }
+    const fixtureFiles = includeReadme
+      ? { "README.md": readme, ...additionalFiles }
+      : additionalFiles;
     await Promise.all(
-      Object.entries(additionalFiles).map(async ([relativePath, content]) => {
+      Object.entries(fixtureFiles).map(async ([relativePath, content]) => {
         const destination = new URL(relativePath, root);
         await Deno.mkdir(new URL("./", destination), { recursive: true });
         await Deno.writeTextFile(destination, content);
@@ -524,6 +534,12 @@ Deno.test("store listing - check reports README install projection drift", async
     }),
     ["README.md#store-install"],
   );
+});
+
+Deno.test("store listing - check rejects a missing README projection", async () => {
+  assertEquals(await validateFixture(validStoreListing(), {}, false), [
+    "README.md#store-install",
+  ]);
 });
 
 Deno.test("store listing - artwork order and file names are exact", async () => {

@@ -141,6 +141,11 @@ export function inspectPng(bytes: Uint8Array): PngInformation {
   ) {
     throw new Error("PNG IHDR chunk is missing or truncated");
   }
+  try {
+    PNG.sync.read(Buffer.from(bytes));
+  } catch (error) {
+    throw new Error("PNG data is invalid or truncated", { cause: error });
+  }
   return {
     width: readUnsigned32(bytes, 16),
     height: readUnsigned32(bytes, 20),
