@@ -335,14 +335,19 @@ async function readWithTimeout(
     timeoutIdentifier = setTimeout(() => {
       reject(timeoutError(stage, transport));
       controller.abort();
-      void reader.cancel();
+      void reader.cancel().catch(() => {
+        // A fetch-backed reader may reject cancellation after its signal aborts. The typed timeout
+        // is authoritative; contain the redundant transport rejection instead of leaking it.
+      });
     }, timeoutMs);
   });
   const cancellation = new Promise<never>((_, reject) => {
     abortListener = () => {
       reject(abortedError(transport));
       controller.abort(signal.reason);
-      void reader.cancel(signal.reason);
+      void reader.cancel(signal.reason).catch(() => {
+        // The caller-owned cancellation is authoritative when the transport is already closing.
+      });
     };
     signal.addEventListener("abort", abortListener, { once: true });
   });

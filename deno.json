@@ -115,6 +115,8 @@
     "visual:update": "deno task build && deno run -A tests/visual/run.ts --update",
     "boot:firefox": "deno run -A scripts/boot-firefox.ts",
     "smoke:firefox": "deno task build && deno run -A tests/firefox/smoke.ts",
+    "a2a:network": "deno task build && deno test -A tests/e2e/a2a-network.spec.ts",
+    "smoke:a2a-firefox": "deno task build && deno run -A tests/firefox/a2a-network.ts",
     "a11y": "deno task build && deno test -A tests/a11y/*.test.ts tests/a11y/*.spec.ts",
     "a2a:generate": "deno run -A src/shared/a2a/client/generate-protocol.ts",
     "gallery": "deno run -A src/ui/gallery/server.ts",
