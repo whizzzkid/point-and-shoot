@@ -215,7 +215,13 @@ export async function checkSite({
       }
       if (url.origin !== localOrigin) {
         if (link.kind === "page" && /^https?:$/.test(url.protocol)) {
-          const repositoryTarget = localRepositoryTarget(url, repositoryRoot);
+          let repositoryTarget;
+          try {
+            repositoryTarget = localRepositoryTarget(url, repositoryRoot);
+          } catch {
+            problems.push(`${route}: malformed repository target ${link.url}`);
+            continue;
+          }
           if (repositoryTarget !== undefined) {
             if (!repositoryTarget.safe) {
               problems.push(`${route}: unsafe repository target ${repositoryTarget.relativePath}`);
