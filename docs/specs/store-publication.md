@@ -49,11 +49,12 @@ JSON `null`, never empty strings or dummy links.
 | ------------------------------- | --------------------------------------------------------------------------------- |
 | `support.email`                 | Exactly `support@pointandshoot.app`                                               |
 | `support.url`                   | Exactly `https://pointandshoot.app/`                                              |
-| `listing.name`                  | Public store name                                                                 |
+| `listing.name`                  | Matches the generated manifest name                                               |
 | `listing.shortDescription`      | Matches the generated manifest description and is at most 132 characters          |
 | `listing.currentVersionSummary` | Concise summary intentionally reviewed when shipped capabilities change           |
-| `listing.fullDescription`       | At most 16,000 characters and contains `currentVersionSummary` verbatim           |
+| `listing.fullDescription`       | At most 16,000 characters; contains the version summary and support email         |
 | `privacy.url`                   | Exactly `https://pointandshoot.app/privacy/`                                      |
+| `privacy.effectiveDate`         | A real calendar date in canonical `YYYY-MM-DD` form                               |
 | `privacy.singlePurpose`         | Chrome single-purpose declaration, at most 1,000 characters                       |
 | `privacy.remoteCode`            | Always `false`                                                                    |
 | `privacy.permissions`           | One explanation, at most 1,000 characters, for each generated manifest permission |
@@ -78,12 +79,13 @@ stateDiagram-v2
     published --> published: Later version submitted or reviewed
 ```
 
-Only `published` permits a non-null `listingUrl`. A published Chrome entry also requires its
-extension and publisher IDs. A published Firefox entry requires its slug, and its `extensionId` must
-always match `FIREFOX_EXTENSION_ID` from `build/manifest.ts`. URLs must use HTTPS, the official
-vendor host, and a path matching the configured identity. Once a listing is public, later package
-submissions do not change this visibility state; per-version review status is tracked by release
-automation instead.
+Only `published` permits a non-null `listingUrl`. Any non-null Chrome extension ID is a 32-character
+vendor ID; a published Chrome entry also requires its extension and publisher IDs. A published
+Firefox entry requires its slug, and its `extensionId` must always match `FIREFOX_EXTENSION_ID` from
+`build/manifest.ts`. URLs must use HTTPS, the official vendor host, no credentials, custom port,
+query, or fragment, and the exact path shape matching the configured identity. Once a listing is
+public, later package submissions do not change this visibility state; per-version review status is
+tracked by release automation instead.
 
 ### Validation and failures
 
@@ -95,8 +97,9 @@ repository.
 
 The checker compares the privacy explanation keys with the union of the permissions generated for
 Chrome and Firefox. Adding or removing a permission therefore requires the manifest, contract,
-privacy page, and disclosure tests to change together. Public repository and site sources may not
-contain store URL sentinel tokens.
+privacy page, and disclosure tests to change together. The repository README, site source, and the
+published documentation set (`docs/README.md`, `docs/design.md`, `docs/specs/**`, and
+`docs/tutorials/**`) may not contain store URL sentinel tokens.
 
 ## Projection flow
 

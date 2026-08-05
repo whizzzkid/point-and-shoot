@@ -30,6 +30,10 @@ function validStoreListing(): StoreListing {
         "Current version",
         "",
         currentVersionSummary,
+        "",
+        "Support",
+        "",
+        "Send support requests to support@pointandshoot.app.",
       ].join("\n"),
     },
     privacy: {
@@ -184,6 +188,36 @@ Deno.test("store listing - rejects malformed URLs and invalid Chrome extension I
   ]);
 });
 
+Deno.test("store listing - validates non-null Chrome IDs before publication", async () => {
+  const listing = validStoreListing();
+  listing.stores.chrome.state = "submitted";
+  listing.stores.chrome.extensionId = "not-a-chrome-id";
+  listing.stores.chrome.publisherId = "point-and-shoot";
+  assertEquals(await validateFixture(listing), ["stores.chrome.extensionId"]);
+});
+
+Deno.test("store listing - rejects non-canonical vendor URL components", async () => {
+  const listing = validStoreListing();
+  listing.stores.chrome = {
+    state: "published",
+    extensionId: CHROME_EXTENSION_ID,
+    publisherId: "point-and-shoot",
+    listingUrl:
+      `https://user:pass@chromewebstore.google.com:444/detail/extra/path/${CHROME_EXTENSION_ID}?source=test#fragment`,
+  };
+  listing.stores.firefox = {
+    state: "published",
+    slug: "point-shoot",
+    extensionId: FIREFOX_EXTENSION_ID,
+    listingUrl:
+      "https://user:pass@addons.mozilla.org:444/firefox/addon/point-shoot/?source=test#fragment",
+  };
+  assertEquals(await validateFixture(listing), [
+    "stores.chrome.listingUrl",
+    "stores.firefox.listingUrl",
+  ]);
+});
+
 Deno.test("store listing - enforces store and privacy form character limits", async () => {
   const listing = validStoreListing();
   listing.listing.shortDescription = "s".repeat(133);
@@ -193,6 +227,7 @@ Deno.test("store listing - enforces store and privacy form character limits", as
   assertEquals(await validateFixture(listing), [
     "listing.shortDescription",
     "listing.shortDescription",
+    "listing.fullDescription",
     "listing.fullDescription",
     "listing.fullDescription",
     "privacy.singlePurpose",
@@ -234,15 +269,35 @@ Deno.test("store listing - support, privacy, and current-version copy stay canon
   listing.support.email = "help@example.invalid";
   listing.support.url = "https://example.invalid/";
   listing.privacy.url = "https://example.invalid/privacy/";
+  listing.listing.name = "A different extension";
   listing.listing.shortDescription = "A different manifest description.";
   listing.listing.fullDescription = "The current-version summary is absent.";
   assertEquals(await validateFixture(listing), [
     "support.email",
     "support.url",
     "privacy.url",
+    "listing.name",
     "listing.shortDescription",
     "listing.fullDescription",
+    "listing.fullDescription",
   ]);
+});
+
+Deno.test("store listing - full description keeps the support address", async () => {
+  const listing = validStoreListing();
+  listing.listing.fullDescription = listing.listing.fullDescription.replace(
+    "support@pointandshoot.app",
+    "help@example.invalid",
+  );
+  assertEquals(await validateFixture(listing), ["listing.fullDescription"]);
+});
+
+Deno.test("store listing - effective date is a real canonical calendar date", async () => {
+  for (const effectiveDate of ["not-a-date", "2026-02-30", "2026-8-4"]) {
+    const listing = validStoreListing();
+    listing.privacy.effectiveDate = effectiveDate;
+    assertEquals(await validateFixture(listing), ["privacy.effectiveDate"]);
+  }
 });
 
 Deno.test("store listing - rejects placeholder store URLs on public surfaces", async () => {
@@ -255,6 +310,17 @@ Deno.test("store listing - rejects placeholder store URLs on public surfaces", a
   ) {
     assertEquals(await validateFixture(listing, { "README.md": publicCopy }), ["README.md"]);
   }
+});
+
+Deno.test("store listing - scans nested site and published documentation sources", async () => {
+  const listing = validStoreListing();
+  assertEquals(
+    await validateFixture(listing, {
+      "docs/specs/example.md": "Install from __CHROME_STORE_URL__.\n",
+      "site/src/pages/install.astro": "Install from __FIREFOX_STORE_URL__.\n",
+    }),
+    ["docs/specs/example.md", "site/src/pages/install.astro"],
+  );
 });
 
 Deno.test("store listing - parser rejects malformed schema values", () => {

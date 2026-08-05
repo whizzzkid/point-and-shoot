@@ -43,7 +43,7 @@ The landing page follows the marketing kit in `.claude-design/point-and-shoot/ui
 with the product's sentence case, restrained animation, and single-accent rules. Its layout may use
 more generous spacing than the extension.
 
-Both public surfaces consume the generated CSS tokens from `src/shared/design/tokens.css`. Site
+All three public surfaces consume the generated CSS tokens from `src/shared/design/tokens.css`. Site
 styles may add layout compositions but must not duplicate the palette, font families, radii, or
 motion values. The site copies the extension's subset WOFF2 files into its build and makes no
 third-party font request.

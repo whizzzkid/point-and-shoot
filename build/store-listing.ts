@@ -14,7 +14,14 @@ const REQUIRED_LOCAL_DATA_CATEGORIES = [
   "userActivity",
   "userGeneratedContent",
 ] as const;
-const PUBLIC_SURFACE_PATHS = ["README.md", "site/src"] as const;
+const PUBLIC_SURFACE_PATHS = [
+  "README.md",
+  "docs/README.md",
+  "docs/design.md",
+  "docs/specs/",
+  "docs/tutorials/",
+  "site/src/",
+] as const;
 const STORE_URL_SENTINELS = [
   "__CHROME_STORE_URL__",
   "__FIREFOX_STORE_URL__",
@@ -390,6 +397,21 @@ function addLengthIssue(
   }
 }
 
+function isCanonicalCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+}
+
+function hasCanonicalUrlComponents(url: URL): boolean {
+  return url.protocol === "https:" &&
+    url.username === "" &&
+    url.password === "" &&
+    url.port === "" &&
+    url.search === "" &&
+    url.hash === "";
+}
+
 function expectedPermissions(): readonly string[] {
   const chromePermissions = forChrome().permissions as readonly string[];
   const firefoxPermissions = forFirefox().permissions as readonly string[];
@@ -430,10 +452,13 @@ function validatePermissionExplanations(
 function isChromeListingUrl(value: string, extensionId: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" &&
+    const pathSegments = url.pathname.split("/").filter(Boolean);
+    return hasCanonicalUrlComponents(url) &&
       url.hostname === "chromewebstore.google.com" &&
-      url.pathname.startsWith("/detail/") &&
-      url.pathname.split("/").filter(Boolean).at(-1) === extensionId;
+      pathSegments.length === 3 &&
+      pathSegments[0] === "detail" &&
+      /^[a-z0-9-]+$/.test(pathSegments[1] ?? "") &&
+      pathSegments[2] === extensionId;
   } catch (error) {
     if (error instanceof TypeError) return false;
     throw error;
@@ -443,8 +468,9 @@ function isChromeListingUrl(value: string, extensionId: string): boolean {
 function isFirefoxListingUrl(value: string, slug: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" &&
+    return hasCanonicalUrlComponents(url) &&
       url.hostname === "addons.mozilla.org" &&
+      /^[a-z0-9-]+$/.test(slug) &&
       url.pathname.replace(/\/$/, "") === `/firefox/addon/${slug}`;
   } catch (error) {
     if (error instanceof TypeError) return false;
@@ -454,6 +480,12 @@ function isFirefoxListingUrl(value: string, slug: string): boolean {
 
 function validateChromeStore(store: ChromeStoreListing): StoreListingIssue[] {
   const issues: StoreListingIssue[] = [];
+  if (store.extensionId !== null && !/^[a-p]{32}$/.test(store.extensionId)) {
+    issues.push({
+      path: "stores.chrome.extensionId",
+      message: "must be a 32-character Chrome extension ID",
+    });
+  }
   if (store.state !== "published") {
     if (store.listingUrl !== null) {
       issues.push({
@@ -465,11 +497,6 @@ function validateChromeStore(store: ChromeStoreListing): StoreListingIssue[] {
   }
   if (store.extensionId === null) {
     issues.push({ path: "stores.chrome.extensionId", message: "is required when published" });
-  } else if (!/^[a-p]{32}$/.test(store.extensionId)) {
-    issues.push({
-      path: "stores.chrome.extensionId",
-      message: "must be a 32-character Chrome extension ID",
-    });
   }
   if (store.publisherId === null) {
     issues.push({ path: "stores.chrome.publisherId", message: "is required when published" });
@@ -564,12 +591,21 @@ async function publicSourceFiles(root: URL): Promise<readonly URL[]> {
       return;
     }
     if (!information.isDirectory) return;
-    for await (const entry of Deno.readDir(url)) {
+    const entries = [];
+    for await (const entry of Deno.readDir(url)) entries.push(entry);
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
       await visit(new URL(entry.isDirectory ? `${entry.name}/` : entry.name, url));
     }
   }
-  await Promise.all(PUBLIC_SURFACE_PATHS.map((surfacePath) => visit(new URL(surfacePath, root))));
-  return files;
+  for (const surfacePath of PUBLIC_SURFACE_PATHS) {
+    await visit(new URL(surfacePath, root));
+  }
+  return files.sort((left, right) =>
+    relative(fromFileUrl(root), fromFileUrl(left)).localeCompare(
+      relative(fromFileUrl(root), fromFileUrl(right)),
+    )
+  );
 }
 
 async function validatePublicSurfaceSentinels(root: URL): Promise<StoreListingIssue[]> {
@@ -618,6 +654,7 @@ export async function validateStoreListing(root: URL): Promise<readonly StoreLis
   addExactValueIssue(issues, "support.email", storeListing.support.email, SUPPORT_EMAIL);
   addExactValueIssue(issues, "support.url", storeListing.support.url, SUPPORT_URL);
   addExactValueIssue(issues, "privacy.url", storeListing.privacy.url, PRIVACY_URL);
+  addExactValueIssue(issues, "listing.name", storeListing.listing.name, manifestBase.name);
   addExactValueIssue(
     issues,
     "listing.shortDescription",
@@ -640,6 +677,18 @@ export async function validateStoreListing(root: URL): Promise<readonly StoreLis
     issues.push({
       path: "listing.fullDescription",
       message: "must include listing.currentVersionSummary verbatim",
+    });
+  }
+  if (!storeListing.listing.fullDescription.includes(SUPPORT_EMAIL)) {
+    issues.push({
+      path: "listing.fullDescription",
+      message: `must include ${SUPPORT_EMAIL}`,
+    });
+  }
+  if (!isCanonicalCalendarDate(storeListing.privacy.effectiveDate)) {
+    issues.push({
+      path: "privacy.effectiveDate",
+      message: "must be a real calendar date in YYYY-MM-DD format",
     });
   }
   addLengthIssue(
