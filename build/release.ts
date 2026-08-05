@@ -224,6 +224,8 @@ async function validateReleaseSet(
   );
   const sourceArchivePath = fromFileUrl(new URL("firefox-source.zip", distDir));
   const instructionsPath = fromFileUrl(new URL("firefox-build-instructions.md", distDir));
+  await assertReviewerArtifactExists(sourceArchivePath, "firefox-source.zip");
+  await assertReviewerArtifactExists(instructionsPath, "firefox-build-instructions.md");
   await validateReviewerArtifacts({
     expectedCommitSha: commitSha,
     expectedVersion: version,
@@ -242,6 +244,23 @@ async function validateReleaseSet(
     `firefox build instructions: ${instructionsSizeBytes} bytes`,
     `total: ${totalSizeBytes} bytes`,
   ].join("\n");
+}
+
+async function assertReviewerArtifactExists(
+  artifactPath: string,
+  artifactName: string,
+): Promise<void> {
+  try {
+    const artifact = await Deno.stat(artifactPath);
+    if (!artifact.isFile) {
+      throw new Error(`release: missing reviewer artifact ${artifactName}`);
+    }
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(`release: missing reviewer artifact ${artifactName}`);
+    }
+    throw error;
+  }
 }
 
 /**

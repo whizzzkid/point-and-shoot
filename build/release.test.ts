@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
+import { build } from "./build.ts";
 import { forChrome, manifestBase } from "./manifest.ts";
 import {
   assertTagMatchesVersion,
@@ -120,6 +121,32 @@ Deno.test("runReleaseCommand - prints the packaged manifest version", async () =
 
 Deno.test("runReleaseCommand - rejects unsupported commands", async () => {
   await assertRejects(() => runReleaseCommand(["unknown"]));
+});
+
+Deno.test("runReleaseCommand - reports missing reviewer artifacts before inspecting them", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const distDir = new URL(`${toFileUrl(temporaryDirectory).href}/`);
+  try {
+    await build({ outDir: distDir, release: true });
+    const options = {
+      commitSha: "0123456789abcdef0123456789abcdef01234567",
+      distDir,
+    };
+    await assertRejects(
+      () => runReleaseCommand(["validate"], options),
+      Error,
+      "missing reviewer artifact firefox-source.zip",
+    );
+
+    await Deno.writeTextFile(new URL("firefox-source.zip", distDir), "placeholder");
+    await assertRejects(
+      () => runReleaseCommand(["validate"], options),
+      Error,
+      "missing reviewer artifact firefox-build-instructions.md",
+    );
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
 });
 
 Deno.test("validateArchivePaths - rejects sourcemaps", () => {

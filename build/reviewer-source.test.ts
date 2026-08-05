@@ -6,6 +6,7 @@ import {
   assertReviewerSourceClean,
   compareArchiveContents,
   createReviewerArtifacts,
+  parseArchiveEntries,
   type ReviewerSourceOptions,
   validateReviewerArtifacts,
 } from "./reviewer-source.ts";
@@ -137,6 +138,13 @@ Deno.test("reviewer source rejects tracked build inputs that differ from HEAD", 
     () => assertReviewerSourceClean(" M build/build.ts\0"),
     Error,
     "tracked build inputs differ from HEAD",
+  );
+});
+
+Deno.test("reviewer archive entries normalize CRLF listings", () => {
+  assertEquals(
+    parseArchiveEntries("background/background.js\r\nmanifest.json\r\n"),
+    ["background/background.js", "manifest.json"],
   );
 });
 

@@ -223,9 +223,20 @@ export async function createReviewerArtifacts(
 async function archiveEntries(archivePath: string): Promise<string[]> {
   const listing = new TextDecoder().decode(
     await runCommand("unzip", ["-Z1", archivePath]),
-  ).trim();
-  if (listing === "") return [];
-  const entries = listing.split("\n");
+  );
+  return parseArchiveEntries(listing);
+}
+
+/**
+ * Parses and validates the line-oriented entry listing emitted by `unzip -Z1`.
+ *
+ * @param listing Raw archive-entry output from `unzip`.
+ * @returns Validated archive paths in deterministic lexical order.
+ */
+export function parseArchiveEntries(listing: string): string[] {
+  const normalizedListing = listing.trim();
+  if (normalizedListing === "") return [];
+  const entries = normalizedListing.split(/\r?\n/u);
   for (const entry of entries) {
     const path = entry.endsWith("/") ? entry.slice(0, -1) : entry;
     if (!isSafeRelativePath(path)) {
