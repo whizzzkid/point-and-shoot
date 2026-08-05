@@ -86,6 +86,36 @@ Deno.test("store assets - validation rejects a stale source fingerprint", async 
   }
 });
 
+Deno.test("store assets - validation rejects source files absent from recorded inventory", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));
+  try {
+    await Deno.mkdir(new URL("docs/assets/store/", root), { recursive: true });
+    await Deno.mkdir(new URL("src/", root), { recursive: true });
+    await Deno.writeTextFile(new URL("src/new-visible-surface.ts", root), "export {};\n");
+    await Deno.writeTextFile(
+      new URL("docs/assets/store/manifest.json", root),
+      `${
+        JSON.stringify({
+          schemaVersion: 1,
+          currentVersionSummary: "unchanged",
+          sourceDigest: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          sourcePaths: [],
+          assets: [],
+        })
+      }\n`,
+    );
+
+    const issues = await validateStoreAssets(root);
+    assertEquals(
+      issues.some(({ path }) => path === "docs/assets/store/manifest.json#sourcePaths"),
+      true,
+    );
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
+});
+
 Deno.test("store assets - validation surfaces unreadable manifest JSON", async () => {
   const temporaryDirectory = await Deno.makeTempDir();
   const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));

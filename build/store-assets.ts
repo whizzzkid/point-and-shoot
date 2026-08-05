@@ -107,6 +107,10 @@ function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function stringsEqual(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 function readUnsigned32(bytes: Uint8Array, offset: number): number {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(offset);
 }
@@ -440,7 +444,14 @@ async function validateManifest(root: URL): Promise<StoreAssetIssue[]> {
   if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.sourcePaths)) {
     return [{ path: STORE_ASSET_MANIFEST, message: "has an unsupported schema" }];
   }
-  if (await calculateSourceDigest(root, manifest.sourcePaths) !== manifest.sourceDigest) {
+  const currentSourcePaths = await collectFiles(root, SOURCE_ROOTS);
+  if (!stringsEqual(currentSourcePaths, manifest.sourcePaths)) {
+    issues.push({
+      path: `${STORE_ASSET_MANIFEST}#sourcePaths`,
+      message: "does not match the current source inventory; run deno task store:assets",
+    });
+  }
+  if (await calculateSourceDigest(root, currentSourcePaths) !== manifest.sourceDigest) {
     issues.push({
       path: `${STORE_ASSET_MANIFEST}#sourceDigest`,
       message: "is stale; run deno task store:assets",

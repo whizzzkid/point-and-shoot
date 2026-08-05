@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
-  "sourceDigest": "63e8689121e984c70f4a508f086517ded1f3a58588e32518e3ef9efe2849d3a8",
+  "sourceDigest": "ed9480f7ea9cdad079ec6680997b3917fb7710f9cf8e4675784338c06ca4bbac",
   "sourcePaths": [
     "build/store-assets.ts",
     "build/store-screenshots.ts",
