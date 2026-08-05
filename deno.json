@@ -99,6 +99,7 @@
     "release:current": "deno run -A build/release.ts current",
     "release:next": "deno run -A build/release.ts next",
     "release:pr": "deno run -A npm:release-please@17.6.0 release-pr",
+    "release:status": "deno run -A build/release-status.ts",
     "release:validate": "deno run -A build/release.ts validate",
     "store:check": "deno run -A build/store-listing.ts check",
     "store:sync": "deno run -A build/store-listing.ts sync",

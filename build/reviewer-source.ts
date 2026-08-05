@@ -243,6 +243,7 @@ function parseReviewerMetadata(value: unknown): ReviewerSourceMetadata {
  * Validates that reviewer source and instructions carry the expected version and commit identity.
  *
  * @param options Artifact paths and the release identity they must match.
+ * @returns A promise that settles after both artifacts pass validation.
  */
 export async function validateReviewerArtifacts(
   options: ValidateReviewerArtifactsOptions,
@@ -284,6 +285,7 @@ export async function validateReviewerArtifacts(
  *
  * @param expectedArchivePath Path to the submitted or expected archive.
  * @param actualArchivePath Path to the rebuilt archive.
+ * @returns A promise that settles when every path and file byte matches.
  * @throws When the archives contain different paths or file bytes.
  */
 export async function compareArchiveContents(

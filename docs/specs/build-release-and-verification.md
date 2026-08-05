@@ -128,6 +128,11 @@ tag and artifact identity, and attaches the same names to the GitHub release.
 
 Store submission remains manual at this layer of the release pipeline.
 
+The workflow adds a marked `point-and-shoot-store-status` section to the release body without
+changing Release Please's notes. It starts Chrome and Firefox as unpublished and distinguishes the
+expected GitHub version, submitted version, vendor review state, public version, reconciliation
+time, and actionable failure text. A public version mismatch keeps release closeout incomplete.
+
 ## Delivery flow
 
 ```mermaid
@@ -141,7 +146,7 @@ flowchart TD
     ReleasePlease --> Preview[Four validated candidate artifacts]
     Preview --> Tag[Merge and create CalVer tag]
     Tag --> Final[Rebuild and validate tagged artifacts]
-    Final --> Release[Four GitHub release assets]
+    Final --> Release[Assets and unpublished store status]
 ```
 
 Every capability claim in a pull request must map to a command or a named remote job that actually

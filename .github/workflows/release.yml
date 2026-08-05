@@ -246,3 +246,18 @@ jobs:
           grep -qx "firefox.zip" <<< "${assets}"
           grep -qx "firefox-source.zip" <<< "${assets}"
           grep -qx "firefox-build-instructions.md" <<< "${assets}"
+
+      - name: Seed browser store publication status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp "${RUNNER_TEMP}/release-body.XXXXXX")"
+          trap 'rm -f -- "${body_file}"' EXIT INT TERM
+          version="$(deno task release:current)"
+          reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh release view "${TAG_NAME}" --json body --jq '.body' |
+            deno task release:status seed "${version}" "${reconciled_at}" > "${body_file}"
+          gh release edit "${TAG_NAME}" --notes-file "${body_file}"

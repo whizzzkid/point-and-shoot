@@ -101,7 +101,15 @@ Confirm that the release pull request updates these version sources to the same 
 Merge the release pull request. The next `main` run recognizes the merged release commit, creates
 the matching `v`-prefixed CalVer tag and GitHub release, checks out the exact tagged SHA, rebuilds
 both packages, and validates the tag against their manifests. It then attaches all four candidate
-and reviewer artifacts to the release.
+and reviewer artifacts to the release. The workflow preserves the generated release notes and adds a
+marked **Browser store publication** section with the expected version and both stores set to
+`unpublished`.
+
+Do not turn an attached ZIP into a public install call to action. The release status must show a
+store as `published`, its public version must match the GitHub release, and its live listing URL
+must be recorded before the URL is presented as the install path. If the canonical listing summary
+changed, update the Chrome Web Store copy in its dashboard and record that manual action during
+release closeout; the Chrome publishing API does not own listing-copy updates.
 
 Do not create or push the tag by hand. Release Please's `autorelease: pending` and
 `autorelease: tagged` labels track whether the pull request is waiting to merge or has been
@@ -114,7 +122,9 @@ failed workflow. Do not merge without all four artifacts.
 
 If tagging succeeds but an asset upload fails, rerun the failed workflow. Uploads use replacement
 semantics, so a retry repairs a partial release without failing because one ZIP already exists. The
-workflow remains red until all four asset names are present.
+workflow remains red until all four asset names are present. If release-body seeding fails after the
+assets upload, rerun the failed job; the marked update is idempotent and leaves existing release
+notes unchanged.
 
 If released code is faulty, revert or fix it on `main` and publish a new CalVer release. Do not move
 or replace a published tag: an immutable tag keeps installed packages and audit history tied to the

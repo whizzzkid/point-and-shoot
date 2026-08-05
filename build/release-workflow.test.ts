@@ -104,6 +104,8 @@ Deno.test("release workflow builds exact preview and release SHAs", async () => 
   assertStringIncludes(workflow, "Load unpacked");
   assertStringIncludes(workflow, "Load Temporary Add-on");
   assertStringIncludes(workflow, "store-submission candidates, not consumer install links");
+  assertStringIncludes(workflow, "deno task release:status seed");
+  assertStringIncludes(workflow, 'gh release edit "${TAG_NAME}" --notes-file');
   assertStringIncludes(
     workflow,
     'gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip ' +
