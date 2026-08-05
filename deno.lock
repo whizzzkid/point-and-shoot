@@ -10,6 +10,7 @@
     "npm:@astrojs/markdown-remark@7.2.2": "7.2.2",
     "npm:@axe-core/playwright@4.12.1": "4.12.1_playwright-core@1.62.0",
     "npm:@types/pngjs@6.0.5": "6.0.5",
+    "npm:ajv@8.20.0": "8.20.0",
     "npm:astro@7.1.6": "7.1.6_@astrojs+markdown-remark@7.2.2_@emnapi+core@1.11.1_@emnapi+runtime@1.11.1",
     "npm:axe-core@4.12.1": "4.12.1",
     "npm:beautiful-mermaid@1.1.3": "1.1.3",
@@ -17,6 +18,7 @@
     "npm:esbuild@0.28.1": "0.28.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
     "npm:jose@6.2.4": "6.2.4",
+    "npm:json-schema-to-typescript@15.0.4": "15.0.4",
     "npm:lighthouse@13.4.1": "13.4.1_@opentelemetry+core@2.10.0__@opentelemetry+api@1.9.1",
     "npm:loose-envify@1.4.0": "1.4.0",
     "npm:oxlint@1.76.0": "1.76.0",
@@ -62,8 +64,16 @@
         "uuid"
       ]
     },
-    "@apm-js-collab/code-transformer-bundler-plugins@0.7.3": {
-      "integrity": "sha512-qNbPwuMZ8f5ZuGj/ttPeB7a6C/S1bB6tNYaEL5vNiRKydSAxa4AU0gxCWgaP4fVju+AuwhcumSFjrEcGF9Dv7Q==",
+    "@apidevtools/json-schema-ref-parser@11.9.3": {
+      "integrity": "sha512-60vepv88RwcJtSHrD6MjIL6Ta3SOYbgfnkHb+ppAVK+o9mXprRtulx7VlRl3lN3bbvysAfCS7WMVfhUYemB0IQ==",
+      "dependencies": [
+        "@jsdevtools/ono",
+        "@types/json-schema",
+        "js-yaml"
+      ]
+    },
+    "@apm-js-collab/code-transformer-bundler-plugins@0.7.4": {
+      "integrity": "sha512-nAfOeZPSUAQvJa1iFT/5oCrTm5YQhMMrfCNthNnaXHZiOQhu1KGuLoIx7HtbAi3wfwaBYLaICPIeenIaEwcXIg==",
       "dependencies": [
         "@apm-js-collab/code-transformer",
         "es-module-lexer",
@@ -883,6 +893,9 @@
     "@jridgewell/sourcemap-codec@1.5.5": {
       "integrity": "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="
     },
+    "@jsdevtools/ono@7.1.3": {
+      "integrity": "sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg=="
+    },
     "@jsep-plugin/assignment@1.3.0_jsep@1.4.0": {
       "integrity": "sha512-VVgV+CXrhbMI3aSusQyclHkenWSAm95WaiKrMxRFam3JSUiIaQjoMIw2sEs/OX4XifnqeQUN4DYbJjlA8EfktQ==",
       "dependencies": [
@@ -1174,8 +1187,8 @@
         "config-chain"
       ]
     },
-    "@puppeteer/browsers@3.0.6": {
-      "integrity": "sha512-B/gKoqlFkzhvzsI6jo9K1cZz9o5ypviVv/xu8CwA4grZzyVwN+XfkT+tu8T1zrauuEXv6VhS2oGX+6NL95WcKA==",
+    "@puppeteer/browsers@3.1.0": {
+      "integrity": "sha512-RDLpio3fH/qrj5k4DVY6eyiN8tCS0Zovd/6jW//n605oeqkWcUjn+3k+9ZtZBnbwMpsu0F7xDIiKXvVmG5c5Bw==",
       "dependencies": [
         "modern-tar",
         "yargs@18.1.0"
@@ -1325,8 +1338,8 @@
         "meriyah"
       ]
     },
-    "@shikijs/core@4.4.1": {
-      "integrity": "sha512-VeR2CY6Nn9/WbisoYLOQZ7HZOnwTrpBuOw4wExjqLnBCi62BNWynBUO6K2uPIASPFJwAv7cX1fUu+LrPlSstcw==",
+    "@shikijs/core@4.4.2": {
+      "integrity": "sha512-StyzbAyxg2/tBGf78gwbBkGyeQ73lf8UiJArFaQhTQIDqQOCKPCQFanvrs4/Yv3Yfyc+ONInJM6K+FMIf+P+kA==",
       "dependencies": [
         "@shikijs/primitive",
         "@shikijs/types",
@@ -1335,43 +1348,43 @@
         "hast-util-to-html"
       ]
     },
-    "@shikijs/engine-javascript@4.4.1": {
-      "integrity": "sha512-6U4lJBh8LTvIkEVqRHv/rr3ruwtO6IweFQt1ME1ntHJMGHS+6N86vfYGO1o8c/DtOCTia2lfhdQBtBrps1sDfQ==",
+    "@shikijs/engine-javascript@4.4.2": {
+      "integrity": "sha512-MnIkeqWdVPUWsxlx8gKLVCJFTsqrQJgpTPBPpQwaFeJ56lOnJxj5aN2LUFnfxUEcvOQuNocmbaMnVrCEln6rkw==",
       "dependencies": [
         "@shikijs/types",
         "@shikijs/vscode-textmate",
         "oniguruma-to-es"
       ]
     },
-    "@shikijs/engine-oniguruma@4.4.1": {
-      "integrity": "sha512-p23RugMKss0r5DAtRJW1yAXUDl60JvhQYV20yuxei//26JyDSJefV3umyWzzwep2weblMnJGDYahuti6XkcMgA==",
+    "@shikijs/engine-oniguruma@4.4.2": {
+      "integrity": "sha512-GLhowz1+jixjz+wiZ3wMnOn1jTxiFCGl2PkXufivbnwPHKuyw1AYqu5/hbWhZZ2oAb0NP05WUJhYeigY14drnw==",
       "dependencies": [
         "@shikijs/types",
         "@shikijs/vscode-textmate"
       ]
     },
-    "@shikijs/langs@4.4.1": {
-      "integrity": "sha512-xb2kCMloBCIraIy2fS5MW0t/BxVY3q2nDyQKBoeSeq6KNrQbShHetCFlw2n35fGIJ6t3+hXDLQogP5ir9O9bvA==",
+    "@shikijs/langs@4.4.2": {
+      "integrity": "sha512-8DfeusD+Zdv/eYIDdXyJTUnSMHt+aAWjAOCXV20HNGAHRlInXpG8wh421v6B91WOm9TFwRLN+b/LG5F2NAIojg==",
       "dependencies": [
         "@shikijs/types"
       ]
     },
-    "@shikijs/primitive@4.4.1": {
-      "integrity": "sha512-ko2OfDoG89YuQ7xL5LtcQiWKb7NIv1Ephb7g48TVU198OzAMLC8lXVEwaJGHK4sUMYrfAGJDqYmNLOLiW/Kz8w==",
+    "@shikijs/primitive@4.4.2": {
+      "integrity": "sha512-l6fQQKsOMlz72n38fztmSgZ76MO6KSWuw8o+GJ+FhmqrpC9pIOJNQNXGgbb5yX2AwpzlEHwsaLPnk/8o4Fm+rA==",
       "dependencies": [
         "@shikijs/types",
         "@shikijs/vscode-textmate",
         "@types/hast"
       ]
     },
-    "@shikijs/themes@4.4.1": {
-      "integrity": "sha512-wudOaoFro+/Zl9gQv2W1Ur5XlVduqvTuYLI483Xi0wgc1A+cy1hfB2r6ac6ufBgF+ID7KJEW7L41MHrzQ4wH+w==",
+    "@shikijs/themes@4.4.2": {
+      "integrity": "sha512-H0CFoL07ddDC2Dd6EdrPYNkRhUR6YCkJlnuYFceYYUJJA5TIm2b5B33qqiDYryBExgbKMndFJPb2u1gTuqO37g==",
       "dependencies": [
         "@shikijs/types"
       ]
     },
-    "@shikijs/types@4.4.1": {
-      "integrity": "sha512-GOwCLQDHM5EjGUWNPrhzJbr6JP8V/Dx/CDVkWvbZ1Avw5JFnNUckrgbLmE07qtg4WlW7Q7QFndhjIkeU9XMPvw==",
+    "@shikijs/types@4.4.2": {
+      "integrity": "sha512-PFYitV4vpDr/iPCIhnHp+Q4ftic5N5VeNJ3KQ1O8gn3h2ar8qgwMAXF7tq4m1CWaMS60fV4VqF6vfnWH4F7vqQ==",
       "dependencies": [
         "@shikijs/vscode-textmate",
         "@types/hast"
@@ -1409,6 +1422,9 @@
     },
     "@types/json-schema@7.0.15": {
       "integrity": "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="
+    },
+    "@types/lodash@4.17.25": {
+      "integrity": "sha512-+K1NIO8I+F9/wNulfVvu23QYd0Pe9/OCqRrim4NoYIf1VoEDL90Ve4ClzpyqBLc7NpGGWRvYNCKZ1BE/Jpf8dQ=="
     },
     "@types/mdast@4.0.4": {
       "integrity": "sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==",
@@ -1524,7 +1540,7 @@
         "emmet",
         "jsonc-parser@2.3.1",
         "vscode-languageserver-textdocument",
-        "vscode-languageserver-types",
+        "vscode-languageserver-types@3.18.0",
         "vscode-uri"
       ]
     },
@@ -3199,6 +3215,21 @@
     "json-parse-even-better-errors@2.3.1": {
       "integrity": "sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w=="
     },
+    "json-schema-to-typescript@15.0.4": {
+      "integrity": "sha512-Su9oK8DR4xCmDsLlyvadkXzX6+GGXJpbhwoLtOGArAG61dvbW4YQmSEno2y66ahpIdmLMg6YUf/QHLgiwvkrHQ==",
+      "dependencies": [
+        "@apidevtools/json-schema-ref-parser",
+        "@types/json-schema",
+        "@types/lodash",
+        "is-glob",
+        "js-yaml",
+        "lodash",
+        "minimist",
+        "prettier",
+        "tinyglobby"
+      ],
+      "bin": true
+    },
     "json-schema-traverse@0.4.1": {
       "integrity": "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg=="
     },
@@ -4396,8 +4427,8 @@
         "escape-goat"
       ]
     },
-    "puppeteer-core@25.4.0": {
-      "integrity": "sha512-K1plkLOdeoUnGeT1OvdqF3qxl33v+Ra/uH5VyPEhXdMcpvGiEskHzxxEU3fgpccJpJLIipB/rPUsvkZRWeKqOA==",
+    "puppeteer-core@25.5.0": {
+      "integrity": "sha512-XPNT0dQJtphqQ4I29zxlG4IIPbg1iEHAQKWuQgtMJGXjACV77pZSmJvDi51IIIfd+DTKICcopJwUx4upVQ4XbA==",
       "dependencies": [
         "@puppeteer/browsers",
         "chromium-bidi",
@@ -4836,8 +4867,8 @@
     "shell-quote@1.8.4": {
       "integrity": "sha512-VsC6n6vz1ihYYyZZwX7YZSF5l5x36ca17OC+a69h94YqB7X6XLwf+5MOgynYir2SLFUbl8gIYvBo8K8RoNQ6bQ=="
     },
-    "shiki@4.4.1": {
-      "integrity": "sha512-rFP+iYKzjLEIqiMiKANhARqiAbk4deDhWnBtnUO/K0D0dPxMGDH4N0FVfBY/VeI+lPrV4wNGCHQZp7EOr7NNBw==",
+    "shiki@4.4.2": {
+      "integrity": "sha512-P8F/dFhRevaw2uSdeIYlq/5SXZNY85DPtmXQ947gD1Zj2JqO5AkNvVVBar0Me9JkFx3uzVud/qOtP5ek9NEQGA==",
       "dependencies": [
         "@shikijs/core",
         "@shikijs/engine-javascript",
@@ -5436,7 +5467,7 @@
       "dependencies": [
         "@vscode/l10n",
         "vscode-languageserver-textdocument",
-        "vscode-languageserver-types",
+        "vscode-languageserver-types@3.17.5",
         "vscode-uri"
       ]
     },
@@ -5445,7 +5476,7 @@
       "dependencies": [
         "@vscode/l10n",
         "vscode-languageserver-textdocument",
-        "vscode-languageserver-types",
+        "vscode-languageserver-types@3.18.0",
         "vscode-uri"
       ]
     },
@@ -5454,7 +5485,7 @@
       "dependencies": [
         "jsonc-parser@3.3.1",
         "vscode-languageserver-textdocument",
-        "vscode-languageserver-types",
+        "vscode-languageserver-types@3.18.0",
         "vscode-nls",
         "vscode-uri"
       ]
@@ -5466,7 +5497,7 @@
       "integrity": "sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==",
       "dependencies": [
         "vscode-jsonrpc",
-        "vscode-languageserver-types"
+        "vscode-languageserver-types@3.17.5"
       ]
     },
     "vscode-languageserver-textdocument@1.0.12": {
@@ -5474,6 +5505,9 @@
     },
     "vscode-languageserver-types@3.17.5": {
       "integrity": "sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg=="
+    },
+    "vscode-languageserver-types@3.18.0": {
+      "integrity": "sha512-8TsGPNMIMiiBdkORgRSvLjuiEIiAFtO+KssmYWxQ+uSVvlf7RjK8YKCOjPzZ+YA04jXEV7+7LvkSmHkhpNS99g=="
     },
     "vscode-languageserver@9.0.1": {
       "integrity": "sha512-woByF3PDpkHFUreUa7Hos7+pUWdeWMXRd26+ZX2A8cFx6v/JPTtd4/uN0/jB6XQHYaOlHbio03NTHCqrgG5n7g==",
@@ -5679,7 +5713,7 @@
         "vscode-json-languageservice",
         "vscode-languageserver",
         "vscode-languageserver-textdocument",
-        "vscode-languageserver-types",
+        "vscode-languageserver-types@3.18.0",
         "vscode-uri",
         "yaml"
       ],
@@ -5771,12 +5805,14 @@
       "npm:@astrojs/markdown-remark@7.2.2",
       "npm:@axe-core/playwright@4.12.1",
       "npm:@types/pngjs@6.0.5",
+      "npm:ajv@8.20.0",
       "npm:astro@7.1.6",
       "npm:axe-core@4.12.1",
       "npm:beautiful-mermaid@1.1.3",
       "npm:chrome-launcher@1.2.1",
       "npm:fake-indexeddb@6.2.5",
       "npm:jose@6.2.4",
+      "npm:json-schema-to-typescript@15.0.4",
       "npm:lighthouse@13.4.1",
       "npm:loose-envify@1.4.0",
       "npm:parse5@8.0.1",
