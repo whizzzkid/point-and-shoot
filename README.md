@@ -62,8 +62,8 @@ release-candidate install easy to identify while testing.
 
 ## Build from source
 
-Chrome Web Store and Firefox Add-ons listings are not live yet. Until they are, build the extension
-locally with [Git](https://git-scm.com/) and [mise](https://mise.jdx.dev/):
+To develop Point & Shoot or inspect an unpacked build, build the extension locally with
+[Git](https://git-scm.com/) and [mise](https://mise.jdx.dev/):
 
 ```bash
 git clone https://github.com/whizzzkid/point-and-shoot.git

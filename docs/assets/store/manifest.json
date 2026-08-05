@@ -1,10 +1,16 @@
 {
   "schemaVersion": 1,
   "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
-  "sourceDigest": "ed9480f7ea9cdad079ec6680997b3917fb7710f9cf8e4675784338c06ca4bbac",
+  "sourceDigest": "1adf40a044633bc04afc74526f20818a909ad37119fd3e0c7d13d2bf936a5f05",
   "sourcePaths": [
+    "build/build.ts",
+    "build/icons.ts",
+    "build/manifest.ts",
+    "build/preact.ts",
     "build/store-assets.ts",
     "build/store-screenshots.ts",
+    "deno.json",
+    "deno.lock",
     "src/background/activation.test.ts",
     "src/background/activation.ts",
     "src/background/capture.browser.test.ts",

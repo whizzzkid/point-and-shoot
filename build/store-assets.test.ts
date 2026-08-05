@@ -1,6 +1,12 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
-import { inspectPng, renderPromoTile, STORE_ARTWORK, validateStoreAssets } from "./store-assets.ts";
+import {
+  inspectPng,
+  refreshStoreBadges,
+  renderPromoTile,
+  STORE_ARTWORK,
+  validateStoreAssets,
+} from "./store-assets.ts";
 
 Deno.test("store assets - artwork contract has five screenshots followed by two promo tiles", () => {
   assertEquals(
@@ -41,6 +47,22 @@ Deno.test("store assets - PNG inspection rejects malformed and truncated inputs"
     Error,
     "IHDR",
   );
+});
+
+Deno.test("store assets - explicit badge refresh rejects changed upstream bytes", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));
+  const changedUpstream: typeof fetch = () =>
+    Promise.resolve(new Response(new Uint8Array([1, 2, 3])));
+  try {
+    await assertRejects(
+      () => refreshStoreBadges(root, changedUpstream),
+      Error,
+      "official badge changed upstream",
+    );
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
 });
 
 Deno.test("store assets - validation reports every missing generated asset and manifest", async () => {

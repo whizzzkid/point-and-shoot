@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import { FIREFOX_EXTENSION_ID, manifestBase } from "./manifest.ts";
 import {
@@ -6,6 +6,7 @@ import {
   renderReadmeInstallBlock,
   replaceReadmeInstallBlock,
   type StoreListing,
+  syncReadmeInstallBlock,
   validateStoreListing,
 } from "./store-listing.ts";
 
@@ -397,6 +398,96 @@ Deno.test("store listing - README install block links only published vendor badg
   assertEquals(block.includes("chrome-web-store-badge.png"), true);
   assertEquals(block.includes("firefox-add-ons-badge.png"), false);
   assertEquals(block.includes("__FIREFOX_STORE_URL__"), false);
+});
+
+Deno.test("store listing - published projection leaves no stale unpublished README copy", async () => {
+  const listing = validStoreListing();
+  listing.stores.chrome = {
+    state: "published",
+    extensionId: CHROME_EXTENSION_ID,
+    publisherId: "point-and-shoot",
+    listingUrl: `https://chromewebstore.google.com/detail/point-shoot/${CHROME_EXTENSION_ID}`,
+  };
+  listing.stores.firefox = {
+    state: "published",
+    slug: "point-and-shoot",
+    extensionId: FIREFOX_EXTENSION_ID,
+    listingUrl: "https://addons.mozilla.org/firefox/addon/point-and-shoot/",
+  };
+
+  const readme = await Deno.readTextFile(new URL("../README.md", import.meta.url));
+  const projected = replaceReadmeInstallBlock(readme, listing);
+  assertEquals(projected.includes("listings are not live yet"), false);
+  assertEquals(projected.includes("Until they are"), false);
+});
+
+Deno.test("store listing - README projection rejects a non-canonical published URL", () => {
+  const listing = validStoreListing();
+  listing.stores.chrome = {
+    state: "published",
+    extensionId: CHROME_EXTENSION_ID,
+    publisherId: "point-and-shoot",
+    listingUrl: "javascript:alert(1)",
+  };
+  assertThrows(
+    () => renderReadmeInstallBlock(listing),
+    Error,
+    "stores.chrome.listingUrl",
+  );
+});
+
+Deno.test("store listing - sync validates before writing README", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const root = new URL("./", toFileUrl(`${temporaryDirectory}/`));
+  const readme = [
+    "# Product",
+    "",
+    "<!-- store-install:start -->",
+    "original",
+    "<!-- store-install:end -->",
+  ].join("\n");
+  const listing = validStoreListing();
+  listing.stores.chrome = {
+    state: "published",
+    extensionId: CHROME_EXTENSION_ID,
+    publisherId: "point-and-shoot",
+    listingUrl: "javascript:alert(1)",
+  };
+  try {
+    await Deno.writeTextFile(new URL("README.md", root), readme);
+    await Deno.writeTextFile(
+      new URL("store-listing.json", root),
+      `${JSON.stringify(listing, null, 2)}\n`,
+    );
+
+    await assertRejects(
+      () => syncReadmeInstallBlock(root),
+      Error,
+      "stores.chrome.listingUrl",
+    );
+    assertEquals(await Deno.readTextFile(new URL("README.md", root)), readme);
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
+});
+
+Deno.test("store listing - parser rejects whitespace-only required copy", () => {
+  const listing = validStoreListing();
+  listing.listing.currentVersionSummary = "   ";
+  listing.artwork.screenshots[0]!.altText = "\t";
+  listing.privacy.singlePurpose = "\n";
+  listing.privacy.permissions.activeTab = "  ";
+  listing.privacy.dataDisclosures.handledLocally[0]!.description = "\r\n";
+
+  assertThrows(() => parseStoreListing(listing), Error, "listing.currentVersionSummary");
+  assertThrows(() => parseStoreListing(listing), Error, "artwork.screenshots.0.altText");
+  assertThrows(() => parseStoreListing(listing), Error, "privacy.singlePurpose");
+  assertThrows(() => parseStoreListing(listing), Error, "privacy.permissions.activeTab");
+  assertThrows(
+    () => parseStoreListing(listing),
+    Error,
+    "privacy.dataDisclosures.handledLocally.0.description",
+  );
 });
 
 Deno.test("store listing - README install projection replaces only its marked block", () => {

@@ -7,6 +7,12 @@ const STORE_ASSET_MANIFEST = `${STORE_ASSET_DIRECTORY}/manifest.json`;
 const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const PNG_HEADER_LENGTH = 29;
 const SOURCE_ROOTS = [
+  "deno.json",
+  "deno.lock",
+  "build/build.ts",
+  "build/icons.ts",
+  "build/manifest.ts",
+  "build/preact.ts",
   "build/store-assets.ts",
   "build/store-screenshots.ts",
   "store-listing.json",
@@ -497,9 +503,21 @@ export async function validateStoreAssets(
   return [...artworkIssues, ...badgeIssues, ...manifestIssues];
 }
 
-async function downloadBadges(root: URL): Promise<void> {
+/**
+ * Refreshes committed vendor badges from their digest-pinned official sources.
+ *
+ * @param root - Repository root receiving the refreshed badges.
+ * @param fetcher - HTTP fetch implementation, injectable for deterministic tests.
+ * @returns Nothing after every verified badge is written.
+ * @throws {Error} When a download fails or upstream bytes do not match the pinned digest.
+ */
+export async function refreshStoreBadges(
+  root: URL,
+  fetcher: typeof fetch = fetch,
+): Promise<void> {
+  const downloads: { readonly bytes: Uint8Array; readonly fileName: string }[] = [];
   for (const specification of STORE_BADGES) {
-    const response = await fetch(specification.sourceUrl);
+    const response = await fetcher(specification.sourceUrl);
     if (!response.ok) {
       throw new Error(`badge download failed (${response.status}): ${specification.sourceUrl}`);
     }
@@ -507,8 +525,12 @@ async function downloadBadges(root: URL): Promise<void> {
     if (await sha256(bytes) !== specification.sha256) {
       throw new Error(`official badge changed upstream: ${specification.sourceUrl}`);
     }
+    downloads.push({ bytes, fileName: specification.fileName });
+  }
+  await Deno.mkdir(new URL(`${STORE_ASSET_DIRECTORY}/`, root), { recursive: true });
+  for (const { bytes, fileName } of downloads) {
     await Deno.writeFile(
-      new URL(`${STORE_ASSET_DIRECTORY}/${specification.fileName}`, root),
+      new URL(`${STORE_ASSET_DIRECTORY}/${fileName}`, root),
       bytes,
     );
   }
@@ -540,14 +562,16 @@ async function writeManifest(root: URL): Promise<void> {
 }
 
 /**
- * Captures current product scenes and generates all vendor-facing artwork and badges.
+ * Captures current product scenes and generates vendor-facing artwork with pinned badges.
  *
  * @param root - Repository root receiving generated assets.
  * @returns Nothing after all outputs and freshness metadata are written.
- * @throws {Error} When a fixture, capture, or pinned vendor download fails.
+ * @throws {Error} When a fixture or capture fails, or a pinned badge is missing or modified.
  */
 export async function generateStoreAssets(root = new URL("../", import.meta.url)): Promise<void> {
   await Deno.mkdir(new URL(`${STORE_ASSET_DIRECTORY}/`, root), { recursive: true });
+  const badgeIssues = await validateBadges(root);
+  if (badgeIssues.length > 0) printIssues(badgeIssues);
   const { captureStoreScreenshots } = await import("./store-screenshots.ts");
   await captureStoreScreenshots(root, new URL(`${STORE_ASSET_DIRECTORY}/`, root));
   for (const kind of ["small", "marquee"] as const) {
@@ -559,7 +583,6 @@ export async function generateStoreAssets(root = new URL("../", import.meta.url)
       await renderPromoTile(kind, root),
     );
   }
-  await downloadBadges(root);
   await writeManifest(root);
 }
 
@@ -581,6 +604,9 @@ if (import.meta.main) {
         relative(fromFileUrl(root), fromFileUrl(new URL(`${STORE_ASSET_DIRECTORY}/`, root)))
       }`,
     );
+  } else if (command === "refresh-badges") {
+    await refreshStoreBadges(root);
+    console.log("Refreshed digest-pinned official store badges.");
   } else if (command === "check") {
     const issues = await validateStoreAssets(root);
     if (issues.length > 0) printIssues(issues);

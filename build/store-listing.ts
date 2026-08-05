@@ -152,7 +152,7 @@ function stringAt(
   issues: StoreListingIssue[],
 ): string {
   const value = record[key];
-  if (typeof value === "string" && value.length > 0) return value;
+  if (typeof value === "string" && value.trim().length > 0) return value;
   issues.push({ path, message: "must be a non-empty string" });
   return "";
 }
@@ -164,7 +164,7 @@ function nullableStringAt(
   issues: StoreListingIssue[],
 ): string | null {
   const value = record[key];
-  if (value === null || (typeof value === "string" && value.length > 0)) return value;
+  if (value === null || (typeof value === "string" && value.trim().length > 0)) return value;
   issues.push({ path, message: "must be null or a non-empty string" });
   return null;
 }
@@ -202,7 +202,7 @@ function stringRecordAt(
   const value = recordAt(record, key, path, issues);
   const result: Record<string, string> = {};
   for (const [entryKey, entryValue] of Object.entries(value)) {
-    if (typeof entryValue !== "string" || entryValue.length === 0) {
+    if (typeof entryValue !== "string" || entryValue.trim().length === 0) {
       issues.push({ path: `${path}.${entryKey}`, message: "must be a non-empty string" });
       continue;
     }
@@ -498,6 +498,13 @@ function publishedBadgeLines(listing: StoreListing): string[] {
  * @throws {Error} When a published store lacks its required listing URL.
  */
 export function renderReadmeInstallBlock(listing: StoreListing): string {
+  const storeIssues = [
+    ...validateChromeStore(listing.stores.chrome),
+    ...validateFirefoxStore(listing.stores.firefox),
+  ];
+  if (storeIssues.length > 0) {
+    throw new Error(`Invalid store projection:\n${storeIssues.map(formatIssue).join("\n")}`);
+  }
   const lines = [README_INSTALL_START, "", "## Install", ""];
   const badges = publishedBadgeLines(listing);
   if (badges.length > 0) lines.push('<p align="center">', ...badges, "</p>", "");
@@ -771,6 +778,65 @@ function validateDataDisclosures(listing: StoreListing): StoreListingIssue[] {
   return issues;
 }
 
+function validateCanonicalStoreListing(storeListing: StoreListing): StoreListingIssue[] {
+  const issues: StoreListingIssue[] = [];
+  addExactValueIssue(issues, "support.email", storeListing.support.email, SUPPORT_EMAIL);
+  addExactValueIssue(issues, "support.url", storeListing.support.url, SUPPORT_URL);
+  addExactValueIssue(issues, "privacy.url", storeListing.privacy.url, PRIVACY_URL);
+  addExactValueIssue(issues, "listing.name", storeListing.listing.name, manifestBase.name);
+  addExactValueIssue(
+    issues,
+    "listing.shortDescription",
+    storeListing.listing.shortDescription,
+    manifestBase.description,
+  );
+  addLengthIssue(
+    issues,
+    "listing.shortDescription",
+    storeListing.listing.shortDescription,
+    MAX_SHORT_DESCRIPTION_CHARACTERS,
+  );
+  addLengthIssue(
+    issues,
+    "listing.fullDescription",
+    storeListing.listing.fullDescription,
+    MAX_FULL_DESCRIPTION_CHARACTERS,
+  );
+  if (!storeListing.listing.fullDescription.includes(storeListing.listing.currentVersionSummary)) {
+    issues.push({
+      path: "listing.fullDescription",
+      message: "must include listing.currentVersionSummary verbatim",
+    });
+  }
+  if (!storeListing.listing.fullDescription.includes(SUPPORT_EMAIL)) {
+    issues.push({
+      path: "listing.fullDescription",
+      message: `must include ${SUPPORT_EMAIL}`,
+    });
+  }
+  if (!isCanonicalCalendarDate(storeListing.privacy.effectiveDate)) {
+    issues.push({
+      path: "privacy.effectiveDate",
+      message: "must be a real calendar date in YYYY-MM-DD format",
+    });
+  }
+  addLengthIssue(
+    issues,
+    "privacy.singlePurpose",
+    storeListing.privacy.singlePurpose,
+    MAX_PRIVACY_FIELD_CHARACTERS,
+  );
+  if (storeListing.privacy.remoteCode) {
+    issues.push({ path: "privacy.remoteCode", message: "must remain false" });
+  }
+  issues.push(...validatePermissionExplanations(storeListing.privacy.permissions));
+  issues.push(...validateDataDisclosures(storeListing));
+  issues.push(...validateArtwork(storeListing.artwork));
+  issues.push(...validateChromeStore(storeListing.stores.chrome));
+  issues.push(...validateFirefoxStore(storeListing.stores.firefox));
+  return issues;
+}
+
 async function publicSourceFiles(root: URL): Promise<readonly URL[]> {
   const files: URL[] = [];
   async function visit(url: URL): Promise<void> {
@@ -845,62 +911,10 @@ export async function validateStoreListing(root: URL): Promise<readonly StoreLis
     throw error;
   }
 
-  const issues: StoreListingIssue[] = [];
-  addExactValueIssue(issues, "support.email", storeListing.support.email, SUPPORT_EMAIL);
-  addExactValueIssue(issues, "support.url", storeListing.support.url, SUPPORT_URL);
-  addExactValueIssue(issues, "privacy.url", storeListing.privacy.url, PRIVACY_URL);
-  addExactValueIssue(issues, "listing.name", storeListing.listing.name, manifestBase.name);
-  addExactValueIssue(
-    issues,
-    "listing.shortDescription",
-    storeListing.listing.shortDescription,
-    manifestBase.description,
-  );
-  addLengthIssue(
-    issues,
-    "listing.shortDescription",
-    storeListing.listing.shortDescription,
-    MAX_SHORT_DESCRIPTION_CHARACTERS,
-  );
-  addLengthIssue(
-    issues,
-    "listing.fullDescription",
-    storeListing.listing.fullDescription,
-    MAX_FULL_DESCRIPTION_CHARACTERS,
-  );
-  if (!storeListing.listing.fullDescription.includes(storeListing.listing.currentVersionSummary)) {
-    issues.push({
-      path: "listing.fullDescription",
-      message: "must include listing.currentVersionSummary verbatim",
-    });
+  const issues = validateCanonicalStoreListing(storeListing);
+  if (!issues.some(({ path }) => path.startsWith("stores."))) {
+    issues.push(...await validateReadmeProjection(root, storeListing));
   }
-  if (!storeListing.listing.fullDescription.includes(SUPPORT_EMAIL)) {
-    issues.push({
-      path: "listing.fullDescription",
-      message: `must include ${SUPPORT_EMAIL}`,
-    });
-  }
-  if (!isCanonicalCalendarDate(storeListing.privacy.effectiveDate)) {
-    issues.push({
-      path: "privacy.effectiveDate",
-      message: "must be a real calendar date in YYYY-MM-DD format",
-    });
-  }
-  addLengthIssue(
-    issues,
-    "privacy.singlePurpose",
-    storeListing.privacy.singlePurpose,
-    MAX_PRIVACY_FIELD_CHARACTERS,
-  );
-  if (storeListing.privacy.remoteCode) {
-    issues.push({ path: "privacy.remoteCode", message: "must remain false" });
-  }
-  issues.push(...validatePermissionExplanations(storeListing.privacy.permissions));
-  issues.push(...validateDataDisclosures(storeListing));
-  issues.push(...validateArtwork(storeListing.artwork));
-  issues.push(...validateChromeStore(storeListing.stores.chrome));
-  issues.push(...validateFirefoxStore(storeListing.stores.firefox));
-  issues.push(...await validateReadmeProjection(root, storeListing));
   issues.push(...await validatePublicSurfaceSentinels(root));
   return issues;
 }
@@ -909,18 +923,33 @@ async function readCanonicalStoreListing(root: URL): Promise<StoreListing> {
   return parseStoreListing(JSON.parse(await Deno.readTextFile(new URL(STORE_LISTING_FILE, root))));
 }
 
+/**
+ * Validates canonical listing semantics before projecting publication state into the README.
+ *
+ * @param root - Repository root containing the listing contract and README.
+ * @returns Nothing after the README projection is written.
+ * @throws {Error} When canonical listing semantics or README markers are invalid.
+ */
+export async function syncReadmeInstallBlock(root: URL): Promise<void> {
+  const listing = await readCanonicalStoreListing(root);
+  const issues = validateCanonicalStoreListing(listing);
+  if (issues.length > 0) {
+    throw new Error(`Store listing validation failed:\n${issues.map(formatIssue).join("\n")}`);
+  }
+  const readme = await Deno.readTextFile(new URL(README_FILE, root));
+  await Deno.writeTextFile(
+    new URL(README_FILE, root),
+    replaceReadmeInstallBlock(readme, listing),
+  );
+}
+
 async function runCommand(): Promise<void> {
   if (Deno.args.length !== 1) {
     throw new Error("Usage: deno run -A build/store-listing.ts <check|sync>");
   }
   const root = new URL("../", import.meta.url);
   if (Deno.args[0] === "sync") {
-    const listing = await readCanonicalStoreListing(root);
-    const readme = await Deno.readTextFile(new URL(README_FILE, root));
-    await Deno.writeTextFile(
-      new URL(README_FILE, root),
-      replaceReadmeInstallBlock(readme, listing),
-    );
+    await syncReadmeInstallBlock(root);
     console.log("store:sync updated README.md");
     return;
   }

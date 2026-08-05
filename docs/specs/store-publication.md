@@ -99,12 +99,14 @@ state, identity, URL, privacy, and public-sentinel issue in deterministic order.
 repository.
 
 `deno task store:assets` captures the release build, creates the two text-free promo tiles from
-generated product tokens, downloads pinned official vendor badges, and writes
-`docs/assets/store/manifest.json`. The five listing screenshots are opaque 24-bit RGB PNG files at
-1280×800. The small and marquee tiles are opaque 24-bit RGB PNG files at 440×280 and 1400×560.
-`deno task store:assets:check` rejects missing files, dimensions or color modes outside this
-contract, modified vendor badges, output hash drift, source-fingerprint drift, or a current-version
-summary that was not recorded when the assets were regenerated.
+generated product tokens, reuses committed digest-pinned official vendor badges without network
+access, and writes `docs/assets/store/manifest.json`. Use `deno task store:assets:refresh-badges`
+only when intentionally refreshing those badges from their official sources. The five listing
+screenshots are opaque 24-bit RGB PNG files at 1280×800. The small and marquee tiles are opaque
+24-bit RGB PNG files at 440×280 and 1400×560. `deno task store:assets:check` rejects missing files,
+dimensions or color modes outside this contract, modified vendor badges, output hash drift,
+source-fingerprint drift, or a current-version summary that was not recorded when the assets were
+regenerated.
 
 The checker compares the privacy explanation keys with the union of the permissions generated for
 Chrome and Firefox. Adding or removing a permission therefore requires the manifest, contract,
