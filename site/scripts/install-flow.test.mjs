@@ -184,10 +184,10 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
       try {
         const page = await context.newPage();
         await page.addInitScript(() => {
-          window.__pointAndShootFocusCalls = 0;
+          globalThis.__pointAndShootFocusCalls = 0;
           const originalFocus = HTMLElement.prototype.focus;
           HTMLElement.prototype.focus = function (...argumentsList) {
-            window.__pointAndShootFocusCalls += 1;
+            globalThis.__pointAndShootFocusCalls += 1;
             return originalFocus.apply(this, argumentsList);
           };
         });
@@ -197,7 +197,7 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           /Chrome Web Store listing is unpublished/,
         );
         assert.equal(await page.locator("[data-recommended]").count(), 0);
-        assert.equal(await page.evaluate(() => window.__pointAndShootFocusCalls), 0);
+        assert.equal(await page.evaluate(() => globalThis.__pointAndShootFocusCalls), 0);
       } finally {
         await context.close();
       }
@@ -278,7 +278,9 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
             0,
           );
           assert.equal(
-            await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            await page.evaluate(() =>
+              document.documentElement.scrollWidth <= globalThis.innerWidth
+            ),
             true,
           );
 
@@ -321,7 +323,9 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           const page = await zoomed.newPage();
           await page.goto(`${both.origin}/`, { waitUntil: "networkidle" });
           assert.equal(
-            await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            await page.evaluate(() =>
+              document.documentElement.scrollWidth <= globalThis.innerWidth
+            ),
             true,
           );
         } finally {
@@ -344,7 +348,9 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           );
           assert.equal(await page.locator("[data-recommended]").count(), 0);
           assert.equal(
-            await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            await page.evaluate(() =>
+              document.documentElement.scrollWidth <= globalThis.innerWidth
+            ),
             true,
           );
         } finally {
