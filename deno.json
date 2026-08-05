@@ -107,6 +107,7 @@
     "smoke:firefox": "deno task build && deno run -A tests/firefox/smoke.ts",
     "a11y": "deno task build && deno test -A tests/a11y/*.test.ts tests/a11y/*.spec.ts",
     "gallery": "deno run -A src/ui/gallery/server.ts",
+    "playwright:install": "deno run -A npm:playwright@1.62.0 install",
     "site:dev": "deno run -A site/scripts/run-astro.mjs dev",
     "site:build": "deno run -A site/scripts/run-astro.mjs build",
     "site:check": "deno run -A site/scripts/run-astro.mjs check",

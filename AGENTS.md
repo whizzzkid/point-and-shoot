@@ -44,40 +44,41 @@ unit tests, extension builds, and the Astro site.
 A stub task that silently passes is worse than a missing one, because it turns an unimplemented gate
 into a green check.
 
-| Task                         | What it does                                                           |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| `deno task fmt`              | Formats the tree                                                       |
-| `deno task fmt:check`        | Fails on any unformatted file                                          |
-| `deno task lint`             | Runs `recommended` rules plus `no-slow-types`                          |
-| `deno task check`            | Type-checks the project                                                |
-| `deno task test`             | Runs Deno unit and browser-backed module tests                         |
-| `deno task ci`               | Runs `fmt:check` → `lint` → `check` → `test`, in sequence              |
-| `deno task fixture`          | Serves the browser fixture app, printing both origins                  |
-| `deno task shots`            | Captures fixture screenshots into `docs/assets/`                       |
-| `deno task shots:wave3`      | Captures every shipped extension surface in both forced themes         |
-| `deno task tokens`           | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle |
-| `deno task tokens:check`     | Regenerates into a temp dir and diffs against the committed output     |
-| `deno task lint:design`      | Lints `src/` against the design bundle's own oxlint config             |
-| `deno task build`            | Builds development packages in `dist/chrome/` and `dist/firefox/`      |
-| `deno task build:release`    | Builds minified, sourcemap-free `dist/<target>.zip` packages           |
-| `deno task release:current`  | Prints the version packaged into both browser manifests                |
-| `deno task release:next`     | Computes the next UTC `YYYY.MMDD.N` release version                    |
-| `deno task release:validate` | Validates both release zips and an optional matching tag               |
-| `deno task lint:firefox`     | Runs `web-ext lint` against `dist/firefox/`                            |
-| `deno task boot:firefox`     | Loads `dist/firefox/` with `web-ext` and asserts it boots              |
-| `deno task smoke:firefox`    | Drives one Firefox capture through Marionette and validates its note   |
-| `deno task a11y`             | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks |
-| `deno task visual`           | Compares every surface and forced theme with its Linux baseline        |
-| `deno task visual:update`    | Replaces visual baselines intentionally on the CI platform             |
-| `deno task site:dev`         | Starts the Astro development server                                    |
-| `deno task site:check`       | Runs Astro diagnostics for the site                                    |
-| `deno task site:lint`        | Checks Deno formatting and lint rules under `site/`                    |
-| `deno task site:test`        | Runs Deno tests for site tooling                                       |
-| `deno task site:build`       | Builds the static site into `site/dist/`                               |
-| `deno task site:links`       | Checks built output, published scope, and external links               |
-| `deno task site:a11y`        | Runs axe against the built marketing and documentation surfaces        |
-| `deno task site:lighthouse`  | Runs Lighthouse budgets against both built surfaces                    |
-| `deno task site:ci`          | Runs every non-browser site gate in sequence                           |
+| Task                           | What it does                                                            |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `deno task fmt`                | Formats the tree                                                        |
+| `deno task fmt:check`          | Fails on any unformatted file                                           |
+| `deno task lint`               | Runs `recommended` rules plus `no-slow-types`                           |
+| `deno task check`              | Type-checks the project                                                 |
+| `deno task test`               | Runs Deno unit and browser-backed module tests                          |
+| `deno task ci`                 | Runs `fmt:check` → `lint` → `check` → `test`, in sequence               |
+| `deno task fixture`            | Serves the browser fixture app, printing both origins                   |
+| `deno task shots`              | Captures fixture screenshots into `docs/assets/`                        |
+| `deno task shots:wave3`        | Captures every shipped extension surface in both forced themes          |
+| `deno task playwright:install` | Installs requested Playwright browsers and optional system dependencies |
+| `deno task tokens`             | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle  |
+| `deno task tokens:check`       | Regenerates into a temp dir and diffs against the committed output      |
+| `deno task lint:design`        | Lints `src/` against the design bundle's own oxlint config              |
+| `deno task build`              | Builds development packages in `dist/chrome/` and `dist/firefox/`       |
+| `deno task build:release`      | Builds minified, sourcemap-free `dist/<target>.zip` packages            |
+| `deno task release:current`    | Prints the version packaged into both browser manifests                 |
+| `deno task release:next`       | Computes the next UTC `YYYY.MMDD.N` release version                     |
+| `deno task release:validate`   | Validates both release zips and an optional matching tag                |
+| `deno task lint:firefox`       | Runs `web-ext lint` against `dist/firefox/`                             |
+| `deno task boot:firefox`       | Loads `dist/firefox/` with `web-ext` and asserts it boots               |
+| `deno task smoke:firefox`      | Drives one Firefox capture through Marionette and validates its note    |
+| `deno task a11y`               | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks  |
+| `deno task visual`             | Compares every surface and forced theme with its Linux baseline         |
+| `deno task visual:update`      | Replaces visual baselines intentionally on the CI platform              |
+| `deno task site:dev`           | Starts the Astro development server                                     |
+| `deno task site:check`         | Runs Astro diagnostics for the site                                     |
+| `deno task site:lint`          | Checks Deno formatting and lint rules under `site/`                     |
+| `deno task site:test`          | Runs Deno tests for site tooling                                        |
+| `deno task site:build`         | Builds the static site into `site/dist/`                                |
+| `deno task site:links`         | Checks built output, published scope, and external links                |
+| `deno task site:a11y`          | Runs axe against the built marketing and documentation surfaces         |
+| `deno task site:lighthouse`    | Runs Lighthouse budgets against both built surfaces                     |
+| `deno task site:ci`            | Runs every non-browser site gate in sequence                            |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. The path-filtered `Site` workflow uses the same `site:*` tasks for
@@ -104,7 +105,7 @@ requests: same host, different port, fully offline.
 
 ```bash
 mise install
-deno run -A npm:playwright@1.62.0 install chromium
+deno task playwright:install chromium
 ```
 
 The second command downloads the Chromium build Playwright drives; it is not covered by
