@@ -59,15 +59,16 @@ related:
 
 ## Executive Summary
 
-The plan is accepted after thirteen findings were folded into the phase guides. The largest original
+The plan is accepted after fourteen findings were folded into the phase guides. The largest original
 risk was an authentication boundary that could attach a valid credential to the wrong request:
 header-only adapters, silent alternative selection, and credentials keyed without a card revision
 could not safely implement the A2A v1 security model. The revised plan uses explicit requirement
 selection, revision-bound credentials, composable request contributions, and fail-closed collision
-checks. Phase 0 still blocks product implementation until the SDK, browser permission, pre-parse
-input limits, streaming lifecycle, and cross-browser assumptions have executable evidence. The
-2026-08-04 reconciliation against `main` found no superseded phase or new architecture finding; it
-tightened preservation and verification contracts for behavior merged after the original review.
+checks. Phase 0 still blocks product implementation until the portable client, browser permission,
+pre-parse input limits, streaming lifecycle, and cross-browser assumptions have executable evidence.
+The 2026-08-04 reconciliation against `main` and the failed official-client proof produced no
+superseded phase; they replace the SDK assumption with a portable browser-client boundary and
+tighten preservation and verification contracts for behavior merged after the original review.
 
 ## Critical Findings
 
@@ -86,6 +87,26 @@ tightened preservation and verification contracts for behavior merged after the 
 - **Recommendation:** Abort matching controllers first, then transactionally delete the session, its
   runs, and its events. Make late callbacks unable to append after deletion; test rollback and
   active-stream races. The plan now assigns this contract to P1.1, P2.7-P2.9, and P4.
+- **Effort:** TBD.
+
+#### [🟠 High] The stable v1 SDK is not browser-safe and an app-local replacement would entangle policy
+
+- **Lens:** C - underlying assumptions; E - security and trust; H - delivery risk.
+- **Where:** `README.md`, Portable client boundary; phase 0, P0.1 and P0.3; phase 1, P1.8.
+- **Problem:** The stable official client bundles but its generated v1 codec calls Node `Buffer` for
+  raw parts. The edge-oriented alternative is a v0.3 fork with JSON-RPC only. Replacing either with
+  transport code that imports extension permissions, storage, or lifecycle state would solve the
+  immediate crash while making protocol correctness inseparable from this product.
+- **Failure mode:** A raw part throws `ReferenceError: Buffer is not defined` in Chromium, or a
+  future library extraction must transplant extension policy and rewrite the public API. Either
+  failure blocks a conforming browser client and makes later consumers repeat the proof.
+- **Recommendation:** Generate browser wire contracts and standalone runtime validators from an
+  official v1 schema snapshot derived from the pinned normative proto. Keep discovery, JSON-RPC,
+  HTTP+JSON, SSE, limits, and typed errors under `src/shared/a2a/client/`. Expose only
+  `client/mod.ts`; inject `fetch`, `AbortSignal`, and limits; enforce a dependency test that forbids
+  extension, Node, gRPC, and compatibility imports. Keep grants, authentication, persistence, and
+  lifecycle in extension adapters outside that subtree. Test both bindings against an official v1
+  server oracle so project-authored client and fixture code cannot share the same mapping error.
 - **Effort:** TBD.
 
 #### [🟠 High] A header-only authentication contract cannot represent A2A security schemes
@@ -205,18 +226,18 @@ tightened preservation and verification contracts for behavior merged after the 
   in the UI.
 - **Effort:** TBD.
 
-#### [🟡 Medium] The SDK authentication helper may violate the no-403-retry policy
+#### [🟡 Medium] Authentication retry policy must not enter the portable client
 
 - **Lens:** B - unhappy paths; C - underlying assumptions; H - delivery risk.
 - **Where:** Phase 0, P0.1; phase 1, P1.7.
-- **Problem:** The current SDK documents an authentication fetch helper that retries both `401` and
-  `403`, while the plan permits one refresh after `401` and forbids automatic `403` retry. Assuming
-  the helper is policy-compatible would hide an authorization retry in a dependency.
+- **Problem:** The original SDK integration placed credential contribution and retry behavior at the
+  protocol-client seam. Keeping that shape in the replacement would couple a reusable client to
+  extension credential storage and could hide an authorization retry inside a transport call.
 - **Failure mode:** A forbidden request is repeated with credentials, creating noisy audit trails or
   unexpected provider-side effects.
-- **Recommendation:** P0.1 now inventories the helper behavior. P1.7 may use it only if the policy
-  is configurable; otherwise a project wrapper supplies the SDK transport while enforcing one `401`
-  refresh and zero `403` retries.
+- **Recommendation:** Keep the portable client authentication-neutral and require injected `fetch`.
+  P1.7 owns the extension fetch wrapper, one `401` refresh, and zero `403` retries; P1.8 supplies
+  that composed fetch to the portable client.
 - **Effort:** TBD.
 
 #### [🟡 Medium] Input-mode negotiation was mapped to a field the v1 TextPart does not have
@@ -225,7 +246,7 @@ tightened preservation and verification contracts for behavior merged after the 
 - **Where:** Phase 1, P1.8.
 - **Problem:** A2A v1 `TextPart` carries text; input media modes are Agent Card capability
   negotiation, not a media-type label on that part. The original wording encouraged an
-  implementation field that is absent from the SDK type.
+  implementation field that is absent from the generated protocol contract.
 - **Failure mode:** The transport fails type-checking, invents a wire extension, or changes prompt
   bytes while trying to satisfy the selected mode.
 - **Recommendation:** Send the exact Markdown in `{ text }`, negotiate `text/markdown` or
@@ -261,19 +282,19 @@ tightened preservation and verification contracts for behavior merged after the 
 
 | Lens                              | Result after incorporation                                                                                                        |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| A - Single points of failure      | SDK, access broker, ledger, and visible stream remain gates; each fails without disabling local exports.                          |
+| A - Single points of failure      | Portable client, access broker, ledger, and visible stream remain gates; local exports survive each failure.                      |
 | B - Unhappy paths                 | Denial, revocation, stale auth, oversized input, deletion races, disconnect, task purge, and quota have named tests.              |
-| C - Underlying assumptions        | SDK, permissions, Firefox API floor, session lifetime, auth hooks, and browser-managed mechanisms have explicit proof owners.     |
+| C - Underlying assumptions        | Client conformance, permissions, Firefox API floor, session lifetime, and browser mechanisms have explicit proof owners.          |
 | D - Scalability and performance   | Remote bytes, history pages, event loading, streams, and reconciliation now have bounded work.                                    |
 | E - Security and trust            | Exact origins, explicit auth choice, revision-bound credentials, OIDC claims, text rendering, and cascading deletion bound trust. |
 | F - Operability and observability | Two-axis status, ids, redacted errors, corrupt entries, incomplete persistence, and unknown delivery remain visible.              |
 | G - Cost and efficiency           | No hosted service exists; bounded browser work and explicit local quota are the relevant cost controls.                           |
-| H - Delivery risk                 | Phase barriers prove the SDK and browser model before UI; PR-stack lanes own disjoint files with convergence points.              |
+| H - Delivery risk                 | Phase barriers prove the portable client and browser model before UI; stack lanes remain file-disjoint until convergence.         |
 
 ## Latest-main reconciliation
 
-**Delta reviewed:** changes merged to `main` after the plan's original merge base, plus the plan
-updates that preserve their contracts.
+**Delta reviewed:** changes merged to `main` after the plan's original merge base, the failed
+official-client proof, and the plan updates that preserve their contracts.
 
 - **A - Single points of failure:** None observed. The delta adds no component, remote dependency,
   or state owner.
@@ -281,34 +302,37 @@ updates that preserve their contracts.
   after success and failure; history verification retains generated, edited, and fallback names.
 - **C - Underlying assumptions:** Current implementation and tests confirm Chrome's required
   `sidePanel` permission, native promise-only `sidePanel.open()`, branch-specific development
-  `version_name`, release omission of `version_name`, and durable generated session names.
+  `version_name`, release omission of `version_name`, and durable generated session names. The
+  official v1 client assumption is disproven by its runtime `Buffer` dependency.
 - **D - Scalability and performance:** None observed. No work bound or retention contract changed.
 - **E - Security and trust boundaries:** The plan preserves target-specific required permissions; it
   does not widen Chrome or Firefox host access.
 - **F - Operability and observability:** Extension-affecting PRs now finish with a development build
   so checked artifacts identify the branch tip after commands that rewrite `dist/`.
 - **G - Cost and efficiency:** None observed. The delta adds no network, storage, or compute path.
-- **H - Delivery risk:** No item is obsolete. Phase owners and parallel lanes remain disjoint, and
-  the new checks prevent later work from regressing merged runtime and build contracts.
+- **H - Delivery risk:** No phase is obsolete. P0.1 now owns a package-shaped portable subtree and
+  dependency guard; extension-specific policy remains in later adapters so extraction cannot widen
+  the current implementation scope.
 
 ## Underlying Assumptions
 
-| Assumption                                                                           | Status                                                  | Risk if wrong                                                       |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| A stable A2A v1 SDK bundles into both targets without Node or gRPC dependencies.     | Unverified; P0.1 owns the proof.                        | Phase 1 stops for an explicit client decision.                      |
-| SDK transport and auth hooks can accept the project's bounded fetch and auth policy. | Unverified; P0.1 owns the proof.                        | The adapter must wrap more of the SDK or replace it by decision.    |
-| Optional host grants enable extension-context cross-origin fetch in both browsers.   | Documentation-verified; P0.3 owns runtime proof.        | Discovery and streaming require a different extension architecture. |
-| Remote byte limits can be enforced before whole-body JSON and SSE parsing.           | Unverified; P0.3 owns the proof.                        | A hostile agent can exhaust extension memory.                       |
-| Firefox 115 is the first supported release with `storage.session`.                   | Documentation-verified; P0.2 owns manifest enforcement. | Older Firefox fails agent setup or needs an unsafe fallback.        |
-| `storage.session` survives context suspension and clears on browser restart.         | Documentation-verified; P0.3 owns runtime proof.        | Secrets disappear mid-run or persist beyond disclosure.             |
-| An agent retains a known task long enough for lookup or subscription.                | Risky and server-dependent.                             | Reconciliation reports a purged task without inventing events.      |
-| Cookie and mTLS paths meet one Chrome and Firefox safety contract.                   | Unverified; P3.4 and P3.6 own fixed decisions.          | The schemes remain detected but browser-managed or unsupported.     |
-| Cursor paging keeps history responsive at the user's retained volume.                | Unverified; P4 load and fault tests own the proof.      | History requires a later explicit indexing or retention decision.   |
+| Assumption                                                                         | Status                                                  | Risk if wrong                                                       |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
+| The stable official v1 client is browser-safe without compatibility code.          | Disproven; P0.1 Chromium raw-part proof fails.          | The SDK runtime cannot ship in the extension.                       |
+| A schema-generated portable client can interoperate over both browser bindings.    | Unverified; P0.1 and P0.3 own conformance proofs.       | Phase 1 remains blocked or requires another explicit architecture.  |
+| Optional host grants enable extension-context cross-origin fetch in both browsers. | Documentation-verified; P0.3 owns runtime proof.        | Discovery and streaming require a different extension architecture. |
+| Remote byte limits can be enforced before whole-body JSON and SSE parsing.         | Unverified; P0.3 owns the proof.                        | A hostile agent can exhaust extension memory.                       |
+| Firefox 115 is the first supported release with `storage.session`.                 | Documentation-verified; P0.2 owns manifest enforcement. | Older Firefox fails agent setup or needs an unsafe fallback.        |
+| `storage.session` survives context suspension and clears on browser restart.       | Documentation-verified; P0.3 owns runtime proof.        | Secrets disappear mid-run or persist beyond disclosure.             |
+| An agent retains a known task long enough for lookup or subscription.              | Risky and server-dependent.                             | Reconciliation reports a purged task without inventing events.      |
+| Cookie and mTLS paths meet one Chrome and Firefox safety contract.                 | Unverified; P3.4 and P3.6 own fixed decisions.          | The schemes remain detected but browser-managed or unsupported.     |
+| Cursor paging keeps history responsive at the user's retained volume.              | Unverified; P4 load and fault tests own the proof.      | History requires a later explicit indexing or retention decision.   |
 
 ## SPOF Map
 
-- **Official SDK wrapper** — blast radius: all A2A protocol operations; mitigation: phase-0 bundle
-  and behavior proof, exact pin, and a narrow project adapter.
+- **Portable browser client** — blast radius: all A2A protocol operations; mitigation: canonical
+  generated contracts, two-binding conformance tests, a single public entry point, injected policy,
+  and a dependency-boundary build test.
 - **Remote access broker** — blast radius: all remote discovery and delivery; mitigation: exact
   origin policy and explicit grants while all local actions remain available.
 - **Run ledger** — blast radius: durable A2A history; mitigation: transaction boundaries,
@@ -327,7 +351,8 @@ flowchart LR
   Options["Options and auth setup"] --> Broker["Origin grant broker"]
   Panel --> Ledger["IndexedDB run ledger"]
   Panel --> Vault["Session credential vault"]
-  Panel --> Client["A2A SDK adapter"]
+  Panel --> Adapter["Extension transport adapter"]
+  Adapter --> Client["Portable A2A browser client"]
   Client --> Broker
   Broker -->|"bounded authenticated fetch"| Agent["Remote agent or identity provider"]
 ```
@@ -353,8 +378,8 @@ flowchart TD
 
 > Ordered by risk reduction divided by effort; estimates remain TBD because none were supplied.
 
-1. Run P0.1-P0.3 and settle the SDK, Firefox 115 floor, permission, auth-hook, remote-input,
-   timeout, and lifecycle facts before accepting the successor ADR.
+1. Run P0.1-P0.3 and settle the portable client, protocol schema, Firefox 115 floor, permissions,
+   remote-input limits, timeouts, and lifecycle facts before accepting the successor ADR.
 2. Land the security revision, explicit requirement choice, composable auth contract, and credential
    invalidation in the phase-1 foundation.
 3. Land transactional session/run/event deletion and active-controller cancellation with IndexedDB
@@ -389,5 +414,10 @@ flowchart TD
   A2A-capable extension floor to Firefox 115 instead of introducing an unsafe secret-store fallback.
 - **FAIL corrected:** Cross-document comparison found first-satisfiable and header-preferred auth
   rules in conflict; the revised rule requires explicit selection among multiple alternatives.
-- **Unverified by design:** No A2A runtime exists on this branch. SDK, remote-fetch, auth, and
-  stream state machines remain blocked behind their named executable phase gates.
+- **FAIL corrected:** `@a2a-js/sdk@1.0.1` produced browser bundles, but a real Chromium raw-part
+  request failed with `ReferenceError: Buffer is not defined`; the plan now replaces its runtime
+  client with a schema-generated portable implementation instead of a compatibility shim.
+- **PASS:** The replacement boundary has one public module, injected Web-standard platform
+  dependencies, and an explicit import guard separating protocol code from extension policy.
+- **Unverified by design:** The replacement client, remote-fetch, authentication, and stream state
+  machines remain blocked behind their named executable phase gates.
