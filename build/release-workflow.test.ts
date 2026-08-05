@@ -120,4 +120,40 @@ Deno.test("release workflow builds exact preview and release SHAs", async () => 
   );
   assertStringIncludes(workflow, ".body | @base64");
   assertStringIncludes(workflow, "base64 --decode");
+  assertStringIncludes(workflow, "uses: ./.github/workflows/store-publish.yml");
+  assertStringIncludes(workflow, "tag_name: ${{ needs.release_please.outputs.tag_name }}");
+  assertStringIncludes(workflow, "release_sha: ${{ needs.release_please.outputs.release_sha }}");
+  assertStringIncludes(workflow, "id-token: write");
+});
+
+Deno.test("store publishing workflow is disabled by default and protects vendor secrets", async () => {
+  const workflow = await Deno.readTextFile(
+    new URL(".github/workflows/store-publish.yml", ROOT),
+  );
+
+  assertStringIncludes(workflow, "workflow_call:");
+  assertStringIncludes(workflow, "workflow_dispatch:");
+  assertStringIncludes(workflow, "operation:");
+  assertStringIncludes(workflow, "vars.STORE_PUBLISH_ENABLED != 'true'");
+  assertStringIncludes(workflow, "vars.STORE_PUBLISH_ENABLED == 'true'");
+  assertStringIncludes(workflow, "environment: browser-stores");
+  assertStringIncludes(workflow, "id-token: write");
+  assertStringIncludes(workflow, "google-github-actions/auth@v3");
+  assertStringIncludes(workflow, "token_format: access_token");
+  assertStringIncludes(
+    workflow,
+    "access_token_scopes: https://www.googleapis.com/auth/chromewebstore",
+  );
+  assertStringIncludes(workflow, "deno task release:validate");
+  assertStringIncludes(workflow, "deno task store:release disabled");
+  assertStringIncludes(workflow, 'deno task store:release "${OPERATION}"');
+  assertStringIncludes(workflow, "WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}");
+  assertStringIncludes(workflow, "WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}");
+
+  const disabledJob = workflow.slice(
+    workflow.indexOf("  disabled:"),
+    workflow.indexOf("  publish:"),
+  );
+  assertEquals(disabledJob.includes("secrets."), false);
+  assertEquals(disabledJob.includes("CHROME_ACCESS_TOKEN"), false);
 });
