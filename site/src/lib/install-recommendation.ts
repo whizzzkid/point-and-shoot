@@ -1,6 +1,7 @@
 import { classifyInstallTarget } from "./install-target.mjs";
 
 type InstallTarget = "gecko" | "chromium" | "mobile-unsupported" | "unknown";
+type StoreTarget = Extract<InstallTarget, "gecko" | "chromium">;
 
 interface BrowserBrand {
   brand?: string;
@@ -16,8 +17,8 @@ interface BrowserEnvironment {
 }
 
 interface Recommendation {
-  actionTarget: "chromium" | "gecko" | null;
-  announcement: string;
+  actionTarget: StoreTarget | null;
+  announcement: string | null;
   label: string | null;
 }
 
@@ -25,9 +26,20 @@ interface Recommendation {
  * Returns the non-navigating recommendation copy and accent target for one detected browser family.
  *
  * @param target - The browser family classified from local browser evidence.
+ * @param availableActions - Store actions currently rendered by the server, when known.
  * @returns The label, announcement, and optional store action to recommend.
  */
-export function getInstallRecommendation(target: InstallTarget): Recommendation {
+export function getInstallRecommendation(
+  target: InstallTarget,
+  availableActions?: ReadonlySet<StoreTarget>,
+): Recommendation {
+  const isStoreTarget = target === "chromium" || target === "gecko";
+  if (isStoreTarget && availableActions !== undefined) {
+    if (!availableActions.has(target)) {
+      return { actionTarget: null, announcement: null, label: null };
+    }
+  }
+
   if (target === "chromium") {
     return {
       actionTarget: "chromium",
@@ -82,19 +94,32 @@ export function enhanceInstallActions(documentRoot: Document): void {
   if (navigatorWithBrands.userAgentData?.mobile !== undefined) {
     environment.mobile = navigatorWithBrands.userAgentData.mobile;
   }
-  const recommendation = getInstallRecommendation(classifyInstallTarget(environment));
+  const availableActions = new Set<StoreTarget>();
+  for (const action of documentRoot.querySelectorAll<HTMLElement>("[data-store-action]")) {
+    const target = action.dataset.storeAction;
+    if (target === "chromium" || target === "gecko") {
+      availableActions.add(target);
+    }
+  }
+  const recommendation = getInstallRecommendation(
+    classifyInstallTarget(environment),
+    availableActions,
+  );
 
-  for (const status of documentRoot.querySelectorAll<HTMLElement>("[data-install-status]")) {
-    status.textContent = recommendation.announcement;
+  if (recommendation.announcement !== null) {
+    for (const status of documentRoot.querySelectorAll<HTMLElement>("[data-install-status]")) {
+      status.textContent = recommendation.announcement;
+    }
   }
 
   if (recommendation.actionTarget === null) {
     return;
   }
 
-  for (const action of documentRoot.querySelectorAll<HTMLAnchorElement>(
+  const recommendedActions = documentRoot.querySelectorAll<HTMLAnchorElement>(
     `[data-store-action="${recommendation.actionTarget}"]`,
-  )) {
+  );
+  for (const action of recommendedActions) {
     action.classList.add("is-recommended");
     action.setAttribute("aria-label", recommendation.label ?? action.textContent ?? "");
     action.setAttribute("data-recommended", "true");
