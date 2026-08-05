@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 
-import { PUBLISHED_DOCS_PATTERN } from "./lib/docs-manifest";
+import { PUBLISHED_DOCS_PATTERN } from "./lib/docs-manifest.ts";
 
 const docs = defineCollection({
   loader: glob({

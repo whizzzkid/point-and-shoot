@@ -15,10 +15,10 @@ body {
   margin: var(--space-0);
   background:
     radial-gradient(
-      circle at top,
-      color-mix(in srgb, var(--accent) 11%, transparent),
-      transparent 32%
-    ),
+    circle at top,
+    color-mix(in srgb, var(--accent) 11%, transparent),
+    transparent 32%
+  ),
     var(--bg-canvas);
 }
 
