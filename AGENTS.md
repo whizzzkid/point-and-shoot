@@ -4,10 +4,11 @@ Conventions for anyone — human or agent — writing code in this repository. T
 authoritative. Where it disagrees with a memory, a habit, or a plausible-looking pattern elsewhere
 in the tree, this file wins.
 
-The delivery plans have been retired now that the product is implemented. Read
+The original v1 delivery plans have been retired now that the product is implemented. Read
 [`docs/specs/`](docs/specs/README.md) for current behavior, [`docs/adr/`](docs/adr/README.md) for
-architectural rationale, and [`docs/design.md`](docs/design.md) before changing UI. Do not infer
-current requirements from old wave IDs, pull requests, or commit messages.
+architectural rationale, and [`docs/design.md`](docs/design.md) before changing UI. Active proposed
+work may have a temporary plan under [`docs/plans/`](docs/plans/README.md); do not infer current
+requirements from retired wave IDs, pull requests, or commit messages.
 
 ## What this project is
 
@@ -275,11 +276,12 @@ availability). The esbuild `target` derives from the same `SUPPORTED` constant e
 
 ## Docs layout
 
-Four folders under [`docs/`](docs/README.md), and no new top-level directories:
+Five folders under [`docs/`](docs/README.md), and no new top-level directories:
 
 | Folder            | Holds                                                               |
 | ----------------- | ------------------------------------------------------------------- |
 | `docs/specs/`     | Settled behavior specs — what the code must do                      |
+| `docs/plans/`     | Active implementation plans — temporary sequencing and evidence     |
 | `docs/adr/`       | Architecture decision records, numbered and immutable once accepted |
 | `docs/tutorials/` | Task-oriented guides for a reader using the extension               |
 | `docs/assets/`    | Committed images referenced by docs and PR bodies                   |
@@ -288,7 +290,7 @@ Plus [`docs/README.md`](docs/README.md) (the published index and the documentati
 item inherits) and [`docs/design.md`](docs/design.md) (the design-bundle map).
 
 **Everything under `docs/` is public in the repository.** The website renders the product-facing
-index, design guide, specs, and tutorials to HTML themed with the product's own tokens. ADRs stay
-repository-only. Do not add implementation plans under `docs/`; document only current guarantees and
-accepted architectural decisions. Write every doc for a reader who has never seen the repo, keep
-links relative, and put nothing there you would not make public.
+index, design guide, specs, and tutorials to HTML themed with the product's own tokens. Plans and
+ADRs stay repository-only. Keep only active work under `docs/plans/`; retire a completed plan after
+its current guarantees and lasting decisions move into specs and ADRs. Write every doc for a reader
+who has never seen the repo, keep links relative, and put nothing there you would not make public.

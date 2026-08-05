@@ -16,6 +16,7 @@ repo.
 | Path                                | What lives there                                                                 | Published?      |
 | ----------------------------------- | -------------------------------------------------------------------------------- | --------------- |
 | [`design.md`](design.md)            | The design system, MV3 substitutions, and application rules                      | Yes             |
+| `plans/`                            | Active implementation plans, sequencing, and provisional decisions               | Repository only |
 | [`specs/`](specs/README.md)         | Current contracts for the extension, release pipeline, and website               | Yes             |
 | [`adr/`](adr/README.md)             | Architecture decision records, numbered and immutable once accepted              | Repository only |
 | [`tutorials/`](tutorials/README.md) | Task walkthroughs for install, capture, Playwright, troubleshooting, and release | Yes             |
@@ -33,6 +34,9 @@ document nobody finds.
   consequences accepted. Written once, at decision time. Superseded rather than edited: a wrong ADR
   gets a successor that references it, because the record of having believed something is itself the
   value.
+- **Plan** (`plans/<initiative>/`) — how active proposed work is sequenced and verified. Temporary:
+  retire it when delivery is complete, after current guarantees move to specs and lasting rationale
+  moves to ADRs.
 - **Spec** (`specs/*.md`) — _what_ the software guarantees. Schemas, formats, invariants, error
   behavior. Normative: an implementation that disagrees with a spec is a bug in one of the two, and
   the PR must say which.
@@ -89,6 +93,7 @@ Two consequences for how you write here:
 - Nothing in this folder is private. Repository-only means omitted from the website, not
   confidential.
 
-Implementation plans are deliberately not stored under `docs/`. Once behavior lands, preserve its
-current contract in a spec and its lasting rationale in an ADR; use issues and pull requests for
-temporary sequencing and delivery history.
+Only active implementation plans live under `docs/plans/`, and the documentation site does not
+publish them. Once behavior lands, preserve its current contract in a spec and its lasting rationale
+in an ADR; use issues and pull requests for durable delivery history, then retire the completed
+plan.
