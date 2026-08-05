@@ -1,4 +1,5 @@
 import { fromFileUrl, relative, toFileUrl } from "@std/path";
+import { Buffer } from "node:buffer";
 import { PNG } from "pngjs";
 import { parseStoreListing } from "./store-listing.ts";
 
