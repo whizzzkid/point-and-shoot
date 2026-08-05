@@ -8,8 +8,9 @@ import { parse } from "parse5";
 import { docsRoute, isPublishedDoc } from "../src/lib/docs-manifest.ts";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repositoryRoot = resolve(siteRoot, "..");
+const defaultRepositoryRoot = resolve(siteRoot, "..");
 const localOrigin = "https://point-and-shoot.invalid";
+const repositoryBlobPrefix = "/whizzzkid/point-and-shoot/blob/main/";
 const execFileAsync = promisify(execFile);
 
 async function walk(root, predicate) {
@@ -102,6 +103,19 @@ function pageRoute(distRoot, filePath) {
   return `/${relativePath.replace(/index\.html$/, "")}`;
 }
 
+function localRepositoryTarget(url, repositoryRoot) {
+  if (url.origin !== "https://github.com" || !url.pathname.startsWith(repositoryBlobPrefix)) {
+    return undefined;
+  }
+  const relativePath = decodeURIComponent(url.pathname.slice(repositoryBlobPrefix.length));
+  const filePath = resolve(repositoryRoot, relativePath);
+  return {
+    filePath,
+    relativePath,
+    safe: filePath.startsWith(`${repositoryRoot}${sep}`),
+  };
+}
+
 /**
  * Parses the three-digit HTTP status emitted by curl.
  *
@@ -165,7 +179,8 @@ async function externalStatus(url) {
  */
 export async function checkSite({
   distRoot = resolve(siteRoot, "dist"),
-  docsRoot = resolve(repositoryRoot, "docs"),
+  docsRoot = resolve(defaultRepositoryRoot, "docs"),
+  repositoryRoot = resolve(docsRoot, ".."),
   checkExternal = false,
   siteUrl = Deno.env.get("SITE_URL") ?? "http://localhost:4321",
 } = {}) {
@@ -200,6 +215,29 @@ export async function checkSite({
       }
       if (url.origin !== localOrigin) {
         if (link.kind === "page" && /^https?:$/.test(url.protocol)) {
+          let repositoryTarget;
+          try {
+            repositoryTarget = localRepositoryTarget(url, repositoryRoot);
+          } catch {
+            problems.push(`${route}: malformed repository target ${link.url}`);
+            continue;
+          }
+          if (repositoryTarget !== undefined) {
+            if (!repositoryTarget.safe) {
+              problems.push(`${route}: unsafe repository target ${repositoryTarget.relativePath}`);
+              continue;
+            }
+            try {
+              if (!(await stat(repositoryTarget.filePath)).isFile()) {
+                problems.push(
+                  `${route}: missing repository target ${repositoryTarget.relativePath}`,
+                );
+              }
+            } catch {
+              problems.push(`${route}: missing repository target ${repositoryTarget.relativePath}`);
+            }
+            continue;
+          }
           externalUrls.add(url.href);
         } else if (link.kind === "page" && ["mailto:", "tel:"].includes(url.protocol)) {
           continue;

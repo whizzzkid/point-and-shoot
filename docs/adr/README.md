@@ -31,12 +31,18 @@ have one behind them.
 | [0017](0017-release-please-with-calendar-versions.md)           | Use Release Please with calendar versions                        | Accepted 2026-07-31 |
 | [0018](0018-astro-for-marketing-and-documentation.md)           | Astro for the marketing and documentation site                   | Superseded by 0019  |
 | [0019](0019-deno-owned-repository-toolchain.md)                 | Deno owns the repository toolchain                               | Accepted 2026-08-05 |
+| [0020](0020-optional-host-permissions-for-a2a.md)               | Use optional host permissions for A2A agents                     | Accepted 2026-08-05 |
 
-Six of these are load-bearing constraints rather than preferences, and reversing one by accident is
-easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no
-Chrome-only APIs), **0009** (no remote fetches, including fonts), and **0012** (no stable Chrome
-resource URLs), and **0015** (no page-world bridge carrying extension data or APIs). `AGENTS.md`
-restates the product-wide rules; this is where the reasoning lives.
+ADR-0020 supersedes only ADR-0002's rejection of optional host permissions. ADR-0002 remains
+accepted because its `activeTab` constraint for inspected pages is still in force.
+
+Eight of these are load-bearing constraints rather than preferences, and reversing one by accident
+is easy: **0001** (no `chrome.offscreen`), **0002** (no required broad host permissions), **0005**
+(no Chrome-only APIs), **0009** (no remote fetches, including fonts), **0012** (no stable Chrome
+resource URLs), **0015** (no page-world bridge carrying extension data or APIs), **0019** (Deno owns
+every repository tool), and **0020** (remote A2A origins require optional eligibility, runtime
+consent, and an exact client allowlist). `AGENTS.md` restates the product-wide rules; this is where
+the reasoning lives.
 
 ## Filing a new one
 

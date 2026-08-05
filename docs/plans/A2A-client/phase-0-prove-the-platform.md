@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: null
 reviewers:
   - Nishant Arora
@@ -53,13 +53,13 @@ P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR and PR #66 a
 base, not delivery PRs. Branch slots may be initialized together, but each delivery PR opens only
 after its first real owning commit.
 
-| Position | Role          | Branch                              | PR target                           | Current state             |
-| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------- |
-| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review  |
-| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | Implementation branch     |
-| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | Planned branch; no PR yet |
-| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | Planned branch; no PR yet |
-| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Planned branch; no PR yet |
+| Position | Role          | Branch                              | PR target                           | Current state                   |
+| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------------- |
+| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review        |
+| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | PR #68, tip `bd866ae`, ready    |
+| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | PR #71, commit `44abed3`, ready |
+| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | PR #72, commit `0152069`, ready |
+| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | PR #74, commit `d845823`, ready |
 
 ```mermaid
 flowchart TD
@@ -88,6 +88,7 @@ browser-native replacement.
 **Files:**
 
 - Modify: `deno.json`
+- Modify: `deno.lock`
 - Delete: `src/shared/a2a/sdk.ts`
 - Delete: `src/shared/a2a/sdk.test.ts`
 - Create: `src/shared/a2a/client/mod.ts`
@@ -96,6 +97,7 @@ browser-native replacement.
 - Create: `src/shared/a2a/client/protocol.generated.ts`
 - Create: `src/shared/a2a/client/validation.generated.ts`
 - Create: `src/shared/a2a/client/validation.test.ts`
+- Create: `src/shared/a2a/client/boundary.test.ts`
 - Create: `src/shared/a2a/client/generate-protocol.ts`
 - Create: `src/shared/a2a/client/generate-protocol.test.ts`
 - Create: `src/shared/a2a/client/card.ts`
@@ -254,6 +256,8 @@ schema digest, generator version, bundle delta, and browser runtime evidence in 
 
 **Commit:** `feat(a2a): add the portable browser client`
 
+**Delivery evidence:** PR #68; reviewed tip `bd866aeeefd457ce1ad2402ace19d7ff644f645a`.
+
 ### P0.2 - Add the cross-browser permission and session APIs
 
 **Marker:** `[AGENT-READY]`.
@@ -267,6 +271,8 @@ manifest and browser shim.
 
 - Modify: `build/manifest.ts`
 - Modify: `build/manifest.test.ts`
+- Modify: `build/release.ts`
+- Modify: `build/release.test.ts`
 - Modify: `docs/plans/README.md`
 - Modify: `src/shared/browser.ts`
 - Modify: `src/shared/browser.test.ts`
@@ -334,6 +340,8 @@ Inspect both built manifests. Required permissions must remain unchanged per tar
 
 **Commit:** `feat(extension): add optional A2A origin grants`
 
+**Delivery evidence:** PR #71; commit `44abed362d629ae1521fc68330f0ca2f01e51743`.
+
 ### P0.3 - Prove cross-origin discovery, authenticated SSE, and lifecycle recovery
 
 **Marker:** `[AGENT-GUIDED]` - record Chrome and Firefox results and any browser-specific
@@ -351,6 +359,9 @@ the portable client and permission shim without copying either item's implementa
 - Create: `tests/e2e/a2a-network.spec.ts`
 - Create: `tests/firefox/a2a-network.ts`
 - Modify: `deno.json`
+- Modify: `src/shared/a2a/client/response.ts`
+- Modify: `src/shared/a2a/client/response.test.ts`
+- Modify: `tests/firefox/smoke.ts`
 
 **Produces:** A reusable OS-assigned-port A2A fixture with separate card and interface origins,
 Bearer-protected requests, ordered SSE events, forced disconnect, polling, and task subscription.
@@ -392,6 +403,8 @@ mise exec -- deno task ci
 
 **Commit:** `test(a2a): prove cross-origin streamed delivery`
 
+**Delivery evidence:** PR #72; commit `01520697cba7f9cdb6e06a282f156fd175aad6ed`.
+
 ### P0.4 - Record the evidence-backed architecture decisions
 
 **Marker:** `[AGENT-READY]`.
@@ -402,7 +415,7 @@ mise exec -- deno task ci
 
 **Files:**
 
-- Create: `docs/adr/0019-optional-host-permissions-for-a2a.md`
+- Create: `docs/adr/0020-optional-host-permissions-for-a2a.md`
 - Create: `docs/specs/a2a-client.md`
 - Modify: `AGENTS.md`
 - Modify: `docs/adr/README.md`
@@ -440,9 +453,12 @@ Also re-run every P0.1 and P0.3 proof against the combined head.
 
 **Commit:** `docs(a2a): record the client architecture`
 
+**Delivery evidence:** PR #74; architecture commit `d845823189338cc7db3af461e57764627d97eca4`.
+
 ## Phase exit gate
 
-Phase 1 remains blocked until all statements below have executable evidence:
+All statements below have executable evidence on the Phase 0 stack. P1.1-P1.9 are unblocked by the
+proof and may start after the complete Phase 0 stack merges:
 
 - The portable client bundles into both extension targets without `Buffer`, Node-only, extension,
   compatibility, or gRPC dependencies, and its generated protocol contract matches the pinned A2A v1

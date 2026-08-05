@@ -26,6 +26,8 @@ come from the [runtime limits](runtime-limits.md) spec and their owning exported
   legacy export bounds.
 - [Extension runtime](extension-runtime.md) — browser targets, permissions, injection, capture,
   evidence, storage, and UI surfaces.
+- [A2A browser client platform](a2a-client.md) — portable A2A v1 contracts, browser transports,
+  optional-origin access, remote-input limits, stream ownership, and recovery boundaries.
 - [Build, release, and verification](build-release-and-verification.md) — build outputs, test tiers,
   protected checks, CalVer, and release artifacts.
 - [Website and published documentation](website-and-published-docs.md) — shared design inputs,

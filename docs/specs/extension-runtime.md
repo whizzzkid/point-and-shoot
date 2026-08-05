@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -13,6 +13,8 @@ labels:
 related:
   - title: ActiveTab-only permission model
     path-or-url: ../adr/0002-activetab-only-permission-model.md
+  - title: Optional host permissions for A2A agents
+    path-or-url: ../adr/0020-optional-host-permissions-for-a2a.md
   - title: Closed shadow DOM
     path-or-url: ../adr/0006-closed-shadow-dom-for-injected-ui.md
   - title: Toolbar session control
@@ -39,19 +41,23 @@ or verification pipeline.
 
 ### Browser targets and permissions
 
-`build/manifest.ts` is the only manifest source. Chrome `116` and Firefox `109` are the minimum
+`build/manifest.ts` is the only manifest source. Chrome `116` and Firefox `115` are the minimum
 versions; `build/build.ts` derives its esbuild targets from the same `SUPPORTED` constant.
 
 Both manifests grant `activeTab`, `storage`, `scripting`, `downloads`, and `clipboardWrite`. Chrome
 also grants `sidePanel`, which is required to call `chrome.sidePanel.open()`. They declare no
-`host_permissions` and no static `content_scripts`. The background injects `content/content.js` only
-after a toolbar click, keyboard command, or popup action supplies an eligible active tab. A
+required `host_permissions` and no static `content_scripts`. Optional remote-agent eligibility is
+declared separately and grants nothing until a user approves an exact origin at runtime, as defined
+by the [A2A browser client platform](a2a-client.md). The background injects `content/content.js`
+only after a toolbar click, keyboard command, or popup action supplies an eligible active tab. A
 restricted page returns an unavailable state and does not create a session.
 
 Chrome uses a module service worker and `side_panel`; Firefox uses an event-page script and
 `sidebar_action`. Application code accesses both through the promise-based shim in
 `src/shared/browser.ts`. The shim normalizes capture, messaging, storage, downloads, script
-injection, action state, options navigation, and panel opening.
+injection, action state, options navigation, panel opening, runtime permissions, session-only
+storage, identity feasibility, and cookie feasibility. Optional `identity` and `cookies` API
+permissions are not declared.
 
 ### Injected interface and theming
 
