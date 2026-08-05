@@ -130,8 +130,9 @@ workarounds.
 
 ## Development
 
-The extension is Deno-first. The marketing and documentation site has an isolated Node toolchain
-under `site/`; none of its dependencies ship inside the extension.
+The repository uses Deno for extension and site development. Astro and other npm packages resolve
+through Deno; there is no separate Node or npm project under `site/`, and none of the site's
+dependencies ship inside the extension.
 
 Run the extension gate with:
 
@@ -142,11 +143,7 @@ mise exec -- deno task ci
 Run the site checks with:
 
 ```bash
-cd site
-npm ci
-npm run check
-npm run lint
-npm run build
+mise exec -- deno task site:ci
 ```
 
 The [Playwright companion guide](docs/tutorials/playwright-companion.md) explains how to load the

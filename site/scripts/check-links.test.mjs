@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import test from "node:test";
 
 import { checkSite, parseHttpStatus } from "./check-links.mjs";
 
@@ -26,28 +25,28 @@ async function fixture() {
   return { distRoot, docsRoot, root, siteUrl };
 }
 
-test("site integrity accepts a complete published set", async () => {
+Deno.test("site integrity accepts a complete published set", async () => {
   const paths = await fixture();
   try {
     const summary = await checkSite(paths);
-    assert.equal(summary.pages, 2);
-    assert.equal(summary.publishedDocs, 1);
+    assertEquals(summary.pages, 2);
+    assertEquals(summary.publishedDocs, 1);
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects a broken internal anchor", async () => {
+Deno.test("site integrity rejects a broken internal anchor", async () => {
   const paths = await fixture();
   try {
     await writeFile(resolve(paths.distRoot, "docs/index.html"), '<a href="/#missing">Broken</a>');
-    await assert.rejects(checkSite(paths), /missing anchor #missing/);
+    await assertRejects(() => checkSite(paths), Error, "missing anchor #missing");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects the obsolete repository prefix on assets", async () => {
+Deno.test("site integrity rejects the obsolete repository prefix on assets", async () => {
   const paths = await fixture();
   try {
     await mkdir(resolve(paths.distRoot, "brand"));
@@ -57,89 +56,101 @@ test("site integrity rejects the obsolete repository prefix on assets", async ()
       '<img src="/point-and-shoot/brand/icon.svg" alt="">',
     );
     await writeFile(resolve(paths.distRoot, "docs/index.html"), "<h1>Docs</h1>");
-    await assert.rejects(checkSite(paths), /missing target \/point-and-shoot\/brand\/icon\.svg/);
+    await assertRejects(
+      () => checkSite(paths),
+      Error,
+      "missing target /point-and-shoot/brand/icon.svg",
+    );
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects a canonical URL outside the configured Pages origin", async () => {
+Deno.test("site integrity rejects a canonical URL outside the configured Pages origin", async () => {
   const paths = await fixture();
   try {
     await writeFile(
       resolve(paths.distRoot, "index.html"),
       '<link rel="canonical" href="https://stale.example.test/"><h1 id="home">Home</h1>',
     );
-    await assert.rejects(checkSite(paths), /unexpected canonical https:\/\/stale\.example\.test\//);
+    await assertRejects(
+      () => checkSite(paths),
+      Error,
+      "unexpected canonical https://stale.example.test/",
+    );
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity requires exactly one canonical URL per page", async () => {
+Deno.test("site integrity requires exactly one canonical URL per page", async () => {
   const paths = await fixture();
   try {
     await writeFile(resolve(paths.distRoot, "index.html"), '<h1 id="home">Home</h1>');
-    await assert.rejects(checkSite(paths), /expected one canonical link, found 0/);
+    await assertRejects(() => checkSite(paths), Error, "expected one canonical link, found 0");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects a product doc without an output page", async () => {
+Deno.test("site integrity rejects a product doc without an output page", async () => {
   const paths = await fixture();
   try {
     await mkdir(resolve(paths.docsRoot, "specs"));
     await writeFile(resolve(paths.docsRoot, "specs/missing.md"), "# Missing\n");
-    await assert.rejects(checkSite(paths), /Missing output page for docs\/specs\/missing\.md/);
+    await assertRejects(
+      () => checkSite(paths),
+      Error,
+      "Missing output page for docs/specs/missing.md",
+    );
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects a remote resource embedded in CSS", async () => {
+Deno.test("site integrity rejects a remote resource embedded in CSS", async () => {
   const paths = await fixture();
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
       '<style>@import url("https://fonts.example.test/family.css");</style>',
     );
-    await assert.rejects(checkSite(paths), /remote resource is not allowed/);
+    await assertRejects(() => checkSite(paths), Error, "remote resource is not allowed");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity rejects a quoted remote CSS import", async () => {
+Deno.test("site integrity rejects a quoted remote CSS import", async () => {
   const paths = await fixture();
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
       '<style>@import "https://fonts.example.test/family.css";</style>',
     );
-    await assert.rejects(checkSite(paths), /remote resource is not allowed/);
+    await assertRejects(() => checkSite(paths), Error, "remote resource is not allowed");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("HTTP status parsing rejects an indeterminate curl response", () => {
-  assert.equal(parseHttpStatus("200"), 200);
-  assert.throws(() => parseHttpStatus(""), /invalid HTTP status/);
-  assert.throws(() => parseHttpStatus("not-a-status"), /invalid HTTP status/);
+Deno.test("HTTP status parsing rejects an indeterminate curl response", () => {
+  assertEquals(parseHttpStatus("200"), 200);
+  assertThrows(() => parseHttpStatus(""), Error, "invalid HTTP status");
+  assertThrows(() => parseHttpStatus("not-a-status"), Error, "invalid HTTP status");
 });
 
-test("site integrity reports a malformed URL", async () => {
+Deno.test("site integrity reports a malformed URL", async () => {
   const paths = await fixture();
   try {
     await writeFile(resolve(paths.distRoot, "docs/index.html"), '<a href="https://%">Bad</a>');
-    await assert.rejects(checkSite(paths), /malformed link https:\/\/%/);
+    await assertRejects(() => checkSite(paths), Error, "malformed link https://%");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }
 });
 
-test("site integrity accepts contact links", async () => {
+Deno.test("site integrity accepts contact links", async () => {
   const paths = await fixture();
   try {
     await writeFile(
@@ -153,14 +164,14 @@ test("site integrity accepts contact links", async () => {
   }
 });
 
-test("site integrity reports a malformed anchor encoding", async () => {
+Deno.test("site integrity reports a malformed anchor encoding", async () => {
   const paths = await fixture();
   try {
     await writeFile(
       resolve(paths.distRoot, "docs/index.html"),
       '<a href="/#%E0%A4%A">Bad anchor</a>',
     );
-    await assert.rejects(checkSite(paths), /malformed anchor #%E0%A4%A/);
+    await assertRejects(() => checkSite(paths), Error, "malformed anchor #%E0%A4%A");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }

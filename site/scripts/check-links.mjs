@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, relative, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { parse } from "parse5";
 
@@ -167,7 +167,7 @@ export async function checkSite({
   distRoot = resolve(siteRoot, "dist"),
   docsRoot = resolve(repositoryRoot, "docs"),
   checkExternal = false,
-  siteUrl = process.env.SITE_URL ?? "http://localhost:4321",
+  siteUrl = Deno.env.get("SITE_URL") ?? "http://localhost:4321",
 } = {}) {
   const htmlFiles = await walk(distRoot, (path) => path.endsWith(".html"));
   const pages = new Map();
@@ -308,8 +308,8 @@ export async function checkSite({
   };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const summary = await checkSite({ checkExternal: process.argv.includes("--external") });
+if (import.meta.main) {
+  const summary = await checkSite({ checkExternal: Deno.args.includes("--external") });
   console.log(
     `Checked ${summary.pages} pages, ${summary.publishedDocs} published docs, ` +
       `${summary.staticDiagrams} static diagrams, and ${summary.externalLinks} external links.`,

@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const contentTypes = new Map([
@@ -84,7 +84,7 @@ export async function startBuiltSite({
   return { origin: `http://${host}:${address.port}`, server };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.main) {
   const { origin } = await startBuiltSite();
   console.log(`Listening at ${origin}/`);
 }

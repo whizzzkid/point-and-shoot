@@ -13,7 +13,7 @@ function formatViolation(surface, violation) {
   return `${surface}: ${violation.id} (${violation.impact}) at ${targets}: ${violation.help}`;
 }
 
-const probeFailure = process.env.PNS_A11Y_PROBE === "1";
+const probeFailure = Deno.env.get("PNS_A11Y_PROBE") === "1";
 const failures = [];
 const browser = await chromium.launch();
 
@@ -33,8 +33,7 @@ try {
         await page.goto(`${origin}${surface.path}`, { waitUntil: "networkidle" });
         if (probeFailure) {
           await page.addStyleTag({
-            content:
-              "body, body * { color: rgb(119 119 119) !important; " +
+            content: "body, body * { color: rgb(119 119 119) !important; " +
               "background-color: rgb(119 119 119) !important; }",
           });
         }
