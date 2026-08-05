@@ -131,7 +131,8 @@ Store submission remains manual at this layer of the release pipeline.
 The workflow adds a marked `point-and-shoot-store-status` section to the release body without
 changing Release Please's notes. It starts Chrome and Firefox as unpublished and distinguishes the
 expected GitHub version, submitted version, vendor review state, public version, reconciliation
-time, and actionable failure text. A public version mismatch keeps release closeout incomplete.
+time, and actionable failure text. A public version mismatch or missing live listing URL keeps
+release closeout incomplete.
 
 ## Delivery flow
 

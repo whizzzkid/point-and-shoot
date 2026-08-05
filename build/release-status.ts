@@ -68,7 +68,8 @@ function versionMismatch(label: string, status: StoreReleaseStatus): string | un
 }
 
 function isCurrentAndPublished(status: StoreReleaseStatus): boolean {
-  return status.state === "published" && status.publicVersion === status.expectedVersion;
+  return status.state === "published" && status.publicVersion === status.expectedVersion &&
+    status.listingUrl !== undefined;
 }
 
 function assertConsistentStatus(status: ReleaseStatus): void {

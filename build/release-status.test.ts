@@ -108,6 +108,15 @@ Deno.test("release status reports public version mismatches and Chrome listing a
   assertStringIncludes(rendered, "Store publication is incomplete");
 });
 
+Deno.test("published versions without live listing URLs remain incomplete", () => {
+  const rendered = renderReleaseStatus(releaseStatus(
+    storeStatus("published", { publicVersion: EXPECTED_VERSION }),
+    storeStatus("published", { publicVersion: EXPECTED_VERSION }),
+  ));
+
+  assertStringIncludes(rendered, "Store publication is incomplete");
+});
+
 Deno.test("status projection preserves release notes and is idempotent", () => {
   const initialBody = "# Release notes\n\nShipped a useful change.\n";
   const status = releaseStatus(storeStatus("unpublished"), storeStatus("unpublished"));
