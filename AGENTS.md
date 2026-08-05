@@ -67,6 +67,9 @@ into a green check.
 | `deno task release:next`       | Computes the next UTC `YYYY.MMDD.N` release version                     |
 | `deno task release:validate`   | Validates both release zips and an optional matching tag                |
 | `deno task store:check`        | Validates listing state, copy, privacy, permissions, and public links   |
+| `deno task store:sync`         | Projects store publication state into the marked README install block   |
+| `deno task store:assets`       | Captures and generates release-build store artwork and vendor badges    |
+| `deno task store:assets:check` | Rejects missing, malformed, modified, or source-stale store artwork     |
 | `deno task lint:firefox`       | Runs `web-ext lint` against `dist/firefox/`                             |
 | `deno task boot:firefox`       | Loads `dist/firefox/` with `web-ext` and asserts it boots               |
 | `deno task smoke:firefox`      | Drives one Firefox capture through Marionette and validates its note    |
@@ -149,6 +152,14 @@ those sources and is part of the authoritative CI gate.
   `listing.currentVersionSummary`, `listing.fullDescription`, README/docs copy, the inventory of up
   to five listing screenshots, and release notes in the same PR. Update every affected artifact;
   record unchanged items in the PR test plan rather than manufacturing copy churn.
+- Store screenshots, promo tiles, vendor badges, and `docs/assets/store/manifest.json` are generated
+  outputs. Do not edit them by hand. Run `deno task store:assets` whenever a visible feature,
+  permission, setting, export behavior, listing-copy field, or current-version summary changes, then
+  visually inspect all seven listing images at their original size. The source digest makes an
+  unchanged summary or screenshot set an explicit regeneration decision instead of silent drift.
+- The marked README install block is generated with `deno task store:sync`. Unpublished or submitted
+  stores never render a badge or link; changing a store to `published` and syncing is the only way
+  its canonical listing becomes an install action.
 - A permission or data-handling change updates the generated manifests, permission explanations,
   data disclosures, privacy page, durable specs or ADRs, and drift tests in the same PR. The privacy
   guarantee remains local-only and `activeTab`-only unless ADR-0002 is superseded.

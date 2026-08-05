@@ -1,10 +1,10 @@
 ---
 title: "PR 2: Listing assets and README install flow"
 type: plan
-status: draft
+status: in progress
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -29,8 +29,8 @@ Firefox install surfaces to the repository without exposing unusable links befor
 
 ## Coordination
 
-- Status: pending
-- Owner: unassigned
+- Status: in progress
+- Owner: Codex
 - Depends on: PR 1 complete
 - PR base: PR 1 branch until PR 1 merges
 - PR boundary: store artwork, asset generation/checking, README install flow, and listing copy; no
@@ -96,27 +96,27 @@ The opening paragraph is the store summary:
 
 ## Checklist
 
-- [ ] Write failing tests for all seven output dimensions, JPEG or PNG color type 2 RGB encoding,
+- [x] Write failing tests for all seven output dimensions, JPEG or PNG color type 2 RGB encoding,
       deterministic bytes, missing inputs, and stale generated output.
-- [ ] Implement 1280×800 screenshot composition using product tokens and vendored fonts.
-- [ ] Generate a text-free 440×280 small promo tile focused on the crosshair and fix-ready evidence.
-- [ ] Generate a text-free 1400×560 marquee tile showing capture-to-agent handoff.
-- [ ] Add official Chrome Web Store and Firefox Add-ons badges from vendor-provided sources, retain
+- [x] Implement 1280×800 screenshot composition using product tokens and vendored fonts.
+- [x] Generate a text-free 440×280 small promo tile focused on the crosshair and fix-ready evidence.
+- [x] Generate a text-free 1400×560 marquee tile showing capture-to-agent handoff.
+- [x] Add official Chrome Web Store and Firefox Add-ons badges from vendor-provided sources, retain
       their aspect ratios, and record source URLs in generator metadata.
-- [ ] Add `store:assets` and `store:assets:check`; include the check in `deno task ci`.
-- [ ] Add screenshot ordering and complete launch copy to `store-listing.json`.
-- [ ] Add a current-version summary check that requires feature PRs changing public capabilities to
+- [x] Add `store:assets` and `store:assets:check`; include the check in `deno task ci`.
+- [x] Add screenshot ordering and complete launch copy to `store-listing.json`.
+- [x] Add a current-version summary check that requires feature PRs changing public capabilities to
       update the summary or record that the existing summary remains accurate.
-- [ ] Add a README **Install** section that shows both browsers and source installation.
-- [ ] While store state is unpublished, do not render either official store badge; retain **Build
+- [x] Add a README **Install** section that shows both browsers and source installation.
+- [x] While store state is unpublished, do not render either official store badge; retain **Build
       from source** as the only install action and state that store publication is in progress.
-- [ ] When state becomes published, make each badge link to its canonical listing without a README
+- [x] When state becomes published, make each badge link to its canonical listing without a README
       edit beyond the config transition.
-- [ ] Add concise alt text that states the user-visible outcome of every image.
-- [ ] Document screenshot-refresh triggers in `AGENTS.md`: visible features, permissions, settings,
+- [x] Add concise alt text that states the user-visible outcome of every image.
+- [x] Document screenshot-refresh triggers in `AGENTS.md`: visible features, permissions, settings,
       export behavior, listing copy, or a release's current-version summary.
-- [ ] Run asset tests twice and compare hashes, then run `mise exec -- deno task ci`.
-- [ ] Visually inspect all seven outputs at original resolution and attach them to PR 2.
+- [x] Run asset tests twice and compare hashes, then run `mise exec -- deno task ci`.
+- [x] Visually inspect all seven outputs at original resolution and attach them to PR 2.
 - [ ] Commit in the two boundaries listed in the parent plan and open PR 2.
 
 ## Acceptance evidence
@@ -145,13 +145,25 @@ verified facts:
 Record any asset-source substitutions, final output filenames, and generator interface changes below
 these facts when PR 2 starts.
 
+- The official Chrome badge is the vendor's 496×150 bordered PNG; the official Firefox badge is the
+  vendor's 172×60 PNG. Their source URLs and exact SHA-256 digests live in `build/store-assets.ts`.
+- Listing outputs are `01-capture-toolbar.png` through `05-privacy-settings.png`, `small-promo.png`,
+  and `marquee-promo.png` under `docs/assets/store/`.
+- `deno task store:assets` captures the release build before generating artwork. The non-writing
+  `deno task store:assets:check` validates dimensions, PNG color type, pinned badges, output hashes,
+  source freshness, and the reviewed current-version summary.
+- `deno task store:sync` is the only writer for the marked README install block.
+
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: in progress
+- Owner: Codex
+- Started: 2026-08-05T05:13:19Z
 - Completed: not completed
 - PR: none
 - Commits: none
-- Verification: not run
-- Deviations: none
+- Verification: `deno task store:assets` twice with byte-identical output; original-resolution
+  visual inspection of all seven outputs; `mise exec -- deno task ci` (347 passed)
+- Deviations: the four product scenes are direct 1280×800 fixture captures rather than composed
+  canvases; only the text-free promo tiles use pixel composition. This preserves authentic product
+  UI while meeting the same deterministic size and color-mode contract.

@@ -98,6 +98,9 @@
     "release:pr": "deno run -A npm:release-please@17.6.0 release-pr",
     "release:validate": "deno run -A build/release.ts validate",
     "store:check": "deno run -A build/store-listing.ts check",
+    "store:sync": "deno run -A build/store-listing.ts sync",
+    "store:assets": "deno task build:release && deno run -A build/store-assets.ts generate",
+    "store:assets:check": "deno run -A build/store-assets.ts check",
     "lint:firefox": "deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox",
     "e2e:smoke": "deno task build && deno test -A tests/e2e/load.spec.ts",
     "e2e:session": "deno task build && deno test -A tests/e2e/session-action.spec.ts",
@@ -121,6 +124,6 @@
     "site:a11y": "deno run -A site/scripts/check-a11y.mjs",
     "site:lighthouse": "deno run -A site/scripts/check-lighthouse.mjs",
     "site:ci": "deno task site:lint && deno task site:check && deno task site:test && deno task site:build && deno task site:links",
-    "ci": "deno task fmt:check && deno task lint && deno task check && deno task store:check && deno task test"
+    "ci": "deno task fmt:check && deno task lint && deno task check && deno task store:check && deno task store:assets:check && deno task test"
   }
 }

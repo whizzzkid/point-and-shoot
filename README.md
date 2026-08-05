@@ -27,6 +27,15 @@
   <a href="#build-from-source">Build from source</a>
 </p>
 
+<!-- store-install:start -->
+
+## Install
+
+Chrome Web Store and Firefox Add-ons publication is in progress. Until both listings are available,
+[build the extension from source](#build-from-source).
+
+<!-- store-install:end -->
+
 ![A Point & Shoot session in the notes panel](tests/visual/baselines/notes-dark.png)
 
 Point & Shoot is a cross-browser extension for reporting interface problems in place. Start a

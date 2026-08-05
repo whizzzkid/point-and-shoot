@@ -1,7 +1,13 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import { FIREFOX_EXTENSION_ID, manifestBase } from "./manifest.ts";
-import { parseStoreListing, type StoreListing, validateStoreListing } from "./store-listing.ts";
+import {
+  parseStoreListing,
+  renderReadmeInstallBlock,
+  replaceReadmeInstallBlock,
+  type StoreListing,
+  validateStoreListing,
+} from "./store-listing.ts";
 
 const CHROME_EXTENSION_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const REQUIRED_LOCAL_DATA_CATEGORIES = [
@@ -35,6 +41,32 @@ function validStoreListing(): StoreListing {
         "",
         "Send support requests to support@pointandshoot.app.",
       ].join("\n"),
+    },
+    artwork: {
+      screenshots: [
+        {
+          fileName: "01-capture-toolbar.png",
+          altText: "Point & Shoot selecting a page element with the capture toolbar.",
+        },
+        {
+          fileName: "02-notes-review.png",
+          altText: "A captured UI issue ready for review in the notes workspace.",
+        },
+        {
+          fileName: "03-note-hover-highlight.png",
+          altText: "The page element linked to a saved note highlighted in place.",
+        },
+        {
+          fileName: "04-compiled-plan.png",
+          altText: "Captured notes compiled into an agent-ready fix prompt.",
+        },
+        {
+          fileName: "05-privacy-settings.png",
+          altText: "Local capture and privacy controls in Point & Shoot settings.",
+        },
+      ],
+      smallPromoFileName: "small-promo.png",
+      marqueePromoFileName: "marquee-promo.png",
     },
     privacy: {
       url: "https://pointandshoot.app/privacy/",
@@ -308,7 +340,10 @@ Deno.test("store listing - rejects placeholder store URLs on public surfaces", a
       "Install from https://chromewebstore.google.com/detail/placeholder after publication.\n",
     ]
   ) {
-    assertEquals(await validateFixture(listing, { "README.md": publicCopy }), ["README.md"]);
+    assertEquals(await validateFixture(listing, { "README.md": publicCopy }), [
+      "README.md#store-install",
+      "README.md",
+    ]);
   }
 });
 
@@ -328,4 +363,84 @@ Deno.test("store listing - parser rejects malformed schema values", () => {
   listing.schemaVersion = 2;
   assertThrows(() => parseStoreListing(listing), Error, "schemaVersion");
   assertThrows(() => parseStoreListing(null), Error, "store listing");
+});
+
+Deno.test("store listing - README install block stays honest while both stores are unpublished", () => {
+  const listing = validStoreListing();
+  assertEquals(
+    renderReadmeInstallBlock(listing),
+    [
+      "<!-- store-install:start -->",
+      "",
+      "## Install",
+      "",
+      "Chrome Web Store and Firefox Add-ons publication is in progress. Until both listings are available,",
+      "[build the extension from source](#build-from-source).",
+      "",
+      "<!-- store-install:end -->",
+    ].join("\n"),
+  );
+});
+
+Deno.test("store listing - README install block links only published vendor badges", () => {
+  const listing = validStoreListing();
+  const chromeListingUrl =
+    `https://chromewebstore.google.com/detail/point-shoot/${CHROME_EXTENSION_ID}`;
+  listing.stores.chrome = {
+    state: "published",
+    extensionId: CHROME_EXTENSION_ID,
+    publisherId: "point-and-shoot",
+    listingUrl: chromeListingUrl,
+  };
+  const block = renderReadmeInstallBlock(listing);
+  assertEquals(block.includes(chromeListingUrl), true);
+  assertEquals(block.includes("chrome-web-store-badge.png"), true);
+  assertEquals(block.includes("firefox-add-ons-badge.png"), false);
+  assertEquals(block.includes("__FIREFOX_STORE_URL__"), false);
+});
+
+Deno.test("store listing - README install projection replaces only its marked block", () => {
+  const listing = validStoreListing();
+  const readme = [
+    "# Product",
+    "",
+    "<!-- store-install:start -->",
+    "stale",
+    "<!-- store-install:end -->",
+    "",
+    "## Build from source",
+  ].join("\n");
+  assertEquals(
+    replaceReadmeInstallBlock(readme, listing),
+    ["# Product", "", renderReadmeInstallBlock(listing), "", "## Build from source"].join("\n"),
+  );
+  assertThrows(
+    () => replaceReadmeInstallBlock("# Missing markers\n", listing),
+    Error,
+    "marked install block",
+  );
+});
+
+Deno.test("store listing - check reports README install projection drift", async () => {
+  const listing = validStoreListing();
+  assertEquals(
+    await validateFixture(listing, {
+      "README.md": [
+        "<!-- store-install:start -->",
+        "stale",
+        "<!-- store-install:end -->",
+      ].join("\n"),
+    }),
+    ["README.md#store-install"],
+  );
+});
+
+Deno.test("store listing - artwork order and file names are exact", async () => {
+  const listing = validStoreListing();
+  listing.artwork.screenshots.reverse();
+  listing.artwork.smallPromoFileName = "wrong.png";
+  assertEquals(await validateFixture(listing), [
+    "artwork.screenshots",
+    "artwork.smallPromoFileName",
+  ]);
 });

@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -53,6 +53,9 @@ JSON `null`, never empty strings or dummy links.
 | `listing.shortDescription`      | Matches the generated manifest description and is at most 132 characters          |
 | `listing.currentVersionSummary` | Concise summary intentionally reviewed when shipped capabilities change           |
 | `listing.fullDescription`       | At most 16,000 characters; contains the version summary and support email         |
+| `artwork.screenshots`           | Five named screenshots in Point, Shoot, Review, Compile, Settings workflow order  |
+| `artwork.smallPromoFileName`    | Exactly `small-promo.png`                                                         |
+| `artwork.marqueePromoFileName`  | Exactly `marquee-promo.png`                                                       |
 | `privacy.url`                   | Exactly `https://pointandshoot.app/privacy/`                                      |
 | `privacy.effectiveDate`         | A real calendar date in canonical `YYYY-MM-DD` form                               |
 | `privacy.singlePurpose`         | Chrome single-purpose declaration, at most 1,000 characters                       |
@@ -95,11 +98,25 @@ state, identity, URL, privacy, and public-sentinel issue in deterministic order.
 `deno task store:check` prints those issues and exits unsuccessfully without modifying the
 repository.
 
+`deno task store:assets` captures the release build, creates the two text-free promo tiles from
+generated product tokens, downloads pinned official vendor badges, and writes
+`docs/assets/store/manifest.json`. The five listing screenshots are opaque 24-bit RGB PNG files at
+1280×800. The small and marquee tiles are opaque 24-bit RGB PNG files at 440×280 and 1400×560.
+`deno task store:assets:check` rejects missing files, dimensions or color modes outside this
+contract, modified vendor badges, output hash drift, source-fingerprint drift, or a current-version
+summary that was not recorded when the assets were regenerated.
+
 The checker compares the privacy explanation keys with the union of the permissions generated for
 Chrome and Firefox. Adding or removing a permission therefore requires the manifest, contract,
 privacy page, and disclosure tests to change together. The repository README, site source, and the
 published documentation set (`docs/README.md`, `docs/design.md`, `docs/specs/**`, and
 `docs/tutorials/**`) may not contain store URL sentinel tokens.
+
+The README contains one generated block delimited by `<!-- store-install:start -->` and
+`<!-- store-install:end -->`. `deno task store:sync` replaces only that block. A store badge and
+canonical link render only when that store is `published`; unpublished and submitted stores render
+an in-progress statement and the source-build fallback instead. `store:check` rejects projection
+drift without rewriting the README.
 
 ## Projection flow
 
@@ -112,7 +129,9 @@ flowchart TD
     Contract --> SiteProjection[site/.generated/store-listing.json]
     SiteProjection --> Privacy[Privacy page]
     SiteProjection --> Install[Install recommendations]
-    Parser --> Repository[README and listing assets]
+    Parser --> ReadmeSync[README install projection]
+    Contract --> AssetGenerator[Release screenshots and promo tiles]
+    AssetGenerator --> AssetGate[store:assets:check]
     Parser --> Release[Release surfaces]
 ```
 

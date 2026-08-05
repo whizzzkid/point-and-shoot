@@ -2,6 +2,9 @@ import { fromFileUrl, relative } from "@std/path";
 import { FIREFOX_EXTENSION_ID, forChrome, forFirefox, manifestBase } from "./manifest.ts";
 
 const STORE_LISTING_FILE = "store-listing.json";
+const README_FILE = "README.md";
+const README_INSTALL_START = "<!-- store-install:start -->";
+const README_INSTALL_END = "<!-- store-install:end -->";
 const SUPPORT_EMAIL = "support@pointandshoot.app";
 const SUPPORT_URL = "https://pointandshoot.app/";
 const PRIVACY_URL = "https://pointandshoot.app/privacy/";
@@ -35,6 +38,11 @@ const DUMMY_STORE_URL_PATTERNS = [
 
 type StoreState = "unpublished" | "submitted" | "published";
 
+interface StoreScreenshot {
+  fileName: string;
+  altText: string;
+}
+
 interface LocalDataDisclosure {
   category: string;
   description: string;
@@ -66,6 +74,11 @@ export interface StoreListing {
     shortDescription: string;
     currentVersionSummary: string;
     fullDescription: string;
+  };
+  artwork: {
+    screenshots: StoreScreenshot[];
+    smallPromoFileName: string;
+    marqueePromoFileName: string;
   };
   privacy: {
     url: string;
@@ -219,6 +232,27 @@ function localDataDisclosuresAt(
   });
 }
 
+function screenshotsAt(
+  record: Record<string, unknown>,
+  key: string,
+  path: string,
+  issues: StoreListingIssue[],
+): StoreScreenshot[] {
+  const value = record[key];
+  if (!Array.isArray(value)) {
+    issues.push({ path, message: "must be an array" });
+    return [];
+  }
+  return value.map((entry, index) => {
+    const entryPath = `${path}.${index}`;
+    const screenshot = recordValue(entry, entryPath, issues);
+    return {
+      fileName: stringAt(screenshot, "fileName", `${entryPath}.fileName`, issues),
+      altText: stringAt(screenshot, "altText", `${entryPath}.altText`, issues),
+    };
+  });
+}
+
 function parseSupport(
   root: Record<string, unknown>,
   issues: StoreListingIssue[],
@@ -250,6 +284,28 @@ function parseListingCopy(
       issues,
     ),
     fullDescription: stringAt(listing, "fullDescription", "listing.fullDescription", issues),
+  };
+}
+
+function parseArtwork(
+  root: Record<string, unknown>,
+  issues: StoreListingIssue[],
+): StoreListing["artwork"] {
+  const artwork = recordAt(root, "artwork", "artwork", issues);
+  return {
+    screenshots: screenshotsAt(artwork, "screenshots", "artwork.screenshots", issues),
+    smallPromoFileName: stringAt(
+      artwork,
+      "smallPromoFileName",
+      "artwork.smallPromoFileName",
+      issues,
+    ),
+    marqueePromoFileName: stringAt(
+      artwork,
+      "marqueePromoFileName",
+      "artwork.marqueePromoFileName",
+      issues,
+    ),
   };
 }
 
@@ -369,12 +425,151 @@ export function parseStoreListing(value: unknown): StoreListing {
     schemaVersion: 1,
     support: parseSupport(root, issues),
     listing: parseListingCopy(root, issues),
+    artwork: parseArtwork(root, issues),
     privacy: parsePrivacy(root, issues),
     stores: parseStores(root, issues),
   };
 
   if (issues.length > 0) throw new StoreListingParseError(issues);
   return result;
+}
+
+const EXPECTED_SCREENSHOT_FILES = [
+  "01-capture-toolbar.png",
+  "02-notes-review.png",
+  "03-note-hover-highlight.png",
+  "04-compiled-plan.png",
+  "05-privacy-settings.png",
+] as const;
+
+function validateArtwork(artwork: StoreListing["artwork"]): StoreListingIssue[] {
+  const issues: StoreListingIssue[] = [];
+  if (
+    artwork.screenshots.length !== EXPECTED_SCREENSHOT_FILES.length ||
+    artwork.screenshots.some(
+      ({ fileName }, index) => fileName !== EXPECTED_SCREENSHOT_FILES[index],
+    )
+  ) {
+    issues.push({
+      path: "artwork.screenshots",
+      message: "must name the five launch screenshots in canonical workflow order",
+    });
+  }
+  if (artwork.smallPromoFileName !== "small-promo.png") {
+    issues.push({ path: "artwork.smallPromoFileName", message: "must equal small-promo.png" });
+  }
+  if (artwork.marqueePromoFileName !== "marquee-promo.png") {
+    issues.push({
+      path: "artwork.marqueePromoFileName",
+      message: "must equal marquee-promo.png",
+    });
+  }
+  return issues;
+}
+
+function publishedBadgeLines(listing: StoreListing): string[] {
+  const lines: string[] = [];
+  if (listing.stores.chrome.state === "published") {
+    const url = listing.stores.chrome.listingUrl;
+    if (url === null) throw new Error("published Chrome listing has no URL");
+    lines.push(
+      `  <a href="${url}">`,
+      '    <img src="docs/assets/store/chrome-web-store-badge.png" height="60" alt="Install Point & Shoot from the Chrome Web Store">',
+      "  </a>",
+    );
+  }
+  if (listing.stores.firefox.state === "published") {
+    const url = listing.stores.firefox.listingUrl;
+    if (url === null) throw new Error("published Firefox listing has no URL");
+    lines.push(
+      `  <a href="${url}">`,
+      '    <img src="docs/assets/store/firefox-add-ons-badge.png" height="60" alt="Install Point & Shoot from Firefox Add-ons">',
+      "  </a>",
+    );
+  }
+  return lines;
+}
+
+/**
+ * Renders the generated README install section for the current publication states.
+ *
+ * @param listing - Validated canonical store listing.
+ * @returns A complete marked Markdown block with no unusable store links.
+ * @throws {Error} When a published store lacks its required listing URL.
+ */
+export function renderReadmeInstallBlock(listing: StoreListing): string {
+  const lines = [README_INSTALL_START, "", "## Install", ""];
+  const badges = publishedBadgeLines(listing);
+  if (badges.length > 0) lines.push('<p align="center">', ...badges, "</p>", "");
+
+  const unpublishedStores = [
+    listing.stores.chrome.state === "published" ? null : "Chrome Web Store",
+    listing.stores.firefox.state === "published" ? null : "Firefox Add-ons",
+  ].filter((name): name is string => name !== null);
+  if (unpublishedStores.length === 2) {
+    lines.push(
+      "Chrome Web Store and Firefox Add-ons publication is in progress. Until both listings are available,",
+      "[build the extension from source](#build-from-source).",
+    );
+  } else if (unpublishedStores.length === 1) {
+    lines.push(
+      `${unpublishedStores[0]} publication is in progress. You can also ` +
+        "[build the extension from source](#build-from-source).",
+    );
+  } else {
+    lines.push("You can also [build the extension from source](#build-from-source).");
+  }
+  lines.push("", README_INSTALL_END);
+  return lines.join("\n");
+}
+
+/**
+ * Replaces only the generated README install block.
+ *
+ * @param readme - Existing README source.
+ * @param listing - Canonical publication state rendered into the block.
+ * @returns README source with the marked install block replaced.
+ * @throws {Error} When the README does not contain exactly one complete marked block.
+ */
+export function replaceReadmeInstallBlock(readme: string, listing: StoreListing): string {
+  const start = readme.indexOf(README_INSTALL_START);
+  const end = readme.indexOf(README_INSTALL_END);
+  if (
+    start < 0 || end < start ||
+    readme.indexOf(README_INSTALL_START, start + README_INSTALL_START.length) >= 0 ||
+    readme.indexOf(README_INSTALL_END, end + README_INSTALL_END.length) >= 0
+  ) {
+    throw new Error("README must contain exactly one marked install block");
+  }
+  const after = end + README_INSTALL_END.length;
+  return `${readme.slice(0, start)}${renderReadmeInstallBlock(listing)}${readme.slice(after)}`;
+}
+
+async function validateReadmeProjection(
+  root: URL,
+  listing: StoreListing,
+): Promise<StoreListingIssue[]> {
+  let readme: string;
+  try {
+    readme = await Deno.readTextFile(new URL(README_FILE, root));
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return [];
+    throw error;
+  }
+  try {
+    if (replaceReadmeInstallBlock(readme, listing) !== readme) {
+      return [{
+        path: "README.md#store-install",
+        message: "is stale; run deno task store:sync",
+      }];
+    }
+    return [];
+  } catch (error) {
+    if (error instanceof Error) {
+      return [{ path: "README.md#store-install", message: error.message }];
+    }
+    throw error;
+  }
 }
 
 function addExactValueIssue(
@@ -702,17 +897,36 @@ export async function validateStoreListing(root: URL): Promise<readonly StoreLis
   }
   issues.push(...validatePermissionExplanations(storeListing.privacy.permissions));
   issues.push(...validateDataDisclosures(storeListing));
+  issues.push(...validateArtwork(storeListing.artwork));
   issues.push(...validateChromeStore(storeListing.stores.chrome));
   issues.push(...validateFirefoxStore(storeListing.stores.firefox));
+  issues.push(...await validateReadmeProjection(root, storeListing));
   issues.push(...await validatePublicSurfaceSentinels(root));
   return issues;
 }
 
-async function runCheck(): Promise<void> {
-  if (Deno.args.length !== 1 || Deno.args[0] !== "check") {
-    throw new Error("Usage: deno task store:check");
+async function readCanonicalStoreListing(root: URL): Promise<StoreListing> {
+  return parseStoreListing(JSON.parse(await Deno.readTextFile(new URL(STORE_LISTING_FILE, root))));
+}
+
+async function runCommand(): Promise<void> {
+  if (Deno.args.length !== 1) {
+    throw new Error("Usage: deno run -A build/store-listing.ts <check|sync>");
   }
   const root = new URL("../", import.meta.url);
+  if (Deno.args[0] === "sync") {
+    const listing = await readCanonicalStoreListing(root);
+    const readme = await Deno.readTextFile(new URL(README_FILE, root));
+    await Deno.writeTextFile(
+      new URL(README_FILE, root),
+      replaceReadmeInstallBlock(readme, listing),
+    );
+    console.log("store:sync updated README.md");
+    return;
+  }
+  if (Deno.args[0] !== "check") {
+    throw new Error("Usage: deno run -A build/store-listing.ts <check|sync>");
+  }
   const issues = await validateStoreListing(root);
   if (issues.length > 0) {
     throw new Error(`Store listing validation failed:\n${issues.map(formatIssue).join("\n")}`);
@@ -720,4 +934,4 @@ async function runCheck(): Promise<void> {
   console.log("store:check passed");
 }
 
-if (import.meta.main) await runCheck();
+if (import.meta.main) await runCommand();
