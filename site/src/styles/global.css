@@ -528,7 +528,6 @@ footer p {
     width: min(calc(100% - var(--space-6)), var(--container-max));
   }
 
-  .hero-actions,
   .proof-strip,
   .workflow-grid,
   footer {
@@ -537,11 +536,6 @@ footer p {
 
   .install-options {
     display: grid;
-  }
-
-  .closing-actions {
-    display: grid;
-    width: 100%;
   }
 
   .product-stage {
