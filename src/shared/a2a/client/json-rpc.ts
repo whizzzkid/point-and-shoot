@@ -15,7 +15,7 @@ import type {
   SubscribeToTaskRequest,
   Task,
 } from "./protocol.generated.ts";
-import { readBoundedJson } from "./response.ts";
+import { isRetryableHttpStatus, readBoundedJsonResponse } from "./response.ts";
 import { parseSseJson } from "./sse.ts";
 import {
   validateSendMessageResponse,
@@ -56,15 +56,21 @@ export function createJsonRpcClient(
   ): Promise<T> => {
     const id = ++requestIdentifier;
     const request = createRequest(target.url, method, id, params, requestOptions, false);
-    const value = await readBoundedJson(fetchImpl, request, {
+    const response = await readBoundedJsonResponse(fetchImpl, request, {
       signal: requestOptions.signal,
       maxBytes: limits.jsonBytes,
       requestMs: limits.requestMs,
       firstByteMs: limits.firstByteMs,
       streamIdleMs: limits.streamIdleMs,
       transport: "JSONRPC",
-    });
-    return parseEnvelope<T>(value, id, validator, responseName);
+    }, true);
+    return parseEnvelope<T>(
+      response.value,
+      id,
+      validator,
+      responseName,
+      response.ok ? undefined : response.status,
+    );
   };
 
   const streaming = async function* <T>(
@@ -161,6 +167,7 @@ function parseEnvelope<T>(
   expectedIdentifier: number,
   validator: Validator,
   responseName: string,
+  status?: number,
 ): T {
   if (!isRecord(value) || value.jsonrpc !== "2.0" || value.id !== expectedIdentifier) {
     throw new A2AClientError("A2A JSON-RPC response envelope is malformed or mismatched", {
@@ -178,8 +185,18 @@ function parseEnvelope<T>(
     }
     throw new A2AClientError("A2A endpoint returned a protocol error", {
       code: "protocol-error",
-      retryable: protocolCode === -32603,
+      retryable: protocolCode === -32603 ||
+        (status !== undefined && isRetryableHttpStatus(status)),
+      status,
       protocolCode,
+      transport: "JSONRPC",
+    });
+  }
+  if (status !== undefined) {
+    throw new A2AClientError(`A2A endpoint returned HTTP ${status}`, {
+      code: "http-error",
+      retryable: isRetryableHttpStatus(status),
+      status,
       transport: "JSONRPC",
     });
   }

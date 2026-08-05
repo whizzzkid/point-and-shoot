@@ -120,6 +120,27 @@ Deno.test("HTTP+JSON client rejects a schema-invalid response", async () => {
   assertEquals(error.transport, "HTTP+JSON");
 });
 
+Deno.test("HTTP+JSON client preserves bounded protocol and HTTP error metadata", async () => {
+  const client = createHttpJsonClient(
+    () =>
+      Promise.resolve(Response.json({
+        error: { code: 400, status: "FAILED_PRECONDITION", message: "secret detail" },
+      }, { status: 400 })),
+    TARGET,
+    LIMITS,
+  );
+
+  const error = await assertRejects(
+    () => client.getTask({ id: "task-1" }, { signal: new AbortController().signal }),
+    A2AClientError,
+  );
+
+  assertEquals(error.code, "protocol-error");
+  assertEquals(error.protocolCode, 400);
+  assertEquals(error.status, 400);
+  assertEquals(error.message.includes("secret detail"), false);
+});
+
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
   const values: T[] = [];
   for await (const event of events) {

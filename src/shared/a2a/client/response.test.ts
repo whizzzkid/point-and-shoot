@@ -2,7 +2,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { A2AClientError } from "./errors.ts";
-import { readBoundedJson } from "./response.ts";
+import { readBoundedJson, readBoundedJsonResponse } from "./response.ts";
 
 const REQUEST = new Request("https://agent.example/a2a");
 
@@ -121,6 +121,24 @@ Deno.test("readBoundedJson preserves safe HTTP failure metadata without reading 
   assertEquals(error.status, 503);
   assertEquals(error.retryable, true);
   assertEquals(pulls, 0);
+});
+
+Deno.test("readBoundedJsonResponse can bound and return a non-success protocol body", async () => {
+  const response = await readBoundedJsonResponse(
+    () =>
+      Promise.resolve(Response.json({ error: { code: 400, message: "secret" } }, {
+        status: 400,
+      })),
+    REQUEST,
+    { signal: new AbortController().signal, ...limits() },
+    true,
+  );
+
+  assertEquals(response, {
+    ok: false,
+    status: 400,
+    value: { error: { code: 400, message: "secret" } },
+  });
 });
 
 Deno.test("readBoundedJson reports caller cancellation", async () => {

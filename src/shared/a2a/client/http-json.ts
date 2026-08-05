@@ -13,7 +13,7 @@ import type {
   StreamResponse,
   Task,
 } from "./protocol.generated.ts";
-import { readBoundedJson } from "./response.ts";
+import { isRetryableHttpStatus, readBoundedJsonResponse } from "./response.ts";
 import { parseSseJson } from "./sse.ts";
 import {
   validateSendMessageResponse,
@@ -53,15 +53,18 @@ export function createHttpJsonClient(
     responseName: string,
   ): Promise<T> => {
     const request = createRequest(endpoint + path, method, body, requestOptions, false);
-    const value = await readBoundedJson(fetchImpl, request, {
+    const response = await readBoundedJsonResponse(fetchImpl, request, {
       signal: requestOptions.signal,
       maxBytes: limits.jsonBytes,
       requestMs: limits.requestMs,
       firstByteMs: limits.firstByteMs,
       streamIdleMs: limits.streamIdleMs,
       transport: "HTTP+JSON",
-    });
-    return validateResponse<T>(value, validator, responseName);
+    }, true);
+    if (!response.ok) {
+      throw parseHttpError(response.value, response.status);
+    }
+    return validateResponse<T>(response.value, validator, responseName);
   };
 
   const streaming = async function* <T>(
@@ -178,6 +181,25 @@ function validateResponse<T>(value: unknown, validator: Validator, responseName:
   return value as T;
 }
 
+function parseHttpError(value: unknown, status: number): A2AClientError {
+  const error = isRecord(value) && isRecord(value.error) ? value.error : undefined;
+  if (typeof error?.code === "number") {
+    return new A2AClientError("A2A endpoint returned a protocol error", {
+      code: "protocol-error",
+      retryable: isRetryableHttpStatus(status),
+      status,
+      protocolCode: error.code,
+      transport: "HTTP+JSON",
+    });
+  }
+  return new A2AClientError(`A2A endpoint returned HTTP ${status}`, {
+    code: "http-error",
+    retryable: isRetryableHttpStatus(status),
+    status,
+    transport: "HTTP+JSON",
+  });
+}
+
 function tenantPath(tenant: string | undefined, path: string): string {
   return tenant === undefined || tenant === "" ? path : `/${encodeURIComponent(tenant)}${path}`;
 }
@@ -213,4 +235,8 @@ function requireIdentifier(identifier: string | undefined, operation: string): s
     });
   }
   return identifier;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

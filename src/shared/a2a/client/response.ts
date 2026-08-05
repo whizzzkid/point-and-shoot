@@ -19,6 +19,16 @@ export interface BoundedResponseOptions {
   readonly transport?: A2ATransportBinding | undefined;
 }
 
+/** Bounded parsed JSON plus safe HTTP response metadata. */
+export interface BoundedJsonResponse {
+  /** Whether the HTTP status is in the successful range. */
+  readonly ok: boolean;
+  /** Numeric HTTP response status. */
+  readonly status: number;
+  /** Parsed but not yet protocol-validated JSON value. */
+  readonly value: unknown;
+}
+
 /**
  * Fetches, bounds, and parses one JSON response without exposing remote body text in errors.
  *
@@ -32,6 +42,25 @@ export async function readBoundedJson(
   request: Request,
   options: BoundedResponseOptions,
 ): Promise<unknown> {
+  return (await readBoundedJsonResponse(fetchImpl, request, options)).value;
+}
+
+/**
+ * Fetches, bounds, and parses JSON while optionally returning non-success protocol bodies.
+ *
+ * @param fetchImpl - Injected Web Fetch implementation.
+ * @param request - Fully constructed request.
+ * @param options - Cancellation, byte, and timeout limits.
+ * @param acceptHttpErrors - Whether a bounded non-success body should be returned for protocol
+ * error inspection.
+ * @returns Parsed JSON and safe HTTP metadata.
+ */
+export async function readBoundedJsonResponse(
+  fetchImpl: typeof fetch,
+  request: Request,
+  options: BoundedResponseOptions,
+  acceptHttpErrors = false,
+): Promise<BoundedJsonResponse> {
   const controller = new AbortController();
   const abortFromCaller = () => controller.abort(options.signal.reason);
   options.signal.addEventListener("abort", abortFromCaller, { once: true });
@@ -41,10 +70,14 @@ export async function readBoundedJson(
       throw abortedError(options.transport);
     }
     const response = await fetchWithTimeout(fetchImpl, request, controller, options);
-    assertAcceptableResponse(response, options);
+    assertAcceptableResponse(response, options, acceptHttpErrors);
     const bytes = await readResponseBytes(response, controller, options);
     try {
-      return JSON.parse(new TextDecoder().decode(bytes));
+      return {
+        ok: response.ok,
+        status: response.status,
+        value: JSON.parse(new TextDecoder().decode(bytes)),
+      };
     } catch (cause) {
       throw new A2AClientError("Remote response is not valid JSON", {
         code: "invalid-response",
@@ -187,12 +220,16 @@ async function fetchWithTimeout(
   }
 }
 
-function assertAcceptableResponse(response: Response, options: BoundedResponseOptions): void {
-  if (!response.ok) {
+function assertAcceptableResponse(
+  response: Response,
+  options: BoundedResponseOptions,
+  acceptHttpErrors = false,
+): void {
+  if (!response.ok && !acceptHttpErrors) {
     void response.body?.cancel();
     throw new A2AClientError(`A2A endpoint returned HTTP ${response.status}`, {
       code: "http-error",
-      retryable: isRetryableStatus(response.status),
+      retryable: isRetryableHttpStatus(response.status),
       status: response.status,
       transport: options.transport,
     });
@@ -345,6 +382,12 @@ function responseTooLargeError(transport?: A2ATransportBinding): A2AClientError 
   });
 }
 
-function isRetryableStatus(status: number): boolean {
+/**
+ * Classifies HTTP statuses that may succeed when repeated unchanged.
+ *
+ * @param status - HTTP response status.
+ * @returns Whether retrying may be useful.
+ */
+export function isRetryableHttpStatus(status: number): boolean {
   return status === 408 || status === 429 || status >= 500;
 }
