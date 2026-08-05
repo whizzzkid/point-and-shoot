@@ -261,3 +261,30 @@ Deno.test("readBoundedJson enforces the stream-idle timeout", async () => {
   assertEquals(error.code, "timeout");
   assertEquals(error.timeout, "stream-idle");
 });
+
+Deno.test("readBoundedJson contains a rejected reader cancellation after timeout", async () => {
+  const response = new Response(
+    new ReadableStream({
+      pull() {
+        return new Promise<void>(() => {});
+      },
+      cancel() {
+        return Promise.reject(new DOMException("transport already aborted", "AbortError"));
+      },
+    }),
+  );
+
+  const error = await assertRejects(
+    () =>
+      readBoundedJson(() => Promise.resolve(response), REQUEST, {
+        signal: new AbortController().signal,
+        ...limits(),
+        firstByteMs: 5,
+      }),
+    A2AClientError,
+  );
+
+  assertEquals(error.code, "timeout");
+  assertEquals(error.timeout, "first-byte");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+});
