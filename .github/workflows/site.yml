@@ -5,7 +5,10 @@ on:
     paths:
       - ".github/workflows/site.yml"
       - ".claude-design/point-and-shoot/assets/icon.svg"
+      - "deno.json"
+      - "deno.lock"
       - "docs/**"
+      - "mise.toml"
       - "site/**"
       - "src/shared/design/**"
       - "tests/visual/baselines/notes-dark.png"
@@ -14,7 +17,10 @@ on:
     paths:
       - ".github/workflows/site.yml"
       - ".claude-design/point-and-shoot/assets/icon.svg"
+      - "deno.json"
+      - "deno.lock"
       - "docs/**"
+      - "mise.toml"
       - "site/**"
       - "src/shared/design/**"
       - "tests/visual/baselines/notes-dark.png"
@@ -46,22 +52,17 @@ jobs:
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: npm ci
       - name: Check site
-        run: npm run check
+        run: deno task site:check
       - name: Lint site
-        run: npm run lint
+        run: deno task site:lint
       - name: Test site tooling
-        run: npm run test
+        run: deno task site:test
       - name: Build site
-        run: npm run build
+        run: deno task site:build
       - name: Upload GitHub Pages artifact
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v4
@@ -73,58 +74,43 @@ jobs:
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: npm ci
       - name: Build site
-        run: npm run build
+        run: deno task site:build
       - name: Check links and published scope
-        run: npm run links
+        run: deno task site:links
 
   accessibility:
     needs: pages
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: npm ci
       - name: Install Chromium
-        run: npm exec -- playwright install --with-deps chromium
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
       - name: Build site
-        run: npm run build
+        run: deno task site:build
       - name: Run axe
-        run: npm run a11y
+        run: deno task site:a11y
 
   lighthouse:
     needs: pages
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: Install dependencies
-        run: npm ci
       - name: Install Chromium
-        run: npm exec -- playwright install --with-deps chromium
+        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
       - name: Build site
-        run: npm run build
+        run: deno task site:build
       - name: Run Lighthouse
-        run: npm run lighthouse
+        run: deno task site:lighthouse
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v7

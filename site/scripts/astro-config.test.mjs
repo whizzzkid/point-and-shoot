@@ -1,30 +1,29 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { assertEquals } from "@std/assert";
 
-test("Astro uses the Pages URL supplied by the build environment", async () => {
-  const previousSiteUrl = process.env.SITE_URL;
-  process.env.SITE_URL = "https://pages.example.test";
+Deno.test("Astro uses the Pages URL supplied by the build environment", async () => {
+  const previousSiteUrl = Deno.env.get("SITE_URL");
+  Deno.env.set("SITE_URL", "https://pages.example.test");
   try {
     const { default: config } = await import(`../astro.config.mjs?test=${Date.now()}`);
-    assert.equal(config.site, "https://pages.example.test");
+    assertEquals(config.site, "https://pages.example.test");
   } finally {
     if (previousSiteUrl === undefined) {
-      delete process.env.SITE_URL;
+      Deno.env.delete("SITE_URL");
     } else {
-      process.env.SITE_URL = previousSiteUrl;
+      Deno.env.set("SITE_URL", previousSiteUrl);
     }
   }
 });
 
-test("Astro uses localhost when a local build has no Pages URL", async () => {
-  const previousSiteUrl = process.env.SITE_URL;
-  delete process.env.SITE_URL;
+Deno.test("Astro uses localhost when a local build has no Pages URL", async () => {
+  const previousSiteUrl = Deno.env.get("SITE_URL");
+  Deno.env.delete("SITE_URL");
   try {
     const { default: config } = await import(`../astro.config.mjs?fallback=${Date.now()}`);
-    assert.equal(config.site, "http://localhost:4321");
+    assertEquals(config.site, "http://localhost:4321");
   } finally {
     if (previousSiteUrl !== undefined) {
-      process.env.SITE_URL = previousSiteUrl;
+      Deno.env.set("SITE_URL", previousSiteUrl);
     }
   }
 });

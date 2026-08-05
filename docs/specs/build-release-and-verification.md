@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -12,8 +12,8 @@ labels:
   - release
   - testing
 related:
-  - title: Deno-first toolchain
-    path-or-url: ../adr/0004-deno-first-toolchain-npm-specifiers.md
+  - title: Deno-owned repository toolchain
+    path-or-url: ../adr/0019-deno-owned-repository-toolchain.md
   - title: Browser verification split
     path-or-url: ../adr/0007-playwright-chromium-plus-web-ext-coverage-split.md
   - title: Release automation
@@ -31,18 +31,21 @@ related:
 
 ## Context
 
-The extension is Deno-first and emits two browser packages from one source tree. Browser behavior
-cannot be proven by one runner: Chromium supports a real extension end-to-end harness, while Firefox
-requires `web-ext` plus Marionette. The static website has an isolated Node toolchain and a
-path-filtered workflow, so website gates do not run for extension-only changes.
+The repository uses Deno throughout, and the extension emits two browser packages from one source
+tree. Browser behavior cannot be proven by one runner: Chromium supports a real extension end-to-end
+harness, while Firefox requires `web-ext` plus Marionette. The static website has additional Astro,
+link, accessibility, and Lighthouse gates in a path-filtered workflow, so those expensive gates do
+not run for extension-only changes.
 
 ## Reference
 
 ### Tool ownership
 
-`mise.toml` pins Deno `2.9.4`, Node `26.5.0`, and lefthook `2.1.10`. `deno.json` is the extension's
-only task registry. Node packages used by extension tooling arrive through exact `npm:` specifiers;
-only `site/` has a `package.json` and lockfile.
+`mise.toml` pins Deno `2.9.4` and lefthook `2.1.10`. `deno.json` is the repository's only task and
+direct-dependency registry. npm packages for the extension and Astro site arrive through exact
+`npm:` specifiers, and `deno.lock` records the resolved graph. The repository has no `package.json`
+or npm lockfile. Deno may generate a gitignored `node_modules/` compatibility tree for Vite and
+other packages that require Node-style resolution.
 
 The pre-commit hook runs staged formatting and lint checks. The pre-push hook and the CI `checks`
 job both run `deno task ci` after activating the pinned mise environment. The task executes
@@ -72,7 +75,7 @@ existing `dist/` tree.
 | `deno task lint:firefox`  | The Firefox package passes `web-ext` static validation.                                                 |
 | `deno task boot:firefox`  | Firefox starts the event page, injects content, and resolves exposed assets.                            |
 | `deno task smoke:firefox` | Firefox completes one representative Marionette-driven capture and stores a valid note.                 |
-| `npm run ci` in `site/`   | Site formatting, Astro checks, tooling tests, build, published scope, and link integrity.               |
+| `deno task site:ci`       | Site formatting, Astro checks, tooling tests, build, published scope, and link integrity.               |
 
 Firefox smoke coverage is not end-to-end parity. Safari is unbuilt. Visual baselines may be updated
 only on the pinned Linux environment, and a failed comparison writes actual, expected, and diff

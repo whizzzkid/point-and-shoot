@@ -25,17 +25,19 @@ panel, the plan view, the options page, and the marketing site.
 
 ## Toolchain
 
-Deno-first. Deno owns source, lint, formatting, type-checking, and unit tests.
+Deno is the repository-wide standard. It owns source, dependencies, lint, formatting, type-checking,
+unit tests, extension builds, and the Astro site.
 
 - **`mise` manages tools; `deno task` manages commands.** `mise.toml` has no `[tasks]` section on
   purpose: `deno.json` is the single task registry, so the two cannot drift apart. Tool versions
   live in `mise.toml` and nowhere else.
 - **`deno task` is the single entry point.** Never document or script a raw `deno fmt`/`deno lint`
   invocation as the project's interface — add or use a task.
-- **Node-ecosystem tools arrive via `npm:` specifiers** under `deno run -A` (Playwright, esbuild,
-  web-ext, the font subsetter). There is no `package.json` and no committed `node_modules/`.
-  _Exception:_ the Astro marketing and documentation site is isolated in `site/` with its own Node
-  toolchain, and never ships inside the extension.
+- **Node-ecosystem tools arrive through exact `npm:` specifiers managed by Deno** (Astro,
+  Playwright, esbuild, web-ext, Lighthouse, and the font subsetter). There is no `package.json` or
+  npm lockfile anywhere in the repository. Deno may generate a gitignored `node_modules/`
+  compatibility tree for packages that require Node-style resolution; this does not require or
+  authorize a standalone Node toolchain.
 
 ### Tasks
 
@@ -67,9 +69,19 @@ into a green check.
 | `deno task a11y`             | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks |
 | `deno task visual`           | Compares every surface and forced theme with its Linux baseline        |
 | `deno task visual:update`    | Replaces visual baselines intentionally on the CI platform             |
+| `deno task site:dev`         | Starts the Astro development server                                    |
+| `deno task site:check`       | Runs Astro diagnostics for the site                                    |
+| `deno task site:lint`        | Checks Deno formatting and lint rules under `site/`                    |
+| `deno task site:test`        | Runs Deno tests for site tooling                                       |
+| `deno task site:build`       | Builds the static site into `site/dist/`                               |
+| `deno task site:links`       | Checks built output, published scope, and external links               |
+| `deno task site:a11y`        | Runs axe against the built marketing and documentation surfaces        |
+| `deno task site:lighthouse`  | Runs Lighthouse budgets against both built surfaces                    |
+| `deno task site:ci`          | Runs every non-browser site gate in sequence                           |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
-local and remote cannot diverge. Extend `ci` rather than adding a parallel gate.
+local and remote cannot diverge. The path-filtered `Site` workflow uses the same `site:*` tasks for
+Astro, link, axe, and Lighthouse checks rather than maintaining another command registry.
 
 Before handing off any change that can affect the shipped extension, run
 `mise exec -- deno task build` after every other command that may write `dist/`. The final local
@@ -226,10 +238,21 @@ Actions pin to the official action's semver major, which is this project's one d
 | Tool                               | Version   | Pinned in                                                              |
 | ---------------------------------- | --------- | ---------------------------------------------------------------------- |
 | deno                               | `2.9.4`   | `mise.toml`                                                            |
-| node                               | `26.5.0`  | `mise.toml` (Playwright browser install, font subset)                  |
 | lefthook                           | `2.1.10`  | `mise.toml`                                                            |
+| astro                              | `7.1.6`   | `deno.json` imports; marketing and documentation site                  |
+| `@astrojs/check`                   | `0.9.10`  | `deno.json` imports; Astro diagnostics                                 |
+| `@astrojs/markdown-remark`         | `7.2.2`   | `deno.json` imports; Markdown pipeline                                 |
+| `@axe-core/playwright`             | `4.12.1`  | `deno.json` imports; site accessibility scans                          |
 | playwright                         | `1.62.0`  | `deno.json` imports                                                    |
 | axe-core                           | `4.12.1`  | `deno.json` imports; automated accessibility scans                     |
+| beautiful-mermaid                  | `1.1.3`   | `deno.json` imports; static site diagrams                              |
+| chrome-launcher                    | `1.2.1`   | `deno.json` imports; Lighthouse browser process                        |
+| lighthouse                         | `13.4.1`  | `deno.json` imports; site quality budgets                              |
+| parse5                             | `8.0.1`   | `deno.json` imports; built-site integrity checks                       |
+| rehype-autolink-headings           | `7.1.0`   | `deno.json` imports; documentation headings                            |
+| rehype-slug                        | `6.0.0`   | `deno.json` imports; documentation anchors                             |
+| typescript                         | `6.0.3`   | `deno.json` imports; Astro checker peer                                |
+| unist-util-visit                   | `5.1.0`   | `deno.json` imports; Markdown transforms                               |
 | `@std/assert`                      | `1.0.14`  | `deno.json` imports                                                    |
 | `@std/path`                        | `1.1.6`   | `deno.json` imports                                                    |
 | `@types/pngjs`                     | `6.0.5`   | `deno.json` imports; visual comparison type declarations               |

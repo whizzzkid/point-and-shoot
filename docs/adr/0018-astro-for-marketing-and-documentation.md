@@ -1,6 +1,6 @@
 # ADR-0018 — Astro for the marketing and documentation site
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0019
 - **Date:** 2026-07-31
 - **Supersedes:** [ADR-0008](0008-preact-for-extension-ui-astro-for-marketing.md)
 

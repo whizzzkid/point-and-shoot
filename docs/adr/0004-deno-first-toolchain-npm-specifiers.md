@@ -1,6 +1,6 @@
 # ADR-0004 — Deno owns the dev loop; Node tooling arrives via npm: specifiers
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0019
 - **Date:** 2026-07-24
 
 ## Context
