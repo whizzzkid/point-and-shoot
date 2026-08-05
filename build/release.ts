@@ -1,7 +1,7 @@
 import { fromFileUrl, toFileUrl } from "@std/path";
 
 import { collectRemoteUrlOffenders } from "./build.ts";
-import { manifestBase } from "./manifest.ts";
+import { forChrome, forFirefox, manifestBase } from "./manifest.ts";
 
 /** Browser extension targets emitted by the release build. */
 export type ReleaseTarget = "chrome" | "firefox";
@@ -273,6 +273,29 @@ function validateManifest(
   if (!(targetKey in manifest)) {
     throw new Error(`release: ${target} manifest is missing required key ${targetKey}`);
   }
+
+  const expectedManifest = target === "chrome" ? forChrome() : forFirefox();
+  const eligibilityKey = target === "chrome" ? "optional_host_permissions" : "optional_permissions";
+  if (
+    JSON.stringify(manifest[eligibilityKey]) !== JSON.stringify(expectedManifest[eligibilityKey])
+  ) {
+    throw new Error(
+      `release: ${target} optional host eligibility does not match the build manifest`,
+    );
+  }
+}
+
+function manifestWithoutHostEligibility(
+  manifest: Record<string, unknown>,
+  target: ReleaseTarget,
+): string {
+  const sanitized = { ...manifest };
+  if (target === "chrome") {
+    delete sanitized.optional_host_permissions;
+  } else {
+    delete sanitized.optional_permissions;
+  }
+  return JSON.stringify(sanitized);
 }
 
 async function validateExtractedArchive(
@@ -285,9 +308,16 @@ async function validateExtractedArchive(
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error("release: manifest.json must contain an object");
   }
-  validateManifest(parsed as Record<string, unknown>, target, expectedVersion);
+  const manifest = parsed as Record<string, unknown>;
+  validateManifest(manifest, target, expectedVersion);
 
-  const remoteUrlOffenders = await collectRemoteUrlOffenders(root);
+  const manifestPath = fromFileUrl(new URL("manifest.json", root));
+  const remoteUrlOffenders = (await collectRemoteUrlOffenders(root)).filter(
+    (path) => path !== manifestPath,
+  );
+  if (/https?:\/\//.test(manifestWithoutHostEligibility(manifest, target))) {
+    remoteUrlOffenders.push(manifestPath);
+  }
   if (remoteUrlOffenders.length > 0) {
     throw new Error(
       `release: archive contains forbidden remote URL in ${remoteUrlOffenders.join(", ")}`,

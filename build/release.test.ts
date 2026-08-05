@@ -182,6 +182,52 @@ Deno.test("validateReleaseArchive - rejects missing manifest keys", async () => 
   );
 });
 
+Deno.test("validateReleaseArchive - rejects optional host eligibility drift", async () => {
+  await withArchive(
+    async (root) => {
+      const manifestPath = new URL("manifest.json", root);
+      const manifest = JSON.parse(await Deno.readTextFile(manifestPath));
+      manifest.optional_host_permissions = ["https://unexpected.example/*"];
+      await Deno.writeTextFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    },
+    async (archivePath) => {
+      await assertRejects(
+        () =>
+          validateReleaseArchive({
+            archivePath,
+            expectedVersion: manifestBase.version,
+            target: "chrome",
+          }),
+        Error,
+        "optional host eligibility",
+      );
+    },
+  );
+});
+
+Deno.test("validateReleaseArchive - rejects remote URLs in non-permission manifest fields", async () => {
+  await withArchive(
+    async (root) => {
+      const manifestPath = new URL("manifest.json", root);
+      const manifest = JSON.parse(await Deno.readTextFile(manifestPath));
+      manifest.homepage_url = "https://unexpected.example/remote";
+      await Deno.writeTextFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    },
+    async (archivePath) => {
+      await assertRejects(
+        () =>
+          validateReleaseArchive({
+            archivePath,
+            expectedVersion: manifestBase.version,
+            target: "chrome",
+          }),
+        Error,
+        "archive contains forbidden remote URL",
+      );
+    },
+  );
+});
+
 Deno.test("validateReleaseArchive - rejects remote URLs in an otherwise valid package", async () => {
   await withArchive(
     async (root) => {

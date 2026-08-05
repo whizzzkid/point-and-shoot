@@ -76,6 +76,28 @@ Deno.test("manifest - chrome grants sidePanel while firefox omits the chrome-onl
   assertEquals(forFirefox().permissions, manifestBase.permissions);
 });
 
+Deno.test("manifest - optional host eligibility uses each browser's accepted manifest key", () => {
+  const expected = [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://[::1]/*",
+  ];
+
+  assertEquals(forChrome().optional_host_permissions, expected);
+  assertEquals(forFirefox().optional_permissions, expected);
+  assertFalse("optional_permissions" in forChrome());
+  assertFalse("optional_host_permissions" in forFirefox());
+  for (const manifest of [forChrome(), forFirefox()]) {
+    assertFalse("host_permissions" in manifest);
+    assertFalse(manifest.permissions instanceof Array && manifest.permissions.includes("identity"));
+    assertFalse(manifest.permissions instanceof Array && manifest.permissions.includes("cookies"));
+    const optional = manifest.optional_permissions;
+    assertFalse(optional instanceof Array && optional.includes("identity"));
+    assertFalse(optional instanceof Array && optional.includes("cookies"));
+  }
+});
+
 Deno.test("manifest - neither target declares host_permissions", () => {
   assertFalse("host_permissions" in forChrome());
   assertFalse("host_permissions" in forFirefox());
@@ -180,6 +202,7 @@ Deno.test("manifest - declared floors match the SUPPORTED constant, not hand-edi
     gecko: { strict_min_version: string };
   };
   assertEquals(geckoSettings.gecko.strict_min_version, `${SUPPORTED.firefox}.0`);
+  assertEquals(SUPPORTED.firefox, 115);
 });
 
 Deno.test("manifest - content_security_policy forbids remote script and object sources", () => {

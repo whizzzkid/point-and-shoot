@@ -143,6 +143,76 @@ export type StorageChanges = Readonly<Record<string, StorageChange>>;
 /** Listener signature for extension-storage changes. */
 export type StorageChangedListener = (changes: StorageChanges, areaName: string) => void;
 
+/** Browser permission request normalized across Chrome and Firefox. */
+export interface PermissionRequest {
+  readonly permissions?: readonly string[];
+  readonly origins?: readonly string[];
+}
+
+/** One promise-based extension storage area. */
+export interface StorageArea {
+  get(keys?: string | readonly string[] | null): Promise<StorageItems>;
+  set(items: StorageItems): Promise<void>;
+  remove(keys: string | readonly string[]): Promise<void>;
+}
+
+/** Options for an interactive or silent browser-owned web authentication flow. */
+export interface WebAuthFlowDetails {
+  readonly interactive: boolean;
+  readonly url: string;
+}
+
+/** Cookie record fields needed by the later enterprise-auth feasibility proof. */
+export interface BrowserCookie {
+  readonly domain: string;
+  readonly httpOnly: boolean;
+  readonly name: string;
+  readonly path: string;
+  readonly secure: boolean;
+  readonly session: boolean;
+  readonly storeId: string;
+  readonly value: string;
+  readonly expirationDate?: number;
+}
+
+/** Cookie lookup criteria accepted by the browser API. */
+export interface CookieQuery {
+  readonly domain?: string;
+  readonly name?: string;
+  readonly path?: string;
+  readonly secure?: boolean;
+  readonly session?: boolean;
+  readonly storeId?: string;
+  readonly url?: string;
+}
+
+/** Cookie values accepted when creating or updating a browser-managed cookie. */
+export interface CookieSetDetails {
+  readonly url: string;
+  readonly domain?: string;
+  readonly expirationDate?: number;
+  readonly httpOnly?: boolean;
+  readonly name?: string;
+  readonly path?: string;
+  readonly secure?: boolean;
+  readonly storeId?: string;
+  readonly value?: string;
+}
+
+/** Cookie identity accepted when removing a browser-managed cookie. */
+export interface CookieRemoveDetails {
+  readonly name: string;
+  readonly url: string;
+  readonly storeId?: string;
+}
+
+/** Browser result describing a removed cookie. */
+export interface CookieRemoval {
+  readonly name: string;
+  readonly storeId: string;
+  readonly url: string;
+}
+
 /**
  * The normalized, promise-based surface every other module in this codebase imports instead of
  * `chrome.*` or `browser.*`. Every method here resolves or rejects a promise; none take a
@@ -187,11 +257,26 @@ export interface BrowserShim {
       addListener(listener: StorageChangedListener): void;
       removeListener(listener: StorageChangedListener): void;
     };
-    readonly local: {
-      get(keys?: string | readonly string[] | null): Promise<StorageItems>;
-      set(items: StorageItems): Promise<void>;
-      remove(keys: string | readonly string[]): Promise<void>;
-    };
+    readonly local: StorageArea;
+    /** Memory-only storage cleared when the browser session ends. */
+    readonly session: StorageArea;
+  };
+  readonly permissions: {
+    /** Engine discriminator used to select the narrowest supported origin pattern. */
+    readonly engine: Engine;
+    contains(request: PermissionRequest): Promise<boolean>;
+    request(request: PermissionRequest): Promise<boolean>;
+    remove(request: PermissionRequest): Promise<boolean>;
+  };
+  readonly identity: {
+    getRedirectURL(path?: string): string;
+    launchWebAuthFlow(details: WebAuthFlowDetails): Promise<string | undefined>;
+  };
+  readonly cookies: {
+    get(details: CookieQuery): Promise<BrowserCookie | null>;
+    getAll(details: CookieQuery): Promise<BrowserCookie[]>;
+    set(details: CookieSetDetails): Promise<BrowserCookie | null>;
+    remove(details: CookieRemoveDetails): Promise<CookieRemoval | null>;
   };
   readonly scripting: {
     executeScript(injection: ExecuteScriptInjection): Promise<ExecuteScriptResult[]>;
@@ -253,6 +338,32 @@ export interface ChromeGlobalShape {
       set(items: StorageItems, callback: () => void): void;
       remove(keys: string | readonly string[], callback: () => void): void;
     };
+    readonly session: {
+      get(
+        keys: string | readonly string[] | null | undefined,
+        callback: (items: StorageItems) => void,
+      ): void;
+      set(items: StorageItems, callback: () => void): void;
+      remove(keys: string | readonly string[], callback: () => void): void;
+    };
+  };
+  readonly permissions: {
+    contains(request: PermissionRequest, callback: (result: boolean) => void): void;
+    request(request: PermissionRequest, callback: (result: boolean) => void): void;
+    remove(request: PermissionRequest, callback: (result: boolean) => void): void;
+  };
+  readonly identity: {
+    getRedirectURL(path?: string): string;
+    launchWebAuthFlow(
+      details: WebAuthFlowDetails,
+      callback: (responseUrl?: string) => void,
+    ): void;
+  };
+  readonly cookies: {
+    get(details: CookieQuery, callback: (cookie: BrowserCookie | null) => void): void;
+    getAll(details: CookieQuery, callback: (cookies: BrowserCookie[]) => void): void;
+    set(details: CookieSetDetails, callback: (cookie: BrowserCookie | null) => void): void;
+    remove(details: CookieRemoveDetails, callback: (details: CookieRemoval | null) => void): void;
   };
   readonly scripting: {
     executeScript(
@@ -307,6 +418,26 @@ export interface FirefoxGlobalShape {
       set(items: StorageItems): Promise<void>;
       remove(keys: string | readonly string[]): Promise<void>;
     };
+    readonly session: {
+      get(keys?: string | readonly string[] | null): Promise<StorageItems>;
+      set(items: StorageItems): Promise<void>;
+      remove(keys: string | readonly string[]): Promise<void>;
+    };
+  };
+  readonly permissions: {
+    contains(request: PermissionRequest): Promise<boolean>;
+    request(request: PermissionRequest): Promise<boolean>;
+    remove(request: PermissionRequest): Promise<boolean>;
+  };
+  readonly identity: {
+    getRedirectURL(path?: string): string;
+    launchWebAuthFlow(details: WebAuthFlowDetails): Promise<string | undefined>;
+  };
+  readonly cookies: {
+    get(details: CookieQuery): Promise<BrowserCookie | null>;
+    getAll(details: CookieQuery): Promise<BrowserCookie[]>;
+    set(details: CookieSetDetails): Promise<BrowserCookie | null>;
+    remove(details: CookieRemoveDetails): Promise<CookieRemoval | null>;
   };
   readonly scripting: {
     executeScript(injection: ExecuteScriptInjection): Promise<ExecuteScriptResult[]>;
@@ -422,6 +553,72 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
           return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.storage.local.remove(keys, cb));
         },
       },
+      session: {
+        get(keys) {
+          return promisifyWithResult(
+            chromeGlobal,
+            (cb) => chromeGlobal.storage.session.get(keys, cb),
+          );
+        },
+        set(items) {
+          return promisifyVoid(chromeGlobal, (cb) => chromeGlobal.storage.session.set(items, cb));
+        },
+        remove(keys) {
+          return promisifyVoid(
+            chromeGlobal,
+            (cb) => chromeGlobal.storage.session.remove(keys, cb),
+          );
+        },
+      },
+    },
+    permissions: {
+      engine: "chrome",
+      contains(request) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.permissions.contains(request, cb),
+        );
+      },
+      request(request) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.permissions.request(request, cb),
+        );
+      },
+      remove(request) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.permissions.remove(request, cb),
+        );
+      },
+    },
+    identity: {
+      getRedirectURL(path) {
+        return chromeGlobal.identity.getRedirectURL(path);
+      },
+      launchWebAuthFlow(details) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.identity.launchWebAuthFlow(details, cb),
+        );
+      },
+    },
+    cookies: {
+      get(details) {
+        return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.cookies.get(details, cb));
+      },
+      getAll(details) {
+        return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.cookies.getAll(details, cb));
+      },
+      set(details) {
+        return promisifyWithResult(chromeGlobal, (cb) => chromeGlobal.cookies.set(details, cb));
+      },
+      remove(details) {
+        return promisifyWithResult(
+          chromeGlobal,
+          (cb) => chromeGlobal.cookies.remove(details, cb),
+        );
+      },
     },
     scripting: {
       executeScript(injection) {
@@ -512,6 +709,51 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
         remove(keys) {
           return firefoxGlobal.storage.local.remove(keys);
         },
+      },
+      session: {
+        get(keys) {
+          return firefoxGlobal.storage.session.get(keys);
+        },
+        set(items) {
+          return firefoxGlobal.storage.session.set(items);
+        },
+        remove(keys) {
+          return firefoxGlobal.storage.session.remove(keys);
+        },
+      },
+    },
+    permissions: {
+      engine: "firefox",
+      contains(request) {
+        return firefoxGlobal.permissions.contains(request);
+      },
+      request(request) {
+        return firefoxGlobal.permissions.request(request);
+      },
+      remove(request) {
+        return firefoxGlobal.permissions.remove(request);
+      },
+    },
+    identity: {
+      getRedirectURL(path) {
+        return firefoxGlobal.identity.getRedirectURL(path);
+      },
+      launchWebAuthFlow(details) {
+        return firefoxGlobal.identity.launchWebAuthFlow(details);
+      },
+    },
+    cookies: {
+      get(details) {
+        return firefoxGlobal.cookies.get(details);
+      },
+      getAll(details) {
+        return firefoxGlobal.cookies.getAll(details);
+      },
+      set(details) {
+        return firefoxGlobal.cookies.set(details);
+      },
+      remove(details) {
+        return firefoxGlobal.cookies.remove(details);
       },
     },
     scripting: {

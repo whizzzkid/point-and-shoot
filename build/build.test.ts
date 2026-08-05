@@ -42,7 +42,7 @@ async function withTempOutDir(run: (outDir: URL) => Promise<void>): Promise<void
 }
 
 Deno.test("esbuildTargetFrom - derives esbuild target strings from SUPPORTED, not literals", () => {
-  assertEquals(esbuildTargetFrom(SUPPORTED), ["chrome116", "firefox109"]);
+  assertEquals(esbuildTargetFrom(SUPPORTED), ["chrome116", "firefox115"]);
 });
 
 Deno.test("developmentVersionName - preserves a slash-delimited branch in the local label", () => {

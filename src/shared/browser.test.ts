@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import {
+  type BrowserCookie,
   type ChromeGlobalShape,
   type CommandInfo,
   createBrowserShim,
@@ -19,8 +20,20 @@ interface FakeChrome {
 function createFakeChrome(): FakeChrome {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
+  const sessionStorage = new Map<string, unknown>();
+  const grantedOrigins = new Set<string>();
   const storageListeners = new Set<StorageChangedListener>();
   let lastErrorMessage: string | undefined;
+  let cookie: BrowserCookie | null = {
+    domain: "agent.example",
+    httpOnly: true,
+    name: "session",
+    path: "/",
+    secure: true,
+    session: true,
+    storeId: "0",
+    value: "managed",
+  };
 
   const chromeGlobal: ChromeGlobalShape = {
     tabs: {
@@ -102,6 +115,98 @@ function createFakeChrome(): FakeChrome {
           });
         },
       },
+      session: {
+        get(keys, callback) {
+          calls.push("storage.session.get");
+          queueMicrotask(() => {
+            if (keys == null) {
+              callback(Object.fromEntries(sessionStorage));
+              return;
+            }
+            const list = Array.isArray(keys) ? keys : [keys];
+            const result: Record<string, unknown> = {};
+            for (const key of list) {
+              if (sessionStorage.has(key)) result[key] = sessionStorage.get(key);
+            }
+            callback(result);
+          });
+        },
+        set(items, callback) {
+          calls.push("storage.session.set");
+          queueMicrotask(() => {
+            for (const [key, value] of Object.entries(items)) sessionStorage.set(key, value);
+            callback();
+          });
+        },
+        remove(keys, callback) {
+          calls.push("storage.session.remove");
+          queueMicrotask(() => {
+            const list = Array.isArray(keys) ? keys : [keys];
+            for (const key of list) sessionStorage.delete(key);
+            callback();
+          });
+        },
+      },
+    },
+    permissions: {
+      contains(request, callback) {
+        calls.push(`permissions.contains:${request.origins?.join(",") ?? ""}`);
+        queueMicrotask(() =>
+          callback(request.origins?.every((item) => grantedOrigins.has(item)) ?? true)
+        );
+      },
+      request(request, callback) {
+        calls.push(`permissions.request:${request.origins?.join(",") ?? ""}`);
+        for (const origin of request.origins ?? []) grantedOrigins.add(origin);
+        queueMicrotask(() => callback(true));
+      },
+      remove(request, callback) {
+        calls.push(`permissions.remove:${request.origins?.join(",") ?? ""}`);
+        const removed = request.origins?.some((item) => grantedOrigins.delete(item)) ?? false;
+        queueMicrotask(() => callback(removed));
+      },
+    },
+    identity: {
+      getRedirectURL(path = "") {
+        calls.push(`identity.getRedirectURL:${path}`);
+        return `https://dynamic-id.chromiumapp.org/${path}`;
+      },
+      launchWebAuthFlow(details, callback) {
+        calls.push(`identity.launchWebAuthFlow:${details.interactive}`);
+        queueMicrotask(() => callback(`${details.url}&code=chrome`));
+      },
+    },
+    cookies: {
+      get(_details, callback) {
+        calls.push("cookies.get");
+        queueMicrotask(() => callback(cookie));
+      },
+      getAll(_details, callback) {
+        calls.push("cookies.getAll");
+        queueMicrotask(() => callback(cookie === null ? [] : [cookie]));
+      },
+      set(details, callback) {
+        calls.push("cookies.set");
+        cookie = {
+          domain: details.domain ?? "agent.example",
+          httpOnly: details.httpOnly ?? true,
+          name: details.name ?? "",
+          path: details.path ?? "/",
+          secure: details.secure ?? true,
+          session: details.expirationDate === undefined,
+          storeId: details.storeId ?? "0",
+          value: details.value ?? "",
+          ...(details.expirationDate === undefined
+            ? {}
+            : { expirationDate: details.expirationDate }),
+        };
+        queueMicrotask(() => callback(cookie));
+      },
+      remove(details, callback) {
+        calls.push("cookies.remove");
+        cookie = null;
+        queueMicrotask(() => callback({ name: details.name, storeId: "0", url: details.url }));
+      },
     },
     scripting: {
       executeScript(injection, callback) {
@@ -169,7 +274,19 @@ interface FakeFirefox {
 function createFakeFirefox(): FakeFirefox {
   const calls: string[] = [];
   const storage = new Map<string, unknown>();
+  const sessionStorage = new Map<string, unknown>();
+  const grantedOrigins = new Set<string>();
   const storageListeners = new Set<StorageChangedListener>();
+  let cookie: BrowserCookie | null = {
+    domain: "agent.example",
+    httpOnly: true,
+    name: "session",
+    path: "/",
+    secure: true,
+    session: true,
+    storeId: "firefox-default",
+    value: "managed",
+  };
 
   const firefoxGlobal: FirefoxGlobalShape = {
     tabs: {
@@ -239,6 +356,92 @@ function createFakeFirefox(): FakeFirefox {
           for (const key of list) storage.delete(key);
           return Promise.resolve();
         },
+      },
+      session: {
+        get(keys) {
+          calls.push("storage.session.get");
+          if (keys == null) return Promise.resolve(Object.fromEntries(sessionStorage));
+          const list = Array.isArray(keys) ? keys : [keys];
+          const result: Record<string, unknown> = {};
+          for (const key of list) {
+            if (sessionStorage.has(key)) result[key] = sessionStorage.get(key);
+          }
+          return Promise.resolve(result);
+        },
+        set(items) {
+          calls.push("storage.session.set");
+          for (const [key, value] of Object.entries(items)) sessionStorage.set(key, value);
+          return Promise.resolve();
+        },
+        remove(keys) {
+          calls.push("storage.session.remove");
+          const list = Array.isArray(keys) ? keys : [keys];
+          for (const key of list) sessionStorage.delete(key);
+          return Promise.resolve();
+        },
+      },
+    },
+    permissions: {
+      contains(request) {
+        calls.push(`permissions.contains:${request.origins?.join(",") ?? ""}`);
+        return Promise.resolve(request.origins?.every((item) => grantedOrigins.has(item)) ?? true);
+      },
+      request(request) {
+        calls.push(`permissions.request:${request.origins?.join(",") ?? ""}`);
+        for (const origin of request.origins ?? []) grantedOrigins.add(origin);
+        return Promise.resolve(true);
+      },
+      remove(request) {
+        calls.push(`permissions.remove:${request.origins?.join(",") ?? ""}`);
+        return Promise.resolve(
+          request.origins?.some((item) => grantedOrigins.delete(item)) ?? false,
+        );
+      },
+    },
+    identity: {
+      getRedirectURL(path = "") {
+        calls.push(`identity.getRedirectURL:${path}`);
+        return `https://random-uuid.extensions.allizom.org/${path}`;
+      },
+      launchWebAuthFlow(details) {
+        calls.push(`identity.launchWebAuthFlow:${details.interactive}`);
+        return Promise.resolve(`${details.url}&code=firefox`);
+      },
+    },
+    cookies: {
+      get() {
+        calls.push("cookies.get");
+        return Promise.resolve(cookie);
+      },
+      getAll() {
+        calls.push("cookies.getAll");
+        return Promise.resolve(cookie === null ? [] : [cookie]);
+      },
+      set(details) {
+        calls.push("cookies.set");
+        cookie = {
+          domain: details.domain ?? "agent.example",
+          httpOnly: details.httpOnly ?? true,
+          name: details.name ?? "",
+          path: details.path ?? "/",
+          secure: details.secure ?? true,
+          session: details.expirationDate === undefined,
+          storeId: details.storeId ?? "firefox-default",
+          value: details.value ?? "",
+          ...(details.expirationDate === undefined
+            ? {}
+            : { expirationDate: details.expirationDate }),
+        };
+        return Promise.resolve(cookie);
+      },
+      remove(details) {
+        calls.push("cookies.remove");
+        cookie = null;
+        return Promise.resolve({
+          name: details.name,
+          storeId: "firefox-default",
+          url: details.url,
+        });
       },
     },
     scripting: {
@@ -462,6 +665,98 @@ Deno.test("browser shim - storage round-trips identically on both engines", asyn
     assertEquals(await shim.storage.local.get(), { a: 1, b: 2 });
     await shim.storage.local.remove("a");
     assertEquals(await shim.storage.local.get(), { b: 2 });
+  }
+});
+
+Deno.test("browser shim - session storage is separate and promise-based on both engines", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+
+  for (
+    const shim of [
+      createBrowserShim({ chrome: chromeGlobal }),
+      createBrowserShim({ browser: firefoxGlobal }),
+    ]
+  ) {
+    await shim.storage.local.set({ token: "disk" });
+    await shim.storage.session.set({ token: "memory", continuation: 1 });
+    assertEquals(await shim.storage.local.get("token"), { token: "disk" });
+    assertEquals(await shim.storage.session.get(), { token: "memory", continuation: 1 });
+    await shim.storage.session.remove("token");
+    assertEquals(await shim.storage.session.get(), { continuation: 1 });
+  }
+});
+
+Deno.test("browser shim - runtime permission lifecycle agrees across engines", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+  const request = { origins: ["https://agent.example:8443/*"] };
+
+  for (
+    const [engine, shim] of [
+      ["chrome", createBrowserShim({ chrome: chromeGlobal })],
+      ["firefox", createBrowserShim({ browser: firefoxGlobal })],
+    ] as const
+  ) {
+    assertEquals(shim.permissions.engine, engine);
+    assertEquals(await shim.permissions.contains(request), false);
+    assertEquals(await shim.permissions.request(request), true);
+    assertEquals(await shim.permissions.contains(request), true);
+    assertEquals(await shim.permissions.remove(request), true);
+    assertEquals(await shim.permissions.contains(request), false);
+  }
+});
+
+Deno.test("browser shim - identity flow preserves synchronous redirect and async launch shapes", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+  const chromeShim = createBrowserShim({ chrome: chromeGlobal });
+  const firefoxShim = createBrowserShim({ browser: firefoxGlobal });
+  const details = { interactive: true, url: "https://idp.example/authorize?state=one" };
+
+  assertEquals(
+    chromeShim.identity.getRedirectURL("oauth"),
+    "https://dynamic-id.chromiumapp.org/oauth",
+  );
+  assertEquals(
+    firefoxShim.identity.getRedirectURL("oauth"),
+    "https://random-uuid.extensions.allizom.org/oauth",
+  );
+  assertEquals(
+    await chromeShim.identity.launchWebAuthFlow(details),
+    "https://idp.example/authorize?state=one&code=chrome",
+  );
+  assertEquals(
+    await firefoxShim.identity.launchWebAuthFlow(details),
+    "https://idp.example/authorize?state=one&code=firefox",
+  );
+});
+
+Deno.test("browser shim - cookie feasibility surface agrees across engines", async () => {
+  const { chromeGlobal } = createFakeChrome();
+  const { firefoxGlobal } = createFakeFirefox();
+
+  for (
+    const shim of [
+      createBrowserShim({ chrome: chromeGlobal }),
+      createBrowserShim({ browser: firefoxGlobal }),
+    ]
+  ) {
+    assertEquals((await shim.cookies.get({ url: "https://agent.example" }))?.name, "session");
+    assertEquals((await shim.cookies.getAll({ domain: "agent.example" })).length, 1);
+    assertEquals(
+      (await shim.cookies.set({
+        name: "agent",
+        url: "https://agent.example",
+        value: "browser-managed",
+      }))?.value,
+      "browser-managed",
+    );
+    assertEquals(
+      (await shim.cookies.remove({ name: "agent", url: "https://agent.example" }))?.name,
+      "agent",
+    );
+    assertEquals(await shim.cookies.getAll({ domain: "agent.example" }), []);
   }
 });
 
