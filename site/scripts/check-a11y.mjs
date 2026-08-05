@@ -6,6 +6,7 @@ import { startBuiltSite } from "./serve-built.mjs";
 const surfaces = [
   { name: "marketing", path: "/" },
   { name: "documentation", path: "/docs/" },
+  { name: "privacy policy", path: "/privacy/" },
 ];
 
 function formatViolation(surface, violation) {

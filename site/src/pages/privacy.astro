@@ -1,0 +1,187 @@
+---
+import storeListing from "../../.generated/store-listing.json";
+import "../styles/global.css";
+import "../styles/privacy.css";
+
+const repositoryUrl = "https://github.com/whizzzkid/point-and-shoot";
+const { privacy, support } = storeListing;
+const permissionLabels: Record<keyof typeof privacy.permissions, string> = {
+  activeTab: "Active tab",
+  storage: "Storage",
+  scripting: "Scripting",
+  downloads: "Downloads",
+  clipboardWrite: "Clipboard write",
+  sidePanel: "Side panel",
+};
+const dataLabels: Record<string, string> = {
+  websiteContent: "Website content",
+  webHistory: "Active page address",
+  userActivity: "Capture interactions",
+  userGeneratedContent: "Your notes",
+};
+const effectiveDate = new Date(`${privacy.effectiveDate}T00:00:00Z`).toLocaleDateString("en-US", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="description"
+      content="How the Point & Shoot browser extension handles captures, permissions, and data."
+    />
+    <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={Astro.url.href} />
+    <title>Privacy policy — Point & Shoot</title>
+  </head>
+  <body>
+    <a class="privacy-skip-link" href="#privacy-content">Skip to privacy policy</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Point & Shoot home">
+        <img src="/brand/icon.svg" alt="" width="48" height="48" />
+        <span>Point & Shoot</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href={repositoryUrl}>GitHub</a>
+      </nav>
+    </header>
+
+    <main class="privacy-main" id="privacy-content">
+      <header class="privacy-hero">
+        <p class="eyebrow">Local by design</p>
+        <h1>Privacy policy</h1>
+        <p class="privacy-intro">
+          Point & Shoot keeps extension data on your device. We do not collect, transmit, sell, or
+          share your captures or personal information.
+        </p>
+        <p class="effective-date">Effective {effectiveDate}</p>
+      </header>
+
+      <aside class="privacy-summary" aria-label="Privacy summary">
+        <strong>No account. No analytics. No remote code.</strong>
+        <p>
+          The extension works locally, and the website is static. Neither includes advertising,
+          tracking scripts, or a service that receives your capture data.
+        </p>
+      </aside>
+
+      <article class="privacy-policy">
+        <section aria-labelledby="purpose-title">
+          <h2 id="purpose-title">What Point & Shoot does</h2>
+          <p>{privacy.singlePurpose}</p>
+          <p>
+            This policy covers the Point & Shoot browser extension and its public website. It does
+            not change the privacy practices of pages you choose to inspect.
+          </p>
+        </section>
+
+        <section aria-labelledby="local-data-title">
+          <h2 id="local-data-title">Data handled on your device</h2>
+          <p>
+            Point & Shoot processes only the evidence needed for the capture you start. That data
+            remains in your browser unless you explicitly export it.
+          </p>
+          <dl class="policy-list">
+            {
+              privacy.dataDisclosures.handledLocally.map((disclosure) => (
+                <div>
+                  <dt>{dataLabels[disclosure.category] ?? disclosure.category}</dt>
+                  <dd>{disclosure.description}</dd>
+                </div>
+              ))
+            }
+          </dl>
+          <p>
+            Sessions remain in the extension until you clear them. Files you export are saved to a
+            location you choose and are then controlled by you and your device.
+          </p>
+        </section>
+
+        <section aria-labelledby="practices-title">
+          <h2 id="practices-title">What we do not do</h2>
+          <ul class="practice-list">
+            <li>We do not collect or transmit extension data.</li>
+            <li>We do not sell or share personal or sensitive user data.</li>
+            <li>We do not use data for advertising, profiling, or credit decisions.</li>
+            <li>We do not monitor general browsing or request persistent access to every site.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="permissions-title">
+          <h2 id="permissions-title">Why each permission is needed</h2>
+          <p>
+            Permissions are limited to the extension's single purpose. Chrome and Firefox use
+            slightly different names for the same review workspace capability.
+          </p>
+          <dl class="policy-list permission-list">
+            {
+              Object.entries(privacy.permissions).map(([permission, explanation]) => (
+                <div>
+                  <dt>
+                    <span>{permissionLabels[permission as keyof typeof permissionLabels]}</span>
+                    <code>{permission}</code>
+                  </dt>
+                  <dd>{explanation}</dd>
+                </div>
+              ))
+            }
+          </dl>
+          <p>
+            Firefox exposes the review workspace as a built-in sidebar declaration rather than the
+            Chrome-only <code>sidePanel</code> permission.
+          </p>
+        </section>
+
+        <section aria-labelledby="code-title">
+          <h2 id="code-title">Remote code</h2>
+          <p>
+            Point & Shoot does not use remote code. All executable JavaScript, fonts, and icons are
+            packaged with the extension and reviewed as part of the submitted build.
+          </p>
+        </section>
+
+        <section aria-labelledby="choices-title">
+          <h2 id="choices-title">Your choices</h2>
+          <p>
+            You choose when to activate capture, what region to select, what note to write, which
+            captures to include, and whether to copy or download an export. You can clear saved
+            sessions from the extension's options page.
+          </p>
+        </section>
+
+        <section aria-labelledby="changes-title">
+          <h2 id="changes-title">Changes and support</h2>
+          <p>
+            If the extension's permissions or data handling changes, this policy and its effective
+            date will be updated before the change is released.
+          </p>
+          <p>
+            Questions or support requests can be sent to
+            <a href={`mailto:${support.email}`}>{support.email}</a>.
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <a class="brand" href="/">
+        <img src="/brand/icon.svg" alt="" width="48" height="48" />
+        <span>Point & Shoot</span>
+      </a>
+      <p>UI evidence for coding agents.</p>
+      <div>
+        <a href="/docs/">Docs</a>
+        <a href="/privacy/" aria-current="page">Privacy</a>
+        <a href={repositoryUrl}>Source</a>
+      </div>
+    </footer>
+  </body>
+</html>

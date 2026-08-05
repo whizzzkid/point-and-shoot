@@ -29,8 +29,9 @@ related:
 
 ## Context
 
-The Astro project under `site/` builds two public surfaces from one static bundle: the marketing
-page at `https://pointandshoot.app/` and product documentation under
+The Astro project under `site/` builds three public surfaces from one static bundle: the marketing
+page at `https://pointandshoot.app/`, the extension privacy policy at
+`https://pointandshoot.app/privacy/`, and product documentation under
 `https://pointandshoot.app/docs/`. The site is isolated from extension source and never ships inside
 the browser packages.
 
@@ -60,12 +61,14 @@ valid install links.
 - every Markdown file under `docs/specs/`; and
 - every Markdown file under `docs/tutorials/`.
 
-ADRs remain repository-only. Implementation plans are not part of the repository's documentation
-model and must not be reintroduced under `docs/`.
+ADRs and implementation plans remain repository-only. The temporary browser-store rollout is the
+only plan allowed under `docs/plans/` and must be removed after its verified closeout.
 
-One generated page must exist for every published source. The integrity checker rejects a missing
-page, an unexpected ADR route, a broken internal link or anchor, an obsolete repository-prefixed
-asset URL, a malformed canonical URL, and an unexpected remote resource in HTML or CSS.
+One generated page must exist for every published source. The marketing, documentation index, and
+privacy routes are required even though they do not all originate from Markdown. The integrity
+checker rejects a missing required page, a missing published document, an unexpected ADR or plan
+route, a broken internal link or anchor, an obsolete repository-prefixed asset URL, a malformed
+canonical URL, and an unexpected remote resource in HTML or CSS.
 
 ### Rendering and navigation
 
@@ -94,9 +97,10 @@ its canonical origin and base path from Pages metadata supplied by CI; local bui
 The built server and integrity tests cover root-relative assets, canonical URLs, missing paths, and
 malformed percent encoding.
 
-The axe gate rejects serious and critical violations on the landing page and a documentation page.
-Lighthouse checks both surfaces. External links are validated by the link task, while contact links
-are allowed without being treated as fetchable page resources.
+The axe gate rejects serious and critical violations on the landing page, privacy policy, and a
+documentation page. Lighthouse checks the marketing and documentation surfaces. External links are
+validated by the link task, while contact links are allowed without being treated as fetchable page
+resources.
 
 ## Publishing flow
 
@@ -104,6 +108,7 @@ are allowed without being treated as fetchable page resources.
 flowchart TD
     Design[Generated tokens and vendored fonts] --> Astro[Astro static build]
     Marketing[Marketing page source] --> Astro
+    StoreContract[Store listing and privacy contract] --> Astro
     Docs[Docs index, design, specs, tutorials] --> Astro
     Astro --> Integrity[Links, scope, canonical URLs, remote resources]
     Astro --> Accessibility[Axe]
@@ -112,6 +117,7 @@ flowchart TD
     Accessibility --> Deploy
     Lighthouse --> Deploy
     Deploy --> Root[pointandshoot.app]
+    Deploy --> Privacy[pointandshoot.app/privacy]
     Deploy --> PublishedDocs[pointandshoot.app/docs]
 ```
 

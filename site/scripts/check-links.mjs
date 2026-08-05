@@ -10,6 +10,7 @@ import { docsRoute, isPublishedDoc } from "../src/lib/docs-manifest.ts";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
 const localOrigin = "https://point-and-shoot.invalid";
+const requiredRoutes = ["/", "/docs/", "/privacy/"];
 const execFileAsync = promisify(execFile);
 
 async function walk(root, predicate) {
@@ -179,6 +180,11 @@ export async function checkSite({
 
   const problems = [];
   const externalUrls = new Set();
+  for (const requiredRoute of requiredRoutes) {
+    if (!pages.has(requiredRoute)) {
+      problems.push(`Missing required page: ${requiredRoute}`);
+    }
+  }
   for (const [route, page] of pages) {
     const expectedCanonical = new URL(route, siteUrl).href;
     if (page.canonicalUrls.length !== 1) {
