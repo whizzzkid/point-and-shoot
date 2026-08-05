@@ -1,7 +1,7 @@
 ---
 title: "PR 2: Listing assets and README install flow"
 type: plan
-status: in progress
+status: complete
 author: Point & Shoot maintainers
 created: 2026-08-04
 last_updated: 2026-08-05
@@ -29,7 +29,7 @@ Firefox install surfaces to the repository without exposing unusable links befor
 
 ## Coordination
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Depends on: PR 1 complete
 - PR base: PR 1 branch until PR 1 merges
@@ -117,7 +117,7 @@ The opening paragraph is the store summary:
       export behavior, listing copy, or a release's current-version summary.
 - [x] Run asset tests twice and compare hashes, then run `mise exec -- deno task ci`.
 - [x] Visually inspect all seven outputs at original resolution and attach them to PR 2.
-- [ ] Commit in the two boundaries listed in the parent plan and open PR 2.
+- [x] Commit in the two boundaries listed in the parent plan and open PR 2.
 
 ## Acceptance evidence
 
@@ -156,14 +156,17 @@ these facts when PR 2 starts.
 
 ## Completion record
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Started: 2026-08-05T05:13:19Z
-- Completed: not completed
-- PR: none
-- Commits: none
+- Completed: 2026-08-05T06:17:33Z
+- PR: [PR 67](https://github.com/whizzzkid/point-and-shoot/pull/67)
+- Commits: `93ed9d3`, `f291543`, `a555401`, `6b7fac0`, `df25bc9`, and `c3b77c6`
 - Verification: `deno task store:assets` twice with byte-identical output; original-resolution
-  visual inspection of all seven outputs; `mise exec -- deno task ci` (347 passed)
+  visual inspection of all seven outputs; `mise exec -- deno task ci` (357 passed); exact-head
+  GitHub CI and site workflows green at `c3b77c6`
 - Deviations: the four product scenes are direct 1280×800 fixture captures rather than composed
   canvases; only the text-free promo tiles use pixel composition. This preserves authentic product
-  UI while meeting the same deterministic size and color-mode contract.
+  UI while meeting the same deterministic size and color-mode contract. Review fixes added
+  fail-closed projection checks, staged output promotion, full PNG decoding, source-inventory drift
+  detection, and query-free public screenshot fixtures beyond the original two commit boundaries.
