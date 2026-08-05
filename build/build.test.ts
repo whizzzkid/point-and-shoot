@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertFalse, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
+import { chromium } from "playwright";
 import {
   build,
   collectRemoteUrlOffenders,
@@ -9,16 +10,20 @@ import {
 } from "./build.ts";
 import { SUPPORTED } from "./manifest.ts";
 
-const TEST_BRANCH = "feat/a2a-sdk-proof-fixture";
-const A2A_SDK_BUNDLE_PATH = "shared/a2a/sdk.js";
-const FORBIDDEN_A2A_BUNDLE_REFERENCES = [
+const TEST_BRANCH = "feat/a2a-portable-client-proof-fixture";
+const A2A_CLIENT_BUNDLE_PATH = "shared/a2a/client.js";
+const FORBIDDEN_A2A_CLIENT_REFERENCES = [
+  "Buffer",
   "node:",
+  "@a2a-js/sdk",
   "@grpc/grpc-js",
   "@bufbuild/protobuf",
+  "chrome.",
+  "browser.",
 ] as const;
 
-function forbiddenA2ABundleReferences(bundle: string): string[] {
-  return FORBIDDEN_A2A_BUNDLE_REFERENCES.filter((reference) => bundle.includes(reference));
+function forbiddenA2AClientReferences(bundle: string): string[] {
+  return FORBIDDEN_A2A_CLIENT_REFERENCES.filter((reference) => bundle.includes(reference));
 }
 
 /**
@@ -43,7 +48,7 @@ Deno.test("esbuildTargetFrom - derives esbuild target strings from SUPPORTED, no
 Deno.test("developmentVersionName - preserves a slash-delimited branch in the local label", () => {
   assertEquals(
     developmentVersionName("2026.801.0", TEST_BRANCH),
-    "2026.801.0-dev-feat/a2a-sdk-proof-fixture",
+    "2026.801.0-dev-feat/a2a-portable-client-proof-fixture",
   );
 });
 
@@ -142,7 +147,10 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
       assertEquals(manifest.manifest_version, 3);
       assertEquals(manifest.version, "2026.801.0");
-      assertEquals(manifest.version_name, "2026.801.0-dev-feat/a2a-sdk-proof-fixture");
+      assertEquals(
+        manifest.version_name,
+        "2026.801.0-dev-feat/a2a-portable-client-proof-fixture",
+      );
       await Deno.stat(new URL("background/background.js", targetDir));
       await Deno.stat(new URL("content/content.js", targetDir));
       await Deno.stat(new URL("sidepanel/sidepanel.js", targetDir));
@@ -154,8 +162,10 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       await Deno.stat(new URL("icons/icon-16.png", targetDir));
       await Deno.stat(new URL("src/shared/design/tokens.css", targetDir));
       await Deno.stat(new URL("src/shared/design/icons.svg", targetDir));
-      const a2aSdkBundle = await Deno.readTextFile(new URL(A2A_SDK_BUNDLE_PATH, targetDir));
-      assertEquals(forbiddenA2ABundleReferences(a2aSdkBundle), []);
+      const a2aClientBundle = await Deno.readTextFile(
+        new URL(A2A_CLIENT_BUNDLE_PATH, targetDir),
+      );
+      assertEquals(forbiddenA2AClientReferences(a2aClientBundle), []);
       const bg = await Deno.readTextFile(new URL("background/background.js", targetDir));
       assert(bg.includes("sourceMappingURL"));
     }
@@ -167,15 +177,33 @@ Deno.test("build({ release: true }) - minifies, drops sourcemaps, and zips both 
     await build({ release: true, outDir });
     const chromeDir = new URL("chrome/", outDir);
     const firefoxDir = new URL("firefox/", outDir);
-    const chromeA2ASdkBundle = await Deno.stat(new URL(A2A_SDK_BUNDLE_PATH, chromeDir));
-    const firefoxA2ASdkBundle = await Deno.stat(new URL(A2A_SDK_BUNDLE_PATH, firefoxDir));
-    const minifiedA2ASdkBundle = await Deno.readTextFile(
-      new URL(A2A_SDK_BUNDLE_PATH, chromeDir),
+    const chromeA2AClientBundle = await Deno.stat(new URL(A2A_CLIENT_BUNDLE_PATH, chromeDir));
+    const firefoxA2AClientBundle = await Deno.stat(new URL(A2A_CLIENT_BUNDLE_PATH, firefoxDir));
+    const minifiedA2AClientBundle = await Deno.readTextFile(
+      new URL(A2A_CLIENT_BUNDLE_PATH, chromeDir),
     );
-    assert(chromeA2ASdkBundle.size > 0);
-    assertEquals(firefoxA2ASdkBundle.size, chromeA2ASdkBundle.size);
-    assertEquals(forbiddenA2ABundleReferences(minifiedA2ASdkBundle), []);
-    console.log(`build: A2A SDK minified bundle delta ${chromeA2ASdkBundle.size} bytes`);
+    assert(chromeA2AClientBundle.size > 0);
+    assertEquals(firefoxA2AClientBundle.size, chromeA2AClientBundle.size);
+    assertEquals(forbiddenA2AClientReferences(minifiedA2AClientBundle), []);
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage();
+      const exportedSymbols = await page.evaluate(async (bundle) => {
+        const moduleUrl = URL.createObjectURL(new Blob([bundle], { type: "text/javascript" }));
+        try {
+          return Object.keys(await import(moduleUrl));
+        } finally {
+          URL.revokeObjectURL(moduleUrl);
+        }
+      }, minifiedA2AClientBundle);
+      assert(exportedSymbols.includes("createA2AClientFactory"));
+      assert(exportedSymbols.includes("A2AClientError"));
+    } finally {
+      await browser.close();
+    }
+    console.log(
+      `build: portable A2A client minified bundle delta ${chromeA2AClientBundle.size} bytes`,
+    );
     const bg = await Deno.readTextFile(new URL("background/background.js", chromeDir));
     assert(!bg.includes("sourceMappingURL"));
     for (const targetDir of [chromeDir, firefoxDir]) {
