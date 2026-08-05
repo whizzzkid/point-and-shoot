@@ -166,16 +166,16 @@ distinguished from Chrome's byte-for-byte upload.
 Only the earliest packet whose dependencies are complete may move to `in progress`. Update this
 table in the same commit that changes a packet's status.
 
-| # | Packet                                                       | Depends on  | Status      | Owner        |
-| - | ------------------------------------------------------------ | ----------- | ----------- | ------------ |
-| 1 | [Contract and privacy](01-contract-and-privacy.md)           | None        | in progress | Codex        |
-| 2 | [Listing assets and README](02-listing-assets-and-readme.md) | PR 1        | pending     | unassigned   |
-| 3 | [Website install flow](03-website-install-flow.md)           | PR 2        | pending     | unassigned   |
-| 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | pending     | unassigned   |
-| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | pending     | unassigned   |
-| 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | pending     | user         |
-| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | pending     | unassigned   |
-| 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending     | user + agent |
+| # | Packet                                                       | Depends on  | Status   | Owner        |
+| - | ------------------------------------------------------------ | ----------- | -------- | ------------ |
+| 1 | [Contract and privacy](01-contract-and-privacy.md)           | None        | complete | Codex        |
+| 2 | [Listing assets and README](02-listing-assets-and-readme.md) | PR 1        | pending  | unassigned   |
+| 3 | [Website install flow](03-website-install-flow.md)           | PR 2        | pending  | unassigned   |
+| 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | pending  | unassigned   |
+| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | pending  | unassigned   |
+| 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | pending  | user         |
+| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | pending  | unassigned   |
+| 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending  | user + agent |
 
 Allowed statuses are `pending`, `in progress`, `blocked`, and `complete`. Replace `unassigned` with
 an agent or person before work starts. Record evidence in the packet: a pull request URL for PR

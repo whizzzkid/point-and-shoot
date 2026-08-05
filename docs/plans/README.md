@@ -7,6 +7,7 @@ decisions move to [`../adr/`](../adr/README.md). Pull requests and issues retain
 | Initiative                  | Plan                                  | Status                               |
 | --------------------------- | ------------------------------------- | ------------------------------------ |
 | Agent2Agent protocol client | [`A2A-client/`](A2A-client/README.md) | Proposed; phase 0 proofs not started |
+| Browser store publication   | [`publish/`](publish/README.md)       | PR 1 complete; PR 2 pending          |
 
 ## A2A plan-owned decisions
 

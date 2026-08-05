@@ -129,7 +129,21 @@ The opening paragraph is the store summary:
 
 ## Incoming handoff
 
-Record any asset-source substitutions, final output filenames, and generator interface changes.
+PR 1 is complete in [PR 65](https://github.com/whizzzkid/point-and-shoot/pull/65). Start from these
+verified facts:
+
+- `store-listing.json` schema version `1` is canonical; both stores remain `unpublished` and both
+  listing URLs remain `null`.
+- Chrome's extension and publisher IDs remain `null`. Firefox's stable extension ID is populated,
+  while its slug remains `null`.
+- `build/store-listing.ts` currently exposes the non-writing `check` command. This packet owns the
+  planned README `sync` projection.
+- The generated manifest and listing name are both `Point & Shoot`.
+- Placeholder checks recurse through `site/src/` and every published documentation root; do not add
+  an install URL outside the canonical projection.
+
+Record any asset-source substitutions, final output filenames, and generator interface changes below
+these facts when PR 2 starts.
 
 ## Completion record
 

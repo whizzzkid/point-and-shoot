@@ -1,7 +1,7 @@
 ---
 title: "PR 1: Store contract, privacy, and drift checks"
 type: plan
-status: in progress
+status: complete
 author: Point & Shoot maintainers
 created: 2026-08-04
 last_updated: 2026-08-04
@@ -29,7 +29,7 @@ make permission, listing, website, and documentation drift fail locally and in C
 
 ## Coordination
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Depends on: none
 - PR base: `main`
@@ -133,27 +133,27 @@ visual and structural evidence for a coding agent.
 
 ## Checklist
 
-- [ ] Write failing tests for valid unpublished state, invalid published state, URL validation,
+- [x] Write failing tests for valid unpublished state, invalid published state, URL validation,
       description limits, Firefox ID drift, and permission additions/removals.
-- [ ] Add a test proving every generated Chrome and Firefox permission has exactly one explanation.
-- [ ] Add a test proving local-only page data is disclosed without being described as collected.
-- [ ] Implement schema version `1` in `store-listing.json` with both stores unpublished and all
+- [x] Add a test proving every generated Chrome and Firefox permission has exactly one explanation.
+- [x] Add a test proving local-only page data is disclosed without being described as collected.
+- [x] Implement schema version `1` in `store-listing.json` with both stores unpublished and all
       unknown public identities set to `null`.
-- [ ] Implement typed parsing and issue aggregation in `build/store-listing.ts`.
-- [ ] Add `store:check` and include it in the authoritative `deno task ci` sequence. Defer
+- [x] Implement typed parsing and issue aggregation in `build/store-listing.ts`.
+- [x] Add `store:check` and include it in the authoritative `deno task ci` sequence. Defer
       `store:sync` and its marked README projection to PR 2, which owns README install changes.
-- [ ] Project the validated contract into `site/.generated/store-listing.json` during each site
+- [x] Project the validated contract into `site/.generated/store-listing.json` during each site
       check, build, and development-server start.
-- [ ] Render the canonical privacy copy at `/privacy/` with support contact and effective date.
-- [ ] Add `/privacy/` to site link, canonical URL, accessibility, and unexpected-resource checks.
-- [ ] Document store state transitions and canonical projection rules in the durable spec.
-- [ ] Record the store-metrics feasibility decision, supported AMO data, Chrome API limitation, and
+- [x] Render the canonical privacy copy at `/privacy/` with support contact and effective date.
+- [x] Add `/privacy/` to site link, canonical URL, accessibility, and unexpected-resource checks.
+- [x] Document store state transitions and canonical projection rules in the durable spec.
+- [x] Record the store-metrics feasibility decision, supported AMO data, Chrome API limitation, and
       no-scraping rule in the durable spec.
-- [ ] Audit all of `AGENTS.md`, then add rules requiring listing copy, screenshots, README CTAs,
+- [x] Audit all of `AGENTS.md`, then add rules requiring listing copy, screenshots, README CTAs,
       privacy disclosures, permissions, release notes, and store status to change together.
-- [ ] Confirm the plan directory remains excluded from the published documentation manifest.
-- [ ] Run focused tests, `mise exec -- deno task ci`, and `npm run ci` from `site/`.
-- [ ] Commit in the two boundaries listed in the parent plan and open PR 1.
+- [x] Confirm the plan directory remains excluded from the published documentation manifest.
+- [x] Run focused tests, `mise exec -- deno task ci`, and `npm run ci` from `site/`.
+- [x] Commit the scoped contract and privacy implementation and open PR 1.
 
 ## Acceptance evidence
 
@@ -169,13 +169,30 @@ None.
 
 ## Completion record
 
-- Status: in progress
+- Status: complete
 - Owner: Codex
 - Started: 2026-08-04
-- Completed: not completed
-- PR: none
-- Commits: none
-- Verification: not run
+- Completed: 2026-08-04
+- PR: https://github.com/whizzzkid/point-and-shoot/pull/65
+- Commits:
+  - `dcbe7d98f177a18c0daa6325380d38145ba7471b` — publication rollout plan
+  - `48e5c575290ff1d656c87dde16fdb88ceaa5d55a` — canonical listing contract and checks
+  - `e688f281d5959246a3cb42baaeed3f6774f3e044` — public privacy policy
+  - `dbb194a37ea52f2693f483bdd6511018de50780d` — adversarial fail-closed corrections
+  - `4764c7f2a5bfc10e0b1627fe2afdc46e0286ac9e` — synchronized `main`
+- Verification:
+  - `mise exec -- deno task ci` — 336 tests passed.
+  - `npm run ci` from `site/` — 24 tests passed; 19 pages, 17 published docs, 7 diagrams, and 21
+    external links checked.
+  - `npm run a11y` from `site/` — no serious or critical Axe findings on three surfaces.
+  - Adversarial contract probes — malformed dates, polluted URLs, name/support drift, nested site
+    source, and published-doc sentinels all fail closed.
+  - GitHub Actions
+    [extension CI](https://github.com/whizzzkid/point-and-shoot/actions/runs/30976411753) and
+    [site CI](https://github.com/whizzzkid/point-and-shoot/actions/runs/30976411755) passed on
+    `4764c7f2a5bfc10e0b1627fe2afdc46e0286ac9e`.
 - Deviations: README projection and `store:sync` moved to PR 2 to preserve this packet's no-README
   boundary. Capability-summary intent is enforced as an `AGENTS.md` review invariant because a
-  single-snapshot validator cannot infer whether shipped behavior changed.
+  single-snapshot validator cannot infer whether shipped behavior changed. Adversarial review added
+  one fail-closed correction commit, and the ready PR merged current `main` without rewriting its
+  reviewed commits.
