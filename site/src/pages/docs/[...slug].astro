@@ -2,7 +2,7 @@
 import { getCollection, render, type CollectionEntry } from "astro:content";
 
 import DocsLayout from "../../layouts/DocsLayout.astro";
-import { docsRoute, docsTitle, sortDocs } from "../../lib/docs";
+import { docsRoute, docsTitle, sortDocs } from "../../lib/docs.ts";
 
 interface Props {
   entry: CollectionEntry<"docs">;

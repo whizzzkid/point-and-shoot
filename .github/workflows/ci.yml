@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+        run: deno task playwright:install --with-deps chromium
 
       - name: deno task ci
         run: deno task ci
@@ -90,7 +90,7 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+        run: deno task playwright:install --with-deps chromium
 
       - name: deno task e2e:smoke
         run: deno task e2e:smoke
@@ -116,7 +116,7 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+        run: deno task playwright:install --with-deps chromium
 
       - name: deno task e2e:full
         run: deno task e2e:full
@@ -166,7 +166,7 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno run -A npm:playwright@1.62.0 install --with-deps chromium
+        run: deno task playwright:install --with-deps chromium
 
       - name: deno task a11y
         run: deno task a11y
