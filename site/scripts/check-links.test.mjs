@@ -218,6 +218,26 @@ Deno.test("site integrity rejects a missing same-repository main target locally"
   }
 });
 
+Deno.test("site integrity reports malformed same-repository path encoding", async () => {
+  const paths = await fixture();
+  try {
+    await writeFile(
+      resolve(paths.distRoot, "docs/index.html"),
+      '<link rel="canonical" href="https://pages.example.test/docs/">' +
+        '<a href="https://github.com/whizzzkid/point-and-shoot/blob/main/docs/%E0%A4%A">' +
+        "Malformed target</a>",
+    );
+
+    await assertRejects(
+      () => checkSite(paths),
+      Error,
+      "malformed repository target",
+    );
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
 Deno.test("site integrity keeps unrelated GitHub links in the external set", async () => {
   const paths = await fixture();
   try {
