@@ -184,6 +184,45 @@ Deno.test("reviewer artifact validation binds source and instructions to version
   });
 });
 
+Deno.test("reviewer artifact validation rejects metadata that admits excluded paths", async () => {
+  await withFixture(async (root, outDir, trackedFiles) => {
+    const artifacts = await createReviewerArtifacts(options(root, outDir, trackedFiles));
+    const mutationDirectory = new URL("mutation/", outDir);
+    await Deno.mkdir(mutationDirectory, { recursive: true });
+    const extraction = await new Deno.Command("unzip", {
+      args: ["-q", artifacts.sourceArchivePath, "-d", mutationDirectory.pathname],
+      stderr: "piped",
+    }).output();
+    assertEquals(extraction.success, true, new TextDecoder().decode(extraction.stderr));
+
+    const metadataPath = new URL(".point-and-shoot-review-source.json", mutationDirectory);
+    const metadata = JSON.parse(await Deno.readTextFile(metadataPath)) as {
+      files: string[];
+    };
+    metadata.files.push(".env");
+    metadata.files.sort();
+    await Deno.writeTextFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+    await Deno.writeTextFile(new URL(".env", mutationDirectory), "SECRET=not-a-secret\n");
+    const mutation = await new Deno.Command("zip", {
+      args: ["-q", artifacts.sourceArchivePath, ".point-and-shoot-review-source.json", ".env"],
+      cwd: mutationDirectory,
+      stderr: "piped",
+    }).output();
+    assertEquals(mutation.success, true, new TextDecoder().decode(mutation.stderr));
+
+    await assertRejects(
+      () =>
+        validateReviewerArtifacts({
+          expectedCommitSha: "0123456789abcdef0123456789abcdef01234567",
+          expectedVersion: "2026.805.0",
+          ...artifacts,
+        }),
+      Error,
+      "contains excluded source path .env",
+    );
+  });
+});
+
 Deno.test("reviewer source reproduces the Firefox release in a clean directory", async () => {
   const temporaryDirectory = await Deno.makeTempDir();
   const temporaryRoot = new URL(`${toFileUrl(temporaryDirectory).href}/`);

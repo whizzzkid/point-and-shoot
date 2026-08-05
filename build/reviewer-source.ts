@@ -272,7 +272,11 @@ export async function validateReviewerArtifacts(
   if (JSON.stringify(archivedSources) !== JSON.stringify(metadataFiles)) {
     throw new Error("reviewer source: archived paths do not match source metadata");
   }
-  selectSourceFiles(metadataFiles);
+  const selectedFiles = selectSourceFiles(metadataFiles);
+  if (JSON.stringify(selectedFiles) !== JSON.stringify(metadataFiles)) {
+    const excludedPath = metadataFiles.find((path) => !isIncluded(path));
+    throw new Error(`reviewer source: archive contains excluded source path ${excludedPath}`);
+  }
 
   const instructions = await Deno.readTextFile(options.instructionsPath);
   if (instructions !== buildInstructions(options.expectedVersion, options.expectedCommitSha)) {
