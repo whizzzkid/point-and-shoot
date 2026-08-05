@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import test from "node:test";
 
 import { chromium } from "playwright";
 
@@ -32,15 +30,18 @@ function store(state, listingUrl = null) {
 }
 
 async function buildSite() {
-  await new Promise((resolveBuild, reject) => {
-    execFile("npm", ["run", "build"], { cwd: siteRoot }, (error, stdout, stderr) => {
-      if (error === null) {
-        resolveBuild();
-        return;
-      }
-      reject(new Error(`site build failed:\n${stdout}\n${stderr}`));
-    });
-  });
+  const output = await new Deno.Command(Deno.execPath(), {
+    args: ["task", "site:build"],
+    cwd: siteRoot,
+    stderr: "piped",
+    stdout: "piped",
+  }).output();
+  const decoder = new TextDecoder();
+  assert.equal(
+    output.code,
+    0,
+    `site build failed:\n${decoder.decode(output.stdout)}\n${decoder.decode(output.stderr)}`,
+  );
 }
 
 async function closeBuiltSite(server) {
@@ -78,7 +79,7 @@ async function storeFixture({ chrome = false, firefox = false, firefoxStatus = "
   }
 }
 
-test("models unpublished, partial, and published store actions from canonical listing data", () => {
+Deno.test("models unpublished, partial, and published store actions from canonical listing data", () => {
   const unpublished = createInstallActionsModel(
     listing({ chrome: store("unpublished"), firefox: store("unpublished") }),
   );
@@ -111,7 +112,7 @@ test("models unpublished, partial, and published store actions from canonical li
   );
 });
 
-test("recommendations only change labels, attributes, and the single accent target", () => {
+Deno.test("recommendations only change labels, attributes, and the single accent target", () => {
   assert.deepEqual(getInstallRecommendation("chromium"), {
     actionTarget: "chromium",
     announcement: "Chrome Web Store is recommended for this desktop browser.",
@@ -150,7 +151,7 @@ test("recommendations only change labels, attributes, and the single accent targ
   });
 });
 
-test("the built unpublished site provides accessible fallback, focus, motion, and responsive states", async () => {
+Deno.test("the built unpublished site provides accessible fallback, focus, motion, and responsive states", async () => {
   await buildSite();
   const [html, styles] = await Promise.all([
     readFile(resolve(siteRoot, "dist/index.html"), "utf8"),
@@ -173,7 +174,7 @@ test("the built unpublished site provides accessible fallback, focus, motion, an
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
-test("browser enhancement preserves unavailable-store status and keeps store choices operable", async () => {
+Deno.test("browser enhancement preserves unavailable-store status and keeps store choices operable", async () => {
   await buildSite();
   const browser = await chromium.launch();
   try {

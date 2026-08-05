@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 import { classifyInstallTarget } from "./install-target.mjs";
 
 type InstallTarget = "gecko" | "chromium" | "mobile-unsupported" | "unknown";

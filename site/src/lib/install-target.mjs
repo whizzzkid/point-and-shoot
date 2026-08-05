@@ -45,9 +45,9 @@ export function classifyInstallTarget(environment) {
 
   if (
     environment.brands?.some((entry) =>
-      typeof entry.brand === "string" ? chromiumBrand.test(entry.brand) : false,
+      typeof entry.brand === "string" ? chromiumBrand.test(entry.brand) : false
     ) ??
-    false
+      false
   ) {
     return "chromium";
   }

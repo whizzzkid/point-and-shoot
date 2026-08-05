@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { classifyInstallTarget } from "../src/lib/install-target.mjs";
 
@@ -15,7 +14,7 @@ const desktopGecko = {
   userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0",
 };
 
-test("classifies desktop Chromium-family browsers from capabilities and browser evidence", () => {
+Deno.test("classifies desktop Chromium-family browsers from capabilities and browser evidence", () => {
   const cases = [
     ["Chrome", desktopChromium],
     ["Chromium", { ...desktopChromium, brands: [{ brand: "Chromium" }] }],
@@ -38,7 +37,7 @@ test("classifies desktop Chromium-family browsers from capabilities and browser 
   }
 });
 
-test("classifies desktop Firefox-family browsers as Gecko", () => {
+Deno.test("classifies desktop Firefox-family browsers as Gecko", () => {
   const cases = [
     ["Firefox", desktopGecko],
     [
@@ -72,7 +71,7 @@ test("classifies desktop Firefox-family browsers as Gecko", () => {
   }
 });
 
-test("prioritizes mobile evidence over desktop browser wrapper tokens", () => {
+Deno.test("prioritizes mobile evidence over desktop browser wrapper tokens", () => {
   const cases = [
     ["Firefox Android", { ...desktopGecko, mobile: true }],
     ["Chrome Android", { ...desktopChromium, mobile: true }],
@@ -115,7 +114,7 @@ test("prioritizes mobile evidence over desktop browser wrapper tokens", () => {
   }
 });
 
-test("uses Gecko capability before Chromium brand evidence and ignores bots", () => {
+Deno.test("uses Gecko capability before Chromium brand evidence and ignores bots", () => {
   assert.equal(
     classifyInstallTarget({
       ...desktopChromium,
@@ -141,7 +140,7 @@ test("uses Gecko capability before Chromium brand evidence and ignores bots", ()
   );
 });
 
-test("leaves Safari, WebKit-only strings, malformed evidence, and empty UAs unknown", () => {
+Deno.test("leaves Safari, WebKit-only strings, malformed evidence, and empty UAs unknown", () => {
   const cases = [
     { platform: "macOS", userAgent: "Mozilla/5.0 Version/18.6 Safari/605.1.15" },
     { platform: "macOS", userAgent: "Mozilla/5.0 AppleWebKit/605.1.15" },
