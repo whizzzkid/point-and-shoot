@@ -1,18 +1,27 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import { build } from "./build.ts";
-import { forChrome, manifestBase } from "./manifest.ts";
+import { forChrome, forFirefox, manifestBase } from "./manifest.ts";
 import {
   assertTagMatchesVersion,
   assertTagResolvesToCommit,
   assertVersionSources,
   nextCalver,
+  type ReleaseTarget,
   runReleaseCommand,
   validateArchivePaths,
   validateReleaseArchive,
 } from "./release.ts";
 
 async function withArchive(
+  mutatePackage: (root: URL) => Promise<void>,
+  assertArchive: (archivePath: string) => Promise<void>,
+): Promise<void> {
+  await withTargetArchive("chrome", mutatePackage, assertArchive);
+}
+
+async function withTargetArchive(
+  target: ReleaseTarget,
   mutatePackage: (root: URL) => Promise<void>,
   assertArchive: (archivePath: string) => Promise<void>,
 ): Promise<void> {
@@ -23,7 +32,7 @@ async function withArchive(
     await Deno.mkdir(new URL("background/", root), { recursive: true });
     await Deno.writeTextFile(
       new URL("manifest.json", root),
-      `${JSON.stringify(forChrome(), null, 2)}\n`,
+      `${JSON.stringify(target === "chrome" ? forChrome() : forFirefox(), null, 2)}\n`,
     );
     await Deno.writeTextFile(new URL("background/background.js", root), "console.log('ready');");
     await mutatePackage(root);
@@ -239,6 +248,37 @@ Deno.test("validateReleaseArchive - rejects optional host eligibility drift", as
         "optional host eligibility",
       );
     },
+  );
+});
+
+Deno.test("validateReleaseArchive - rejects a target's non-canonical optional host key", async () => {
+  await Promise.all(
+    (["chrome", "firefox"] as const).map((target) =>
+      withTargetArchive(
+        target,
+        async (root) => {
+          const manifestPath = new URL("manifest.json", root);
+          const manifest = JSON.parse(await Deno.readTextFile(manifestPath));
+          const nonCanonicalKey = target === "chrome"
+            ? "optional_permissions"
+            : "optional_host_permissions";
+          manifest[nonCanonicalKey] = [];
+          await Deno.writeTextFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+        },
+        async (archivePath) => {
+          await assertRejects(
+            () =>
+              validateReleaseArchive({
+                archivePath,
+                expectedVersion: manifestBase.version,
+                target,
+              }),
+            Error,
+            "non-canonical optional host key",
+          );
+        },
+      )
+    ),
   );
 });
 

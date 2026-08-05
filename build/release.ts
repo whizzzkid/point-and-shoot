@@ -349,6 +349,14 @@ function validateManifest(
 
   const expectedManifest = target === "chrome" ? forChrome() : forFirefox();
   const eligibilityKey = target === "chrome" ? "optional_host_permissions" : "optional_permissions";
+  const nonCanonicalEligibilityKey = target === "chrome"
+    ? "optional_permissions"
+    : "optional_host_permissions";
+  if (nonCanonicalEligibilityKey in manifest) {
+    throw new Error(
+      `release: ${target} manifest contains non-canonical optional host key ${nonCanonicalEligibilityKey}`,
+    );
+  }
   if (
     JSON.stringify(manifest[eligibilityKey]) !== JSON.stringify(expectedManifest[eligibilityKey])
   ) {
