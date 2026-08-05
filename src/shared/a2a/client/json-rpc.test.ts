@@ -138,6 +138,29 @@ Deno.test("JSON-RPC client preserves protocol error codes without remote text", 
   assertEquals(error.message.includes("secret server detail"), false);
 });
 
+Deno.test("JSON-RPC client preserves a bounded protocol error returned with HTTP failure", async () => {
+  const client = createJsonRpcClient(
+    () =>
+      Promise.resolve(Response.json({
+        jsonrpc: "2.0",
+        id: 1,
+        error: { code: -32603, message: "secret server detail" },
+      }, { status: 500 })),
+    TARGET,
+    LIMITS,
+  );
+
+  const error = await assertRejects(
+    () => client.sendMessage(SEND_REQUEST, { signal: new AbortController().signal }),
+    A2AClientError,
+  );
+
+  assertEquals(error.code, "protocol-error");
+  assertEquals(error.protocolCode, -32603);
+  assertEquals(error.status, 500);
+  assertEquals(error.retryable, true);
+});
+
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
   const values: T[] = [];
   for await (const event of events) {
