@@ -2,6 +2,8 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { projectStoreListing, runStoreListingCheck } from "./store-listing.mjs";
+
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(siteRoot, "..");
 const astroCacheRoot = resolve(siteRoot, ".astro");
@@ -11,6 +13,7 @@ const sourceDesignRoot = resolve(repositoryRoot, "src/shared/design");
 const sourceDocsAssets = resolve(repositoryRoot, "docs/assets");
 const sourceIcon = resolve(repositoryRoot, ".claude-design/point-and-shoot/assets/icon.svg");
 const sourceProductPreview = resolve(repositoryRoot, "tests/visual/baselines/notes-dark.png");
+const sourceStoreListing = resolve(repositoryRoot, "store-listing.json");
 const command = Deno.args[0];
 const supportedCommands = new Set(["build", "check", "dev"]);
 
@@ -18,6 +21,7 @@ if (!supportedCommands.has(command)) {
   throw new Error("Usage: deno task site:<build|check|dev>");
 }
 
+await runStoreListingCheck(repositoryRoot);
 await Promise.all([
   rm(astroCacheRoot, { force: true, recursive: true }),
   rm(generatedRoot, { force: true, recursive: true }),
@@ -37,6 +41,7 @@ await Promise.all([
   cp(resolve(sourceDesignRoot, "icons.svg"), resolve(generatedRoot, "public/brand/icons.svg")),
   cp(sourceIcon, resolve(generatedRoot, "public/brand/icon.svg")),
   cp(sourceProductPreview, resolve(generatedRoot, "public/product/notes-panel.png")),
+  projectStoreListing(sourceStoreListing, resolve(generatedRoot, "store-listing.json")),
 ]);
 
 const tokens = await readFile(resolve(sourceDesignRoot, "tokens.css"), "utf8");

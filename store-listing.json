@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "support": {
+    "email": "support@pointandshoot.app",
+    "url": "https://pointandshoot.app/"
+  },
+  "listing": {
+    "name": "Point & Shoot",
+    "shortDescription": "Point at or drag a box around a broken element, add a note, export a fix prompt.",
+    "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
+    "fullDescription": "Point & Shoot turns interface problems into local evidence a coding agent can act on. Start a capture from the browser toolbar or keyboard shortcut, point at a broken element or drag around a region, add a note, and repeat across as many pages as needed.\n\nEach capture can include a screenshot, page URL, selector fallbacks, relevant page text and metadata, a bounded computed-style digest, and the note you wrote. Review the session in the browser side panel, choose which notes to include, then export an agent-readable Markdown prompt or ZIP bundle.\n\nPoint & Shoot keeps extension data on your device. It does not upload captures, notes, screenshots, browsing information, or exported bundles. The extension requests temporary active-tab access only after you invoke it and does not request persistent access to every site. All executable code is packaged with the extension.\n\nCurrent version\n\nCapture annotated UI evidence and export a local fix prompt from Chrome or Firefox.\n\nBrowser support\n\nChrome 116 or newer and Firefox 109 or newer are supported. Safari support is planned separately.\n\nSupport\n\nSend support requests to support@pointandshoot.app."
+  },
+  "privacy": {
+    "url": "https://pointandshoot.app/privacy/",
+    "effectiveDate": "2026-08-04",
+    "singlePurpose": "Point & Shoot lets a user select a UI problem on the active page, annotate it, and export local visual and structural evidence for a coding agent.",
+    "remoteCode": false,
+    "permissions": {
+      "activeTab": "Temporarily accesses only the active tab after the user invokes Point & Shoot, so it can inspect the selected region and capture the visible page. It does not request persistent host access.",
+      "storage": "Saves extension settings and session pointers locally. Captures, screenshots, and notes remain in the browser's local IndexedDB storage until the user deletes them.",
+      "scripting": "Injects the packaged capture interface into the active tab after an explicit user gesture. It does not download or execute remote code.",
+      "downloads": "Creates a Markdown prompt or ZIP bundle only when the user chooses an export action.",
+      "clipboardWrite": "Copies the compiled prompt only when the user selects Copy prompt. The extension cannot read clipboard contents.",
+      "sidePanel": "Opens the Chrome review workspace where the user edits notes, compiles the prompt, and starts an export."
+    },
+    "dataDisclosures": {
+      "handledLocally": [
+        {
+          "category": "websiteContent",
+          "description": "Text, images, links, element metadata, and styles from only the active page and selected region are processed locally to create the capture."
+        },
+        {
+          "category": "webHistory",
+          "description": "The active page URL is stored locally with a capture so the exported evidence identifies where the problem appeared."
+        },
+        {
+          "category": "userActivity",
+          "description": "Selection and click activity used to choose a capture is processed locally and is not used to monitor general browsing."
+        },
+        {
+          "category": "userGeneratedContent",
+          "description": "Notes written by the user are stored locally with the capture until the user deletes the session."
+        }
+      ],
+      "collected": false,
+      "transmitted": false,
+      "sold": false,
+      "shared": false,
+      "usedForAdvertising": false,
+      "usedForCreditDecisions": false
+    }
+  },
+  "stores": {
+    "chrome": {
+      "state": "unpublished",
+      "extensionId": null,
+      "publisherId": null,
+      "listingUrl": null
+    },
+    "firefox": {
+      "state": "unpublished",
+      "slug": null,
+      "extensionId": "pointandshoot@whizzzkid.dev",
+      "listingUrl": null
+    }
+  }
+}

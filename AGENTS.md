@@ -4,7 +4,9 @@ Conventions for anyone — human or agent — writing code in this repository. T
 authoritative. Where it disagrees with a memory, a habit, or a plausible-looking pattern elsewhere
 in the tree, this file wins.
 
-The original v1 delivery plans have been retired now that the product is implemented. Read
+The original v1 delivery plans have been retired now that the product is implemented. The active
+browser-store rollout lives under [`docs/plans/publish/`](docs/plans/publish/README.md) and must be
+retired after the first automated store release is verified. Read
 [`docs/specs/`](docs/specs/README.md) for current behavior, [`docs/adr/`](docs/adr/README.md) for
 architectural rationale, and [`docs/design.md`](docs/design.md) before changing UI. Active proposed
 work may have a temporary plan under [`docs/plans/`](docs/plans/README.md); do not infer current
@@ -51,7 +53,7 @@ into a green check.
 | `deno task lint`               | Runs `recommended` rules plus `no-slow-types`                           |
 | `deno task check`              | Type-checks the project                                                 |
 | `deno task test`               | Runs Deno unit and browser-backed module tests                          |
-| `deno task ci`                 | Runs `fmt:check` → `lint` → `check` → `test`, in sequence               |
+| `deno task ci`                 | Runs formatting, lint, type, store-drift, and test gates                |
 | `deno task fixture`            | Serves the browser fixture app, printing both origins                   |
 | `deno task shots`              | Captures fixture screenshots into `docs/assets/`                        |
 | `deno task shots:wave3`        | Captures every shipped extension surface in both forced themes          |
@@ -64,6 +66,7 @@ into a green check.
 | `deno task release:current`    | Prints the version packaged into both browser manifests                 |
 | `deno task release:next`       | Computes the next UTC `YYYY.MMDD.N` release version                     |
 | `deno task release:validate`   | Validates both release zips and an optional matching tag                |
+| `deno task store:check`        | Validates listing state, copy, privacy, permissions, and public links   |
 | `deno task lint:firefox`       | Runs `web-ext lint` against `dist/firefox/`                             |
 | `deno task boot:firefox`       | Loads `dist/firefox/` with `web-ext` and asserts it boots               |
 | `deno task smoke:firefox`      | Drives one Firefox capture through Marionette and validates its note    |
@@ -132,6 +135,27 @@ Chrome and Firefox are both first-class. Safari is compatible-by-construction wi
   revisit [ADR-0002](docs/adr/0002-activetab-only-permission-model.md), not a config change.
 - Browser-API divergence is covered by unit tests against fakes at the shim seam, not by a second
   end-to-end stack.
+
+## Store publication invariants
+
+[`store-listing.json`](store-listing.json) is the canonical source for browser-store state,
+identities, links, listing copy, support details, and privacy disclosures. The generated manifests
+remain canonical for permissions and Firefox's stable extension ID. `deno task store:check` joins
+those sources and is part of the authoritative CI gate.
+
+- Unknown vendor-assigned identities and listing URLs are JSON `null`. A public store URL may appear
+  only when that store's state is `published` and the checker accepts the vendor host and identity.
+- A shipped user-visible capability change must make an intentional decision about
+  `listing.currentVersionSummary`, `listing.fullDescription`, README/docs copy, the inventory of up
+  to five listing screenshots, and release notes in the same PR. Update every affected artifact;
+  record unchanged items in the PR test plan rather than manufacturing copy churn.
+- A permission or data-handling change updates the generated manifests, permission explanations,
+  data disclosures, privacy page, durable specs or ADRs, and drift tests in the same PR. The privacy
+  guarantee remains local-only and `activeTab`-only unless ADR-0002 is superseded.
+- Do not hand-maintain a second website copy of store metadata. Astro reads the disposable
+  `site/.generated/store-listing.json` projection created from the root contract.
+- Store credentials and API tokens never enter the contract, repository, generated artifacts, logs,
+  pull request bodies, or release notes. They live only in protected GitHub environments or secrets.
 
 ## UI conventions
 

@@ -10,6 +10,7 @@ on:
       - "docs/**"
       - "mise.toml"
       - "site/**"
+      - "store-listing.json"
       - "src/shared/design/**"
       - "tests/visual/baselines/notes-dark.png"
   push:
@@ -22,6 +23,7 @@ on:
       - "docs/**"
       - "mise.toml"
       - "site/**"
+      - "store-listing.json"
       - "src/shared/design/**"
       - "tests/visual/baselines/notes-dark.png"
 
