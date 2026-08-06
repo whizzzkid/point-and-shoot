@@ -153,13 +153,6 @@ h3 {
   line-height: var(--leading-relaxed);
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-8);
-}
-
 .button {
   display: inline-flex;
   align-items: center;
@@ -198,11 +191,60 @@ h3 {
   color: var(--text-primary);
 }
 
-.privacy-note {
-  margin-top: var(--space-5);
-  margin-bottom: var(--space-0);
+.button.is-recommended {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--black);
+}
+
+.button.is-recommended:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+.install-actions {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.install-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.install-store,
+.install-source {
+  display: grid;
+  min-width: min-content;
+  gap: var(--space-3);
+}
+
+.install-store-copy,
+.install-source-copy,
+.install-status,
+.install-recommendation,
+.install-no-script {
+  max-width: 58ch;
+  margin: var(--space-0);
   color: var(--text-tertiary);
   font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+}
+
+.install-store-copy {
+  max-width: 38ch;
+}
+
+.install-status,
+.install-recommendation,
+.install-no-script {
+  color: var(--text-secondary);
+}
+
+.hero-workflow-link {
+  margin-top: var(--space-3);
 }
 
 .product-frame {
@@ -270,9 +312,8 @@ h3 {
   position: absolute;
   z-index: 1;
   inset: 38% 48% 39% var(--space-12);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  box-shadow: var(--glow-accent);
 }
 
 .capture-outline span {
@@ -281,8 +322,9 @@ h3 {
   left: var(--space-0);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--black);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   white-space: nowrap;
@@ -418,11 +460,31 @@ h3 {
   color: var(--text-secondary);
 }
 
-.closing-actions {
-  display: flex;
-  flex-wrap: wrap;
+.install-actions--closing {
+  justify-items: center;
+  width: 100%;
+  margin-top: var(--space-0);
+}
+
+.install-actions--closing .install-options {
   justify-content: center;
-  gap: var(--space-3);
+}
+
+.install-actions--closing .install-store,
+.install-actions--closing .install-source {
+  justify-items: center;
+}
+
+.install-actions--closing .install-store-copy,
+.install-actions--closing .install-source-copy,
+.install-actions--closing .install-status,
+.install-actions--closing .install-recommendation,
+.install-actions--closing .install-no-script {
+  text-align: center;
+}
+
+.closing-docs-link {
+  margin-top: var(--space-3);
 }
 
 footer {
@@ -466,20 +528,14 @@ footer p {
     width: min(calc(100% - var(--space-6)), var(--container-max));
   }
 
-  .hero-actions,
   .proof-strip,
   .workflow-grid,
   footer {
     grid-template-columns: 1fr;
   }
 
-  .hero-actions {
+  .install-options {
     display: grid;
-  }
-
-  .closing-actions {
-    display: grid;
-    width: 100%;
   }
 
   .product-stage {

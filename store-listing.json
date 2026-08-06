@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "support": {
+    "email": "support@pointandshoot.app",
+    "url": "https://pointandshoot.app/"
+  },
+  "listing": {
+    "name": "Point & Shoot",
+    "shortDescription": "Point at or drag a box around a broken element, add a note, export a fix prompt.",
+    "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
+    "fullDescription": "Point at a UI problem, capture its visual and structural evidence, and export a fix-ready prompt for your coding agent.\n\nPoint\n\nStart a capture from the browser toolbar or keyboard shortcut, then point at a broken element or drag around a visible region.\n\nShoot\n\nAdd a note describing what should change. Repeat across as many pages and problems as needed.\n\nReview\n\nReview the session in the browser side panel and choose which notes to include. Each capture can contain a screenshot, page URL, selector fallbacks, relevant DOM text and metadata, a bounded computed-style digest, capture geometry, and the note you wrote.\n\nExport\n\nCompile the selected evidence into an agent-readable Markdown prompt or download a ZIP bundle containing the canonical session, prompt, and referenced screenshots.\n\nPrivate by design\n\nPoint & Shoot keeps extension data on your device. It does not upload captures, notes, screenshots, browsing information, or exported bundles. The extension requests temporary activeTab access only after you invoke it and never requests persistent access to every site. All executable code is packaged with the extension.\n\nCurrent version\n\nCapture annotated UI evidence and export a local fix prompt from Chrome or Firefox.\n\nBrowser support\n\nChrome and other Chromium-based browsers can install the Chrome build. Firefox and other Gecko-based browsers can install the Firefox build. Chrome 116 or newer and Firefox 109 or newer are supported. Safari support is planned separately.\n\nSupport\n\nSend support requests to support@pointandshoot.app.\n\nPrivacy policy\n\nhttps://pointandshoot.app/privacy/\n\nDocumentation\n\nhttps://pointandshoot.app/docs/\n\nSource code\n\nhttps://github.com/whizzzkid/point-and-shoot"
+  },
+  "artwork": {
+    "screenshots": [
+      {
+        "fileName": "01-capture-toolbar.png",
+        "altText": "Point & Shoot selecting a page element with the capture toolbar."
+      },
+      {
+        "fileName": "02-notes-review.png",
+        "altText": "A captured UI issue ready for review in the notes workspace."
+      },
+      {
+        "fileName": "03-note-hover-highlight.png",
+        "altText": "The page element linked to a saved note highlighted in place."
+      },
+      {
+        "fileName": "04-compiled-plan.png",
+        "altText": "Captured notes compiled into an agent-ready fix prompt."
+      },
+      {
+        "fileName": "05-privacy-settings.png",
+        "altText": "Local capture and privacy controls in Point & Shoot settings."
+      }
+    ],
+    "smallPromoFileName": "small-promo.png",
+    "marqueePromoFileName": "marquee-promo.png"
+  },
+  "privacy": {
+    "url": "https://pointandshoot.app/privacy/",
+    "effectiveDate": "2026-08-04",
+    "singlePurpose": "Point & Shoot lets a user select a UI problem on the active page, annotate it, and export local visual and structural evidence for a coding agent.",
+    "remoteCode": false,
+    "permissions": {
+      "activeTab": "Temporarily accesses only the active tab after the user invokes Point & Shoot, so it can inspect the selected region and capture the visible page. It does not request persistent host access.",
+      "storage": "Saves extension settings and session pointers locally. Captures, screenshots, and notes remain in the browser's local IndexedDB storage until the user deletes them.",
+      "scripting": "Injects the packaged capture interface into the active tab after an explicit user gesture. It does not download or execute remote code.",
+      "downloads": "Creates a Markdown prompt or ZIP bundle only when the user chooses an export action.",
+      "clipboardWrite": "Copies the compiled prompt only when the user selects Copy prompt. The extension cannot read clipboard contents.",
+      "sidePanel": "Opens the Chrome review workspace where the user edits notes, compiles the prompt, and starts an export."
+    },
+    "dataDisclosures": {
+      "handledLocally": [
+        {
+          "category": "websiteContent",
+          "description": "Text, images, links, element metadata, and styles from only the active page and selected region are processed locally to create the capture."
+        },
+        {
+          "category": "webHistory",
+          "description": "The active page URL is stored locally with a capture so the exported evidence identifies where the problem appeared."
+        },
+        {
+          "category": "userActivity",
+          "description": "Selection and click activity used to choose a capture is processed locally and is not used to monitor general browsing."
+        },
+        {
+          "category": "userGeneratedContent",
+          "description": "Notes written by the user are stored locally with the capture until the user deletes the session."
+        }
+      ],
+      "collected": false,
+      "transmitted": false,
+      "sold": false,
+      "shared": false,
+      "usedForAdvertising": false,
+      "usedForCreditDecisions": false
+    }
+  },
+  "stores": {
+    "chrome": {
+      "state": "unpublished",
+      "extensionId": null,
+      "publisherId": null,
+      "listingUrl": null
+    },
+    "firefox": {
+      "state": "unpublished",
+      "slug": null,
+      "extensionId": "pointandshoot@whizzzkid.dev",
+      "listingUrl": null
+    }
+  }
+}

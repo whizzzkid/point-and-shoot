@@ -92,7 +92,7 @@ interface ManifestBase {
 /** Everything shared between the two targets. Neither builder adds `host_permissions` — see ADR-0002. */
 export const manifestBase: ManifestBase = {
   manifest_version: 3,
-  name: "Point and Shoot",
+  name: "Point & Shoot",
   version: "2026.801.0", // x-release-please-version
   description: "Point at or drag a box around a broken element, add a note, export a fix prompt.",
   icons: EXTENSION_ICONS,

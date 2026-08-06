@@ -4,7 +4,9 @@ Conventions for anyone — human or agent — writing code in this repository. T
 authoritative. Where it disagrees with a memory, a habit, or a plausible-looking pattern elsewhere
 in the tree, this file wins.
 
-The original v1 delivery plans have been retired now that the product is implemented. Read
+The original v1 delivery plans have been retired now that the product is implemented. The active
+browser-store rollout lives under [`docs/plans/publish/`](docs/plans/publish/README.md) and must be
+retired after the first automated store release is verified. Read
 [`docs/specs/`](docs/specs/README.md) for current behavior, [`docs/adr/`](docs/adr/README.md) for
 architectural rationale, and [`docs/design.md`](docs/design.md) before changing UI. Active proposed
 work may have a temporary plan under [`docs/plans/`](docs/plans/README.md); do not infer current
@@ -44,41 +46,46 @@ unit tests, extension builds, and the Astro site.
 A stub task that silently passes is worse than a missing one, because it turns an unimplemented gate
 into a green check.
 
-| Task                           | What it does                                                            |
-| ------------------------------ | ----------------------------------------------------------------------- |
-| `deno task fmt`                | Formats the tree                                                        |
-| `deno task fmt:check`          | Fails on any unformatted file                                           |
-| `deno task lint`               | Runs `recommended` rules plus `no-slow-types`                           |
-| `deno task check`              | Type-checks the project                                                 |
-| `deno task test`               | Runs Deno unit and browser-backed module tests                          |
-| `deno task ci`                 | Runs `fmt:check` → `lint` → `check` → `test`, in sequence               |
-| `deno task fixture`            | Serves the browser fixture app, printing both origins                   |
-| `deno task shots`              | Captures fixture screenshots into `docs/assets/`                        |
-| `deno task shots:wave3`        | Captures every shipped extension surface in both forced themes          |
-| `deno task playwright:install` | Installs requested Playwright browsers and optional system dependencies |
-| `deno task tokens`             | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle  |
-| `deno task tokens:check`       | Regenerates into a temp dir and diffs against the committed output      |
-| `deno task lint:design`        | Lints `src/` against the design bundle's own oxlint config              |
-| `deno task build`              | Builds development packages in `dist/chrome/` and `dist/firefox/`       |
-| `deno task build:release`      | Builds minified, sourcemap-free `dist/<target>.zip` packages            |
-| `deno task release:current`    | Prints the version packaged into both browser manifests                 |
-| `deno task release:next`       | Computes the next UTC `YYYY.MMDD.N` release version                     |
-| `deno task release:validate`   | Validates both release zips and an optional matching tag                |
-| `deno task lint:firefox`       | Runs `web-ext lint` against `dist/firefox/`                             |
-| `deno task boot:firefox`       | Loads `dist/firefox/` with `web-ext` and asserts it boots               |
-| `deno task smoke:firefox`      | Drives one Firefox capture through Marionette and validates its note    |
-| `deno task a11y`               | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks  |
-| `deno task visual`             | Compares every surface and forced theme with its Linux baseline         |
-| `deno task visual:update`      | Replaces visual baselines intentionally on the CI platform              |
-| `deno task site:dev`           | Starts the Astro development server                                     |
-| `deno task site:check`         | Runs Astro diagnostics for the site                                     |
-| `deno task site:lint`          | Checks Deno formatting and lint rules under `site/`                     |
-| `deno task site:test`          | Runs Deno tests for site tooling                                        |
-| `deno task site:build`         | Builds the static site into `site/dist/`                                |
-| `deno task site:links`         | Checks built output, published scope, and external links                |
-| `deno task site:a11y`          | Runs axe against the built marketing and documentation surfaces         |
-| `deno task site:lighthouse`    | Runs Lighthouse budgets against both built surfaces                     |
-| `deno task site:ci`            | Runs every non-browser site gate in sequence                            |
+| Task                                    | What it does                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `deno task fmt`                         | Formats the tree                                                       |
+| `deno task fmt:check`                   | Fails on any unformatted file                                          |
+| `deno task lint`                        | Runs `recommended` rules plus `no-slow-types`                          |
+| `deno task check`                       | Type-checks the project                                                |
+| `deno task test`                        | Runs Deno unit and browser-backed module tests                         |
+| `deno task ci`                          | Runs formatting, lint, type, store-drift, and test gates               |
+| `deno task fixture`                     | Serves the browser fixture app, printing both origins                  |
+| `deno task shots`                       | Captures fixture screenshots into `docs/assets/`                       |
+| `deno task shots:wave3`                 | Captures every shipped extension surface in both forced themes         |
+| `deno task playwright:install`          | Installs requested Playwright browsers and system dependencies         |
+| `deno task tokens`                      | Regenerates `src/shared/design/tokens.{css,ts}` from the design bundle |
+| `deno task tokens:check`                | Regenerates into a temp dir and diffs against the committed output     |
+| `deno task lint:design`                 | Lints `src/` against the design bundle's own oxlint config             |
+| `deno task build`                       | Builds development packages in `dist/chrome/` and `dist/firefox/`      |
+| `deno task build:release`               | Builds minified, sourcemap-free `dist/<target>.zip` packages           |
+| `deno task release:current`             | Prints the version packaged into both browser manifests                |
+| `deno task release:next`                | Computes the next UTC `YYYY.MMDD.N` release version                    |
+| `deno task release:validate`            | Validates both release zips and an optional matching tag               |
+| `deno task store:check`                 | Validates listing state, copy, privacy, permissions, and public links  |
+| `deno task store:sync`                  | Projects store publication state into the marked README install block  |
+| `deno task store:assets`                | Captures release-build artwork using committed digest-pinned badges    |
+| `deno task store:assets:refresh-badges` | Explicitly downloads digest-pinned official vendor badges              |
+| `deno task store:assets:check`          | Rejects missing, malformed, modified, or source-stale store artwork    |
+| `deno task lint:firefox`                | Runs `web-ext lint` against `dist/firefox/`                            |
+| `deno task boot:firefox`                | Loads `dist/firefox/` with `web-ext` and asserts it boots              |
+| `deno task smoke:firefox`               | Drives one Firefox capture through Marionette and validates its note   |
+| `deno task a11y`                        | Runs axe, keyboard, focus, contrast, and reduced-motion browser checks |
+| `deno task visual`                      | Compares every surface and forced theme with its Linux baseline        |
+| `deno task visual:update`               | Replaces visual baselines intentionally on the CI platform             |
+| `deno task site:dev`                    | Starts the Astro development server                                    |
+| `deno task site:check`                  | Runs Astro diagnostics for the site                                    |
+| `deno task site:lint`                   | Checks Deno formatting and lint rules under `site/`                    |
+| `deno task site:test`                   | Runs Deno tests for site tooling                                       |
+| `deno task site:build`                  | Builds the static site into `site/dist/`                               |
+| `deno task site:links`                  | Checks built output, published scope, and external links               |
+| `deno task site:a11y`                   | Runs axe against the built marketing and documentation surfaces        |
+| `deno task site:lighthouse`             | Runs Lighthouse budgets against both built surfaces                    |
+| `deno task site:ci`                     | Runs every non-browser site gate in sequence                           |
 
 `deno task ci` is the one command that both GitHub Actions and the lefthook `pre-push` hook call, so
 local and remote cannot diverge. The path-filtered `Site` workflow uses the same `site:*` tasks for
@@ -132,6 +139,35 @@ Chrome and Firefox are both first-class. Safari is compatible-by-construction wi
   revisit [ADR-0002](docs/adr/0002-activetab-only-permission-model.md), not a config change.
 - Browser-API divergence is covered by unit tests against fakes at the shim seam, not by a second
   end-to-end stack.
+
+## Store publication invariants
+
+[`store-listing.json`](store-listing.json) is the canonical source for browser-store state,
+identities, links, listing copy, support details, and privacy disclosures. The generated manifests
+remain canonical for permissions and Firefox's stable extension ID. `deno task store:check` joins
+those sources and is part of the authoritative CI gate.
+
+- Unknown vendor-assigned identities and listing URLs are JSON `null`. A public store URL may appear
+  only when that store's state is `published` and the checker accepts the vendor host and identity.
+- A shipped user-visible capability change must make an intentional decision about
+  `listing.currentVersionSummary`, `listing.fullDescription`, README/docs copy, the inventory of up
+  to five listing screenshots, and release notes in the same PR. Update every affected artifact;
+  record unchanged items in the PR test plan rather than manufacturing copy churn.
+- Store screenshots, promo tiles, vendor badges, and `docs/assets/store/manifest.json` are generated
+  outputs. Do not edit them by hand. Run `deno task store:assets` whenever a visible feature,
+  permission, setting, export behavior, listing-copy field, or current-version summary changes, then
+  visually inspect all seven listing images at their original size. The source digest makes an
+  unchanged summary or screenshot set an explicit regeneration decision instead of silent drift.
+- The marked README install block is generated with `deno task store:sync`. Unpublished or submitted
+  stores never render a badge or link; changing a store to `published` and syncing is the only way
+  its canonical listing becomes an install action.
+- A permission or data-handling change updates the generated manifests, permission explanations,
+  data disclosures, privacy page, durable specs or ADRs, and drift tests in the same PR. The privacy
+  guarantee remains local-only and `activeTab`-only unless ADR-0002 is superseded.
+- Do not hand-maintain a second website copy of store metadata. Astro reads the disposable
+  `site/.generated/store-listing.json` projection created from the root contract.
+- Store credentials and API tokens never enter the contract, repository, generated artifacts, logs,
+  pull request bodies, or release notes. They live only in protected GitHub environments or secrets.
 
 ## UI conventions
 

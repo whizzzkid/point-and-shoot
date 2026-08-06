@@ -16,7 +16,7 @@ repo.
 | Path                                | What lives there                                                                 | Published?      |
 | ----------------------------------- | -------------------------------------------------------------------------------- | --------------- |
 | [`design.md`](design.md)            | The design system, MV3 substitutions, and application rules                      | Yes             |
-| `plans/`                            | Active implementation plans, sequencing, and provisional decisions               | Repository only |
+| [`plans/`](plans/README.md)         | Active implementation plans, including the browser-store rollout                 | Repository only |
 | [`specs/`](specs/README.md)         | Current contracts for the extension, release pipeline, and website               | Yes             |
 | [`adr/`](adr/README.md)             | Architecture decision records, numbered and immutable once accepted              | Repository only |
 | [`tutorials/`](tutorials/README.md) | Task walkthroughs for install, capture, Playwright, troubleshooting, and release | Yes             |
@@ -96,4 +96,5 @@ Two consequences for how you write here:
 Only active implementation plans live under `docs/plans/`, and the documentation site does not
 publish them. Once behavior lands, preserve its current contract in a spec and its lasting rationale
 in an ADR; use issues and pull requests for durable delivery history, then retire the completed
-plan.
+plan. In particular, retire the active browser-store plan under `plans/publish/` after the first
+automated store release is verified.

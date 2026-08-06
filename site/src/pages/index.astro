@@ -1,9 +1,11 @@
 ---
 import Icon from "../components/Icon.astro";
+import InstallActions from "../components/InstallActions.astro";
+import storeListing from "../../.generated/store-listing.json";
 import "../styles/global.css";
 
 const repositoryUrl = "https://github.com/whizzzkid/point-and-shoot";
-const sourceInstallUrl = `${repositoryUrl}#build-from-source`;
+const { support } = storeListing;
 ---
 
 <!doctype html>
@@ -41,14 +43,9 @@ const sourceInstallUrl = `${repositoryUrl}#build-from-source`;
             Highlight what is broken on any page, leave a note, and export the screenshot,
             selectors, styles, and page context your coding agent needs to act.
           </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href={sourceInstallUrl}>Build from source</a>
-            <a class="button button-secondary" href="#workflow">See how it works</a>
-          </div>
-          <p class="privacy-note">
-            Chrome and Firefox store listings are not live yet. Local by default; Point & Shoot does
-            not upload your captures.
-          </p>
+          <InstallActions variant="hero" enhance />
+          <a class="button button-secondary hero-workflow-link" href="#workflow">See how it works</a
+          >
         </div>
 
         <div class="product-frame" aria-label="Point & Shoot notes panel preview">
@@ -136,10 +133,9 @@ const sourceInstallUrl = `${repositoryUrl}#build-from-source`;
         <img src="/brand/icon.svg" alt="" width="48" height="48" />
         <h2 id="closing-title">Make the bug report part of the fix.</h2>
         <p>Install the current build locally, or explore the capture model first.</p>
-        <div class="closing-actions">
-          <a class="button button-primary" href={sourceInstallUrl}>Build from source</a>
-          <a class="button button-secondary" href="/docs/">Read the documentation</a>
-        </div>
+        <InstallActions variant="closing" />
+        <a class="button button-secondary closing-docs-link" href="/docs/">Read the documentation</a
+        >
       </section>
     </main>
 
@@ -151,6 +147,8 @@ const sourceInstallUrl = `${repositoryUrl}#build-from-source`;
       <p>UI evidence for coding agents.</p>
       <div>
         <a href="/docs/">Docs</a>
+        <a href="/privacy/">Privacy</a>
+        <a href={`mailto:${support.email}`}>Support</a>
         <a href={repositoryUrl}>Source</a>
       </div>
     </footer>

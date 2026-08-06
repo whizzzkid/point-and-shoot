@@ -11,6 +11,7 @@ async function fixture() {
   const docsRoot = resolve(root, "docs");
   const siteUrl = "https://pages.example.test";
   await mkdir(resolve(distRoot, "docs"), { recursive: true });
+  await mkdir(resolve(distRoot, "privacy"), { recursive: true });
   await mkdir(docsRoot, { recursive: true });
   await writeFile(
     resolve(distRoot, "index.html"),
@@ -21,6 +22,10 @@ async function fixture() {
     '<link rel="canonical" href="https://pages.example.test/docs/">' +
       '<h1 id="docs">Docs</h1><a href="/#home">Home</a>',
   );
+  await writeFile(
+    resolve(distRoot, "privacy/index.html"),
+    '<link rel="canonical" href="https://pages.example.test/privacy/"><h1>Privacy</h1>',
+  );
   await writeFile(resolve(docsRoot, "README.md"), "# Docs\n");
   return { distRoot, docsRoot, root, siteUrl };
 }
@@ -29,8 +34,18 @@ Deno.test("site integrity accepts a complete published set", async () => {
   const paths = await fixture();
   try {
     const summary = await checkSite(paths);
-    assertEquals(summary.pages, 2);
+    assertEquals(summary.pages, 3);
     assertEquals(summary.publishedDocs, 1);
+  } finally {
+    await rm(paths.root, { force: true, recursive: true });
+  }
+});
+
+Deno.test("site integrity rejects a missing privacy policy route", async () => {
+  const paths = await fixture();
+  try {
+    await rm(resolve(paths.distRoot, "privacy"), { force: true, recursive: true });
+    await assertRejects(() => checkSite(paths), Error, "Missing required page: /privacy/");
   } finally {
     await rm(paths.root, { force: true, recursive: true });
   }

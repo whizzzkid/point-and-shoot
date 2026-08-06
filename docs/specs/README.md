@@ -30,3 +30,5 @@ come from the [runtime limits](runtime-limits.md) spec and their owning exported
   protected checks, CalVer, and release artifacts.
 - [Website and published documentation](website-and-published-docs.md) — shared design inputs,
   published scope, static rendering, quality gates, and deployment.
+- [Browser store publication](store-publication.md) — canonical listing metadata, publication state,
+  privacy disclosures, projection guarantees, and supported metrics sources.

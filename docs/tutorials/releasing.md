@@ -3,7 +3,8 @@
 Release Please maintains one release pull request from conventional commits merged into `main`. That
 pull request updates the changelog, `version.txt`, the Release Please version manifest, and the
 browser-manifest source together. Merging it creates the matching `v`-prefixed CalVer tag and GitHub
-release. The same workflow attaches ready-to-install Chrome and Firefox packages.
+release. The same workflow attaches Chrome and Firefox store-submission packages plus the source and
+build instructions required by Mozilla reviewers.
 
 The version uses the UTC release date:
 
@@ -46,22 +47,47 @@ to a 14-day GitHub Actions artifact containing:
 
 - `chrome.zip`
 - `firefox.zip`
+- `firefox-source.zip`
+- `firefox-build-instructions.md`
 
-The files are built from the exact release pull request head SHA shown in the comment. Download
-them, extract them, and follow the Chrome and Firefox loading steps in
-[Get started](getting-started.md). Review both themes and complete at least one capture and export
-in each browser before merging. Confirm that the tiny version marker at the bottom-right of the
-injected toolbar, notes and plan views, popup, and options page matches the candidate version.
+The files are built from the exact release pull request head SHA shown in the comment. They are
+candidate and reviewer artifacts, not consumer store-install links. Download and extract
+`chrome.zip`, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and
+select the extracted directory. For Firefox, extract `firefox.zip`, open
+`about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select its
+`manifest.json`. Temporary loads disappear when the browser profile closes.
+
+Review both themes and complete at least one capture and export in each browser before merging.
+Confirm that the tiny version marker at the bottom-right of the injected toolbar, notes and plan
+views, popup, and options page matches the candidate version.
 
 To reproduce the package checks from a local checkout of the release pull request, run:
 
 ```bash
-mise exec -- deno task build:release
+mise exec -- deno task release:artifacts
 mise exec -- deno task release:validate
 ```
 
 The validator rejects a missing manifest key, version drift, remote URL, sourcemap, unsafe archive
-path, or leaked `dist/` path. It also reports each package size and the combined size.
+path, leaked `dist/` path, missing reviewer artifact, or reviewer version/commit drift. It reports
+each artifact size and the combined size.
+
+## Verify the Firefox reviewer build
+
+`firefox-source.zip` is an allowlisted snapshot of the tracked build inputs, not a repository
+archive. Its companion instructions record the exact version, commit, pinned setup, and build
+commands. To perform the same check expected of a Mozilla reviewer:
+
+1. Extract `firefox-source.zip` into an empty directory.
+2. Run the pinned setup and release build shown in `firefox-build-instructions.md`.
+3. Compare the rebuilt package with the submitted Firefox package:
+
+   ```bash
+   mise exec -- deno task release:compare /path/to/submitted-firefox.zip dist/firefox.zip
+   ```
+
+The comparison intentionally ignores ZIP container metadata. It requires the same sorted paths and
+the same uncompressed bytes for every entry.
 
 ## Publish
 
@@ -74,8 +100,16 @@ Confirm that the release pull request updates these version sources to the same 
 
 Merge the release pull request. The next `main` run recognizes the merged release commit, creates
 the matching `v`-prefixed CalVer tag and GitHub release, checks out the exact tagged SHA, rebuilds
-both packages, and validates the tag against their manifests. It then attaches `chrome.zip` and
-`firefox.zip` to the release.
+both packages, and validates the tag against their manifests. It then attaches all four candidate
+and reviewer artifacts to the release. The workflow preserves the generated release notes and adds a
+marked **Browser store publication** section with the expected version and both stores set to
+`unpublished`.
+
+Do not turn an attached ZIP into a public install call to action. The release status must show a
+store as `published`, its public version must match the GitHub release, and its live listing URL
+must be recorded before the URL is presented as the install path. If the canonical listing summary
+changed, update the Chrome Web Store copy in its dashboard and record that manual action during
+release closeout; the Chrome publishing API does not own listing-copy updates.
 
 Do not create or push the tag by hand. Release Please's `autorelease: pending` and
 `autorelease: tagged` labels track whether the pull request is waiting to merge or has been
@@ -84,11 +118,13 @@ released.
 ## Recover a failed release
 
 If preview packaging fails, fix the release pull request or its source configuration and rerun the
-failed workflow. Do not merge without both testable packages.
+failed workflow. Do not merge without all four artifacts.
 
 If tagging succeeds but an asset upload fails, rerun the failed workflow. Uploads use replacement
 semantics, so a retry repairs a partial release without failing because one ZIP already exists. The
-workflow remains red until both asset names are present.
+workflow remains red until all four asset names are present. If release-body seeding fails after the
+assets upload, rerun the failed job; the marked update is idempotent and leaves existing release
+notes unchanged.
 
 If released code is faulty, revert or fix it on `main` and publish a new CalVer release. Do not move
 or replace a published tag: an immutable tag keeps installed packages and audit history tied to the

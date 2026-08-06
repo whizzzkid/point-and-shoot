@@ -1,8 +1,10 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { toFileUrl } from "@std/path";
+import { build } from "./build.ts";
 import { forChrome, manifestBase } from "./manifest.ts";
 import {
   assertTagMatchesVersion,
+  assertTagResolvesToCommit,
   assertVersionSources,
   nextCalver,
   runReleaseCommand,
@@ -77,6 +79,15 @@ Deno.test("assertTagMatchesVersion - rejects a missing prefix or version drift",
   assertThrows(() => assertTagMatchesVersion("v2026.731.1", "2026.731.0"));
 });
 
+Deno.test("assertTagResolvesToCommit - rejects a same-version tag on another commit", () => {
+  assertTagResolvesToCommit("v2026.731.0", "abc123", "abc123");
+  assertThrows(
+    () => assertTagResolvesToCommit("v2026.731.0", "def456", "abc123"),
+    Error,
+    "resolves to def456 instead of release commit abc123",
+  );
+});
+
 Deno.test("assertVersionSources - accepts aligned release metadata", () => {
   assertVersionSources("2026.731.0", "2026.731.0", { ".": "2026.731.0" });
 });
@@ -110,6 +121,32 @@ Deno.test("runReleaseCommand - prints the packaged manifest version", async () =
 
 Deno.test("runReleaseCommand - rejects unsupported commands", async () => {
   await assertRejects(() => runReleaseCommand(["unknown"]));
+});
+
+Deno.test("runReleaseCommand - reports missing reviewer artifacts before inspecting them", async () => {
+  const temporaryDirectory = await Deno.makeTempDir();
+  const distDir = new URL(`${toFileUrl(temporaryDirectory).href}/`);
+  try {
+    await build({ outDir: distDir, release: true });
+    const options = {
+      commitSha: "0123456789abcdef0123456789abcdef01234567",
+      distDir,
+    };
+    await assertRejects(
+      () => runReleaseCommand(["validate"], options),
+      Error,
+      "missing reviewer artifact firefox-source.zip",
+    );
+
+    await Deno.writeTextFile(new URL("firefox-source.zip", distDir), "placeholder");
+    await assertRejects(
+      () => runReleaseCommand(["validate"], options),
+      Error,
+      "missing reviewer artifact firefox-build-instructions.md",
+    );
+  } finally {
+    await Deno.remove(temporaryDirectory, { recursive: true });
+  }
 });
 
 Deno.test("validateArchivePaths - rejects sourcemaps", () => {
