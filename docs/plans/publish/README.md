@@ -4,7 +4,7 @@ type: plan
 status: draft
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-05
+last_updated: 2026-08-06
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -180,6 +180,14 @@ table in the same commit that changes a packet's status.
 Allowed statuses are `pending`, `in progress`, `blocked`, and `complete`. Replace `unassigned` with
 an agent or person before work starts. Record evidence in the packet: a pull request URL for PR
 packets, a dated note for manual packets, or a release URL for release verification.
+
+PRs [#65](https://github.com/whizzzkid/point-and-shoot/pull/65),
+[#67](https://github.com/whizzzkid/point-and-shoot/pull/67),
+[#70](https://github.com/whizzzkid/point-and-shoot/pull/70), and
+[#75](https://github.com/whizzzkid/point-and-shoot/pull/75) merged as one stack on 2026-08-06. PR
+[#77](https://github.com/whizzzkid/point-and-shoot/pull/77) remains open against `main`; the manual
+publication and live-listing activation packets stay blocked until it merges and both stores are
+publicly installable.
 
 ## Agent operating protocol
 
