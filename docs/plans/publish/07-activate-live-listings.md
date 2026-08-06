@@ -1,10 +1,10 @@
 ---
 title: "PR 6: Activate live store listings"
 type: plan
-status: draft
+status: blocked
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-04
+last_updated: 2026-08-06
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -23,6 +23,9 @@ related:
 > values as [Incoming handoff](#incoming-handoff), execute the [Checklist](#checklist), and enable
 > automation only after reconciliation passes.
 
+The `[DNM]` draft is a coordination scaffold, not the start of activation. Every checklist item
+remains unchecked and the canonical contract retains `null` values while this packet is blocked.
+
 ## Outcome
 
 Replace null store identities with verified public values, enable canonical store links everywhere,
@@ -30,12 +33,20 @@ and turn on automatic submission only after all fail-closed checks pass.
 
 ## Coordination
 
-- Status: pending
-- Owner: unassigned
+- Status: blocked
+- Owner: Codex
 - Depends on: manual gate complete
-- PR base: `main` after PR 5 merges
+- Upstream delivery: PRs [#65](https://github.com/whizzzkid/point-and-shoot/pull/65),
+  [#67](https://github.com/whizzzkid/point-and-shoot/pull/67),
+  [#70](https://github.com/whizzzkid/point-and-shoot/pull/70), and
+  [#75](https://github.com/whizzzkid/point-and-shoot/pull/75) merged as one stack on 2026-08-06.
+- Remaining prerequisite: PR [#77](https://github.com/whizzzkid/point-and-shoot/pull/77) is open
+  against `main` and remains the only code prerequisite for this packet.
+- PR base: PR 5 branch until PR 5 merges; intentionally not registered in the `gh stack`
 - PR boundary: canonical identity/state transition, regenerated projections, GitHub variables, and
   live-link verification; no unrelated feature work
+- Merge gate: `[DNM]` until both official listings are publicly installable and the manual packet
+  supplies every non-secret identity below
 
 ## Read first
 
@@ -82,17 +93,29 @@ and turn on automatic submission only after all fail-closed checks pass.
 
 ## Incoming handoff
 
-Paste the non-secret completion values from the manual gate and note vendor wording changes.
+The branch and draft pull request were scaffolded before publication at the user's direction. Do not
+substitute dummy values: `store-listing.json` must keep unknown vendor values as `null` until the
+manual gate supplies all of the following:
+
+- Chrome extension ID: pending manual publication
+- Chrome publisher ID: pending manual publication
+- Chrome listing URL: pending manual publication
+- Firefox AMO slug: pending manual publication
+- Firefox listing URL: pending manual publication
+- First public GitHub release URL and version: pending manual publication
+- Vendor wording changes: pending manual publication
 
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: blocked
+- Owner: Codex
+- Started: 2026-08-05T16:58:14Z
 - Completed: not completed
-- PR: none
-- Commit: none
+- PR: [#78](https://github.com/whizzzkid/point-and-shoot/pull/78), draft `[DNM]`
+- Commit: `92c283fef71a8c0f080927f11ac93c28ba8b3714` (coordination scaffold only)
 - Live-link verification: not run
 - Browser installation verification: not run
 - Automation enablement: disabled
-- Deviations: none
+- Deviations: PRs 1–4 merged before the manual gate. This branch remains based directly on open PR 5
+  and is deliberately excluded from `gh stack`; no activation value or public projection changes
+  until the gate is complete.
