@@ -103,7 +103,8 @@ the matching `v`-prefixed CalVer tag and GitHub release, checks out the exact ta
 both packages, and validates the tag against their manifests. It then attaches all four candidate
 and reviewer artifacts to the release. The workflow preserves the generated release notes and adds a
 marked **Browser store publication** section with the expected version and both stores set to
-`unpublished`.
+`unpublished`. The follow-on browser-store workflow is initially disabled. It records that state in
+the release body and completes without reading Chrome or Firefox credentials.
 
 Do not turn an attached ZIP into a public install call to action. The release status must show a
 store as `published`, its public version must match the GitHub release, and its live listing URL
@@ -114,6 +115,73 @@ release closeout; the Chrome publishing API does not own listing-copy updates.
 Do not create or push the tag by hand. Release Please's `autorelease: pending` and
 `autorelease: tagged` labels track whether the pull request is waiting to merge or has been
 released.
+
+## Configure browser-store automation
+
+Keep the repository variable `STORE_PUBLISH_ENABLED` set to `false` until both first listings are
+public and their identities have landed in `store-listing.json`. Create a protected GitHub
+environment named `browser-stores`; require the repository's normal deployment reviewers if the team
+wants an approval between release creation and vendor submission.
+
+Configure these repository variables after the first manual publication:
+
+| Variable                         | Value                                                                |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `CHROME_EXTENSION_ID`            | Vendor-assigned Chrome extension ID; must equal `store-listing.json` |
+| `CHROME_PUBLISHER_ID`            | Publisher resource ID used by Chrome Web Store API v2                |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full Google Workload Identity Provider resource name                 |
+| `GCP_SERVICE_ACCOUNT`            | Service account linked in the Chrome Web Store developer dashboard   |
+
+Configure `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET` as secrets on the `browser-stores` environment.
+They are the AMO JWT issuer and secret from the Firefox Add-ons developer account. The Firefox
+stable ID remains `pointandshoot@whizzzkid.dev`; the workflow verifies it rather than accepting a
+configurable replacement.
+
+For Chrome, create a Google Workload Identity Provider restricted to this repository and release
+workflow, allow it to impersonate the service account linked in the Chrome Web Store dashboard, and
+grant only the token-minting roles required by that impersonation. The workflow requests the
+`chromewebstore` OAuth scope through `google-github-actions/auth@v3`; do not create or store a
+long-lived service-account JSON key. Follow the official
+[Chrome Web Store service-account setup](https://developer.chrome.com/docs/webstore/service-accounts)
+and
+[GitHub-to-Google OIDC guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-google-cloud-platform).
+
+Before setting `STORE_PUBLISH_ENABLED` to `true`:
+
+1. Publish both first listings manually and verify their public install URLs in a signed-out
+   browser.
+2. Update the canonical store IDs, slugs, URLs, and `published` states in `store-listing.json`.
+3. Run `mise exec -- deno task store:sync`, `mise exec -- deno task store:check`, and the site
+   checks.
+4. Confirm the GitHub variables and protected-environment secrets above.
+5. Merge the activation pull request, then change `STORE_PUBLISH_ENABLED` to `true`.
+
+New releases then upload the exact attached Chrome ZIP and a Firefox package deterministically
+created from the attached Firefox ZIP. They never rebuild store inputs from a moving branch. Chrome
+warnings block publication. Firefox submissions include the reviewer source archive and the current
+version summary as release notes.
+
+## Reconcile, retry, and disable publication
+
+Run **Browser store publication** from the Actions page with `operation` set to `reconcile`, the
+exact `v`-prefixed tag, and the tag's commit SHA to refresh review and public-version state without
+uploading. Use `submit` with the same exact inputs to retry a partial vendor failure. Matching
+versions are idempotent; a different pending version is a hard failure.
+
+For a vendor rejection, leave the immutable tag and existing release assets unchanged. Address the
+review finding in a new pull request and CalVer release, unless the vendor explicitly permits a
+metadata-only correction. Chrome listing-copy changes remain a dashboard action because API v2 does
+not expose listing-copy mutation.
+
+For emergency disablement, set `STORE_PUBLISH_ENABLED` to `false`. Future releases then record a
+disabled status without resolving vendor secrets. Rotate the AMO credentials in the protected
+environment; rotate the Google federation binding or service account in Google Cloud and update the
+two repository variables. Never print a credential while testing rotation.
+
+Vendor behavior is defined by the current
+[Chrome Web Store API v2 reference](https://developer.chrome.com/docs/webstore/api/reference/rest)
+and Mozilla's
+[`web-ext sign` reference](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/#web-ext-sign).
 
 ## Recover a failed release
 
@@ -130,8 +198,9 @@ If released code is faulty, revert or fix it on `main` and publish a new CalVer 
 or replace a published tag: an immutable tag keeps installed packages and audit history tied to the
 bytes reviewers tested.
 
-Chrome Web Store and Firefox Add-ons submission remain manual. The GitHub release packages are
-installable artifacts, not evidence that either store has reviewed or published them.
+While `STORE_PUBLISH_ENABLED` is `false`, Chrome Web Store and Firefox Add-ons submission remain
+manual. In either mode, GitHub release packages are not evidence that a store has reviewed or
+published them; rely on the reconciled public version and live listing URL.
 
 For the underlying automation behavior, see Release Please's
 [manifest-driven configuration](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md)

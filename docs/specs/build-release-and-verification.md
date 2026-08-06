@@ -126,7 +126,25 @@ release pull request. Its exact head receives a 14-day candidate bundle containi
 artifacts. When that pull request merges, the workflow rebuilds from the tagged SHA, validates the
 tag and artifact identity, and attaches the same names to the GitHub release.
 
-Store submission remains manual at this layer of the release pipeline.
+After the four final assets exist, the release workflow calls the reusable browser-store workflow
+with the exact tag and tagged commit SHA. `STORE_PUBLISH_ENABLED` is a fail-closed gate. Any value
+other than `true` records a visible disabled result without entering the protected environment or
+resolving a vendor credential. This is the launch state until the first listings are published
+manually.
+
+When enabled, the workflow re-downloads exactly the four release assets, verifies the tag, checkout,
+manifest version, reviewer metadata, and asset set, then operates the stores independently:
+
+- Chrome receives the attached `chrome.zip` bytes through Chrome Web Store API v2. A short-lived
+  OAuth token comes from Google Workload Identity Federation, upload polling is bounded, publication
+  blocks on vendor warnings, and the returned `crxVersion` must equal the GitHub release version.
+- Firefox receives a deterministic package built by pinned `web-ext` `10.5.0` from the extracted
+  `firefox.zip`. The listed submission includes release notes, reviewer notes, and the attached
+  `firefox-source.zip`; the stable Gecko ID and manifest version are checked before submission.
+
+An exact matching retry is idempotent. A conflicting version, missing enabled configuration,
+timeout, warning, or rejection fails the workflow after recording each store's independent result.
+The same workflow supports a manually dispatched `reconcile` operation that performs no upload.
 
 The workflow adds a marked `point-and-shoot-store-status` section to the release body without
 changing Release Please's notes. It starts Chrome and Firefox as unpublished and distinguishes the
@@ -147,7 +165,11 @@ flowchart TD
     ReleasePlease --> Preview[Four validated candidate artifacts]
     Preview --> Tag[Merge and create CalVer tag]
     Tag --> Final[Rebuild and validate tagged artifacts]
-    Final --> Release[Assets and unpublished store status]
+    Final --> Release[Assets and initial store status]
+    Release --> Enabled{Store publishing enabled?}
+    Enabled -->|No| Disabled[Visible disabled status]
+    Enabled -->|Yes| Vendors[Independent Chrome and Firefox submission]
+    Vendors --> Reconcile[Review and public-version reconciliation]
 ```
 
 Every capability claim in a pull request must map to a command or a named remote job that actually

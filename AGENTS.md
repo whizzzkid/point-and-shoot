@@ -71,6 +71,7 @@ into a green check.
 | `deno task store:assets`                | Captures release-build artwork using committed digest-pinned badges    |
 | `deno task store:assets:refresh-badges` | Explicitly downloads digest-pinned official vendor badges              |
 | `deno task store:assets:check`          | Rejects missing, malformed, modified, or source-stale store artwork    |
+| `deno task store:release`               | Reconciles or submits one exact GitHub release to both browser stores  |
 | `deno task lint:firefox`                | Runs `web-ext lint` against `dist/firefox/`                            |
 | `deno task boot:firefox`                | Loads `dist/firefox/` with `web-ext` and asserts it boots              |
 | `deno task smoke:firefox`               | Drives one Firefox capture through Marionette and validates its note   |
@@ -168,6 +169,10 @@ those sources and is part of the authoritative CI gate.
   `site/.generated/store-listing.json` projection created from the root contract.
 - Store credentials and API tokens never enter the contract, repository, generated artifacts, logs,
   pull request bodies, or release notes. They live only in protected GitHub environments or secrets.
+- Store automation consumes the four exact assets attached to an immutable GitHub release. It stays
+  disabled unless `STORE_PUBLISH_ENABLED` equals `true`, and its disabled path must not resolve
+  vendor credentials. Chrome upload warnings block publication; Firefox updates always include the
+  reviewer source archive.
 
 ## UI conventions
 
@@ -306,6 +311,7 @@ Actions pin to the official action's semver major, which is this project's one d
 | `actions/checkout`                 | `v7`      | CI workflows                                                           |
 | `actions/upload-artifact`          | `v7`      | CI and release workflows                                               |
 | `actions/github-script`            | `v9`      | release pull request artifact comment, `.github/workflows/release.yml` |
+| `google-github-actions/auth`       | `v3`      | Chrome Web Store OIDC, `.github/workflows/store-publish.yml`           |
 | `googleapis/release-please-action` | `v5`      | release automation, `.github/workflows/release.yml`                    |
 | `jdx/mise-action`                  | `v4`      | CI workflows                                                           |
 | runner image                       | `24.04`   | CI workflows (`runs-on: ubuntu-24.04`)                                 |

@@ -106,6 +106,7 @@
     "store:assets": "deno task build:release && deno run -A build/store-assets.ts generate",
     "store:assets:refresh-badges": "deno run -A build/store-assets.ts refresh-badges",
     "store:assets:check": "deno run -A build/store-assets.ts check",
+    "store:release": "deno run -A scripts/store-release.ts",
     "lint:firefox": "deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox",
     "e2e:smoke": "deno task build && deno test -A tests/e2e/load.spec.ts",
     "e2e:session": "deno task build && deno test -A tests/e2e/session-action.spec.ts",

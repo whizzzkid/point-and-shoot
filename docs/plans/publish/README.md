@@ -172,7 +172,7 @@ table in the same commit that changes a packet's status.
 | 2 | [Listing assets and README](02-listing-assets-and-readme.md) | PR 1        | complete | Codex        |
 | 3 | [Website install flow](03-website-install-flow.md)           | PR 2        | complete | Codex        |
 | 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | complete | Codex        |
-| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | pending  | unassigned   |
+| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | complete | Codex        |
 | 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | pending  | user         |
 | 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | pending  | unassigned   |
 | 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending  | user + agent |
