@@ -131,7 +131,10 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       const targetDir = new URL(`${target}/`, outDir);
       const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
       assertEquals(manifest.manifest_version, 3);
-      assertEquals(manifest.version_name, `${manifestBase.version}-dev-${TEST_BRANCH}`);
+      assertEquals(
+        manifest.version_name,
+        developmentVersionName(manifestBase.version, TEST_BRANCH),
+      );
       await Deno.stat(new URL("background/background.js", targetDir));
       await Deno.stat(new URL("content/content.js", targetDir));
       await Deno.stat(new URL("sidepanel/sidepanel.js", targetDir));
