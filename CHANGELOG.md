@@ -1,5 +1,50 @@
 # Changelog
 
+## [2026.811.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.801.0...v2026.811.0) (2026-08-11)
+
+
+### Features
+
+* **release:** 📊 report store installation status ([cf566fb](https://github.com/whizzzkid/point-and-shoot/commit/cf566fbbabb3ba94a6d46945866655998aca8d7b))
+* **site:** ✨ publish extension privacy policy ([d267164](https://github.com/whizzzkid/point-and-shoot/commit/d2671644555c406ed75315e2e424d9a24f1f1ea4))
+* **site:** 💖 recommend the compatible browser store ([fc8012d](https://github.com/whizzzkid/point-and-shoot/commit/fc8012d6bb712d429804355135a91e2589d2d81b))
+* **store:** ✨ add canonical listing metadata contract ([5e23fa1](https://github.com/whizzzkid/point-and-shoot/commit/5e23fa1e5c8d481abf48075fa3f7f20542b7f6fe))
+* **version:** ✨ label local builds by branch ([1fcc2bd](https://github.com/whizzzkid/point-and-shoot/commit/1fcc2bda8c4fe9061aae0997a573cc6be4c58943))
+* **version:** ✨ label local builds by branch ([ef3a173](https://github.com/whizzzkid/point-and-shoot/commit/ef3a173651148a23d47f2adcebd001f22496bb08))
+
+
+### Bug Fixes
+
+* **build:** 🐛 resolve CI branch without git ([7f88b9c](https://github.com/whizzzkid/point-and-shoot/commit/7f88b9c62c88b6d641a29347dea85f25a4c644b5))
+* **chrome:** 🐛 call the side panel promise API ([b96685c](https://github.com/whizzzkid/point-and-shoot/commit/b96685c023b7c4c05ead4119df1e97c75f4d60ea))
+* **chrome:** 🐛 grant side panel permission ([93bd43a](https://github.com/whizzzkid/point-and-shoot/commit/93bd43a8cf32a766e8d5157c6860110137eccd28))
+* **chrome:** 🐛 restore side panel launch ([9e2215b](https://github.com/whizzzkid/point-and-shoot/commit/9e2215b1efc5cddde67e6d049cbd99feb4585050))
+* **ci:** 🐛 route browser installs through Deno tasks ([dc88bc3](https://github.com/whizzzkid/point-and-shoot/commit/dc88bc35b1245e0c3c9f9d26f30b00b012a3b468))
+* **release:** 🐛 harden reviewer artifact validation ([7a188d1](https://github.com/whizzzkid/point-and-shoot/commit/7a188d1b35f8b1354fb11b53aba20f68fd4a9d21))
+* **release:** 🐛 require live store links for completion ([ec4fda7](https://github.com/whizzzkid/point-and-shoot/commit/ec4fda79ccc9083bb394e1edb2f36db6e33cf2b0))
+* **release:** 🔒 enforce reviewer source allowlist ([3dc10b1](https://github.com/whizzzkid/point-and-shoot/commit/3dc10b11214d9b70e97766602bcddcaaf5f31c45))
+* **release:** 🛡️ bind artifacts to release identity ([0ecd60f](https://github.com/whizzzkid/point-and-shoot/commit/0ecd60f815b626ac580a377d5ef00fab9ffccd57))
+* **session:** 🐛 name new sessions from the active tab ([15d0fa0](https://github.com/whizzzkid/point-and-shoot/commit/15d0fa0f6b57564dff7b5a44c4818b5e5e656248))
+* **session:** 🐛 name new sessions from the active tab ([a178a0c](https://github.com/whizzzkid/point-and-shoot/commit/a178a0cf4f47db83d32593a704bd5ad2872da0b5))
+* **site:** 🐛 align install tests with Deno ([8ab6761](https://github.com/whizzzkid/point-and-shoot/commit/8ab6761187d5cc26139e99ff0188b95492fa6da7))
+* **site:** 🐛 exclude legacy EdgeHTML from store recommendations ([5d44758](https://github.com/whizzzkid/point-and-shoot/commit/5d447581361ed083c09e39eccf4fc944b0088063))
+* **site:** 🐛 preserve browser-store publication status ([59f77c8](https://github.com/whizzzkid/point-and-shoot/commit/59f77c8cdc0a744a5699980d5ab21943111d91c7))
+* **site:** 🐛 preserve unavailable store status ([e3c7266](https://github.com/whizzzkid/point-and-shoot/commit/e3c7266af43a7cb81eca1c6323fda5d03a212635))
+* **site:** 🐛 recommend one install action ([a402c96](https://github.com/whizzzkid/point-and-shoot/commit/a402c96d50ee83a94c5f6af64fa7746e39d0eb03))
+* **store:** 🐛 detect asset source inventory drift ([3bc8104](https://github.com/whizzzkid/point-and-shoot/commit/3bc810409c311bbbb1802a700bd370081d93391e))
+* **store:** 🐛 fail closed on listing contract drift ([d6ab506](https://github.com/whizzzkid/point-and-shoot/commit/d6ab506c0b20b16ad181c8ab865473c4b740064e))
+* **store:** 🐛 fail closed on store projections ([385d729](https://github.com/whizzzkid/point-and-shoot/commit/385d7294fdb0c07ba98a40492ec0c31f70b496fb))
+* **store:** 🐛 import PNG buffer explicitly ([8059b9e](https://github.com/whizzzkid/point-and-shoot/commit/8059b9ef453f26b9b741cea02c7fa0a3355fe0ac))
+* **store:** 🐛 redact and validate listing assets ([a341728](https://github.com/whizzzkid/point-and-shoot/commit/a3417289e8a15b2e07d7687d2a8ebedb0f1aa21a))
+* **store:** 🐛 refresh listing asset digest ([3258ead](https://github.com/whizzzkid/point-and-shoot/commit/3258ead2a290c20fabfc42d4db1882a32af55edd))
+* **store:** 🐛 stage listing assets before promotion ([ee14dc0](https://github.com/whizzzkid/point-and-shoot/commit/ee14dc0dbdf0693a579961d0b0d3beb080c4ff3d))
+* **store:** 🔒 harden publication reconciliation ([80ac537](https://github.com/whizzzkid/point-and-shoot/commit/80ac537ccb93eed25ed71970cf3d51bc8be0d34d))
+* **store:** 🔒 harden publish client inputs ([9fa8dee](https://github.com/whizzzkid/point-and-shoot/commit/9fa8dee2705b8cb06242dd008f2a1e87a431dd7f))
+* **test:** 🐛 match the side panel promise contract ([873a956](https://github.com/whizzzkid/point-and-shoot/commit/873a956061dfdeaca9b4e00d2b245de9b43bcb3e))
+* **version:** 🐛 handle branch label edge cases ([9ab870f](https://github.com/whizzzkid/point-and-shoot/commit/9ab870f6496c31d3cd7fa90b417279215a573558))
+* **visual:** 🐛 normalize development version fixtures ([68508af](https://github.com/whizzzkid/point-and-shoot/commit/68508af5454e616f248e9928e0b17a2cd3243741))
+* **visual:** 🐛 normalize development version fixtures ([1280f3b](https://github.com/whizzzkid/point-and-shoot/commit/1280f3b1eb4d650c73f04445df5ca11b6d3407a2))
+
 ## [2026.801.0](https://github.com/whizzzkid/point-and-shoot/compare/v0.1.0...v2026.801.0) (2026-08-01)
 
 
