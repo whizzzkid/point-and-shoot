@@ -1,0 +1,179 @@
+name: Browser store publication
+
+on:
+  workflow_call:
+    inputs:
+      operation:
+        description: Submit exact release assets or only reconcile vendor state
+        required: true
+        type: string
+      release_sha:
+        description: Exact commit targeted by the immutable release tag
+        required: true
+        type: string
+      tag_name:
+        description: Exact existing GitHub release tag
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Submit exact release assets or only reconcile vendor state
+        required: true
+        type: choice
+        options:
+          - reconcile
+          - submit
+      release_sha:
+        description: Exact commit targeted by the immutable release tag
+        required: true
+        type: string
+      tag_name:
+        description: Exact existing GitHub release tag
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: store-publication-${{ inputs.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  disabled:
+    if: vars.STORE_PUBLISH_ENABLED != 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.release_sha }}
+      - uses: jdx/mise-action@v4
+
+      - name: Record disabled publication status without vendor credentials
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          TAG_NAME: ${{ inputs.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp "${RUNNER_TEMP}/release-body.XXXXXX")"
+          updated_file="$(mktemp "${RUNNER_TEMP}/release-body-updated.XXXXXX")"
+          trap 'rm -f -- "${body_file}" "${updated_file}"' EXIT INT TERM
+          tag_commit="$(git rev-parse "${TAG_NAME}^{commit}")"
+          if [[ "${tag_commit}" != "${RELEASE_SHA}" || "$(git rev-parse HEAD)" != "${RELEASE_SHA}" ]]; then
+            echo "Release tag, requested SHA, and checkout must identify one commit." >&2
+            exit 1
+          fi
+          version="${TAG_NAME#v}"
+          reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh release view "${TAG_NAME}" --json body --jq '.body | @base64' |
+            base64 --decode > "${body_file}"
+          deno task store:release disabled "${version}" "${reconciled_at}" \
+            "${body_file}" "${updated_file}"
+          gh release edit "${TAG_NAME}" --notes-file "${updated_file}"
+          echo "Store publication is disabled; no vendor credential was resolved." >> "${GITHUB_STEP_SUMMARY}"
+
+  publish:
+    if: vars.STORE_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: browser-stores
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.release_sha }}
+      - uses: jdx/mise-action@v4
+
+      - name: Authenticate to Chrome Web Store through Google OIDC
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          create_credentials_file: false
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Validate and publish exact GitHub release assets
+        env:
+          CHROME_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          CHROME_EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ vars.CHROME_PUBLISHER_ID }}
+          FIREFOX_EXTENSION_ID: pointandshoot@whizzzkid.dev
+          GH_TOKEN: ${{ github.token }}
+          OPERATION: ${{ inputs.operation }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          TAG_NAME: ${{ inputs.tag_name }}
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${OPERATION}" != "submit" && "${OPERATION}" != "reconcile" ]]; then
+            echo "operation must be submit or reconcile" >&2
+            exit 1
+          fi
+          for required in CHROME_ACCESS_TOKEN CHROME_EXTENSION_ID CHROME_PUBLISHER_ID \
+            WEB_EXT_API_KEY WEB_EXT_API_SECRET; do
+            if [[ -z "${!required}" ]]; then
+              echo "Required store configuration ${required} is missing." >&2
+              exit 1
+            fi
+            echo "::add-mask::${!required}"
+          done
+
+          tag_commit="$(git rev-parse "${TAG_NAME}^{commit}")"
+          if [[ "${tag_commit}" != "${RELEASE_SHA}" || "$(git rev-parse HEAD)" != "${RELEASE_SHA}" ]]; then
+            echo "Release tag, requested SHA, and checkout must identify one commit." >&2
+            exit 1
+          fi
+
+          asset_dir="$(mktemp -d "${RUNNER_TEMP}/store-assets.XXXXXX")"
+          body_file="$(mktemp "${RUNNER_TEMP}/release-body.XXXXXX")"
+          updated_file="$(mktemp "${RUNNER_TEMP}/release-body-updated.XXXXXX")"
+          result_file="$(mktemp "${RUNNER_TEMP}/store-result.XXXXXX")"
+          trap 'rm -rf -- "${asset_dir}"; rm -f -- "${body_file}" "${updated_file}" "${result_file}"' EXIT INT TERM
+          gh release download "${TAG_NAME}" --dir "${asset_dir}"
+          asset_names="$(find "${asset_dir}" -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | sort)"
+          expected_assets="$(printf '%s\n' chrome.zip firefox-build-instructions.md firefox-source.zip firefox.zip)"
+          if [[ "${asset_names}" != "${expected_assets}" ]]; then
+            echo "GitHub release must contain exactly the four validated store assets." >&2
+            exit 1
+          fi
+          mkdir -p dist "${asset_dir}/firefox" "${asset_dir}/signed-firefox"
+          cp "${asset_dir}"/chrome.zip "${asset_dir}"/firefox.zip \
+            "${asset_dir}"/firefox-source.zip "${asset_dir}"/firefox-build-instructions.md dist/
+          deno task release:validate "${TAG_NAME}"
+          unzip -q "${asset_dir}/firefox.zip" -d "${asset_dir}/firefox"
+
+          version="${TAG_NAME#v}"
+          reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          previous_tag="$(git describe --tags --match 'v*' --abbrev=0 "${TAG_NAME}^{commit}^" 2>/dev/null || true)"
+          current_summary="$(jq -er '.listing.currentVersionSummary' store-listing.json)"
+          previous_summary=""
+          if [[ -n "${previous_tag}" ]] && git cat-file -e "${previous_tag}:store-listing.json" 2>/dev/null; then
+            previous_summary="$(git show "${previous_tag}:store-listing.json" | jq -er '.listing.currentVersionSummary')"
+          else
+            previous_tag=""
+          fi
+          if [[ -z "${previous_tag}" || "${current_summary}" != "${previous_summary}" ]]; then
+            export LISTING_SUMMARY_CHANGED=true
+          else
+            export LISTING_SUMMARY_CHANGED=false
+          fi
+          gh release view "${TAG_NAME}" --json body --jq '.body | @base64' |
+            base64 --decode > "${body_file}"
+          deno task store:release "${OPERATION}" "${version}" "${reconciled_at}" \
+            "${body_file}" "${updated_file}" "${asset_dir}" > "${result_file}"
+          gh release edit "${TAG_NAME}" --notes-file "${updated_file}"
+          if [[ "$(jq -r '.failed' "${result_file}")" == "true" ]]; then
+            echo "One or more browser-store operations failed; see the release status." >&2
+            exit 1
+          fi
