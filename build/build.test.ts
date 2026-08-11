@@ -7,7 +7,7 @@ import {
   developmentVersionName,
   esbuildTargetFrom,
 } from "./build.ts";
-import { SUPPORTED } from "./manifest.ts";
+import { manifestBase, SUPPORTED } from "./manifest.ts";
 
 const TEST_BRANCH = "fix/calver-display";
 
@@ -131,7 +131,7 @@ Deno.test("build({ release: false }) - emits dist/<target>/manifest.json plus bu
       const targetDir = new URL(`${target}/`, outDir);
       const manifest = JSON.parse(await Deno.readTextFile(new URL("manifest.json", targetDir)));
       assertEquals(manifest.manifest_version, 3);
-      assertEquals(manifest.version_name, "2026.801.0-dev-fix/calver-display");
+      assertEquals(manifest.version_name, `${manifestBase.version}-dev-${TEST_BRANCH}`);
       await Deno.stat(new URL("background/background.js", targetDir));
       await Deno.stat(new URL("content/content.js", targetDir));
       await Deno.stat(new URL("sidepanel/sidepanel.js", targetDir));
