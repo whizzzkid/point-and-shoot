@@ -231,3 +231,26 @@ jobs:
         run: deno task smoke:firefox
         env:
           PNS_FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}
+
+  store-assets-check:
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@v4
+      - name: Check if store assets changed
+        id: store-assets-changed
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -E '^docs/assets/store/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Store assets changed:"
+            echo "$CHANGED"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: deno task store:assets:check
+        if: steps.store-assets-changed.outputs.changed == 'true'
+        run: deno task store:assets:check
