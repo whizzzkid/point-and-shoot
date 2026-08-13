@@ -282,8 +282,8 @@ Deno.test("reviewer source reproduces the Firefox release in a clean directory",
       new TextDecoder().decode(rebuild.stderr) + new TextDecoder().decode(rebuild.stdout),
     );
     await compareArchiveContents(
-      new URL("firefox.zip", originalOutput).pathname,
-      new URL("dist/firefox.zip", cleanRoot).pathname,
+      new URL(`firefox-${manifestBase.version}.zip`, originalOutput).pathname,
+      new URL(`dist/firefox-${manifestBase.version}.zip`, cleanRoot).pathname,
     );
   } finally {
     await Deno.remove(temporaryDirectory, { recursive: true });

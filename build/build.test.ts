@@ -173,8 +173,8 @@ Deno.test("build({ release: true }) - minifies, drops sourcemaps, and zips both 
     }
     assert(!mapExists);
 
-    const chromeZip = await Deno.stat(new URL("chrome.zip", outDir));
-    const firefoxZip = await Deno.stat(new URL("firefox.zip", outDir));
+    const chromeZip = await Deno.stat(new URL(`chrome-${manifestBase.version}.zip`, outDir));
+    const firefoxZip = await Deno.stat(new URL(`firefox-${manifestBase.version}.zip`, outDir));
     assert(chromeZip.size > 0);
     assert(firefoxZip.size > 0);
   });

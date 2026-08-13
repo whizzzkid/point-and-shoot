@@ -59,8 +59,9 @@ fonts, the icon sprite, HTML shells, and generated manifests. The bundling stage
 absolute HTTP or HTTPS URLs in generated JavaScript; `release:validate` provides the full-tree
 remote-URL guarantee for distributable archives.
 
-`deno task build:release` additionally minifies, omits sourcemaps, and creates `dist/chrome.zip` and
-`dist/firefox.zip`. `deno task release:artifacts` runs that build and also creates
+`deno task build:release` additionally minifies, omits sourcemaps, and creates
+`dist/chrome-<version>.zip` and `dist/firefox-<version>.zip` (with `<version>` matching the packaged
+manifest CalVer). `deno task release:artifacts` runs that build and also creates
 `dist/firefox-source.zip` plus `dist/firefox-build-instructions.md` for Mozilla reviewers. Tests use
 temporary output directories and must not delete a developer's existing `dist/` tree.
 
@@ -135,12 +136,14 @@ manually.
 When enabled, the workflow re-downloads exactly the four release assets, verifies the tag, checkout,
 manifest version, reviewer metadata, and asset set, then operates the stores independently:
 
-- Chrome receives the attached `chrome.zip` bytes through Chrome Web Store API v2. A short-lived
-  OAuth token comes from Google Workload Identity Federation, upload polling is bounded, publication
-  blocks on vendor warnings, and the returned `crxVersion` must equal the GitHub release version.
+- Chrome receives the attached `chrome-<version>.zip` bytes through Chrome Web Store API v2. A
+  short-lived OAuth token comes from Google Workload Identity Federation, upload polling is bounded,
+  publication blocks on vendor warnings, and the returned `crxVersion` must equal the GitHub release
+  version.
 - Firefox receives a deterministic package built by pinned `web-ext` `10.5.0` from the extracted
-  `firefox.zip`. The listed submission includes release notes, reviewer notes, and the attached
-  `firefox-source.zip`; the stable Gecko ID and manifest version are checked before submission.
+  `firefox-<version>.zip`. The listed submission includes release notes, reviewer notes, and the
+  attached `firefox-source.zip`; the stable Gecko ID and manifest version are checked before
+  submission.
 
 An exact matching retry is idempotent. A conflicting version, missing enabled configuration,
 timeout, warning, or rejection fails the workflow after recording each store's independent result.

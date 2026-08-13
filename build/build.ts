@@ -1,7 +1,7 @@
 /**
  * Bundles every extension surface with esbuild and assembles `dist/chrome/` and `dist/firefox/` —
  * each a complete, loadable extension tree. `deno task build:release` (`--release`) additionally
- * minifies, drops sourcemaps, and zips each tree to `dist/<target>.zip`.
+ * minifies, drops sourcemaps, and zips each tree to `dist/<target>-<version>.zip`.
  *
  * Two esbuild passes run because the two output formats are load-bearing, not a style choice:
  * `background/background.js` is a Chrome MV3 module service worker but a Firefox MV3 classic
@@ -303,9 +303,10 @@ export async function build(options: BuildOptions): Promise<void> {
 
   if (options.release) {
     for (const t of TARGETS) {
-      const zipPath = new URL(`${t}.zip`, outDir);
+      const zipName = `${t}-${manifestBase.version}.zip`;
+      const zipPath = new URL(zipName, outDir);
       await zipDir(new URL(`${t}/`, outDir), zipPath);
-      console.log(`build: wrote dist/${t}.zip`);
+      console.log(`build: wrote dist/${zipName}`);
     }
   }
 }

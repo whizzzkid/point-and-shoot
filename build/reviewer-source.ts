@@ -166,7 +166,7 @@ that are not used by the extension build.
    differ, so this command compares the sorted entry paths and uncompressed bytes:
 
    \`\`\`bash
-   mise exec -- deno task release:compare /path/to/submitted-firefox.zip dist/firefox.zip
+   mise exec -- deno task release:compare /path/to/submitted-firefox.zip dist/firefox-${version}.zip
    \`\`\`
 `;
 }

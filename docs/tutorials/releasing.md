@@ -45,15 +45,16 @@ moves the candidate to the new date. A second release on the same day increments
 Wait for the release workflow's **preview** job. Its bot comment on the release pull request links
 to a 14-day GitHub Actions artifact containing:
 
-- `chrome.zip`
-- `firefox.zip`
+- `chrome-<version>.zip`
+- `firefox-<version>.zip`
 - `firefox-source.zip`
 - `firefox-build-instructions.md`
 
-The files are built from the exact release pull request head SHA shown in the comment. They are
-candidate and reviewer artifacts, not consumer store-install links. Download and extract
-`chrome.zip`, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and
-select the extracted directory. For Firefox, extract `firefox.zip`, open
+The `<version>` matches the CalVer identifier the release pull request updated (for example
+`chrome-2026.813.1.zip`). The files are built from the exact release pull request head SHA shown in
+the comment. They are candidate and reviewer artifacts, not consumer store-install links. Download
+and extract `chrome-<version>.zip`, open `chrome://extensions`, enable Developer mode, choose **Load
+unpacked**, and select the extracted directory. For Firefox, extract `firefox-<version>.zip`, open
 `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select its
 `manifest.json`. Temporary loads disappear when the browser profile closes.
 
@@ -83,7 +84,7 @@ commands. To perform the same check expected of a Mozilla reviewer:
 3. Compare the rebuilt package with the submitted Firefox package:
 
    ```bash
-   mise exec -- deno task release:compare /path/to/submitted-firefox.zip dist/firefox.zip
+   mise exec -- deno task release:compare /path/to/submitted-firefox.zip dist/firefox-<version>.zip
    ```
 
 The comparison intentionally ignores ZIP container metadata. It requires the same sorted paths and

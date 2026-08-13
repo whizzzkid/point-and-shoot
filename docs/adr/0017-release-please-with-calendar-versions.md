@@ -39,9 +39,10 @@ When Release Please creates or updates its pull request, the same workflow check
 request's exact head SHA under read-only repository permissions, builds and validates both browser
 packages, and uploads them as a GitHub Actions artifact for testing. When merging the release pull
 request causes Release Please to create the tag and GitHub release, the same workflow rebuilds the
-released SHA, validates both packages against the tag, and attaches `chrome.zip` and `firefox.zip`
-to the release. Final attachment uploads replace an identically named asset so retrying a partially
-failed workflow repairs the release instead of failing on the first asset already present.
+released SHA, validates both packages against the tag, and attaches `chrome-<version>.zip` and
+`firefox-<version>.zip` to the release. Final attachment uploads replace an identically named asset
+so retrying a partially failed workflow repairs the release instead of failing on the first asset
+already present.
 
 ## Consequences
 

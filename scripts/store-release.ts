@@ -279,7 +279,7 @@ export async function runStoreReleaseCommand(args: readonly string[]): Promise<s
       chrome: () =>
         operation === "reconcile"
           ? chrome.reconcile(version)
-          : Deno.readFile(`${assetRoot}/chrome.zip`).then((archive) =>
+          : Deno.readFile(`${assetRoot}/chrome-${version}.zip`).then((archive) =>
             chrome.submit(archive, version)
           ),
       firefox: () =>
