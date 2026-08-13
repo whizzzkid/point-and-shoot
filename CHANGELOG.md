@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026.813.1](https://github.com/whizzzkid/point-and-shoot/compare/v2026.813.0...v2026.813.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* **activation:** 🐛 keyboard shortcut now grants activeTab on all URLs ([cd6a3b6](https://github.com/whizzzkid/point-and-shoot/commit/cd6a3b608535ecb2fa7311c29c51391424d86888))
+* **activation:** 🐛 rename toggle-capture to _execute_action so keyboard shortcut grants activeTab ([9b062cf](https://github.com/whizzzkid/point-and-shoot/commit/9b062cfd746ef974bdb4ff684d20712b8fe785a7))
+* **activation:** 🐛 update E2E readiness probe and restore restoreActionState coverage ([ab0c7b6](https://github.com/whizzzkid/point-and-shoot/commit/ab0c7b63e30125aa36ae759d54621862f2abf0a9))
+* **content:** 🐛 synchronous content script init and setPanelBehavior shim ([d3aa651](https://github.com/whizzzkid/point-and-shoot/commit/d3aa651673426b9c434131a51ae44755c84fd49e))
+
 ## [2026.813.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.801.0...v2026.813.0) (2026-08-13)
 
 
