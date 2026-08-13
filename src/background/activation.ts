@@ -189,7 +189,7 @@ export function createActivationController(browser: ActivationBrowser): Activati
  * Registers runtime-message listener for overlay toggle requests from the side panel.
  *
  * @param browser Browser capabilities and listener registries used by the background entry point.
- * @param controller Shared activation controller used by toolbar and command entry points.
+ * @param controller Shared activation controller used by toolbar and runtime-message entry points.
  * @param restoreActionState Restores session badge and tooltip state after successful activation.
  * @returns The shared controller retained by the registered listener closures.
  */
