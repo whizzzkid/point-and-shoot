@@ -23,7 +23,7 @@ import {
   OPEN_NOTES_PANEL_MESSAGE,
   TOGGLE_OVERLAY_MESSAGE,
 } from "../shared/messages.ts";
-import { DEFAULT_SETTINGS, type ExtensionSettings, loadSettings } from "../shared/settings.ts";
+import { DEFAULT_SETTINGS, type ExtensionSettings } from "../shared/settings.ts";
 import { resolveTheme, sampleBackdrop, watchTheme } from "../shared/theme.ts";
 import { CaptureOverlay } from "./CaptureOverlay.tsx";
 import { captureSelectedRegion } from "./capture.ts";
@@ -206,14 +206,10 @@ if (contentState === "true" || contentState === "initializing") {
   console.log("point-and-shoot: content script already present, skipping re-init");
 } else {
   document.documentElement.dataset.pointAndShootContentReady = "initializing";
-  void loadSettings(browser.storage.local)
-    .catch((error: unknown) => {
-      console.error("point-and-shoot: initial content settings could not load", error);
-      return DEFAULT_SETTINGS;
-    })
-    .then(initializeContent)
-    .catch((error: unknown) => {
-      delete document.documentElement.dataset.pointAndShootContentReady;
-      console.error("point-and-shoot: content script failed to initialize", error);
-    });
+  try {
+    initializeContent(DEFAULT_SETTINGS);
+  } catch (error: unknown) {
+    delete document.documentElement.dataset.pointAndShootContentReady;
+    console.error("point-and-shoot: content script failed to initialize", error);
+  }
 }

@@ -144,6 +144,10 @@ function createFakeChrome(): FakeChrome {
         calls.push("sidePanel.open");
         return Promise.resolve();
       },
+      setPanelBehavior(_behavior) {
+        calls.push("sidePanel.setPanelBehavior");
+        return Promise.resolve();
+      },
     },
   };
 
