@@ -31,7 +31,13 @@
 
 ## Install
 
-Chrome Web Store and Firefox Add-ons publication is in progress. Until both listings are available,
+<p align="center">
+  <a href="https://addons.mozilla.org/firefox/addon/point-and-shoot/">
+    <img src="docs/assets/store/firefox-add-ons-badge.png" height="60" alt="Install Point & Shoot from Firefox Add-ons">
+  </a>
+</p>
+
+Chrome Web Store publication is in progress. You can also
 [build the extension from source](#build-from-source).
 
 <!-- store-install:end -->

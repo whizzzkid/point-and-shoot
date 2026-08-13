@@ -520,8 +520,8 @@ export function renderReadmeInstallBlock(listing: StoreListing): string {
     );
   } else if (unpublishedStores.length === 1) {
     lines.push(
-      `${unpublishedStores[0]} publication is in progress. You can also ` +
-        "[build the extension from source](#build-from-source).",
+      `${unpublishedStores[0]} publication is in progress. You can also`,
+      "[build the extension from source](#build-from-source).",
     );
   } else {
     lines.push("You can also [build the extension from source](#build-from-source).");

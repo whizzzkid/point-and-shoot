@@ -151,7 +151,7 @@ Deno.test("recommendations only change labels, attributes, and the single accent
   });
 });
 
-Deno.test("the built unpublished site provides accessible fallback, focus, motion, and responsive states", async () => {
+Deno.test("the built partially published site provides accessible fallback, focus, motion, and responsive states", async () => {
   await buildSite();
   const [html, styles] = await Promise.all([
     readFile(resolve(siteRoot, "dist/index.html"), "utf8"),
@@ -159,7 +159,8 @@ Deno.test("the built unpublished site provides accessible fallback, focus, motio
   ]);
   assert.match(html, /Build from source/);
   assert.match(html, /Chrome Web Store listing is unpublished/);
-  assert.match(html, /Firefox Add-ons listing is unpublished/);
+  assert.doesNotMatch(html, /Firefox Add-ons listing is unpublished/);
+  assert.match(html, /addons\.mozilla\.org\/firefox\/addon\/point-and-shoot\//);
   assert.match(html, /data-no-script/);
   assert.equal((html.match(/<a[^>]*data-source-install/gu) ?? []).length, 2);
   assert.equal((html.match(/<p[^>]*data-install-status/gu) ?? []).length, 2);
@@ -168,7 +169,6 @@ Deno.test("the built unpublished site provides accessible fallback, focus, motio
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /mailto:support@pointandshoot\.app/);
   assert.doesNotMatch(html, /chromewebstore\.google\.com/);
-  assert.doesNotMatch(html, /addons\.mozilla\.org/);
   assert.match(styles, /a:focus-visible/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.install-options/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
@@ -205,56 +205,51 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
       await closeBuiltSite(unavailable.server);
     }
 
-    const firefoxOnlyFixture = await storeFixture({ firefox: true, firefoxStatus: "published" });
+    const firefoxOnly = await startBuiltSite({ port: 0 });
     try {
-      const firefoxOnly = await startBuiltSite({ distRoot: firefoxOnlyFixture.distRoot, port: 0 });
+      const context = await browser.newContext();
       try {
-        const context = await browser.newContext();
-        try {
-          const page = await context.newPage();
-          await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
-          assert.match(
-            await page.locator("[data-install-status]").first().textContent(),
-            /Chrome Web Store listing is unpublished/,
-          );
-          assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
-          assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
-          assert.equal(
-            await page.locator('[data-store-action="gecko"]').first().getAttribute("href"),
-            "https://addons.mozilla.org/firefox/addon/point-and-shoot/",
-          );
-          assert.equal(await page.locator("[data-recommended]").count(), 0);
-        } finally {
-          await context.close();
-        }
-
-        const compatibleContext = await browser.newContext({
-          userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0",
-        });
-        try {
-          const page = await compatibleContext.newPage();
-          await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
-          assert.match(
-            await page.locator("[data-install-status]").first().textContent(),
-            /Chrome Web Store listing is unpublished/,
-          );
-          assert.equal(await page.locator("[data-install-recommendation]").count(), 1);
-          assert.match(
-            await page.locator("[data-install-recommendation]").textContent(),
-            /Firefox Add-ons is recommended/,
-          );
-          assert.equal(await page.locator('[role="status"]').count(), 1);
-        } finally {
-          await compatibleContext.close();
-        }
+        const page = await context.newPage();
+        await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
+        assert.match(
+          await page.locator("[data-install-status]").first().textContent(),
+          /Chrome Web Store listing is unpublished/,
+        );
+        assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
+        assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+        assert.equal(
+          await page.locator('[data-store-action="gecko"]').first().getAttribute("href"),
+          "https://addons.mozilla.org/firefox/addon/point-and-shoot/",
+        );
+        assert.equal(await page.locator("[data-recommended]").count(), 0);
       } finally {
-        await closeBuiltSite(firefoxOnly.server);
+        await context.close();
+      }
+
+      const compatibleContext = await browser.newContext({
+        userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0",
+      });
+      try {
+        const page = await compatibleContext.newPage();
+        await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
+        assert.match(
+          await page.locator("[data-install-status]").first().textContent(),
+          /Chrome Web Store listing is unpublished/,
+        );
+        assert.equal(await page.locator("[data-install-recommendation]").count(), 1);
+        assert.match(
+          await page.locator("[data-install-recommendation]").textContent(),
+          /Firefox Add-ons is recommended/,
+        );
+        assert.equal(await page.locator('[role="status"]').count(), 1);
+      } finally {
+        await compatibleContext.close();
       }
     } finally {
-      await rm(firefoxOnlyFixture.root, { force: true, recursive: true });
+      await closeBuiltSite(firefoxOnly.server);
     }
 
-    const bothFixture = await storeFixture({ chrome: true, firefox: true });
+    const bothFixture = await storeFixture({ chrome: true });
     try {
       const both = await startBuiltSite({ distRoot: bothFixture.distRoot, port: 0 });
       try {
