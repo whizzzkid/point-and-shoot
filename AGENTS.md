@@ -159,6 +159,12 @@ those sources and is part of the authoritative CI gate.
   permission, setting, export behavior, listing-copy field, or current-version summary changes, then
   visually inspect all seven listing images at their original size. The source digest makes an
   unchanged summary or screenshot set an explicit regeneration decision instead of silent drift.
+- `build/manifest.ts` is deliberately excluded from the store asset `SOURCE_ROOTS`. Release-please
+  bumps its version field on every release PR; including it would make every release PR fail
+  `store:assets:check` because the source digest changes without the screenshots changing. Other
+  manifest.ts changes that affect store assets (permissions, description, icons) always co-occur
+  with changes to files already in `SOURCE_ROOTS` (`src/`, `store-listing.json`, etc.). Do not add
+  `build/manifest.ts` back to `SOURCE_ROOTS` — keep the release pipeline simple.
 - The marked README install block is generated with `deno task store:sync`. Unpublished or submitted
   stores never render a badge or link; changing a store to `published` and syncing is the only way
   its canonical listing becomes an install action.

@@ -105,7 +105,6 @@
     "store:sync": "deno run -A build/store-listing.ts sync",
     "store:assets": "deno task build:release && deno run -A build/store-assets.ts generate",
     "store:assets:refresh-badges": "deno run -A build/store-assets.ts refresh-badges",
-    "store:assets:refresh-manifest": "deno run -A build/store-assets.ts refresh-manifest",
     "store:assets:check": "deno run -A build/store-assets.ts check",
     "store:release": "deno run -A scripts/store-release.ts",
     "lint:firefox": "deno run -A npm:web-ext@10.5.0 lint --source-dir dist/firefox",
