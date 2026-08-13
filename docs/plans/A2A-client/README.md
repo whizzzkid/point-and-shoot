@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -24,6 +24,8 @@ related:
     path: ../../adr/0002-activetab-only-permission-model.md
   - title: A2A protocol specification
     url: https://a2a-protocol.org/latest/specification/
+  - title: Canonical A2A v1 protocol definition
+    url: https://github.com/a2aproject/A2A/blob/v1.0.0/specification/a2a.proto
   - title: Official A2A JavaScript SDK
     url: https://github.com/a2aproject/a2a-js
   - title: Architecture review
@@ -44,12 +46,13 @@ session and agent-run history without losing the current copy and download paths
 agent profiles, immutable outbound requests, task snapshots, and ordered events in IndexedDB;
 extension-owned credential material lives only in `storage.session`. Cookie and mTLS material stays
 in browser- or OS-managed stores, follows those stores' lifecycle, and is never copied into
-extension storage. The official A2A JavaScript SDK owns protocol parsing and the JSON-RPC or
-HTTP+JSON transport, while a small project adapter owns runtime permissions, authentication,
-persistence, and lifecycle recovery.
+extension storage. A project-owned, Web-standard client subtree owns generated A2A v1 contracts,
+protocol parsing, JSON-RPC, HTTP+JSON, and SSE. Thin extension adapters own runtime permissions,
+authentication, persistence, and lifecycle recovery without entering the portable subtree.
 
 **Tech stack:** Manifest V3, Chrome service worker, Firefox event page, Preact, IndexedDB,
-`storage.session`, the exact-pinned `@a2a-js/sdk` client, JSON-RPC or HTTP+JSON, and SSE.
+`storage.session`, generated A2A v1 protocol contracts, Web-standard `fetch` and streams, JSON-RPC,
+HTTP+JSON, and SSE.
 
 ## How to read this plan
 
@@ -117,6 +120,13 @@ This plan is complete when:
   consume those shared limits without imposing a hard cap on local copy or download actions.
 - Do not introduce a native companion, public webhook receiver, remote registry, response Markdown
   renderer, task cancellation, or general multi-turn composer in this plan.
+- Keep portable protocol code under `src/shared/a2a/client/` with `mod.ts` as its only supported
+  import surface. That subtree may use Web-standard APIs and exact-pinned protocol dependencies but
+  must not import extension permissions, storage, manifests, UI, browser shims, `Deno.*`, Node
+  built-ins, or repository-specific domain records.
+- Do not publish a package, add a workspace, or promise independent semantic-version compatibility
+  yet. Extraction should be a directory move plus packaging metadata, not a rewrite, but package
+  publication remains a separate decision when another consumer exists.
 
 ## Architecture reference
 
@@ -131,7 +141,8 @@ flowchart LR
   Permission["Remote access broker<br/>URL policy and host grants"]
   Catalog["Agent catalog<br/>public cards and interface choice"]
   Vault["Credential vault<br/>storage.session only"]
-  Client["A2A client adapter<br/>official JavaScript SDK"]
+  Adapter["Extension transport adapter<br/>auth, grants, lifecycle"]
+  Client["Portable A2A browser client<br/>generated v1 contracts"]
   Ledger["Run ledger<br/>IndexedDB runs and events"]
   Agent["Remote A2A agent"]
 
@@ -141,16 +152,40 @@ flowchart LR
   Options --> Vault
   Panel --> Catalog
   Panel --> Vault
-  Panel --> Client
+  Panel --> Adapter
   Panel --> Ledger
+  Adapter --> Client
   Client --> Permission --> Agent
-  Client --> Ledger
+  Adapter --> Ledger
 ```
 
 The background router never accepts an arbitrary URL from the inspected page. Content sends only a
 stored agent id; the background validates it against the catalog before writing the pending target
 to `storage.session` and opening the panel. All remote bytes are rendered as text or typed metadata,
 never assigned to `innerHTML`.
+
+### Portable client boundary
+
+```mermaid
+flowchart LR
+  Extension["Extension-owned adapters"] --> Public["client/mod.ts<br/>single public entry point"]
+  Public --> Card["Card discovery and interface selection"]
+  Public --> RPC["JSON-RPC transport"]
+  Public --> REST["HTTP+JSON transport"]
+  RPC --> SSE["Bounded SSE parser"]
+  REST --> SSE
+  Card --> Types["Generated A2A v1 contracts and validators"]
+  RPC --> Types
+  REST --> Types
+  Platform["Injected fetch, AbortSignal, limits"] --> Public
+```
+
+Every extension caller imports the portable client through `client/mod.ts`. The subtree receives
+network behavior through injected `fetch`, cancellation through `AbortSignal`, and settled remote
+input limits through constructor options. Host grants, credential preparation, `storage.session`,
+IndexedDB, browser lifecycle, and product error presentation remain outside. A dependency-boundary
+test bundles `mod.ts` by itself and rejects imports from the rest of the extension, Node globals,
+gRPC, and compatibility shims.
 
 ### Delivery and recovery flow
 
@@ -255,7 +290,7 @@ operation at a time.
 
 The UI must never collapse remote task state and local transport state into one label.
 
-**A2A task state:** Use the SDK's v1 values corresponding to `TASK_STATE_UNSPECIFIED`,
+**A2A task state:** Use the generated v1 values corresponding to `TASK_STATE_UNSPECIFIED`,
 `TASK_STATE_SUBMITTED`, `TASK_STATE_WORKING`, `TASK_STATE_COMPLETED`, `TASK_STATE_FAILED`,
 `TASK_STATE_CANCELED`, `TASK_STATE_INPUT_REQUIRED`, `TASK_STATE_REJECTED`, and
 `TASK_STATE_AUTH_REQUIRED`. A direct `Message` response is a successful settled run without a task
@@ -283,9 +318,9 @@ browser differences and explicit server-side Origin policies.
 3. Fetch and runtime-validate the public Agent Card within the shared byte and time budgets. Honor
    `Cache-Control`, `ETag`, and `Last-Modified`; never execute or remotely load card-provided
    presentation assets.
-4. Select only SDK-supported browser transports: JSON-RPC or HTTP+JSON. gRPC remains unavailable in
-   the browser. Persist the selected interface's optional tenant and include it in every request. If
-   the selected interface uses another origin, require a second explicit grant.
+4. Select only portable-client browser transports: JSON-RPC or HTTP+JSON. gRPC remains unavailable
+   in the browser. Persist the selected interface's optional tenant and include it in every request.
+   If the selected interface uses another origin, require a second explicit grant.
 5. Apply the same URL-policy and grant flow to OAuth metadata, token, OIDC discovery, and JWS
    key-set hosts. Never turn the background router into a caller-directed network proxy.
 6. Cache only the public card persistently. Keep authenticated extended cards in `storage.session`
@@ -305,7 +340,7 @@ an authentication failure. Every scheme inside the selected requirement remains 
 Authentication is modeled as a prepared request contribution, not a header-only hook. An adapter may
 contribute headers, a query parameter, browser request credentials, or a browser-managed TLS
 precondition. Composition rejects collisions, cross-origin redirects, stale security revisions, and
-unrequested scope changes before the SDK sends a request.
+unrequested scope changes before the portable client sends a request.
 
 Agent Card security requirements authenticate A2A endpoint requests. `TASK_STATE_AUTH_REQUIRED`
 instead represents in-task authorization and does not define a credential format. The client may
@@ -316,7 +351,7 @@ polling. It never places a credential in an A2A message without a separately neg
 | Scheme or flow           | Delivery decision                                                                                          |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | No authentication        | Supported in the first end-to-end slice.                                                                   |
-| HTTP Bearer              | First authenticated slice; attach `Authorization` through the SDK authentication hook.                     |
+| HTTP Bearer              | First authenticated slice; attach `Authorization` through the extension fetch wrapper.                     |
 | Header API key           | First authenticated slice; use the card-declared header name.                                              |
 | Other HTTP auth          | Phase 3 adds Basic and registered schemes that can be represented by request headers.                      |
 | Query API key            | Phase 3 adds explicit URL injection with redacted logs and history.                                        |
@@ -334,12 +369,13 @@ does not silently fall back to another scheme or expand into native messaging.
 
 ## Delivery phases
 
-Phases are barriers. Independent stack lanes inside a phase run concurrently; a later phase begins
-only after every required lane tip is merged and the phase exit gate passes.
+Phases are barriers. Each phase guide defines whether its delivery PRs form one linear stack or a
+stack forest. A later phase begins only after every required PR is merged and the phase exit gate
+passes.
 
 ```mermaid
 flowchart TD
-  P0["Phase 0: Prove the platform<br/>SDK, permissions, CORS, lifecycle, ADR"]
+  P0["Phase 0: Prove the platform<br/>client, permissions, CORS, lifecycle, ADR"]
   P1["Phase 1: Build foundations<br/>catalog, ledger, credentials, transport"]
   P2["Phase 2: Ship delivery UX<br/>options, split send, streaming, history"]
   P3["Phase 3: Expand enterprise support<br/>OAuth, OIDC, HTTP auth, mTLS, recovery"]
@@ -348,19 +384,37 @@ flowchart TD
   P0 --> P1 --> P2 --> P3 --> P4
 ```
 
-| Phase | Guide                                                             | Parallel stack lanes                                | Exit result                                              |
-| ----- | ----------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------- |
-| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | SDK and browser-platform                            | Evidence-backed architecture and successor ADR           |
-| 1     | [Build foundations](phase-1-build-foundations.md)                 | Catalog, ledger, authentication, transport          | Tested non-UI A2A client foundation                      |
-| 2     | [Ship delivery UX](phase-2-ship-delivery-ux.md)                   | Options, toolbar, delivery, history                 | Bearer/API-key send, stream, status, and history         |
-| 3     | [Expand enterprise support](phase-3-expand-enterprise-support.md) | OAuth/OIDC, HTTP/API key, mTLS/card trust, recovery | Full declared-scheme negotiation or explicit constraints |
-| 4     | [Verify and document](phase-4-verify-and-document.md)             | Protocol tests, browser tests, quality, docs        | Cross-browser release evidence and current public docs   |
+| Phase | Guide                                                             | Stack structure                                       | Exit result                                              |
+| ----- | ----------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| 0     | [Prove the platform](phase-0-prove-the-platform.md)               | One four-PR proof stack                               | Evidence-backed architecture and successor ADR           |
+| 1     | [Build foundations](phase-1-build-foundations.md)                 | Catalog, ledger, authentication, extension adapter    | Tested non-UI A2A client foundation                      |
+| 2     | [Ship delivery UX](phase-2-ship-delivery-ux.md)                   | Options, toolbar, delivery, history                   | Bearer/API-key send, stream, status, and history         |
+| 3     | [Expand enterprise support](phase-3-expand-enterprise-support.md) | OAuth/OIDC, HTTP/API key, mTLS/card trust, recovery   | Full declared-scheme negotiation or explicit constraints |
+| 4     | [Verify and document](phase-4-verify-and-document.md)             | Protocol tests, browser tests, quality, documentation | Cross-browser release evidence and current public docs   |
+
+### Delivery PR inventory
+
+The delivery plan contains 41 implementation PRs. The merged planning PR and the Phase 0
+SDK-proof/replanning PR establish the implementation base; neither is an additional delivery PR. In
+particular, P0.1-P0.4 are the four Phase 0 delivery PRs stacked after that proof, not replacements
+for or additions to an earlier Phase 0 delivery set.
+
+| Phase | Delivery items | Planned PRs | Topology                    |
+| ----- | -------------- | ----------: | --------------------------- |
+| 0     | P0.1-P0.4      |           4 | One linear stack            |
+| 1     | P1.1-P1.9      |           9 | Phase-specific stack forest |
+| 2     | P2.1-P2.9      |           9 | Phase-specific stack forest |
+| 3     | P3.1-P3.10     |          10 | Phase-specific stack forest |
+| 4     | P4.1-P4.9      |           9 | Phase-specific stack forest |
+| Total | P0.1-P4.9      |          41 | Five phase barriers         |
 
 ## Stack execution contract
 
-Each phase uses a **stack forest**: one linear PR stack per lane, with multiple lanes rooted at the
-same confirmed phase base. This keeps related commits reviewable without serializing file-disjoint
-work.
+Phase 0 uses one linear four-PR delivery stack rooted in its SDK-proof/replanning PR because P0.3
+consumes both proof foundations and P0.4 records their combined evidence. Later phases may use a
+**stack forest**: one linear PR stack per lane, with multiple lanes rooted at the same confirmed
+phase base. File-disjoint ownership still applies when items share a linear stack; stacking
+determines review ancestry, not permission to mix concerns.
 
 The phase coordinator hands each executor this plan, the current phase guide, and one item id. One
 executor stays with a lane's linear PR stack; sibling executors work only on other currently
@@ -388,8 +442,9 @@ Agents executing an item must:
 1. Read this file and the item's phase guide before changing code.
 2. Confirm every declared dependency is merged or present in the parent branch. Never copy an
    unmerged sibling's code into another lane.
-3. Name branches `feat/a2a-p<phase>-<item>-<slug>`. A lane's first PR targets the confirmed phase
-   base; each child PR targets its immediate parent branch.
+3. Name branches `feat/a2a-p<phase>-<item>-<slug>`. A stack's first PR targets the confirmed phase
+   base; each child PR targets its immediate parent branch. Initialize planned branch slots when a
+   stack begins, but open each PR only after that layer has a real owning commit.
 4. Use `wk-pr` and the repository's stack tooling. Verify the live PR base, remote head, CI rollup,
    and tree identity rather than trusting cached stack metadata.
 5. Keep one logical change per PR and commit. Every PR must pass `mise exec -- deno task ci` and its

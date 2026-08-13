@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -35,7 +35,8 @@ related:
 
 Phase 1 adds an A2A-specific persistence and service layer without changing the canonical capture
 `Session`. P1.1 establishes types and IndexedDB stores; four file-disjoint stacks then implement the
-catalog, run ledger, credential/authentication layer, and SDK transport concurrently.
+catalog, run ledger, credential/authentication layer, and extension adapter over the portable client
+concurrently.
 
 **Phase base:** `main` after phase 0 passes.
 
@@ -47,7 +48,7 @@ flowchart TD
   P11 --> P12["P1.2 Agent repository"] --> P13["P1.3 Discovery and card cache"]
   P11 --> P14["P1.4 Run ledger"] --> P15["P1.5 Event reducer and reconciliation"]
   P11 --> P16["P1.6 Session credential vault"] --> P17["P1.7 Bearer and header API key"]
-  P11 --> P18["P1.8 SDK transport adapter"]
+  P11 --> P18["P1.8 Extension transport adapter"]
   P13 --> P19["P1.9 Delivery convergence"]
   P15 --> P19
   P17 --> P19
@@ -222,9 +223,10 @@ export function discoverAgent(request: DiscoverAgentRequest): Promise<DiscoverAg
 
 1. Resolve the well-known card path, request no permissions internally, and require the caller to
    supply already-granted origins.
-2. Fetch through the injected SDK-compatible fetch, runtime-validate the public card, and select the
-   first supported interface in server order among JSON-RPC and HTTP+JSON. Preserve its optional
-   tenant as opaque routing data.
+2. Fetch through the injected portable-client fetch, runtime-validate the public card, and use its
+   pure public selection operation to choose a v1 JSON-RPC or HTTP+JSON interface in the configured
+   preference order. Preserve the returned URL, binding, protocol version, and optional tenant as
+   opaque routing data.
 3. Return every additional interface origin that still needs a user grant instead of fetching it.
 4. Persist `ETag`, `Last-Modified`, and parsed `Cache-Control` metadata. Use conditional refreshes;
    preserve the last valid public card on `304`, and surface malformed replacements without
@@ -310,8 +312,8 @@ run and serially refreshes nonterminal tasks in the currently visible history pa
 
 **Implementation:**
 
-1. Reduce SDK stream responses into the two-axis status model without allowing a connection state to
-   erase a task state.
+1. Reduce portable-client stream responses into the two-axis status model without allowing a
+   connection state to erase a task state.
 2. Treat terminal task states and direct messages as settled. Treat `INPUT_REQUIRED` and
    `AUTH_REQUIRED` as interrupted remote states, not transport failures.
 3. Preserve artifact identity and apply `append` and `lastChunk` updates in arrival order. Never
@@ -404,10 +406,9 @@ mise exec -- deno task ci
    `apiKeySecurityScheme.location` equal to header.
 2. Use the card-declared API-key header name. Reject forbidden, A2A-reserved, hop-by-hop, cookie,
    origin, and proxy authorization header names.
-3. Attach credentials through the SDK authentication fetch hook. On `401`, consume
-   `WWW-Authenticate`, refresh headers at most once, and never retry `403` automatically. Use the
-   SDK authentication helper only if P0.1 proves it supports that policy; otherwise keep the SDK
-   transport and provide the project fetch wrapper.
+3. Compose credentials into the fetch implementation supplied to the portable client. On `401`,
+   consume `WWW-Authenticate`, refresh headers at most once, and never retry `403` automatically.
+   Keep this policy in the extension adapter so the portable client remains authentication-neutral.
 4. Redact authorization and API-key values from errors and test diagnostics.
 5. Test valid headers, malformed schemes, forbidden header names, missing credentials, one `401`
    refresh, repeated `401`, `403`, abort, and concurrent requests using independent credentials.
@@ -421,15 +422,15 @@ mise exec -- deno task ci
 
 **Commit:** `feat(a2a): support header authentication`
 
-### P1.8 - Implement the SDK transport adapter
+### P1.8 - Implement the extension transport adapter
 
 **Marker:** `[AGENT-READY]`.
 
 **Parallel safety:** First PR in the transport stack; parallel with P1.2, P1.4, and P1.6.
 
-**Depends on:** P1.1 and P0.1's SDK wrapper.
+**Depends on:** P1.1 and P0.1's portable client public contract.
 
-**Branch and PR:** `feat/a2a-p1-8-sdk-transport`, targeting the phase base containing P1.1.
+**Branch and PR:** `feat/a2a-p1-8-client-adapter`, targeting the phase base containing P1.1.
 
 **Files:**
 
@@ -437,13 +438,13 @@ mise exec -- deno task ci
 - Create: `src/shared/a2a/transport.test.ts`
 
 **Produces:** The `AgentTransport` implementation using the selected public Agent Card interface,
-`A2A-Version`, injected authenticated fetch, per-call `AbortSignal`, and SDK response types.
+`A2A-Version`, injected authenticated fetch, per-call `AbortSignal`, and generated protocol types.
 
 **Implementation:**
 
-1. Create a client from the already-validated Agent Card. Never let the SDK re-fetch an ungranted
-   URL behind the permission broker, and include the selected interface's tenant in every request
-   when present.
+1. Import only `src/shared/a2a/client/mod.ts`, create a portable client from the persisted selected
+   target after the permission broker confirms its exact origin, and never call discovery behind the
+   broker. Include the selected interface's tenant in every request when present.
 2. Send the exact Markdown as one v1 user `TextPart` with a stable client-generated message id.
    Negotiate `text/markdown` when the selected agent or skill input modes accept it, otherwise
    `text/plain`; store that negotiated mode in the run snapshot, but do not invent a media-type
@@ -452,8 +453,9 @@ mise exec -- deno task ci
 3. Use streaming send only when the card advertises streaming. Otherwise call non-streaming send
    with immediate task return where supported, yield its single response through the same adapter,
    and let reconciliation poll a known nonterminal task with `GetTask`.
-4. Expose streaming, task lookup, and task subscription as typed methods. Convert SDK or HTTP errors
-   into project error categories without dropping the original safe status and error code.
+4. Expose streaming, task lookup, and task subscription as typed methods. Convert portable-client
+   protocol or HTTP errors into project error categories without dropping the original safe status
+   and error code.
 5. Enforce the phase-0 settled JSON response, SSE-frame, request, first-byte, and idle budgets
    before parsing or buffering remote data.
 6. Reject a card version or required extension the client does not support. Do not enable the v0.3
@@ -469,7 +471,7 @@ mise exec -- deno task test src/shared/a2a/transport.test.ts
 mise exec -- deno task ci
 ```
 
-**Commit:** `feat(a2a): add the browser transport adapter`
+**Commit:** `feat(a2a): add the extension transport adapter`
 
 ### P1.9 - Orchestrate durable send and streamed persistence
 

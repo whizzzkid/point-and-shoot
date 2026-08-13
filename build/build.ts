@@ -3,12 +3,15 @@
  * each a complete, loadable extension tree. `deno task build:release` (`--release`) additionally
  * minifies, drops sourcemaps, and zips each tree to `dist/<target>.zip`.
  *
- * Two esbuild passes run because the two output formats are load-bearing, not a style choice:
+ * Separate esbuild passes keep each output contract explicit. The two extension formats are
+ * load-bearing, not a style choice:
  * `background/background.js` is a Chrome MV3 module service worker but a Firefox MV3 classic
  * background script (see `build/manifest.ts`'s `forChrome`/`forFirefox`), and `content/content.js`
  * runs as a classic content script for cross-browser compatibility — both bundle
  * as IIFE. `sidepanel`/`popup`/`options` load via `<script type="module">` in their own HTML shells
- * (this script's own output, copied verbatim), so they bundle as ESM.
+ * (this script's own output, copied verbatim), so they bundle as ESM. The A2A SDK wrapper uses a
+ * third ESM pass so its independent minified cost stays measurable and dependency comments cannot
+ * trip the shipped-URL guard.
  *
  * @module
  */
@@ -60,6 +63,19 @@ const ESM_ENTRY_POINTS: Record<string, string> = {
   "sidepanel/sidepanel": fromFileUrl(new URL("sidepanel/index.tsx", SRC)),
   "popup/popup": fromFileUrl(new URL("popup/index.tsx", SRC)),
   "options/options": fromFileUrl(new URL("options/index.tsx", SRC)),
+};
+
+const A2A_ESM_ENTRY_POINTS: Record<string, string> = {
+  "shared/a2a/sdk": fromFileUrl(new URL("shared/a2a/sdk.ts", SRC)),
+};
+
+const a2aSdkResolverPlugin: esbuild.Plugin = {
+  name: "deno-a2a-sdk-resolver",
+  setup(pluginBuild) {
+    pluginBuild.onResolve({ filter: /^(?:@a2a-js\/sdk(?:\/.*)?|jose)$/ }, (args) => ({
+      path: fromFileUrl(import.meta.resolve(args.path)),
+    }));
+  },
 };
 
 const HTML_SHELLS: ReadonlyArray<{ readonly from: string; readonly to: string }> = [
@@ -271,6 +287,20 @@ export async function build(options: BuildOptions): Promise<void> {
       plugins: [preactResolverPlugin],
       sourcemap: !options.release,
       minify: options.release,
+      legalComments: "none",
+    });
+    await esbuild.build({
+      entryPoints: A2A_ESM_ENTRY_POINTS,
+      absWorkingDir: fromFileUrl(ROOT),
+      outdir: fromFileUrl(bundleDir),
+      bundle: true,
+      format: "esm",
+      target,
+      plugins: [a2aSdkResolverPlugin],
+      sourcemap: !options.release,
+      minifyIdentifiers: options.release,
+      minifySyntax: true,
+      minifyWhitespace: true,
       legalComments: "none",
     });
   } finally {

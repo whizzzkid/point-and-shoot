@@ -4,7 +4,7 @@ type: plan
 status: proposed
 author: Codex
 created: 2026-07-31
-last_updated: 2026-08-01
+last_updated: 2026-08-04
 epic: null
 reviewers:
   - Nishant Arora
@@ -19,6 +19,8 @@ related:
     path: ../../adr/0002-activetab-only-permission-model.md
   - title: Deno-first dependency decision
     path: ../../adr/0004-deno-first-toolchain-npm-specifiers.md
+  - title: Canonical A2A v1 protocol definition
+    url: https://github.com/a2aproject/A2A/blob/v1.0.0/specification/a2a.proto
 ---
 
 # Phase 0 - Prove the platform
@@ -26,116 +28,240 @@ related:
 ## How to read this phase
 
 - **Phase contract** defines what must be proven before product implementation begins.
-- **Parallel stack map** assigns file-disjoint work to the SDK and browser-platform lanes.
+- **Stack map** defines the review ancestry while preserving file-disjoint item ownership.
 - **Delivery items** provide exact artifacts, interfaces, verification, and PR boundaries.
-- **Exit gate** prevents an unverified SDK, permission, or lifecycle assumption from entering
+- **Exit gate** prevents an unverified client, permission, or lifecycle assumption from entering
   phase 1.
 
 ## Phase contract
 
 Phase 0 turns the riskiest external assumptions into executable evidence. Nothing in later phases
-may hand-roll A2A wire types, request broad required host access, or keep a long-lived stream in the
-background context to bypass a failed proof.
+may hand-write or copy A2A wire types, request broad required host access, or keep a long-lived
+stream in the background context to bypass a failed proof. Protocol contracts must be generated from
+an official v1 schema snapshot derived from the pinned normative proto and remain inside the
+portable client boundary.
 
-**Phase base:** The merged planning PR on `main`.
+**Phase base:** The merged planning PR on `main`, followed by PR #66's executable official-SDK
+failure proof and portable-client replanning. The delivery stack targets PR #66 until it merges;
+stack sync then retargets P0.1 to `main` without rewriting a delivery commit.
 
-**Maximum parallel width:** Two stack lanes. P0.1 and P0.2 start together. P0.3 starts after both
-proof foundations land, and P0.4 records the combined decision.
+**Stack shape:** One linear four-PR stack. P0.1 establishes the portable client, P0.2 layers the
+browser platform APIs onto that reviewed base, P0.3 proves their combined runtime path, and P0.4
+records the evidence-backed decisions.
+
+P0.1-P0.4 are the four Phase 0 delivery PRs. The merged planning PR and PR #66 are their evidence
+base, not delivery PRs. Branch slots may be initialized together, but each delivery PR opens only
+after its first real owning commit.
+
+| Position | Role          | Branch                              | PR target                           | Current state             |
+| -------- | ------------- | ----------------------------------- | ----------------------------------- | ------------------------- |
+| Base     | SDK proof     | `feat/a2a-p0-1-sdk-proof`           | `main`                              | PR #66, ready for review  |
+| 1        | P0.1 delivery | `feat/a2a-p0-1-portable-client`     | `feat/a2a-p0-1-sdk-proof`           | Implementation branch     |
+| 2        | P0.2 delivery | `feat/a2a-p0-2-browser-permissions` | `feat/a2a-p0-1-portable-client`     | Planned branch; no PR yet |
+| 3        | P0.3 delivery | `feat/a2a-p0-3-network-proof`       | `feat/a2a-p0-2-browser-permissions` | Planned branch; no PR yet |
+| 4        | P0.4 delivery | `feat/a2a-p0-4-architecture`        | `feat/a2a-p0-3-network-proof`       | Planned branch; no PR yet |
 
 ```mermaid
 flowchart TD
   Base["Phase base"]
-  P01["P0.1 SDK and browser bundle proof"]
+  Proof["PR #66: SDK failure proof and replanning"]
+  P01["P0.1 Portable browser client proof"]
   P02["P0.2 Browser shim and optional origins"]
   P03["P0.3 Cross-origin stream and lifecycle proof"]
   P04["P0.4 Architecture decisions and phase exit"]
 
-  Base --> P01 --> P03 --> P04
-  Base --> P02 --> P03
+  Base --> Proof --> P01 --> P02 --> P03 --> P04
 ```
 
 ## Delivery items
 
-### P0.1 - Prove the official SDK in both extension bundles
+### P0.1 - Build and prove the portable browser client
 
 **Marker:** `[AGENT-GUIDED]` - report measured bundle and runtime evidence in the PR before P0.4.
 
-**Parallel safety:** Starts immediately in the SDK lane. It does not edit manifest or browser-shim
-files owned by P0.2.
+**Stack safety:** First stack layer. It does not edit manifest or browser-shim files owned by P0.2.
 
-**Branch and PR:** `feat/a2a-p0-1-sdk-proof`, targeting the phase base.
+**Branch and PR:** `feat/a2a-p0-1-portable-client`, targeting `feat/a2a-p0-1-sdk-proof`. The parent
+PR preserves the failed official-client proof and decision trail; this delivery PR contains only the
+browser-native replacement.
 
 **Files:**
 
 - Modify: `deno.json`
-- Create: `src/shared/a2a/sdk.ts`
-- Create: `src/shared/a2a/sdk.test.ts`
+- Delete: `src/shared/a2a/sdk.ts`
+- Delete: `src/shared/a2a/sdk.test.ts`
+- Create: `src/shared/a2a/client/mod.ts`
+- Create: `src/shared/a2a/client/contracts.ts`
+- Create: `src/shared/a2a/client/protocol.schema.json`
+- Create: `src/shared/a2a/client/protocol.generated.ts`
+- Create: `src/shared/a2a/client/validation.generated.ts`
+- Create: `src/shared/a2a/client/validation.test.ts`
+- Create: `src/shared/a2a/client/generate-protocol.ts`
+- Create: `src/shared/a2a/client/generate-protocol.test.ts`
+- Create: `src/shared/a2a/client/card.ts`
+- Create: `src/shared/a2a/client/card.test.ts`
+- Create: `src/shared/a2a/client/client.ts`
+- Create: `src/shared/a2a/client/client.test.ts`
+- Create: `src/shared/a2a/client/conformance.test.ts`
+- Create: `src/shared/a2a/client/json-rpc.ts`
+- Create: `src/shared/a2a/client/json-rpc.test.ts`
+- Create: `src/shared/a2a/client/http-json.ts`
+- Create: `src/shared/a2a/client/http-json.test.ts`
+- Create: `src/shared/a2a/client/sse.ts`
+- Create: `src/shared/a2a/client/sse.test.ts`
+- Create: `src/shared/a2a/client/errors.ts`
 - Modify: `build/build.ts`
 - Modify: `build/build.test.ts`
 
 **Produces:**
 
 ```ts
-export interface A2ASdkFactoryOptions {
-  readonly fetch: typeof fetch;
-  readonly preferredTransports: readonly ("JSONRPC" | "HTTP+JSON")[];
+export type A2ATransportBinding = "JSONRPC" | "HTTP+JSON";
+
+export interface A2AClientLimits {
+  readonly cardBytes: number;
+  readonly jsonBytes: number;
+  readonly sseFrameBytes: number;
+  readonly requestMs: number;
+  readonly firstByteMs: number;
+  readonly streamIdleMs: number;
 }
 
-export function createA2ASdkFactory(options: A2ASdkFactoryOptions): ClientFactory;
+export interface A2AClientFactoryOptions {
+  readonly fetch: typeof fetch;
+  readonly preferredTransports: readonly A2ATransportBinding[];
+  readonly limits: A2AClientLimits;
+}
+
+export interface A2ARequestOptions {
+  readonly signal: AbortSignal;
+  readonly serviceParameters?: Readonly<Record<string, string>>;
+}
+
+export interface A2AClientTarget {
+  readonly url: URL;
+  readonly transport: A2ATransportBinding;
+  readonly protocolVersion: "1.0";
+  readonly tenant?: string;
+}
+
+export interface A2AClient {
+  readonly target: A2AClientTarget;
+  sendMessage(
+    request: SendMessageRequest,
+    options: A2ARequestOptions,
+  ): Promise<SendMessageResponse>;
+  sendMessageStream(
+    request: SendMessageRequest,
+    options: A2ARequestOptions,
+  ): AsyncIterable<StreamResponse>;
+  getTask(request: GetTaskRequest, options: A2ARequestOptions): Promise<Task>;
+  subscribeToTask(
+    request: SubscribeToTaskRequest,
+    options: A2ARequestOptions,
+  ): AsyncIterable<StreamResponse>;
+}
+
+export interface A2AClientFactory {
+  resolve(cardUrl: URL, signal: AbortSignal): Promise<AgentCard>;
+  select(agentCard: AgentCard): A2AClientTarget;
+  create(target: A2AClientTarget): A2AClient;
+}
+
+export function createA2AClientFactory(options: A2AClientFactoryOptions): A2AClientFactory;
 ```
 
 **Implementation:**
 
-1. Query the npm registry for `@a2a-js/sdk`, select the newest stable release implementing A2A v1,
-   and pin that exact version in `deno.json`. Record the resolved version in the PR for P0.4 to add
-   to the shared version table after both proof lanes converge. If no stable v1 release exists, stop
-   the phase and request an explicit prerelease or alternative-client decision instead of silently
-   pinning `next`.
-2. Import only `@a2a-js/sdk` protocol types and `@a2a-js/sdk/client`. Never import server, Express,
-   compatibility, or gRPC subpaths into an extension entry point.
-3. Wrap `ClientFactory` construction in `src/shared/a2a/sdk.ts`, inject `fetch`, and restrict
-   browser transport preference to JSON-RPC and HTTP+JSON.
-4. Add a build test that bundles the new client module into Chrome and Firefox artifacts using a
-   temporary output directory and an explicit fixture branch, scans for unresolved Node built-ins
-   and gRPC peers, and records the minified byte delta in the test output. Unit tests must not
-   replace the branch-labeled development packages in the repository's `dist/` directory. Assert
-   that adding the SDK preserves the existing numeric `version` and branch-specific `version_name`.
-5. Inventory and test the SDK's v1 client, authentication hook, stream, task lookup/subscription,
-   and Agent Card signature-verification surfaces. Prove whether authentication can contribute
-   headers, query parameters, request credentials, and browser-managed preconditions. Inspect the
-   SDK authentication helper's `401`/`403` behavior; later code must use a project wrapper unless
-   the helper can be configured to refresh at most once on `401` and never retry `403`. Record
-   missing or browser-incompatible surfaces for P0.4 instead of assuming an example from another
-   release still applies.
-6. Unit-test factory creation, transport preference, injected fetch, and failure when an Agent Card
-   advertises only gRPC.
-7. Keep the wrapper as production code. Do not land a throwaway spike, compatibility shim, or copied
-   SDK type definition. If the client cannot bundle safely, phase 1 remains blocked pending a new
-   architecture decision.
+1. Preserve the failed official-client proof as PR evidence: stable `@a2a-js/sdk@1.0.1` bundles but
+   uses `Buffer` in its v1 codec, and a raw part fails in Chromium with
+   `ReferenceError: Buffer is not defined`. Remove the official SDK from the portable production
+   graph; retain an exact test-only server pin for cross-implementation conformance. Do not adopt
+   the v0.3-only `drew-foxall/a2a-js-sdk` fork, a Buffer polyfill, or copied SDK source.
+2. Pin the normative A2A protocol definition to release `v1.0.0`. Store the official generated
+   schema snapshot, proto URL, schema URL, source tag, SHA-256 digest, upstream Apache-2.0 license,
+   and required attribution beside the generated types; record that the schema is a non-normative
+   build artifact. Query the npm registry for the type and standalone-validator generators, pin
+   exact stable versions in `deno.json`, and make regeneration deterministic and offline from the
+   committed schema snapshot.
+3. Generate `protocol.generated.ts` and standalone runtime validators from `protocol.schema.json`
+   with the build-only `generate-protocol.ts`; never export the generator or edit either generated
+   file. Preserve JSON wire representations, including base64 strings for raw bytes, instead of
+   mapping them to Node `Buffer`. Generate validators for every accepted card, success response,
+   stream event, and protocol error shape. Add a generation-check test that regenerates into a
+   temporary directory and byte-compares both outputs with the committed files.
+4. Treat `src/shared/a2a/client/` as a future package root. `mod.ts` is its only supported public
+   entry point and exports only the documented contracts, generated protocol types, factory,
+   signature primitives when added, and typed errors. Add TSDoc to every authored export and retain
+   schema descriptions on generated exports. Production files in that subtree may import only
+   sibling client files, exact-pinned third-party dependencies, and Web-standard APIs. They must not
+   import the extension browser shim, permissions, manifests, storage, IndexedDB, UI, project domain
+   records, `Deno.*`, Node built-ins, gRPC, or compatibility layers. Modules that use browser types
+   add a file-local `/// <reference lib="dom" />`; do not widen the repository's global TypeScript
+   libraries.
+5. Require injected `fetch`, explicit `AbortSignal`, ordered transport preferences, and explicit
+   limits. Keep permissions, authentication contributions, `401` refresh policy, credential storage,
+   persistence, logging, and extension lifecycle outside the portable client. Extension code
+   supplies a composed fetch implementation instead of the client learning extension policy.
+6. Resolve a public Agent Card from an already-approved URL and validate it before use. Make
+   interface selection a pure public operation that returns the URL, binding, protocol version, and
+   optional tenant without performing I/O, so an extension can request the exact interface grant
+   without reproducing selection logic. Select only v1 JSON-RPC or HTTP+JSON interfaces, honor the
+   configured preference order, and fail closed for malformed, unsupported-version, or gRPC-only
+   cards. Client creation from the selected target must also perform no I/O.
+7. Implement `SendMessage`, streaming send, `GetTask`, and `SubscribeToTask` for both browser
+   transports using only `fetch`, `Request`, `Response`, `ReadableStream`, `TextDecoder`, `URL`, and
+   `AbortController`. Validate every parsed remote value with the generated validators before
+   returning it. Keep method/path mapping and JSON envelope conversion behind transport-local
+   modules so the public contract does not expose binding mechanics.
+8. Implement incremental JSON and SSE readers that reject oversized declared `Content-Length`, count
+   received bytes when it is absent or acceptable, enforce request, first-byte, and idle timeouts,
+   and abort before whole-body buffering or parsing. P0.3 supplies the measured production values;
+   P0.1 tests the configurable boundaries without inventing final numbers.
+9. Return typed protocol and transport errors without including credentials or an unbounded remote
+   body. Preserve safe HTTP status, A2A error code, selected binding, and retryability as structured
+   fields for the extension adapter.
+10. Test public factory creation, card discovery, preference order, injected fetch, both bindings,
+    all four operations, tenants, service parameters, text and raw parts, malformed envelopes,
+    protocol errors, HTTP errors, aborts, every byte boundary, every timeout, and gRPC-only cards.
+    Add a cross-implementation suite against an OS-assigned-port official v1 JavaScript server as a
+    test-only conformance oracle so a project-authored fixture cannot validate the same mistaken
+    method, path, envelope, or serialization mapping. Keep all official SDK server imports outside
+    the portable production graph.
+11. Add a dependency-boundary test that starts at `client/mod.ts` and fails on any import outside
+    the portable subtree other than allowlisted dependencies. Bundle that entry point independently
+    for Chrome and Firefox and scan for `Buffer`, unresolved Node built-ins, gRPC, protobuf peers,
+    and extension globals.
+12. Record the minified portable-client byte delta. Unit tests must use a temporary output directory
+    and must not replace the branch-labeled development packages in `dist/`. Assert that the build
+    preserves the numeric `version` and branch-specific `version_name`.
+13. Keep the portable client as production code. Do not publish it as a package in this phase. P3.5
+    adds portable Agent Card signature primitives under the same public boundary while its
+    permissioned key retrieval and trust presentation remain extension adapters.
 
 **Verification:**
 
 ```bash
-mise exec -- deno task test src/shared/a2a/sdk.test.ts build/build.test.ts
+mise exec -- deno task test src/shared/a2a/client/ build/build.test.ts
 mise exec -- deno task build
 mise exec -- deno task lint:firefox
 mise exec -- deno task ci
 mise exec -- deno task build
 ```
 
-Inspect `dist/chrome/` and `dist/firefox/` for Node-only imports. Record the exact SDK version and
-bundle delta in the PR body.
+Inspect `dist/chrome/` and `dist/firefox/` for Node-only imports. Record the protocol version,
+schema digest, generator version, bundle delta, and browser runtime evidence in the PR body.
 
-**Commit:** `build(a2a): prove the browser SDK client`
+**Commit:** `feat(a2a): add the portable browser client`
 
 ### P0.2 - Add the cross-browser permission and session APIs
 
 **Marker:** `[AGENT-READY]`.
 
-**Parallel safety:** Starts immediately in the browser-platform lane. P0.1 owns SDK and build
-imports; P0.2 owns the manifest and browser shim.
+**Stack safety:** Second stack layer. P0.1 owns the portable client and build imports; P0.2 owns the
+manifest and browser shim.
 
-**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting the phase base.
+**Branch and PR:** `feat/a2a-p0-2-browser-permissions`, targeting `feat/a2a-p0-1-portable-client`.
 
 **Files:**
 
@@ -213,11 +339,10 @@ Inspect both built manifests. Required permissions must remain unchanged per tar
 **Marker:** `[AGENT-GUIDED]` - record Chrome and Firefox results and any browser-specific
 limitation.
 
-**Depends on:** P0.1 and P0.2. Start after both parallel proofs land so the fixture can use the
-official SDK wrapper and permission shim without copying either lane.
+**Depends on:** P0.1 and P0.2. Start after both proof layers are reviewable so the fixture can use
+the portable client and permission shim without copying either item's implementation.
 
-**Branch and PR:** `feat/a2a-p0-3-network-proof`, targeting the merged phase base after P0.1 and
-P0.2 land.
+**Branch and PR:** `feat/a2a-p0-3-network-proof`, targeting `feat/a2a-p0-2-browser-permissions`.
 
 **Files:**
 
@@ -240,8 +365,9 @@ Bearer-protected requests, ordered SSE events, forced disconnect, polling, and t
    task with `GetTask` polling, malformed cards, gRPC-only cards, delayed first bytes, mid-stream
    disconnect, and recovery. Include oversized card, JSON response, and SSE-frame fixtures and prove
    the client aborts at the byte boundary before parsing or buffering the complete body.
-4. Drive the permission prompt from an extension page user gesture, fetch the card, grant a second
-   interface origin, and consume authenticated SSE from the visible extension page.
+4. Drive the permission prompt from an extension page user gesture, fetch the card through the
+   portable client's public entry point, grant a second interface origin, and consume authenticated
+   SSE from the visible extension page. Import no portable-client implementation file directly.
 5. Close the page mid-task, reopen it, and prove recovery through subscription or polling. Do not
    attempt to keep the Chrome service worker alive for the stream.
 6. Suspend and reopen the extension contexts and prove credentials survive context suspension in
@@ -270,11 +396,9 @@ mise exec -- deno task ci
 
 **Marker:** `[AGENT-READY]`.
 
-**Depends on:** P0.1 and P0.3. Start only after both lane tips are available on the convergence
-branch.
+**Depends on:** P0.1-P0.3. Start only after the network proof is reviewable on its parent branch.
 
-**Branch and PR:** `feat/a2a-p0-4-architecture`, targeting the merged phase base after both stacks
-land.
+**Branch and PR:** `feat/a2a-p0-4-architecture`, targeting `feat/a2a-p0-3-network-proof`.
 
 **Files:**
 
@@ -292,10 +416,11 @@ land.
 1. Supersede only ADR-0002's rejection of optional host permissions. Preserve its `activeTab`
    guarantee for inspected pages and explain the difference between optional eligibility and a
    granted remote-agent origin.
-2. Record the proven SDK version and Firefox 115 minimum in the `AGENTS.md` version table. Record
-   the supported browser transports, runtime origin-grant flow, loopback policy, stream owner,
-   credential storage boundary, recovery behavior, and pre-parse remote-input enforcement in the A2A
-   client spec.
+2. Record the proven A2A protocol version, schema digest, type-generator version, portable-client
+   bundle delta, and Firefox 115 minimum. Add exact tool versions to the `AGENTS.md` version table;
+   keep the schema digest in the A2A client spec. Record the supported browser transports, runtime
+   origin-grant flow, loopback policy, stream owner, credential storage boundary, recovery behavior,
+   pre-parse remote-input enforcement, and portable extraction boundary in that spec.
 3. Include the tested failure results. Do not convert a Chrome-only observation into a cross-browser
    capability claim.
 4. Run `wk-arch-review` over the ADR and spec, fold blockers into both artifacts, and record the
@@ -319,7 +444,9 @@ Also re-run every P0.1 and P0.3 proof against the combined head.
 
 Phase 1 remains blocked until all statements below have executable evidence:
 
-- The exact SDK client bundles into both extension targets without Node-only or gRPC dependencies.
+- The portable client bundles into both extension targets without `Buffer`, Node-only, extension,
+  compatibility, or gRPC dependencies, and its generated protocol contract matches the pinned A2A v1
+  schema snapshot.
 - Chrome's existing minimum and Firefox 115 expose the session-only credential store required by the
   client; no older-Firefox disk or event-page memory fallback exists.
 - Optional runtime grants permit extension-context cross-origin fetch without changing required host
