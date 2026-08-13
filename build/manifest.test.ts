@@ -61,7 +61,7 @@ Deno.test("manifest - permissions contain only browser capabilities that require
     "downloads",
     "clipboardWrite",
   ]);
-  assertEquals(Object.keys(manifestBase.commands), ["toggle-capture"]);
+  assertEquals(Object.keys(manifestBase.commands), ["_execute_action"]);
 });
 
 Deno.test("manifest - chrome grants sidePanel while firefox omits the chrome-only permission", () => {

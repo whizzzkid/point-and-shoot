@@ -214,6 +214,7 @@ export interface BrowserShim {
    * genuine naming divergence between the two engines.
    */
   openPanel(tabId?: number): Promise<void>;
+  setPanelBehavior(openOnActionClick: boolean): Promise<void>;
 }
 
 /** Shape of Chrome's MV3 global this module depends on. */
@@ -274,6 +275,7 @@ export interface ChromeGlobalShape {
   };
   readonly sidePanel: {
     open(options: { readonly tabId?: number }): Promise<void>;
+    setPanelBehavior(behavior: { readonly openPanelOnActionClick: boolean }): Promise<void>;
   };
 }
 
@@ -465,6 +467,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
       const options = tabId === undefined ? {} : { tabId };
       return chromeGlobal.sidePanel.open(options);
     },
+    setPanelBehavior(openOnActionClick) {
+      return chromeGlobal.sidePanel.setPanelBehavior({ openPanelOnActionClick: openOnActionClick });
+    },
   };
 }
 
@@ -545,6 +550,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
     },
     openPanel() {
       return firefoxGlobal.sidebarAction.open();
+    },
+    setPanelBehavior() {
+      return Promise.resolve();
     },
   };
 }

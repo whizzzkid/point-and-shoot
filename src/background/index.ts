@@ -28,9 +28,6 @@ registerSessionActionHandler(browser, sessionAction);
 registerSessionStateHandlers(browser, sessionAction);
 registerActivationHandlers(
   browser,
-  (error) => {
-    console.error("point-and-shoot: activation failed:", error);
-  },
   activation,
   () => sessionAction.synchronize(),
 );

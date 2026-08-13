@@ -8,9 +8,10 @@ workspace for reviewing, editing, compiling, and exporting the session.
 The Chrome and Firefox manifests declare an action title but no `action.default_popup`. A toolbar
 click therefore dispatches `action.onClicked` to the background session controller.
 
-The `toggle-capture` keyboard command remains a direct overlay toggle. It does not end the active
-session. Both entry points use the same per-tab activation controller, which injects the content
-bundle only when no content listener exists.
+The `_execute_action` keyboard shortcut fires `action.onClicked`, granting `activeTab` permission
+and following the same session-toggle path as the toolbar click. Both entry points use the same
+per-tab activation controller, which injects the content bundle only when no content listener
+exists.
 
 ## Lifecycle
 

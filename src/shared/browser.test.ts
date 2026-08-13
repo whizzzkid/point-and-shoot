@@ -115,7 +115,7 @@ function createFakeChrome(): FakeChrome {
         queueMicrotask(() =>
           callback([{
             description: "Toggle capture",
-            name: "toggle-capture",
+            name: "_execute_action",
             shortcut: "Command+Shift+P",
           }])
         );
@@ -142,6 +142,10 @@ function createFakeChrome(): FakeChrome {
     sidePanel: {
       open(_options) {
         calls.push("sidePanel.open");
+        return Promise.resolve();
+      },
+      setPanelBehavior(_behavior) {
+        calls.push("sidePanel.setPanelBehavior");
         return Promise.resolve();
       },
     },
@@ -252,7 +256,7 @@ function createFakeFirefox(): FakeFirefox {
         calls.push("commands.getAll");
         return Promise.resolve([{
           description: "Toggle capture",
-          name: "toggle-capture",
+          name: "_execute_action",
           shortcut: "Command+Shift+P",
         }]);
       },
@@ -507,7 +511,7 @@ Deno.test("browser shim - options navigation and storage changes agree across en
   const firefoxShim = createBrowserShim({ browser: firefoxFake.firefoxGlobal });
   const expectedCommands: CommandInfo[] = [{
     description: "Toggle capture",
-    name: "toggle-capture",
+    name: "_execute_action",
     shortcut: "Command+Shift+P",
   }];
 

@@ -106,7 +106,7 @@ export const manifestBase: ManifestBase = {
     page: "options/options.html",
   },
   commands: {
-    "toggle-capture": {
+    _execute_action: {
       suggested_key: { default: "Ctrl+Shift+P", mac: "Command+Shift+P" },
       description: "Start pointing at or dragging a box around a broken element",
     },

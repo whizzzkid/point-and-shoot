@@ -30,5 +30,5 @@ the real production overlay inside its closed root.
 
 Chromium automation cannot dispatch a browser-level extension shortcut reliably. The keyboard flow
 uses Chromium DevTools' extension-action gesture to grant `activeTab`, then uses keyboard input
-only. The background command listener and its `toggle-capture` routing remain covered at the
-browser-shim unit seam.
+only. The `_execute_action` command fires `action.onClicked` directly, granting `activeTab` for both
+toolbar click and keyboard shortcut.
