@@ -138,8 +138,8 @@ jobs:
         with:
           name: point-and-shoot-${{ steps.package.outputs.version }}-release-pr
           path: |
-            dist/chrome.zip
-            dist/firefox.zip
+            dist/chrome-${{ steps.package.outputs.version }}.zip
+            dist/firefox-${{ steps.package.outputs.version }}.zip
             dist/firefox-source.zip
             dist/firefox-build-instructions.md
           if-no-files-found: error
@@ -171,12 +171,12 @@ jobs:
               `[Download the release PR artifacts](${process.env.ARTIFACT_URL}) within 14 days.`,
               "These are store-submission candidates, not consumer install links.",
               "",
-              "- `chrome.zip`: extract it, open `chrome://extensions`, enable Developer mode,",
+              `- \`chrome-${process.env.VERSION}.zip\`: extract it, open \`chrome://extensions\`, enable Developer mode,`,
               "  choose **Load unpacked**, and select the extracted directory.",
-              "- `firefox.zip`: extract it, open `about:debugging#/runtime/this-firefox`, choose",
+              `- \`firefox-${process.env.VERSION}.zip\`: extract it, open \`about:debugging#/runtime/this-firefox\`, choose`,
               "  **Load Temporary Add-on**, and select the extracted `manifest.json`.",
-              "- `firefox-source.zip`: the tracked, allowlisted source supplied to Mozilla",
-              "  reviewers so they can reproduce `firefox.zip`.",
+              `- \`firefox-source.zip\`: the tracked, allowlisted source supplied to Mozilla`,
+              `  reviewers so they can reproduce \`firefox-${process.env.VERSION}.zip\`.`,
               "- `firefox-build-instructions.md`: pinned setup, build, and normalized comparison",
               "  commands for Mozilla reviewers.",
               "",
@@ -233,7 +233,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
-        run: gh release upload "${TAG_NAME}" dist/chrome.zip dist/firefox.zip dist/firefox-source.zip dist/firefox-build-instructions.md --clobber
+        run: |
+          version="${TAG_NAME#v}"
+          gh release upload "${TAG_NAME}" \
+            "dist/chrome-${version}.zip" \
+            "dist/firefox-${version}.zip" \
+            dist/firefox-source.zip \
+            dist/firefox-build-instructions.md --clobber
 
       - name: Verify all release assets exist
         env:
@@ -242,7 +248,8 @@ jobs:
         shell: bash
         run: |
           asset_names="$(gh release view "${TAG_NAME}" --json assets --jq '[.assets[].name] | sort | join("\n")')"
-          expected_assets="$(printf '%s\n' chrome.zip firefox-build-instructions.md firefox-source.zip firefox.zip)"
+          version="${TAG_NAME#v}"
+          expected_assets="$(printf '%s\n' "chrome-${version}.zip" firefox-build-instructions.md firefox-source.zip "firefox-${version}.zip" | sort)"
           if [[ "${asset_names}" != "${expected_assets}" ]]; then
             printf 'Expected exactly these release assets:\n%s\nActual release assets:\n%s\n' \
               "${expected_assets}" "${asset_names}" >&2

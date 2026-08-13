@@ -142,18 +142,17 @@ jobs:
           trap 'rm -rf -- "${asset_dir}"; rm -f -- "${body_file}" "${updated_file}" "${result_file}"' EXIT INT TERM
           gh release download "${TAG_NAME}" --dir "${asset_dir}"
           asset_names="$(find "${asset_dir}" -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | sort)"
-          expected_assets="$(printf '%s\n' chrome.zip firefox-build-instructions.md firefox-source.zip firefox.zip)"
+          version="${TAG_NAME#v}"
+          expected_assets="$(printf '%s\n' "chrome-${version}.zip" firefox-build-instructions.md firefox-source.zip "firefox-${version}.zip" | sort)"
           if [[ "${asset_names}" != "${expected_assets}" ]]; then
             echo "GitHub release must contain exactly the four validated store assets." >&2
             exit 1
           fi
           mkdir -p dist "${asset_dir}/firefox" "${asset_dir}/signed-firefox"
-          cp "${asset_dir}"/chrome.zip "${asset_dir}"/firefox.zip \
+          cp "${asset_dir}/chrome-${version}.zip" "${asset_dir}/firefox-${version}.zip" \
             "${asset_dir}"/firefox-source.zip "${asset_dir}"/firefox-build-instructions.md dist/
           deno task release:validate "${TAG_NAME}"
-          unzip -q "${asset_dir}/firefox.zip" -d "${asset_dir}/firefox"
-
-          version="${TAG_NAME#v}"
+          unzip -q "${asset_dir}/firefox-${version}.zip" -d "${asset_dir}/firefox"
           reconciled_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           previous_tag="$(git describe --tags --match 'v*' --abbrev=0 "${TAG_NAME}^{commit}^" 2>/dev/null || true)"
           current_summary="$(jq -er '.listing.currentVersionSummary' store-listing.json)"

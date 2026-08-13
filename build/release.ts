@@ -216,7 +216,7 @@ async function validateReleaseSet(
   const reports = await Promise.all(
     (["chrome", "firefox"] as const).map((target) =>
       validateReleaseArchive({
-        archivePath: fromFileUrl(new URL(`${target}.zip`, distDir)),
+        archivePath: fromFileUrl(new URL(`${target}-${version}.zip`, distDir)),
         expectedVersion: version,
         target,
       })
