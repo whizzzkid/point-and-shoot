@@ -27,7 +27,8 @@ The action badge shows the current note count, capped at `99+`. The action title
 tooltip and always carries the exact count. A completed session clears the badge and restores the
 start-session title.
 
-The keyboard shortcut remains an overlay toggle. It does not end a session.
+The keyboard shortcut uses `_execute_action`, which fires `action.onClicked` and grants `activeTab`
+— the same path as the toolbar click. Both entry points follow the session lifecycle.
 
 ## Consequences
 

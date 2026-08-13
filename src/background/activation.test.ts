@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import type { CommandListener, MessageListener } from "../shared/browser.ts";
+import type { MessageListener } from "../shared/browser.ts";
 import { TOGGLE_ACTIVE_TAB_MESSAGE } from "../shared/messages.ts";
 import {
   type ActivationBrowser,
@@ -10,7 +10,6 @@ import {
 interface FakeActivationBrowser {
   readonly browser: ActivationBrowser;
   readonly calls: string[];
-  commandListener(): CommandListener | undefined;
   runtimeListener(): MessageListener | undefined;
   rejectInjection(error: Error): void;
   resolveMessage(): void;
@@ -18,7 +17,6 @@ interface FakeActivationBrowser {
 
 function createFakeActivationBrowser(): FakeActivationBrowser {
   const calls: string[] = [];
-  let commandListener: CommandListener | undefined;
   let runtimeListener: MessageListener | undefined;
   let injectionError: Error | undefined;
   let messageError: Error | undefined = new Error("no receiving end");
@@ -61,19 +59,11 @@ function createFakeActivationBrowser(): FakeActivationBrowser {
         return Promise.resolve();
       },
     },
-    commands: {
-      onCommand: {
-        addListener(listener) {
-          commandListener = listener;
-        },
-      },
-    },
   };
 
   return {
     browser,
     calls,
-    commandListener: () => commandListener,
     runtimeListener: () => runtimeListener,
     rejectInjection(error) {
       injectionError = error;
@@ -218,32 +208,4 @@ Deno.test("activation - runtime messages toggle the queried active tab and retur
     "action.setBadgeText:undefined:",
     "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
-});
-
-Deno.test("activation - the keyboard shortcut toggles capture through the shared controller", async () => {
-  const fake = createFakeActivationBrowser();
-  fake.resolveMessage();
-  let restored = 0;
-  registerActivationHandlers(
-    fake.browser,
-    () => undefined,
-    createActivationController(fake.browser),
-    () => {
-      restored += 1;
-      return Promise.resolve();
-    },
-  );
-  const commandListener = fake.commandListener();
-
-  commandListener?.("unrelated-command");
-  commandListener?.("toggle-capture");
-  await new Promise((resolve) => setTimeout(resolve, 0));
-
-  assertEquals(fake.calls, [
-    "tabs.query",
-    "tabs.sendMessage:9",
-    "action.setBadgeText:undefined:",
-    "action.setTitle:undefined:Point and Shoot — Start session",
-  ]);
-  assertEquals(restored, 1);
 });

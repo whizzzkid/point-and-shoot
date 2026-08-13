@@ -65,7 +65,7 @@ exact opt-in, execution-world, version, and failure contract is defined by the
 ## Browser-owned shortcuts
 
 The options page displays the browser's current assignment for the manifest command
-`toggle-capture`; it does not repeat the manifest default as though it were still assigned.
+`_execute_action`; it does not repeat the manifest default as though it were still assigned.
 
 The extension cannot rebind shortcuts. `Manage browser shortcuts` opens:
 

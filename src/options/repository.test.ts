@@ -53,7 +53,7 @@ function createBrowser(engine: Engine): {
         getAll: () =>
           Promise.resolve([{
             description: "Toggle capture",
-            name: "toggle-capture",
+            name: "_execute_action",
             shortcut: "Command+Shift+P",
           }]),
       },

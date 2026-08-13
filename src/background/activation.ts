@@ -17,7 +17,6 @@ export interface ActivationBrowser {
   readonly tabs: Pick<BrowserShim["tabs"], "query" | "sendMessage">;
   readonly scripting: BrowserShim["scripting"];
   readonly action: Pick<BrowserShim["action"], "setBadgeText" | "setTitle">;
-  readonly commands: Pick<BrowserShim["commands"], "onCommand">;
 }
 
 /** Observable result of one tab activation request. */
@@ -187,19 +186,15 @@ export function createActivationController(browser: ActivationBrowser): Activati
 }
 
 /**
- * Registers toolbar-action and keyboard-command listeners against one shared controller.
+ * Registers runtime-message listener for overlay toggle requests from the side panel.
  *
  * @param browser Browser capabilities and listener registries used by the background entry point.
- * @param reportError Receives unexpected API failures that cannot be shown through action state.
  * @param controller Shared activation controller used by toolbar and command entry points.
  * @param restoreActionState Restores session badge and tooltip state after successful activation.
  * @returns The shared controller retained by the registered listener closures.
  */
 export function registerActivationHandlers(
   browser: ActivationBrowser,
-  reportError: (error: unknown) => void = (error) => {
-    console.error("point-and-shoot: activation failed:", error);
-  },
   controller: ActivationController = createActivationController(browser),
   restoreActionState: () => Promise<void> = () => Promise.resolve(),
 ): ActivationController {
@@ -208,15 +203,6 @@ export function registerActivationHandlers(
     if (outcome.result !== "unavailable") await restoreActionState();
     return outcome;
   };
-
-  browser.commands.onCommand.addListener((command) => {
-    if (command !== "toggle-capture") return;
-    void browser.tabs.query({ active: true, currentWindow: true })
-      .then(([tab]) => {
-        if (tab?.id !== undefined) void toggle(tab.id).catch(reportError);
-      })
-      .catch(reportError);
-  });
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message !== TOGGLE_ACTIVE_TAB_MESSAGE) return;

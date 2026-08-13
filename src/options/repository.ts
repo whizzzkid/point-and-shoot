@@ -60,7 +60,7 @@ export function createOptionsRepository(browser: OptionsBrowser): OptionsReposit
         loadSettings(browser.storage.local),
         browser.commands.getAll().catch(() => []),
       ]);
-      const command = commands.find((candidate) => candidate.name === "toggle-capture");
+      const command = commands.find((candidate) => candidate.name === "_execute_action");
       return {
         settings,
         shortcut: command?.shortcut?.trim() || "Not assigned",
