@@ -30,20 +30,20 @@ contracts and links to the ADRs that explain their architectural constraints.
 Keeping these distinct is what makes the set navigable. A document in the wrong category is a
 document nobody finds.
 
-- **ADR** (`adr/NNNN-slug.md`) — _why_ a decision was made, the alternatives rejected, and the
-  consequences accepted. Written once, at decision time. Superseded rather than edited: a wrong ADR
-  gets a successor that references it, because the record of having believed something is itself the
-  value.
-- **Plan** (`plans/<initiative>/`) — how active proposed work is sequenced and verified. Temporary:
-  retire it when delivery is complete, after current guarantees move to specs and lasting rationale
-  moves to ADRs.
-- **Spec** (`specs/*.md`) — _what_ the software guarantees. Schemas, formats, invariants, error
-  behavior. Normative: an implementation that disagrees with a spec is a bug in one of the two, and
-  the PR must say which.
-- **Tutorial** (`tutorials/*.md`) — how a _person_ accomplishes a task, start to finish, with real
-  commands. Every command in a tutorial has been run.
-- **Design** (`design.md`) — the visual and interaction language, and the rules that keep the
-  shipped UI faithful to the exported bundle.
+- **ADR** ([`adr/NNNN-slug.md`](adr/README.md)) — _why_ a decision was made, the alternatives
+  rejected, and the consequences accepted. Written once, at decision time. Superseded rather than
+  edited: a wrong ADR gets a successor that references it, because the record of having believed
+  something is itself the value.
+- **Plan** ([`plans/<initiative>/`](plans/README.md)) — how active proposed work is sequenced and
+  verified. Temporary: retire it when delivery is complete, after current guarantees move to specs
+  and lasting rationale moves to ADRs.
+- **Spec** ([`specs/*.md`](specs/README.md)) — _what_ the software guarantees. Schemas, formats,
+  invariants, error behavior. Normative: an implementation that disagrees with a spec is a bug in
+  one of the two, and the PR must say which.
+- **Tutorial** ([`tutorials/*.md`](tutorials/README.md)) — how a _person_ accomplishes a task, start
+  to finish, with real commands. Every command in a tutorial has been run.
+- **Design** ([`design.md`](design.md)) — the visual and interaction language, and the rules that
+  keep the shipped UI faithful to the exported bundle.
 
 ## Documenting interactions and intentions
 
@@ -53,15 +53,16 @@ decision, are both documented before the work that introduces them is considered
 Concretely, for every item of work:
 
 1. **Interactions** — any new user-facing behavior (a gesture, a keyboard path, a state the UI can
-   be in, an error the user can hit) is described in `specs/` or `tutorials/`, including the sad
-   paths. A behavior that only exists in a test assertion is undocumented.
+   be in, an error the user can hit) is described in [`specs/`](specs/README.md) or
+   [`tutorials/`](tutorials/README.md), including the sad paths. A behavior that only exists in a
+   test assertion is undocumented.
 2. **Intentions** — any decision that a future reader could reasonably second-guess gets its
    rationale written down: an ADR when it constrains the architecture, an inline design note on the
    PR when it is local to the change. "Why not the obvious alternative?" is the question being
    answered.
 3. **Limits** — known limitations are documented up front, not when someone files them as bugs.
    Closed shadow roots, cross-origin iframes, restricted pages, and viewport-clamped regions are all
-   known today and belong in `tutorials/troubleshooting`.
+   known today and belong in [`tutorials/troubleshooting.md`](tutorials/troubleshooting.md).
 4. **Sync** — docs land in the **same commit** as the behavior they describe. A follow-up docs
    commit is a docs commit that doesn't happen.
 
@@ -93,8 +94,8 @@ Two consequences for how you write here:
 - Nothing in this folder is private. Repository-only means omitted from the website, not
   confidential.
 
-Only active implementation plans live under `docs/plans/`, and the documentation site does not
-publish them. Once behavior lands, preserve its current contract in a spec and its lasting rationale
-in an ADR; use issues and pull requests for durable delivery history, then retire the completed
-plan. In particular, retire the active browser-store plan under `plans/publish/` after the first
-automated store release is verified.
+Only active implementation plans live under [`docs/plans/`](plans/README.md), and the documentation
+site does not publish them. Once behavior lands, preserve its current contract in a spec and its
+lasting rationale in an ADR; use issues and pull requests for durable delivery history, then retire
+the completed plan. In particular, retire the active browser-store plan under
+[`plans/publish/`](plans/publish/README.md) after the first automated store release is verified.
