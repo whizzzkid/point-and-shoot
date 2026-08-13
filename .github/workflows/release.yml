@@ -95,6 +95,31 @@ jobs:
           echo "prs_created=true" >> "${GITHUB_OUTPUT}"
           echo "pr=${pr_json}" >> "${GITHUB_OUTPUT}"
 
+      # Release-please bumps the version in build/manifest.ts, which changes the
+      # source digest checked by `store:assets:check`. Refresh the manifest so CI
+      # sees a current digest without regenerating screenshots.
+      - name: Refresh store asset manifest on release branch
+        if: steps.release_pr.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_JSON: ${{ steps.release_pr.outputs.pr }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_branch="$(jq -er '.headBranchName' <<< "${PR_JSON}")"
+          git fetch origin "${head_branch}"
+          git checkout "${head_branch}"
+          deno task store:assets:refresh-manifest
+          if git diff --quiet docs/assets/store/manifest.json; then
+            echo "Manifest already current, nothing to push."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/assets/store/manifest.json
+            git commit -m "chore: refresh store asset manifest for release"
+            git push origin "${head_branch}"
+          fi
+
       # GITHUB_TOKEN-created PRs otherwise leave CI waiting for manual approval. A workflow
       # dispatch is GitHub's explicit recursion-safe exception and attaches checks to this head.
       - name: Dispatch CI for the release pull request

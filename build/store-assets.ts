@@ -654,6 +654,19 @@ if (import.meta.main) {
   } else if (command === "refresh-badges") {
     await refreshStoreBadges(root);
     console.log("Refreshed digest-pinned official store badges.");
+  } else if (command === "refresh-manifest") {
+    const manifestPath = new URL(STORE_ASSET_MANIFEST, root);
+    const manifest = JSON.parse(
+      await Deno.readTextFile(manifestPath),
+    ) as StoreAssetManifest;
+    const sourcePaths = await collectFiles(root, SOURCE_ROOTS);
+    const refreshed: StoreAssetManifest = {
+      ...manifest,
+      sourcePaths,
+      sourceDigest: await calculateSourceDigest(root, sourcePaths),
+    };
+    await Deno.writeTextFile(manifestPath, `${JSON.stringify(refreshed, null, 2)}\n`);
+    console.log("Refreshed store asset manifest source digest.");
   } else if (command === "check") {
     const issues = await validateStoreAssets(root);
     if (issues.length > 0) printIssues(issues);
