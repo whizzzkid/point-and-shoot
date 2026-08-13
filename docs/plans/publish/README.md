@@ -4,7 +4,7 @@ type: plan
 status: draft
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-06
+last_updated: 2026-08-13
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -166,16 +166,16 @@ distinguished from Chrome's byte-for-byte upload.
 Only the earliest packet whose dependencies are complete may move to `in progress`. Update this
 table in the same commit that changes a packet's status.
 
-| # | Packet                                                       | Depends on  | Status   | Owner        |
-| - | ------------------------------------------------------------ | ----------- | -------- | ------------ |
-| 1 | [Contract and privacy](01-contract-and-privacy.md)           | None        | complete | Codex        |
-| 2 | [Listing assets and README](02-listing-assets-and-readme.md) | PR 1        | complete | Codex        |
-| 3 | [Website install flow](03-website-install-flow.md)           | PR 2        | complete | Codex        |
-| 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | complete | Codex        |
-| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | complete | Codex        |
-| 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | pending  | user         |
-| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | blocked  | Codex        |
-| 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending  | user + agent |
+| # | Packet                                                       | Depends on  | Status      | Owner        |
+| - | ------------------------------------------------------------ | ----------- | ----------- | ------------ |
+| 1 | [Contract and privacy](01-contract-and-privacy.md)           | None        | complete    | Codex        |
+| 2 | [Listing assets and README](02-listing-assets-and-readme.md) | PR 1        | complete    | Codex        |
+| 3 | [Website install flow](03-website-install-flow.md)           | PR 2        | complete    | Codex        |
+| 4 | [Release surfaces](04-release-surfaces.md)                   | PR 3        | complete    | Codex        |
+| 5 | [Publishing automation](05-publishing-automation.md)         | PR 4        | complete    | Codex        |
+| 6 | [First manual publication](06-first-manual-publication.md)   | PR 5 merged | in progress | user         |
+| 7 | [Activate live listings](07-activate-live-listings.md)       | Manual gate | blocked     | Codex        |
+| 8 | [First automated release](08-first-automated-release.md)     | PR 6 merged | pending     | user + agent |
 
 Allowed statuses are `pending`, `in progress`, `blocked`, and `complete`. Replace `unassigned` with
 an agent or person before work starts. Record evidence in the packet: a pull request URL for PR
@@ -183,11 +183,19 @@ packets, a dated note for manual packets, or a release URL for release verificat
 
 PRs [#65](https://github.com/whizzzkid/point-and-shoot/pull/65),
 [#67](https://github.com/whizzzkid/point-and-shoot/pull/67),
-[#70](https://github.com/whizzzkid/point-and-shoot/pull/70), and
-[#75](https://github.com/whizzzkid/point-and-shoot/pull/75) merged as one stack on 2026-08-06. PR
-[#77](https://github.com/whizzzkid/point-and-shoot/pull/77) remains open against `main`; the manual
-publication and live-listing activation packets stay blocked until it merges and both stores are
-publicly installable.
+[#70](https://github.com/whizzzkid/point-and-shoot/pull/70),
+[#75](https://github.com/whizzzkid/point-and-shoot/pull/75), and
+[#77](https://github.com/whizzzkid/point-and-shoot/pull/77) merged as one stack on 2026-08-06.
+
+**2026-08-13 status update:** Firefox listing is live at
+<https://addons.mozilla.org/en-US/firefox/addon/point-and-shoot/> (slug `point-and-shoot`). Chrome
+Web Store publication is still in progress. Because PR 6
+[`#78`](https://github.com/whizzzkid/point-and-shoot/pull/78) activates both stores together, it
+stays `[DNM]`/blocked until the Chrome listing is public. Interim work streams now open against
+`main`:
+
+- `chore(release): version artifact filenames as chrome/firefox-<calver>.zip`
+- `chore(store): link Firefox add-on listing across public surfaces`
 
 ## Agent operating protocol
 

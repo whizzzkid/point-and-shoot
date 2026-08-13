@@ -4,7 +4,7 @@ type: plan
 status: blocked
 author: Point & Shoot maintainers
 created: 2026-08-04
-last_updated: 2026-08-06
+last_updated: 2026-08-13
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -40,8 +40,13 @@ and turn on automatic submission only after all fail-closed checks pass.
   [#67](https://github.com/whizzzkid/point-and-shoot/pull/67),
   [#70](https://github.com/whizzzkid/point-and-shoot/pull/70), and
   [#75](https://github.com/whizzzkid/point-and-shoot/pull/75) merged as one stack on 2026-08-06.
-- Remaining prerequisite: PR [#77](https://github.com/whizzzkid/point-and-shoot/pull/77) is open
-  against `main` and remains the only code prerequisite for this packet.
+- Remaining prerequisite: PR [#77](https://github.com/whizzzkid/point-and-shoot/pull/77) merged on
+  2026-08-06. As of 2026-08-13 the Firefox listing is publicly installable at
+  <https://addons.mozilla.org/en-US/firefox/addon/point-and-shoot/> (slug `point-and-shoot`); the
+  Chrome Web Store review is still pending, so this packet stays blocked because canonical
+  activation flips both stores together. Interim Firefox-only surface updates (README badge, install
+  actions link, release-page callouts) ship on separate `main`-based branches without touching the
+  canonical `stores.chrome` state.
 - PR base: PR 5 branch until PR 5 merges; intentionally not registered in the `gh stack`
 - PR boundary: canonical identity/state transition, regenerated projections, GitHub variables, and
   live-link verification; no unrelated feature work
