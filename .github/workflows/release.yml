@@ -97,7 +97,9 @@ jobs:
 
       # Release-please bumps the version in build/manifest.ts, which changes the
       # source digest checked by `store:assets:check`. Refresh the manifest so CI
-      # sees a current digest without regenerating screenshots.
+      # sees a current digest without regenerating screenshots. The commit is
+      # created via the GitHub API so it is signed by GitHub's web-flow key and
+      # satisfies the verified-commits branch protection rule.
       - name: Refresh store asset manifest on release branch
         if: steps.release_pr.outputs.prs_created == 'true'
         env:
@@ -113,11 +115,14 @@ jobs:
           if git diff --quiet docs/assets/store/manifest.json; then
             echo "Manifest already current, nothing to push."
           else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docs/assets/store/manifest.json
-            git commit -m "chore: refresh store asset manifest for release"
-            git push origin "${head_branch}"
+            content="$(base64 -w0 docs/assets/store/manifest.json)"
+            blob_sha="$(git rev-parse HEAD:docs/assets/store/manifest.json)"
+            gh api "repos/${GITHUB_REPOSITORY}/contents/docs/assets/store/manifest.json" \
+              --method PUT \
+              --field message="chore: refresh store asset manifest for release" \
+              --field content="${content}" \
+              --field sha="${blob_sha}" \
+              --field branch="${head_branch}"
           fi
 
       # GITHUB_TOKEN-created PRs otherwise leave CI waiting for manual approval. A workflow
