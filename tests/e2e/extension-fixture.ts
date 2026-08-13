@@ -62,15 +62,15 @@ export async function launchExtension(userDataDir = ""): Promise<ExtensionLaunch
       const listenersReady = await serviceWorker.evaluate(() => {
         const extensionGlobal = globalThis as unknown as {
           readonly chrome: {
-            readonly commands: {
-              readonly onCommand: { hasListeners(): boolean };
+            readonly action: {
+              readonly onClicked: { hasListeners(): boolean };
             };
             readonly runtime: {
               readonly onMessage: { hasListeners(): boolean };
             };
           };
         };
-        return extensionGlobal.chrome.commands.onCommand.hasListeners() &&
+        return extensionGlobal.chrome.action.onClicked.hasListeners() &&
           extensionGlobal.chrome.runtime.onMessage.hasListeners();
       });
       if (listenersReady) {

@@ -24,9 +24,9 @@ Declare `popup/popup.html` as the action's `default_popup` on both browser targe
 an `action.onClicked` listener.
 
 The popup's start, resume, and overlay controls send a typed runtime message to the background's
-single-flight activation controller. The `_execute_action` keyboard shortcut fires
-`action.onClicked`, following the same path as the toolbar click, so experienced users retain a
-one-step capture path without opening the launcher.
+single-flight activation controller. The `toggle-capture` keyboard command continues to call that
+controller directly, so experienced users retain a one-step capture path without opening the
+launcher.
 
 ## Consequences
 

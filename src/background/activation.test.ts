@@ -209,3 +209,43 @@ Deno.test("activation - runtime messages toggle the queried active tab and retur
     "action.setTitle:undefined:Point and Shoot — Start session",
   ]);
 });
+
+Deno.test("activation - restoreActionState fires on successful toggle via runtime message", async () => {
+  const fake = createFakeActivationBrowser();
+  fake.resolveMessage();
+  let restored = 0;
+  registerActivationHandlers(
+    fake.browser,
+    createActivationController(fake.browser),
+    () => {
+      restored += 1;
+      return Promise.resolve();
+    },
+  );
+  const response = new Promise<unknown>((resolve) => {
+    fake.runtimeListener()?.(TOGGLE_ACTIVE_TAB_MESSAGE, {}, resolve);
+  });
+
+  await response;
+  assertEquals(restored, 1);
+});
+
+Deno.test("activation - restoreActionState does not fire when page is unavailable", async () => {
+  const fake = createFakeActivationBrowser();
+  fake.rejectInjection(new Error("Cannot access a chrome:// URL"));
+  let restored = 0;
+  registerActivationHandlers(
+    fake.browser,
+    createActivationController(fake.browser),
+    () => {
+      restored += 1;
+      return Promise.resolve();
+    },
+  );
+  const response = new Promise<unknown>((resolve) => {
+    fake.runtimeListener()?.(TOGGLE_ACTIVE_TAB_MESSAGE, {}, resolve);
+  });
+
+  await response;
+  assertEquals(restored, 0);
+});
