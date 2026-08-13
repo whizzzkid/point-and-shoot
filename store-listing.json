@@ -84,10 +84,10 @@
       "listingUrl": null
     },
     "firefox": {
-      "state": "unpublished",
-      "slug": null,
+      "state": "published",
+      "slug": "point-and-shoot",
       "extensionId": "pointandshoot@whizzzkid.dev",
-      "listingUrl": null
+      "listingUrl": "https://addons.mozilla.org/firefox/addon/point-and-shoot/"
     }
   }
 }
