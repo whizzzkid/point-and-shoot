@@ -53,6 +53,7 @@ const SESSION: Session = {
       text: "Total wraps.",
     },
   ],
+  domain: "example.com",
   schemaVersion: SCHEMA_VERSION,
 };
 

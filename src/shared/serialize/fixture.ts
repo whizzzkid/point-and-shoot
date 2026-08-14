@@ -15,6 +15,7 @@ export const EXPORT_FIXTURE_SESSION: Session = {
   name: "Checkout review",
   createdAt: "2026-07-28T12:00:00.000Z",
   endedAt: null,
+  domain: "example.com",
   notes: [
     {
       id: "note-button",

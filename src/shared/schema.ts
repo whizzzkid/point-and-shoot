@@ -10,7 +10,7 @@ import type { SelectorBundle } from "./selectors.ts";
 import type { StyleDigestBundle } from "./style-digest.ts";
 
 /** Current schema version. Bump on any breaking field change and add a migration in `store.ts`. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Maximum stored length of a framework component name or source path. */
 export const MAX_COMPONENT_HINT_TEXT_LENGTH = 1_024;
@@ -70,6 +70,12 @@ export interface Session {
   readonly createdAt: string;
   /** `null` while the session is still active; set once the user ends it. */
   readonly endedAt: string | null;
+  /**
+   * Hostname of the tab at session start; `null` when the start URL was
+   * unparseable (`chrome://`, `about:`, empty) or when a v1 record had no notes
+   * to backfill from during migration.
+   */
+  readonly domain: string | null;
   readonly notes: readonly Note[];
 }
 
@@ -113,6 +119,13 @@ export function validateSession(candidate: unknown): SessionValidationResult {
     return {
       valid: false,
       error: { reason: "invalid-field", field: "endedAt", detail: "must be string or null" },
+    };
+  }
+
+  if (record.domain !== null && typeof record.domain !== "string") {
+    return {
+      valid: false,
+      error: { reason: "invalid-field", field: "domain", detail: "must be string or null" },
     };
   }
 

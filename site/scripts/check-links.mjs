@@ -283,8 +283,36 @@ export async function checkSite({
   }
 
   if (checkExternal) {
+    // Skip GitHub `blob/main` and `tree/main` links whose target path exists in the local
+    // working tree. New ADRs/plans that a spec references legitimately 404 on `main` until the
+    // PR merges; the file is right here on disk, so we know the post-merge link will resolve.
+    const blobMainPattern =
+      /^https:\/\/github\.com\/whizzzkid\/point-and-shoot\/(?:blob|tree)\/main\/(?<path>[^?#]+)/u;
+    const urlsToCheck = [];
+    for (const url of externalUrls) {
+      const match = blobMainPattern.exec(url);
+      const capturedPath = match?.groups?.path;
+      if (typeof capturedPath === "string" && capturedPath.length > 0) {
+        // Reject any traversal segment before touching the filesystem — the regex accepts any
+        // path characters, and `..` could reach outside the repo root.
+        const decoded = decodeURIComponent(capturedPath);
+        const containsTraversal = decoded.split("/").some((segment) => segment === "..");
+        if (!containsTraversal) {
+          const localPath = resolve(repositoryRoot, decoded);
+          if (localPath.startsWith(`${repositoryRoot}/`) || localPath === repositoryRoot) {
+            try {
+              await stat(localPath);
+              continue;
+            } catch {
+              // Not present locally — fall through and hit the network.
+            }
+          }
+        }
+      }
+      urlsToCheck.push(url);
+    }
     const results = await Promise.all(
-      [...externalUrls].map(async (url) => {
+      urlsToCheck.map(async (url) => {
         try {
           return { status: await externalStatus(url), url };
         } catch (error) {

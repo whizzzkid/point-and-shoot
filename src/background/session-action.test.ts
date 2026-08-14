@@ -19,6 +19,7 @@ import {
 function session(noteCount: number): Session {
   return {
     createdAt: "2026-07-30T12:00:00.000Z",
+    domain: "example.com",
     endedAt: null,
     id: "session-1",
     name: "Untitled session",
@@ -45,7 +46,7 @@ function createFakes(initial: Session | null = null): {
   readonly browser: SessionActionBrowser;
   readonly calls: string[];
   readonly service: SessionService;
-  click(tabId: number, title?: string): void;
+  click(tabId: number, title?: string, url?: string): void;
   setMountOutcome(outcome: ActivationOutcome): void;
 } {
   const calls: string[] = [];
@@ -96,8 +97,9 @@ function createFakes(initial: Session | null = null): {
       calls.push("session.load");
       return Promise.resolve(active);
     },
-    start(pageTitle?: string) {
-      calls.push(`session.start:${pageTitle ?? ""}`);
+    start(pageTitle?: string, pageUrl?: string) {
+      const urlSuffix = pageUrl === undefined ? "" : `:${pageUrl}`;
+      calls.push(`session.start:${pageTitle ?? ""}${urlSuffix}`);
       active = session(0);
       return Promise.resolve(active);
     },
@@ -106,8 +108,10 @@ function createFakes(initial: Session | null = null): {
     activation,
     browser,
     calls,
-    click(tabId, title) {
-      const tab = title === undefined ? { id: tabId } : { id: tabId, title };
+    click(tabId, title, url) {
+      const tab: { id: number; title?: string; url?: string } = { id: tabId };
+      if (title !== undefined) tab.title = title;
+      if (url !== undefined) tab.url = url;
       clickListener?.(tab);
     },
     service,
@@ -130,6 +134,20 @@ Deno.test("session action toolbar click opens the panel and toggles the session"
   assertEquals(fake.calls.includes("session.start:Checkout"), true);
   assertEquals(fake.calls.at(-2), "action.badge:0");
   assertEquals(fake.calls.at(-1), "action.title:Point and Shoot — End session (0 notes)");
+});
+
+Deno.test("session action forwards the clicked tab URL to session start", async () => {
+  const fake = createFakes();
+  const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
+  registerSessionActionHandler(fake.browser, controller);
+
+  fake.click(7, "Checkout", "https://shop.example.com/cart");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  assertEquals(
+    fake.calls.includes("session.start:Checkout:https://shop.example.com/cart"),
+    true,
+  );
 });
 
 Deno.test("session action starts capture and renders a zero-note badge and tooltip", async () => {

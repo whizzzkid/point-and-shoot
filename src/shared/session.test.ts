@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import type { Session } from "./schema.ts";
+import { SCHEMA_VERSION, type Session } from "./schema.ts";
 import {
   DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
   nextSessionRevision,
@@ -11,10 +11,11 @@ import {
 const SESSION: Session = {
   createdAt: "2026-07-28T12:00:00.000Z",
   endedAt: null,
+  domain: null,
   id: "session-1",
   name: "Checkout review",
   notes: [],
-  schemaVersion: 1,
+  schemaVersion: SCHEMA_VERSION,
 };
 
 Deno.test("nextSessionRevision advances valid revisions and resets invalid values", () => {

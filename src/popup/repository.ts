@@ -45,6 +45,7 @@ async function startSession(
 
   const session: Session = {
     createdAt: dependencies.now().toISOString(),
+    domain: null,
     endedAt: null,
     id: dependencies.createId(),
     name: "Untitled session",

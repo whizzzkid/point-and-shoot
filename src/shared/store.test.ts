@@ -22,14 +22,16 @@ import {
   RecordValidationError,
 } from "./store.ts";
 
-function makeSession(id: string): Session {
+function makeSession(id: string, overrides: Partial<Session> = {}): Session {
   return {
     schemaVersion: SCHEMA_VERSION,
     id,
     name: `Session ${id}`,
     createdAt: "2026-07-27T00:00:00.000Z",
     endedAt: null,
+    domain: null,
     notes: [],
+    ...overrides,
   };
 }
 
@@ -51,6 +53,77 @@ Deno.test("openStore - creates the sessions store via the v0->v1 migration on a 
     db.close();
   }
 });
+
+Deno.test(
+  "openStore - v1 -> v2 backfills Session.domain from the first note's pageUrl",
+  async () => {
+    await resetDb();
+
+    // Seed the database at v1 with a legacy record that has no `domain` field.
+    const seed = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore("sessions", { keyPath: "id" });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const legacy = {
+      schemaVersion: 1,
+      id: "legacy-1",
+      name: "Legacy",
+      createdAt: "2026-07-27T00:00:00.000Z",
+      endedAt: null,
+      notes: [
+        {
+          id: "n1",
+          createdAt: "2026-07-27T00:01:00.000Z",
+          pageUrl: "https://docs.example.com/guide?ref=x",
+          pageTitle: "Guide",
+          region: {
+            screenshot: "data:image/webp;base64,AAAA",
+            viewport: { width: 800, height: 600 },
+            box: { x: 0, y: 0, width: 10, height: 10 },
+            truncated: false,
+          },
+          elements: [],
+          text: "",
+        },
+      ],
+    };
+    const emptyLegacy = {
+      schemaVersion: 1,
+      id: "legacy-empty",
+      name: "Legacy empty",
+      createdAt: "2026-07-27T00:00:00.000Z",
+      endedAt: null,
+      notes: [],
+    };
+    await new Promise<void>((resolve, reject) => {
+      const tx = seed.transaction("sessions", "readwrite");
+      tx.objectStore("sessions").put(legacy);
+      tx.objectStore("sessions").put(emptyLegacy);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    seed.close();
+
+    // Reopen at DB_VERSION (=2) to trigger the migration.
+    const db = await openStore();
+    try {
+      const migrated = await getSession(db, "legacy-1");
+      assertEquals(migrated?.domain, "docs.example.com");
+      assertEquals(migrated?.schemaVersion, SCHEMA_VERSION);
+
+      const migratedEmpty = await getSession(db, "legacy-empty");
+      assertEquals(migratedEmpty?.domain, null);
+      assertEquals(migratedEmpty?.schemaVersion, SCHEMA_VERSION);
+    } finally {
+      db.close();
+      await resetDb();
+    }
+  },
+);
 
 Deno.test("openStore - yields to a later version bump instead of deadlocking it", async () => {
   await resetDb();

@@ -58,6 +58,7 @@ function makeNote(
 
 const SESSION: Session = {
   createdAt: "2026-07-28T12:00:00.000Z",
+  domain: "example.com",
   endedAt: null,
   id: "session-1",
   name: "Checkout review",

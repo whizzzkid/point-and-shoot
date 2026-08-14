@@ -4,6 +4,7 @@ import "fake-indexeddb/auto";
 
 import { assertEquals } from "@std/assert";
 import type { BrowserShim, StorageItems } from "../shared/browser.ts";
+import { SCHEMA_VERSION } from "../shared/schema.ts";
 import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../shared/session.ts";
 import { DB_NAME } from "../shared/store.ts";
 import { createPopupSessionRepository } from "./repository.ts";
@@ -56,11 +57,12 @@ Deno.test("popup repository starts one session and resumes it on later calls", a
 
   assertEquals(started, {
     createdAt: "2026-07-28T18:00:00.000Z",
+    domain: null,
     endedAt: null,
     id: "session-popup",
     name: "Untitled session",
     notes: [],
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
   });
   assertEquals(resumed, started);
   assertEquals(storage.values[ACTIVE_SESSION_ID_STORAGE_KEY], "session-popup");
