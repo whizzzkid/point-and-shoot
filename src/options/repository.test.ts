@@ -146,6 +146,64 @@ Deno.test("options repository clears sessions and the active pointer without del
   await resetDatabase();
 });
 
+Deno.test(
+  "options repository lists sessions newest-first and deletes them individually",
+  async () => {
+    await resetDatabase();
+    const fake = createBrowser("chrome");
+    const database = await openStore();
+    const seed = (id: string, createdAt: string, domain: string | null) => {
+      return putSession(database, {
+        createdAt,
+        domain,
+        endedAt: null,
+        id,
+        name: `Session ${id}`,
+        notes: [],
+        schemaVersion: SCHEMA_VERSION,
+      });
+    };
+    await seed("older", "2026-08-01T00:00:00.000Z", "example.com");
+    await seed("newer", "2026-08-14T00:00:00.000Z", "docs.example.com");
+    await seed("unknown", "2026-08-10T00:00:00.000Z", null);
+    database.close();
+
+    const repository = createOptionsRepository(fake.browser);
+    const listed = await repository.listAllSessions();
+    assertEquals(listed.map((session) => session.id), ["newer", "unknown", "older"]);
+
+    fake.storage.values[DISPLAY_SESSION_ID_STORAGE_KEY] = "newer";
+    await repository.deleteSessionById("newer");
+    assertEquals(fake.storage.values[DISPLAY_SESSION_ID_STORAGE_KEY], undefined);
+    assertEquals(fake.storage.values[SESSION_REVISION_STORAGE_KEY], 1);
+    const after = await repository.listAllSessions();
+    assertEquals(after.map((session) => session.id), ["unknown", "older"]);
+    await resetDatabase();
+  },
+);
+
+Deno.test("options repository persists the group-by-domain preference", async () => {
+  const fake = createBrowser("chrome");
+  const repository = createOptionsRepository(fake.browser);
+
+  assertEquals(await repository.readGroupByDomain(), false);
+  await repository.writeGroupByDomain(true);
+  assertEquals(await repository.readGroupByDomain(), true);
+  await repository.writeGroupByDomain(false);
+  assertEquals(await repository.readGroupByDomain(), false);
+});
+
+Deno.test(
+  "options repository openSessionInSidePanel bumps revision and sets displaySessionId",
+  async () => {
+    const fake = createBrowser("chrome");
+    const repository = createOptionsRepository(fake.browser);
+    await repository.openSessionInSidePanel("session-x");
+    assertEquals(fake.storage.values[DISPLAY_SESSION_ID_STORAGE_KEY], "session-x");
+    assertEquals(fake.storage.values[SESSION_REVISION_STORAGE_KEY], 1);
+  },
+);
+
 Deno.test("options repository opens each browser's own shortcut settings page", async () => {
   const chrome = createBrowser("chrome");
   const firefox = createBrowser("firefox");

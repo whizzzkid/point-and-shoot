@@ -186,6 +186,112 @@ body {
   color: var(--danger);
 }
 
+.ps-options-inline-error {
+  color: var(--danger);
+  margin-block: var(--space-3);
+}
+
+.ps-options-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.ps-options-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: var(--space-4) var(--space-0);
+  padding: var(--space-0);
+}
+
+.ps-options-session-item {
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+}
+
+.ps-options-session-meta {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.ps-options-session-name {
+  font-weight: var(--font-weight-semibold, 600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ps-options-session-details {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-block-start: var(--space-1);
+}
+
+.ps-options-session-status {
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.ps-options-session-status-running {
+  color: var(--success, currentColor);
+}
+
+.ps-options-session-status-paused {
+  color: var(--warning, currentColor);
+}
+
+.ps-options-session-status-completed {
+  color: var(--text-secondary);
+}
+
+.ps-options-session-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+
+.ps-options-session-group {
+  margin-block: var(--space-3);
+}
+
+.ps-options-session-group > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-0);
+}
+
+.ps-options-session-group-count {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.ps-options-section-heading h2 {
+  margin: var(--space-0) var(--space-0) var(--space-1);
+}
+
+.ps-options-section-heading p {
+  color: var(--text-secondary);
+  margin: var(--space-0) var(--space-0) var(--space-4);
+}
+
+.ps-options-danger-button {
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
 @media (max-width: 48rem) {
   .ps-options-header,
   .ps-options-navigation,
