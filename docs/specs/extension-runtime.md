@@ -100,19 +100,28 @@ distinct typed errors.
 
 ### Session and storage model
 
-`src/shared/schema.ts` defines schema version `1`:
+`src/shared/schema.ts` defines schema version `2`:
 
-- A `Session` has an ID, name, creation time, nullable end time, and ordered notes.
+- A `Session` has an ID, name, creation time, nullable end time, a nullable domain (see below), and
+  ordered notes.
 - A `Note` has its page URL and title, optional query-stripping choice, captured region, ordered
   elements, creation time, and user text.
 - A `RegionCapture` has a WebP data URL, viewport, crop box, and truncation flag.
 - A `NoteElement` has a selector bundle, a nullable style digest, and an optional framework hint.
 
-IndexedDB database `point-and-shoot`, version `1`, stores sessions by ID. Every read validates the
+`Session.domain` is the hostname of the tab the session began on, captured once at start and never
+updated later, so a session that outlives a mid-session navigation to another host stays
+attributable to where the user set out to capture. Unparseable start URLs (`chrome://newtab/`,
+`about:blank`, empty strings) leave the field `null`. See
+[ADR-0021](../adr/0021-session-domain-field.md).
+
+IndexedDB database `point-and-shoot`, version `2`, stores sessions by ID. Every read validates the
 unknown stored value with `validateSession`. A single-record read rejects corrupt data; a list read
 skips corrupt records. Quota exhaustion becomes `QuotaExceededError`. Database migrations append to
 `MIGRATIONS`; existing migration entries are immutable, and open connections close on
-`versionchange` so an upgrade cannot deadlock indefinitely.
+`versionchange` so an upgrade cannot deadlock indefinitely. The v1 → v2 migration walks the store
+with a cursor to stamp `schemaVersion: 2` and backfill `domain` from `notes[0].pageUrl`; sessions
+with no notes migrate with `domain: null`.
 
 `storage.local` holds settings and the active, displayed, and revision pointers. Session writes are
 serialized in the background so concurrent starts or note appends cannot create duplicates or lose
