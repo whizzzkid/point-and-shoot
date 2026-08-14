@@ -22,9 +22,58 @@ import {
   VersionLabel,
 } from "../ui/components/index.ts";
 import type { OptionsRepository } from "./repository.ts";
+import type { Session } from "../shared/schema.ts";
 
-const SECTIONS = ["General", "Capture", "Export & privacy", "Shortcuts", "Data"] as const;
+const SECTIONS = [
+  "General",
+  "Capture",
+  "Export & privacy",
+  "Shortcuts",
+  "Sessions",
+  "Data",
+] as const;
 type OptionsSection = typeof SECTIONS[number];
+
+interface SessionListEntry {
+  readonly session: Session;
+  readonly noteCount: number;
+  readonly status: "running" | "paused" | "completed";
+  readonly displayDomain: string;
+}
+
+function toEntry(session: Session): SessionListEntry {
+  // Session.pausedAt is added by ADR-0022 (feat/session-pause-resume); PR4's base predates that
+  // change, so we read it defensively. After the pause/resume PR merges the cast is a no-op.
+  const pausedAt = (session as { readonly pausedAt?: string | null }).pausedAt;
+  const status: SessionListEntry["status"] = session.endedAt !== null
+    ? "completed"
+    : pausedAt != null
+    ? "paused"
+    : "running";
+  return {
+    session,
+    noteCount: session.notes.length,
+    status,
+    displayDomain: session.domain ?? "No domain",
+  };
+}
+
+function groupByDomain(
+  entries: readonly SessionListEntry[],
+): readonly (readonly [string, readonly SessionListEntry[]])[] {
+  const groups = new Map<string, SessionListEntry[]>();
+  for (const entry of entries) {
+    const existing = groups.get(entry.displayDomain);
+    if (existing === undefined) groups.set(entry.displayDomain, [entry]);
+    else existing.push(entry);
+  }
+  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
+}
+
+function formatCreatedAt(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleString();
+}
 
 type OptionsStatus =
   | { readonly state: "idle" }
@@ -44,6 +93,41 @@ interface SettingRowProps {
   readonly children: ComponentChildren;
   readonly help: string;
   readonly label: string;
+}
+
+interface SessionListItemProps {
+  readonly entry: SessionListEntry;
+  readonly onLoad: () => void;
+  readonly onDelete: () => void;
+  readonly showDomain?: boolean;
+}
+
+function SessionListItem(
+  { entry, onLoad, onDelete, showDomain = false }: SessionListItemProps,
+): JSX.Element {
+  return (
+    <li className="ps-options-session-item">
+      <div className="ps-options-session-meta">
+        <span className="ps-options-session-name">{entry.session.name}</span>
+        <span className="ps-options-session-details">
+          {showDomain ? <span>{entry.displayDomain} ·</span> : null}
+          <span>{formatCreatedAt(entry.session.createdAt)}</span>
+          <span>· {entry.noteCount} {entry.noteCount === 1 ? "note" : "notes"}</span>
+          <span className={`ps-options-session-status ps-options-session-status-${entry.status}`}>
+            {" · "}
+            {entry.status[0]?.toUpperCase() ?? ""}
+            {entry.status.slice(1)}
+          </span>
+        </span>
+      </div>
+      <div className="ps-options-session-actions">
+        <button type="button" onClick={onLoad}>Load in side panel</button>
+        <button type="button" onClick={onDelete} className="ps-options-danger-button">
+          Delete
+        </button>
+      </div>
+    </li>
+  );
 }
 
 function SettingRow({ children, help, label }: SettingRowProps): JSX.Element {
@@ -90,8 +174,52 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
   const [section, setSection] = useState<OptionsSection>("General");
   const [status, setStatus] = useState<OptionsStatus>({ state: "idle" });
   const [confirmClear, setConfirmClear] = useState(false);
+  const [sessions, setSessions] = useState<readonly SessionListEntry[]>();
+  const [groupByDomainOn, setGroupByDomainOn] = useState(false);
+  const [sessionError, setSessionError] = useState<string>();
+  const [confirmDelete, setConfirmDelete] = useState<SessionListEntry>();
   const saveGeneration = useRef(0);
   const lastSavedSettings = useRef<ExtensionSettings>();
+
+  const reloadSessions = (): void => {
+    void repository.listAllSessions()
+      .then((records) => setSessions(records.map(toEntry)))
+      .catch((cause: unknown) => {
+        setSessionError(cause instanceof Error ? cause.message : "Sessions could not be loaded.");
+      });
+  };
+
+  useEffect(() => {
+    if (section !== "Sessions") return;
+    reloadSessions();
+    void repository.readGroupByDomain().then(setGroupByDomainOn).catch(() => undefined);
+  }, [section, repository]);
+
+  const onLoadSession = (entry: SessionListEntry): void => {
+    setSessionError(undefined);
+    void repository.openSessionInSidePanel(entry.session.id).catch((cause: unknown) => {
+      setSessionError(
+        cause instanceof Error ? cause.message : "The side panel could not be opened.",
+      );
+    });
+  };
+
+  const onDeleteSession = (entry: SessionListEntry): void => {
+    setSessionError(undefined);
+    setConfirmDelete(undefined);
+    void repository.deleteSessionById(entry.session.id)
+      .then(reloadSessions)
+      .catch((cause: unknown) => {
+        setSessionError(
+          cause instanceof Error ? cause.message : "The session could not be deleted.",
+        );
+      });
+  };
+
+  const toggleGroupByDomain = (next: boolean): void => {
+    setGroupByDomainOn(next);
+    void repository.writeGroupByDomain(next).catch(() => undefined);
+  };
 
   useEffect(() => {
     let active = true;
@@ -325,6 +453,82 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
               )
               : null}
 
+            {section === "Sessions"
+              ? (
+                <>
+                  <div className="ps-options-section-heading">
+                    <h2>Sessions</h2>
+                    <p>
+                      Load a session back into the side panel, delete individual sessions, or group
+                      the list by the domain each session started on.
+                    </p>
+                  </div>
+                  <SettingRow
+                    label="Group by domain"
+                    help="Collect sessions by the hostname captured at their start."
+                  >
+                    <label className="ps-options-toggle">
+                      <input
+                        checked={groupByDomainOn}
+                        onInput={(event) =>
+                          toggleGroupByDomain((event.currentTarget as HTMLInputElement).checked)}
+                        type="checkbox"
+                      />
+                      <span>{groupByDomainOn ? "On" : "Off"}</span>
+                    </label>
+                  </SettingRow>
+
+                  {sessionError !== undefined
+                    ? <p role="alert" className="ps-options-inline-error">{sessionError}</p>
+                    : null}
+
+                  {sessions === undefined
+                    ? <p role="status">Loading…</p>
+                    : sessions.length === 0
+                    ? <p>No sessions captured yet.</p>
+                    : groupByDomainOn
+                    ? (
+                      <>
+                        {groupByDomain(sessions).map(([domain, entries]) => (
+                          <details key={domain} className="ps-options-session-group" open>
+                            <summary>
+                              <strong>{domain}</strong>
+                              <span className="ps-options-session-group-count">
+                                {entries.length}
+                              </span>
+                            </summary>
+                            <ul className="ps-options-session-list">
+                              {entries.map((entry) => (
+                                <SessionListItem
+                                  key={entry.session.id}
+                                  entry={entry}
+                                  onLoad={() => onLoadSession(entry)}
+                                  onDelete={() =>
+                                    setConfirmDelete(entry)}
+                                />
+                              ))}
+                            </ul>
+                          </details>
+                        ))}
+                      </>
+                    )
+                    : (
+                      <ul className="ps-options-session-list">
+                        {sessions.map((entry) => (
+                          <SessionListItem
+                            key={entry.session.id}
+                            entry={entry}
+                            onLoad={() => onLoadSession(entry)}
+                            onDelete={() => setConfirmDelete(entry)}
+                            showDomain
+                          />
+                        ))}
+                      </ul>
+                    )}
+                </>
+              )
+              : null}
+
             {section === "Data"
               ? (
                 <>
@@ -379,6 +583,29 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
         title="Clear all sessions?"
       >
         This cannot be undone. Export any sessions you need before continuing.
+      </Dialog>
+      <Dialog
+        footer={
+          <>
+            <button type="button" onClick={() => setConfirmDelete(undefined)}>Cancel</button>
+            <button
+              type="button"
+              className="ps-options-danger-button"
+              onClick={() => confirmDelete && onDeleteSession(confirmDelete)}
+            >
+              Delete
+            </button>
+          </>
+        }
+        onClose={() => setConfirmDelete(undefined)}
+        open={confirmDelete !== undefined}
+        title="Delete this session?"
+      >
+        {confirmDelete
+          ? `"${confirmDelete.session.name}" and its ${confirmDelete.noteCount} note${
+            confirmDelete.noteCount === 1 ? "" : "s"
+          } will be removed. This cannot be undone.`
+          : ""}
       </Dialog>
       <VersionLabel version={version} />
     </main>

@@ -48,6 +48,11 @@ function mountOptions(autoTheme: "dark" | "light"): void {
       persisted = { ...settings };
       return Promise.resolve();
     },
+    listAllSessions: () => Promise.resolve([]),
+    deleteSessionById: () => Promise.resolve(),
+    openSessionInSidePanel: () => Promise.resolve(),
+    readGroupByDomain: () => Promise.resolve(false),
+    writeGroupByDomain: () => Promise.resolve(),
   };
   render(
     <IconSpriteProvider url="">
