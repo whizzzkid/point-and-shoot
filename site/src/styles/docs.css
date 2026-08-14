@@ -324,7 +324,6 @@ article img,
   display: flex;
   justify-content: space-between;
   gap: var(--space-4);
-  max-width: 74ch;
   margin-top: var(--space-16);
   padding-top: var(--space-6);
   border-top: 1px solid var(--border-subtle);
