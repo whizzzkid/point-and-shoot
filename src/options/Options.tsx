@@ -182,6 +182,7 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
   const lastSavedSettings = useRef<ExtensionSettings>();
 
   const reloadSessions = (): void => {
+    setSessionError(undefined);
     void repository.listAllSessions()
       .then((records) => setSessions(records.map(toEntry)))
       .catch((cause: unknown) => {
@@ -490,7 +491,7 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                     ? (
                       <>
                         {groupByDomain(sessions).map(([domain, entries]) => (
-                          <details key={domain} className="ps-options-session-group" open>
+                          <details key={domain} className="ps-options-session-group">
                             <summary>
                               <strong>{domain}</strong>
                               <span className="ps-options-session-group-count">

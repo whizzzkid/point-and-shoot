@@ -244,7 +244,7 @@ body {
 }
 
 .ps-options-session-status-running {
-  color: var(--accent, currentColor);
+  color: var(--success, currentColor);
 }
 
 .ps-options-session-status-paused {
