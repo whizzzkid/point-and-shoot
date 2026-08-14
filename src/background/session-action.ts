@@ -9,6 +9,8 @@ import { SESSION_REVISION_STORAGE_KEY } from "../shared/session.ts";
 
 const INACTIVE_ACTION_TITLE = "Point and Shoot — Start session";
 const UNAVAILABLE_ACTION_TITLE = "Point and Shoot — unavailable on this page";
+const PAUSED_ACTION_TITLE_PREFIX = "Point and Shoot — Resume session";
+const RUNNING_ACTION_TITLE_PREFIX = "Point and Shoot — Pause session";
 const MAXIMUM_BADGE_COUNT = 99;
 
 /** Browser capabilities required by the toolbar-owned session controller. */
@@ -25,7 +27,7 @@ export type SessionActionResult =
   | {
     readonly noteCount: number;
     readonly sessionId: string;
-    readonly state: "ended" | "started";
+    readonly state: "paused" | "resumed" | "started";
   }
   | { readonly state: "unavailable" };
 
@@ -61,14 +63,26 @@ function noteLabel(noteCount: number): string {
   return `${noteCount} ${noteCount === 1 ? "note" : "notes"}`;
 }
 
-async function showActive(
+async function showRunning(
   browser: SessionActionBrowser,
   noteCount: number,
 ): Promise<void> {
   await Promise.all([
     browser.action.setBadgeText({ text: badgeText(noteCount) }),
     browser.action.setTitle({
-      title: `Point and Shoot — End session (${noteLabel(noteCount)})`,
+      title: `${RUNNING_ACTION_TITLE_PREFIX} (${noteLabel(noteCount)})`,
+    }),
+  ]);
+}
+
+async function showPaused(
+  browser: SessionActionBrowser,
+  noteCount: number,
+): Promise<void> {
+  await Promise.all([
+    browser.action.setBadgeText({ text: badgeText(noteCount) }),
+    browser.action.setTitle({
+      title: `${PAUSED_ACTION_TITLE_PREFIX} (${noteLabel(noteCount)})`,
     }),
   ]);
 }
@@ -89,7 +103,7 @@ async function showUnavailable(browser: SessionActionBrowser): Promise<void> {
 
 async function showFailure(
   browser: SessionActionBrowser,
-  operation: "end" | "start",
+  operation: "pause" | "resume" | "start",
 ): Promise<void> {
   await Promise.all([
     browser.action.setBadgeText({ text: "!" }),
@@ -137,28 +151,60 @@ export function createSessionActionController(
           await showInactive(browser);
           return;
         }
-        await showActive(browser, active.notes.length);
+        if (active.pausedAt != null) {
+          await showPaused(browser, active.notes.length);
+          return;
+        }
+        await showRunning(browser, active.notes.length);
       }),
     toggle: (tabId, pageTitle, pageUrl) =>
       enqueue(async () => {
         const active = await sessions.loadActive();
-        if (active !== null) {
+
+        // Active + running → pause. Keep the session pointer so the next click resumes rather
+        // than starting a new one, which is the whole point of the pause/resume model.
+        if (active !== null && active.pausedAt == null) {
           await activation.unmount(tabId);
           try {
-            const ended = await sessions.end();
-            await showInactive(browser);
+            const paused = await sessions.pause();
+            await showPaused(browser, paused?.notes.length ?? active.notes.length);
             return {
-              noteCount: ended?.notes.length ?? active.notes.length,
-              sessionId: ended?.id ?? active.id,
-              state: "ended",
+              noteCount: paused?.notes.length ?? active.notes.length,
+              sessionId: paused?.id ?? active.id,
+              state: "paused",
             };
           } catch (error) {
             await activation.mount(tabId).catch(() => undefined);
-            await showFailure(browser, "end");
+            await showFailure(browser, "pause");
             throw error;
           }
         }
 
+        // Active + paused → resume. Re-mount the overlay in the clicked tab; note that the
+        // background's `tabs.onUpdated` listener also mounts the overlay after navigation while
+        // the session is running, so a resumed session keeps working across pages.
+        if (active !== null && active.pausedAt != null) {
+          const outcome = await activation.mount(tabId);
+          if (outcome.result === "unavailable") {
+            await showUnavailable(browser);
+            return { state: "unavailable" };
+          }
+          try {
+            const resumed = await sessions.resume();
+            await showRunning(browser, resumed?.notes.length ?? active.notes.length);
+            return {
+              noteCount: resumed?.notes.length ?? active.notes.length,
+              sessionId: resumed?.id ?? active.id,
+              state: "resumed",
+            };
+          } catch (error) {
+            await activation.unmount(tabId).catch(() => undefined);
+            await showFailure(browser, "resume");
+            throw error;
+          }
+        }
+
+        // No active session → start a fresh one.
         const outcome = await activation.mount(tabId);
         if (outcome.result === "unavailable") {
           await showUnavailable(browser);
@@ -166,7 +212,7 @@ export function createSessionActionController(
         }
         try {
           const started = await sessions.start(pageTitle, pageUrl);
-          await showActive(browser, started.notes.length);
+          await showRunning(browser, started.notes.length);
           return {
             noteCount: started.notes.length,
             sessionId: started.id,

@@ -26,6 +26,7 @@ interface StoredSessionState {
   readonly activeId: string | undefined;
   readonly displayId: string | undefined;
   readonly endedAt: string | null | undefined;
+  readonly pausedAt: string | null | undefined;
   readonly name: string | undefined;
 }
 
@@ -55,7 +56,13 @@ async function readStoredSession(
       : undefined;
     const selectedId = requestedSessionId ?? activeId;
     if (selectedId === undefined) {
-      return { activeId, displayId, endedAt: undefined, name: undefined };
+      return {
+        activeId,
+        displayId,
+        endedAt: undefined,
+        pausedAt: undefined,
+        name: undefined,
+      };
     }
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("point-and-shoot");
@@ -73,17 +80,20 @@ async function readStoredSession(
       const endedAt = typeof record === "object" && record !== null && "endedAt" in record
         ? (record as { readonly endedAt: string | null }).endedAt
         : undefined;
+      const pausedAt = typeof record === "object" && record !== null && "pausedAt" in record
+        ? (record as { readonly pausedAt: string | null | undefined }).pausedAt
+        : undefined;
       const name = typeof record === "object" && record !== null && "name" in record
         ? (record as { readonly name: string }).name
         : undefined;
-      return { activeId, displayId, endedAt, name };
+      return { activeId, displayId, endedAt, pausedAt, name };
     } finally {
       database.close();
     }
   }, sessionId);
 }
 
-Deno.test("browser toolbar starts, counts, ends, and starts a fresh session", async () => {
+Deno.test("browser toolbar starts, counts, pauses, and resumes the same session", async () => {
   const { context, extensionId, serviceWorker } = await launchExtension();
   const fixture = startFixtureServer();
 
@@ -93,49 +103,61 @@ Deno.test("browser toolbar starts, counts, ends, and starts a fresh session", as
       await page.goto(`${fixture.base}/light.html`);
       const tabId = await tabIdForPage(context, page);
 
+      // First click: start.
       await triggerExtensionAction(context, page, extensionId);
       await waitForHostCount(page, 1);
       assertEquals(
         await waitForActionState(serviceWorker, tabId, {
           badgeText: "0",
-          title: "Point and Shoot — End session (0 notes)",
+          title: "Point and Shoot — Pause session (0 notes)",
         }),
-        { badgeText: "0", title: "Point and Shoot — End session (0 notes)" },
+        { badgeText: "0", title: "Point and Shoot — Pause session (0 notes)" },
       );
       const started = await readStoredSession(serviceWorker);
       assertEquals(started.activeId, started.displayId);
       assertEquals(started.endedAt, null);
 
+      // Capture a note so the badge shows a note count.
       await page.getByTestId("light-action").click();
       assertEquals(
         await waitForActionState(serviceWorker, tabId, {
           badgeText: "1",
-          title: "Point and Shoot — End session (1 note)",
+          title: "Point and Shoot — Pause session (1 note)",
         }),
-        { badgeText: "1", title: "Point and Shoot — End session (1 note)" },
+        { badgeText: "1", title: "Point and Shoot — Pause session (1 note)" },
       );
 
+      // Second click: pause — badge and session pointer must survive; only pausedAt flips.
       await triggerExtensionAction(context, page, extensionId);
       await waitForHostCount(page, 0);
       assertEquals(
         await waitForActionState(serviceWorker, tabId, {
-          badgeText: "",
-          title: "Point and Shoot — Start session",
+          badgeText: "1",
+          title: "Point and Shoot — Resume session (1 note)",
         }),
-        { badgeText: "", title: "Point and Shoot — Start session" },
+        { badgeText: "1", title: "Point and Shoot — Resume session (1 note)" },
       );
-      const ended = await readStoredSession(serviceWorker, started.activeId);
-      assertEquals(ended.activeId, undefined);
-      assertEquals(ended.displayId, started.activeId);
-      assertNotEquals(ended.endedAt, null);
-      assertNotEquals(ended.endedAt, undefined);
+      const paused = await readStoredSession(serviceWorker, started.activeId);
+      assertEquals(paused.activeId, started.activeId);
+      assertEquals(paused.displayId, started.activeId);
+      assertEquals(paused.endedAt, null);
+      assertNotEquals(paused.pausedAt, null);
+      assertNotEquals(paused.pausedAt, undefined);
 
+      // Third click: resume — same session id, overlay back, pausedAt cleared.
       await triggerExtensionAction(context, page, extensionId);
       await waitForHostCount(page, 1);
-      const fresh = await readStoredSession(serviceWorker);
-      assertNotEquals(fresh.activeId, started.activeId);
-      assertEquals(fresh.activeId, fresh.displayId);
-      assertEquals(fresh.endedAt, null);
+      const resumed = await readStoredSession(serviceWorker, started.activeId);
+      assertEquals(resumed.activeId, started.activeId);
+      assertEquals(resumed.endedAt, null);
+      assertEquals(resumed.pausedAt, null);
+      assertEquals(
+        await waitForActionState(serviceWorker, tabId, {
+          badgeText: "1",
+          title: "Point and Shoot — Pause session (1 note)",
+        }),
+        { badgeText: "1", title: "Point and Shoot — Pause session (1 note)" },
+      );
     });
   } finally {
     await fixture.close();
@@ -187,6 +209,7 @@ Deno.test("browser toolbar refuses to start a session on a restricted page", asy
         activeId: undefined,
         displayId: undefined,
         endedAt: undefined,
+        pausedAt: undefined,
         name: undefined,
       });
     });

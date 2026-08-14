@@ -112,6 +112,7 @@ const harness = {
     renderPanel(theme, {
       load: () => Promise.reject(new Error(message)),
       save: () => Promise.resolve(),
+      complete: (session) => Promise.resolve(session),
       watch: () => () => undefined,
     });
   },
@@ -119,6 +120,7 @@ const harness = {
     renderPanel(theme, {
       load: () => repository.load(),
       save: () => Promise.reject(new Error(message)),
+      complete: (session) => Promise.resolve(session),
       watch: () => () => undefined,
     });
   },

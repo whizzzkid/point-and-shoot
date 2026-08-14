@@ -437,6 +437,10 @@ async function captureThemeShots(
     );
     await seedExtension(serviceWorker);
     await captureNotesAndPlan(context, extensionId, theme, outputDirectory);
+    // ADR-0022: the Compile Plan click inside captureNotesAndPlan now completes the session and
+    // clears activeSessionId. Re-seed so the popup capture (which reads activeSessionId) has a
+    // session to render again.
+    await seedExtension(serviceWorker);
     await capturePopup(context, extensionId, theme, outputDirectory);
     await captureOptions(context, extensionId, serviceWorker, theme, outputDirectory);
   } finally {
