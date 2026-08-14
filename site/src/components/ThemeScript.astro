@@ -1,0 +1,85 @@
+---
+/**
+ * Applies a stored theme override before first paint and wires every `[data-theme-toggle]` control
+ * on the page. Belongs in `<head>` of any page that renders the site header.
+ *
+ * With no stored preference nothing is written to `<html>`, so the generated tokens'
+ * `prefers-color-scheme` block still decides the theme — the override is additive, never a
+ * replacement for the OS preference.
+ */
+---
+
+{/*
+  Deliberately `is:inline` and deliberately in `<head>`: a bundled Astro script is deferred, so the
+  document would paint the token default and then repaint with the stored override on every
+  navigation. This is the one behavior on the site that cannot be a deferred enhancement.
+
+  It also sets `html.js`, which is what reveals the toggle. A control that silently does nothing is
+  worse than no control, so the button stays hidden until the script that drives it has run.
+*/}
+<script is:inline>
+  (() => {
+    const root = document.documentElement;
+    const storageKey = "point-and-shoot-theme";
+    const themes = ["dark", "light"];
+
+    const readStored = () => {
+      try {
+        const value = localStorage.getItem(storageKey);
+        return themes.includes(value) ? value : null;
+      } catch {
+        // Storage blocked by private browsing or a site-data restriction. The OS preference still
+        // applies; only persistence is lost, so this is not worth surfacing to the visitor.
+        return null;
+      }
+    };
+
+    const systemTheme = () =>
+      globalThis.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+    const activeTheme = () =>
+      themes.includes(root.dataset.theme) ? root.dataset.theme : systemTheme();
+
+    const stored = readStored();
+    if (stored !== null) root.dataset.theme = stored;
+
+    const labelToggles = () => {
+      const next = activeTheme() === "light" ? "dark" : "light";
+      for (const toggle of document.querySelectorAll("[data-theme-toggle]")) {
+        toggle.setAttribute("aria-label", `Switch to ${next} theme`);
+      }
+    };
+
+    const applyTheme = (theme) => {
+      root.dataset.theme = theme;
+      try {
+        localStorage.setItem(storageKey, theme);
+      } catch {
+        // Same restriction as above: the switch still applies to this document, it just will not
+        // survive the next navigation.
+      }
+      labelToggles();
+    };
+
+    const wireToggles = () => {
+      for (const toggle of document.querySelectorAll("[data-theme-toggle]")) {
+        toggle.addEventListener("click", () => {
+          applyTheme(activeTheme() === "light" ? "dark" : "light");
+        });
+      }
+      labelToggles();
+      root.classList.add("js");
+    };
+
+    // Keep the label truthful when the OS flips and the visitor has not chosen an override.
+    globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+      if (readStored() === null) labelToggles();
+    });
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", wireToggles, { once: true });
+    } else {
+      wireToggles();
+    }
+  })();
+</script>

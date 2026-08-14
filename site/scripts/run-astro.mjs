@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { writeRepositoryProjection } from "./repository.mjs";
 import { projectStoreListing, runStoreListingCheck } from "./store-listing.mjs";
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -16,6 +17,9 @@ const sourceProductPreview = resolve(repositoryRoot, "tests/visual/baselines/not
 const sourceStoreListing = resolve(repositoryRoot, "store-listing.json");
 const command = Deno.args[0];
 const supportedCommands = new Set(["build", "check", "dev"]);
+// The star badge is decoration, so an air-gapped build gets an explicit way to skip the one network
+// call this build makes. Read here, not in the projection module: this is the entry point.
+const starCountEnabled = Deno.env.get("PNS_SITE_SKIP_STAR_COUNT") !== "1";
 
 if (!supportedCommands.has(command)) {
   throw new Error("Usage: deno task site:<build|check|dev>");
@@ -42,20 +46,30 @@ await Promise.all([
   cp(sourceIcon, resolve(generatedRoot, "public/brand/icon.svg")),
   cp(sourceProductPreview, resolve(generatedRoot, "public/product/notes-panel.png")),
   projectStoreListing(sourceStoreListing, resolve(generatedRoot, "store-listing.json")),
+  writeRepositoryProjection(resolve(generatedRoot, "repository.json"), {
+    enabled: starCountEnabled,
+  }),
 ]);
 
 const tokens = await readFile(resolve(sourceDesignRoot, "tokens.css"), "utf8");
-const lightThemeBlocks = [...tokens.matchAll(/\[data-theme="light"\]\s*(\{[^}]*\})/g)]
-  .map((match) => `:root ${match[1]}`)
-  .join("\n");
+const lightThemeBodies = [...tokens.matchAll(/\[data-theme="light"\]\s*(\{[^}]*\})/g)]
+  .map((match) => match[1]);
 
-if (lightThemeBlocks.length === 0) {
+if (lightThemeBodies.length === 0) {
   throw new Error("The generated design tokens do not define a light theme.");
 }
 
+// The token source already carries `[data-theme="light"]`, so an explicit override on `<html>` works
+// without translation. Only the operating-system branch is rewritten, and it is narrowed to
+// `:root:not([data-theme])` so `prefers-color-scheme` stays the default while a stored override
+// wins. Re-hoisting it to a bare `:root` would make the OS preference beat an explicit choice.
+const systemLightBlocks = lightThemeBodies
+  .map((body) => `:root:not([data-theme]) ${body}`)
+  .join("\n");
+
 await writeFile(
   resolve(generatedDesignRoot, "tokens-site.css"),
-  `${tokens}\n@media (prefers-color-scheme: light) {\n${lightThemeBlocks}\n}\n`,
+  `${tokens}\n@media (prefers-color-scheme: light) {\n${systemLightBlocks}\n}\n`,
 );
 
 const child = new Deno.Command(Deno.execPath(), {

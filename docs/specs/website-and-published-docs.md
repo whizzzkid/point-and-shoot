@@ -4,7 +4,7 @@ type: spec
 status: accepted
 author: Point & Shoot maintainers
 created: 2026-07-31
-last_updated: 2026-08-05
+last_updated: 2026-08-13
 epic: https://github.com/whizzzkid/point-and-shoot/issues/3
 reviewers: []
 labels:
@@ -70,6 +70,13 @@ browser-store listing. It does not mean the website can install the extension in
 no-JavaScript fallback keeps every available action and publication status available without focus
 changes.
 
+One further script applies the stored theme override. It is the only inline script in `<head>`: a
+deferred module would paint the token default first and flash the wrong theme on every navigation.
+It reads and writes one local-storage key, sets `data-theme` on the document element, keeps the
+control's accessible name describing the theme it switches to, and reveals that control only once it
+has run — without scripting the header ships no theme control rather than a control that cannot
+work. A blocked storage API costs persistence only, never the in-page switch. See ADR-0020.
+
 ### Published documentation scope
 
 `site/src/lib/docs-manifest.ts` publishes Markdown directly from these repository sources:
@@ -95,10 +102,19 @@ Every heading receives a stable anchor. Repository-relative Markdown links are r
 published routes when the target is published and to GitHub when the target is source code, an ADR,
 or another repository-only artifact.
 
+The documentation header links the documentation index, the privacy policy, and the repository. Each
+link carries an icon and the display family one step below the wordmark, and the single accent
+treatment marks the current page only. The repository link carries the public star count resolved at
+build time; nothing about it is fetched from the visitor's browser, and a build that cannot reach
+the GitHub API renders the link with no badge rather than failing or showing a placeholder.
+
 Mermaid blocks render at build time to static SVG. The shipped documentation includes no Mermaid
 runtime and no client-side diagram fallback. Both themes derive from product tokens and honor
-`prefers-color-scheme`; technical strings use the vendored mono family and expose their full value
-when visually truncated.
+`prefers-color-scheme` by default. A visitor may pin either theme from the header control; that
+choice persists in local storage, applies to every public surface, and wins over the
+operating-system preference until it changes. With no stored choice the site writes no theme
+attribute at all, so the operating-system preference remains the only input. Technical strings use
+the vendored mono family and expose their full value when visually truncated.
 
 ### Quality and deployment
 

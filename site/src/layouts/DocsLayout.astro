@@ -2,6 +2,11 @@
 import type { CollectionEntry } from "astro:content";
 
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
+import SiteIcon from "../components/SiteIcon.astro";
+import ThemeScript from "../components/ThemeScript.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import repository from "../../.generated/repository.json";
+import { formatStarCount } from "../lib/star-count.mjs";
 import "../styles/docs.css";
 
 interface Props {
@@ -13,6 +18,10 @@ interface Props {
 const { currentId, entries, title } = Astro.props;
 const canonicalPath = Astro.url.pathname;
 const docsIndexPath = "/docs/";
+const privacyPath = "/privacy/";
+// `null` whenever the build could not establish a count, in which case the repository link renders
+// without a badge rather than showing a placeholder that claims something untrue.
+const starLabel = formatStarCount(repository.stars);
 ---
 
 <!doctype html>
@@ -24,6 +33,7 @@ const docsIndexPath = "/docs/";
     <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
     <link rel="canonical" href={Astro.url.href} />
     <title>{title} — Point & Shoot docs</title>
+    <ThemeScript />
   </head>
   <body>
     <a class="skip-link" href="#docs-content">Skip to content</a>
@@ -32,12 +42,35 @@ const docsIndexPath = "/docs/";
         <img src="/brand/icon.svg" alt="" width="48" height="48" />
         <span>Point & Shoot</span>
       </a>
-      <nav aria-label="Site navigation">
-        <a href={docsIndexPath} aria-current={canonicalPath === docsIndexPath ? "page" : undefined}>
-          Docs
-        </a>
-        <a href="https://github.com/whizzzkid/point-and-shoot">GitHub</a>
-      </nav>
+      <div class="docs-header-actions">
+        <nav aria-label="Site navigation">
+          <a
+            href={docsIndexPath}
+            aria-current={canonicalPath === docsIndexPath ? "page" : undefined}
+          >
+            <SiteIcon name="book-open" />
+            <span class="docs-nav-label">Docs</span>
+          </a>
+          <a href={privacyPath}>
+            <SiteIcon name="shield-check" />
+            <span class="docs-nav-label">Privacy</span>
+          </a>
+          <a href={repository.url}>
+            <SiteIcon name="github" />
+            <span class="docs-nav-label">GitHub</span>
+            {
+              starLabel !== null && (
+                <span class="docs-star-count">
+                  <SiteIcon name="star" />
+                  <span>{starLabel}</span>
+                  <span class="visually-hidden">stars</span>
+                </span>
+              )
+            }
+          </a>
+        </nav>
+        <ThemeToggle />
+      </div>
     </header>
     <div class="docs-shell">
       <DocsSidebar currentId={currentId} entries={entries} />
