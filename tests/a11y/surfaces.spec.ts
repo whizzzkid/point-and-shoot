@@ -33,7 +33,8 @@ async function seedExtension(serviceWorker: Worker): Promise<void> {
         [settingsKey]: settings,
       });
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("point-and-shoot", 1);
+        // Keep in sync with `src/shared/store.ts:DB_VERSION`.
+        const request = indexedDB.open("point-and-shoot", 2);
         request.onupgradeneeded = () => {
           if (!request.result.objectStoreNames.contains("sessions")) {
             request.result.createObjectStore("sessions", { keyPath: "id" });
