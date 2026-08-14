@@ -82,17 +82,73 @@ and turn on automatic submission only after all fail-closed checks pass.
 
 ## Incoming handoff
 
-Paste the non-secret completion values from the manual gate and note vendor wording changes.
+Both stores are now publicly installable (2026-08-14):
+
+- Chrome: `https://chromewebstore.google.com/detail/point-shoot/efiaamiohjjhhcgeaihgmbajnamhbahb`
+- Firefox: `https://addons.mozilla.org/firefox/addon/point-and-shoot/`
+- Chrome extension ID: `efiaamiohjjhhcgeaihgmbajnamhbahb`
+- Chrome publisher ID: `d40d655e-e8ab-491b-9fc7-f5220fdca1c7`
+- Firefox extension ID: `pointandshoot@whizzzkid.dev`
+- Firefox slug: `point-and-shoot`
+
+## Automation enablement checklist
+
+Both Chrome and Firefox submissions are automated by `.github/workflows/store-publish.yml`. The
+workflow fires automatically after every GitHub release (via `release.yml`). To enable it:
+
+### Repository variables (`Settings > Secrets and variables > Actions > Variables`)
+
+- [ ] `STORE_PUBLISH_ENABLED` = `true` (fail-closed gate; any other value runs the `disabled` job)
+- [ ] `CHROME_EXTENSION_ID` = `efiaamiohjjhhcgeaihgmbajnamhbahb`
+- [ ] `CHROME_PUBLISHER_ID` = `d40d655e-e8ab-491b-9fc7-f5220fdca1c7`
+- [ ] `GCP_WORKLOAD_IDENTITY_PROVIDER` = full GCP Workload Identity Provider resource name
+- [ ] `GCP_SERVICE_ACCOUNT` = GCP service account linked in the Chrome Web Store developer dashboard
+
+### Protected environment secrets (`Settings > Environments > browser-stores`)
+
+Create a protected GitHub environment named `browser-stores`, then add:
+
+- [ ] `WEB_EXT_API_KEY` = AMO JWT issuer from Firefox Add-ons developer account
+- [ ] `WEB_EXT_API_SECRET` = AMO JWT secret from Firefox Add-ons developer account
+
+### Chrome OIDC setup (GCP Workload Identity Federation)
+
+The Chrome publishing step authenticates via OIDC — no long-lived API key. Required GCP setup:
+
+1. Create a GCP project (or reuse an existing one) with the Chrome Web Store API enabled.
+2. Create a service account with `chromewebstore` scope.
+3. Create a Workload Identity Pool and Provider configured for GitHub Actions OIDC
+   (`token.actions.githubusercontent.com`), restricted to this repository.
+4. Link the service account in the Chrome Web Store developer dashboard.
+5. Set `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SERVICE_ACCOUNT` as repository variables.
+
+### Firefox AMO credentials
+
+1. Go to Firefox Add-ons developer hub > API Keys.
+2. Generate a JWT issuer and secret.
+3. Set `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET` as secrets on the `browser-stores` environment.
+
+### Verification
+
+After setting all variables and secrets:
+
+1. Set `STORE_PUBLISH_ENABLED` = `true`.
+2. Merge a conventional `feat:` or `fix:` commit to `main` to trigger a release PR.
+3. Merge the release PR.
+4. Watch the store-publish workflow: it should submit to both Chrome and Firefox, then update the
+   GitHub release body with publication status.
+5. Confirm both stores show the new version.
 
 ## Completion record
 
-- Status: pending
-- Owner: unassigned
-- Started: not started
+- Status: in progress
+- Owner: user
+- Started: 2026-08-14
 - Completed: not completed
-- PR: none
-- Commit: none
-- Live-link verification: not run
+- PR: #96 (Chrome activation), #90 (Firefox activation)
+- Commit: pending
+- Live-link verification: both listings verified reachable
 - Browser installation verification: not run
-- Automation enablement: disabled
-- Deviations: none
+- Automation enablement: pending GCP WIF + AMO credentials
+- Deviations: activated stores separately (Firefox first in #90, Chrome in #96) rather than together
+  as originally planned; automation enablement deferred to after identity PRs merge
