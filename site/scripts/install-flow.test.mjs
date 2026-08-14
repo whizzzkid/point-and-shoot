@@ -151,16 +151,19 @@ Deno.test("recommendations only change labels, attributes, and the single accent
   });
 });
 
-Deno.test("the built partially published site provides accessible fallback, focus, motion, and responsive states", async () => {
+Deno.test("the built fully published site provides accessible fallback, focus, motion, and responsive states", async () => {
   await buildSite();
   const [html, styles] = await Promise.all([
     readFile(resolve(siteRoot, "dist/index.html"), "utf8"),
     readFile(resolve(siteRoot, "src/styles/global.css"), "utf8"),
   ]);
   assert.match(html, /Build from source/);
-  assert.match(html, /Chrome Web Store listing is unpublished/);
-  assert.doesNotMatch(html, /Firefox Add-ons listing is unpublished/);
+  assert.doesNotMatch(html, /listing is unpublished/);
   assert.match(html, /addons\.mozilla\.org\/firefox\/addon\/point-and-shoot\//);
+  assert.match(
+    html,
+    /chromewebstore\.google\.com\/detail\/point-shoot\/efiaamiohjjhhcgeaihgmbajnamhbahb/,
+  );
   assert.match(html, /data-no-script/);
   assert.equal((html.match(/<a[^>]*data-source-install/gu) ?? []).length, 2);
   assert.equal((html.match(/<p[^>]*data-install-status/gu) ?? []).length, 2);
@@ -168,7 +171,6 @@ Deno.test("the built partially published site provides accessible fallback, focu
   assert.match(html, /data-install-recommendation role="status" aria-live="polite"/);
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /mailto:support@pointandshoot\.app/);
-  assert.doesNotMatch(html, /chromewebstore\.google\.com/);
   assert.match(styles, /a:focus-visible/);
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.install-options/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
@@ -178,7 +180,7 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
   await buildSite();
   const browser = await chromium.launch();
   try {
-    const unavailable = await startBuiltSite({ port: 0 });
+    const allPublished = await startBuiltSite({ port: 0 });
     try {
       const context = await browser.newContext({ viewport: { height: 900, width: 1440 } });
       try {
@@ -191,29 +193,33 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
             return originalFocus.apply(this, argumentsList);
           };
         });
-        await page.goto(`${unavailable.origin}/`, { waitUntil: "networkidle" });
-        assert.match(
+        await page.goto(`${allPublished.origin}/`, { waitUntil: "networkidle" });
+        assert.doesNotMatch(
           await page.locator("[data-install-status]").first().textContent(),
-          /Chrome Web Store listing is unpublished/,
+          /listing is unpublished/,
         );
-        assert.equal(await page.locator("[data-recommended]").count(), 0);
+        assert.equal(await page.locator("[data-recommended]").count(), 1);
+        assert.match(
+          await page.locator("[data-install-recommendation]").textContent(),
+          /Chrome Web Store is recommended/,
+        );
         assert.equal(await page.evaluate(() => globalThis.__pointAndShootFocusCalls), 0);
       } finally {
         await context.close();
       }
     } finally {
-      await closeBuiltSite(unavailable.server);
+      await closeBuiltSite(allPublished.server);
     }
 
-    const firefoxOnly = await startBuiltSite({ port: 0 });
+    const published = await startBuiltSite({ port: 0 });
     try {
       const context = await browser.newContext();
       try {
         const page = await context.newPage();
-        await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
-        assert.match(
+        await page.goto(`${published.origin}/`, { waitUntil: "networkidle" });
+        assert.doesNotMatch(
           await page.locator("[data-install-status]").first().textContent(),
-          /Chrome Web Store listing is unpublished/,
+          /listing is unpublished/,
         );
         assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
         assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
@@ -221,7 +227,16 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           await page.locator('[data-store-action="gecko"]').first().getAttribute("href"),
           "https://addons.mozilla.org/firefox/addon/point-and-shoot/",
         );
-        assert.equal(await page.locator("[data-recommended]").count(), 0);
+        assert.equal(await page.locator('[data-store-action="chromium"]').count(), 2);
+        assert.equal(
+          await page.locator('[data-store-action="chromium"]').first().getAttribute("href"),
+          "https://chromewebstore.google.com/detail/point-shoot/efiaamiohjjhhcgeaihgmbajnamhbahb",
+        );
+        assert.equal(await page.locator("[data-recommended]").count(), 1);
+        assert.match(
+          await page.locator("[data-install-recommendation]").textContent(),
+          /Chrome Web Store is recommended/,
+        );
       } finally {
         await context.close();
       }
@@ -231,10 +246,10 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
       });
       try {
         const page = await compatibleContext.newPage();
-        await page.goto(`${firefoxOnly.origin}/`, { waitUntil: "networkidle" });
-        assert.match(
+        await page.goto(`${published.origin}/`, { waitUntil: "networkidle" });
+        assert.doesNotMatch(
           await page.locator("[data-install-status]").first().textContent(),
-          /Chrome Web Store listing is unpublished/,
+          /listing is unpublished/,
         );
         assert.equal(await page.locator("[data-install-recommendation]").count(), 1);
         assert.match(
@@ -246,13 +261,12 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
         await compatibleContext.close();
       }
     } finally {
-      await closeBuiltSite(firefoxOnly.server);
+      await closeBuiltSite(published.server);
     }
 
-    const bothFixture = await storeFixture({ chrome: true });
+    const both = await startBuiltSite({ port: 0 });
     try {
-      const both = await startBuiltSite({ distRoot: bothFixture.distRoot, port: 0 });
-      try {
+      {
         const desktop = await browser.newContext({ viewport: { height: 900, width: 1440 } });
         try {
           const page = await desktop.newPage();
@@ -362,11 +376,9 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
         } finally {
           await withoutJavaScript.close();
         }
-      } finally {
-        await closeBuiltSite(both.server);
       }
     } finally {
-      await rm(bothFixture.root, { force: true, recursive: true });
+      await closeBuiltSite(both.server);
     }
   } finally {
     await browser.close();
