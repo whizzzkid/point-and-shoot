@@ -36,14 +36,17 @@ legal values.
 `pausedAt`, drop `activeSessionId`, keep `displaySessionId` pointing at the completed record. The
 plan view keeps rendering the same session id, so there is no user-visible flicker.
 
-**A `tabs.onUpdated` listener follows the overlay across navigations.** A new module
+**A `tabs.onUpdated` listener keeps the badge honest across navigations.** A new module
 `src/background/tab-lifecycle.ts` registers a listener that fires on
 `changeInfo.status ===
-"complete"`. When there is an active session and its `pausedAt` is `null`,
-the listener asks the activation controller to mount the overlay in the completed tab. Paused
-sessions and restricted pages are no-ops. The listener stays inside the ADR-0002 `activeTab`-only
-permission model: the `tabs.onUpdated` event fires for every tab, but the extension only injects
-into tabs whose activation returns something other than `"unavailable"`.
+"complete"` and re-synchronizes the action badge and title from the current
+session state. Paused sessions and no-session cases are no-ops so the badge does not thrash between
+"Pause" and "Start" labels. The listener does **not** re-inject the overlay: ADR-0002 restricts the
+extension to `activeTab`, and the engine revokes that grant on every navigation, so injecting
+without a fresh user gesture is impossible. The correct next step after navigation is one toolbar
+click, which regrants activeTab, mounts the overlay, and (thanks to the persistent `activeSessionId`
+pointer) continues the same session. The badge title on the new page shows "Pause session (N notes)"
+— so the click is a resume, not a fresh start.
 
 The action badge title reflects the three-way state: "Start session", "Pause session (N notes)", or
 "Resume session (N notes)". The unavailable branch is unchanged.
@@ -63,6 +66,10 @@ The action badge title reflects the three-way state: "Start session", "Pause ses
 - Adding `tabs.onUpdated` does not require any new manifest permission: the event fires against the
   extension's existing capabilities, and the URL exposed by the event carries no more information
   than `activeTab` already grants when the user clicks.
+- The overlay itself does **not** auto-remount after navigation. That would require broad host
+  permissions (ADR-0002 rejected), so the user reactivates the overlay on each new page with one
+  toolbar click. The badge title makes clear the click resumes the ongoing session rather than
+  starting a new one — a much cheaper affordance than the alternatives below.
 
 ## Alternatives considered
 
