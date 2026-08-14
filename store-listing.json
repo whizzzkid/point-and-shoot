@@ -78,10 +78,10 @@
   },
   "stores": {
     "chrome": {
-      "state": "unpublished",
-      "extensionId": null,
-      "publisherId": null,
-      "listingUrl": null
+      "state": "published",
+      "extensionId": "efiaamiohjjhhcgeaihgmbajnamhbahb",
+      "publisherId": "d40d655e-e8ab-491b-9fc7-f5220fdca1c7",
+      "listingUrl": "https://chromewebstore.google.com/detail/point-shoot/efiaamiohjjhhcgeaihgmbajnamhbahb"
     },
     "firefox": {
       "state": "published",

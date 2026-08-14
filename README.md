@@ -32,13 +32,15 @@
 ## Install
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/point-shoot/efiaamiohjjhhcgeaihgmbajnamhbahb">
+    <img src="docs/assets/store/chrome-web-store-badge.png" height="60" alt="Install Point & Shoot from the Chrome Web Store">
+  </a>
   <a href="https://addons.mozilla.org/firefox/addon/point-and-shoot/">
     <img src="docs/assets/store/firefox-add-ons-badge.png" height="60" alt="Install Point & Shoot from Firefox Add-ons">
   </a>
 </p>
 
-Chrome Web Store publication is in progress. You can also
-[build the extension from source](#build-from-source).
+You can also [build the extension from source](#build-from-source).
 
 <!-- store-install:end -->
 
