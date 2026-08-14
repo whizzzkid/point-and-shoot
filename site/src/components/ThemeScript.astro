@@ -42,7 +42,6 @@
 
     const stored = readStored();
     if (stored !== null) root.dataset.theme = stored;
-    root.classList.add("js");
 
     const labelToggles = () => {
       const next = activeTheme() === "light" ? "dark" : "light";
@@ -69,6 +68,7 @@
         });
       }
       labelToggles();
+      root.classList.add("js");
     };
 
     // Keep the label truthful when the OS flips and the visitor has not chosen an override.
