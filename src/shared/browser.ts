@@ -101,6 +101,23 @@ export interface DownloadOptions {
   readonly saveAs?: boolean;
 }
 
+/**
+ * Subset of `tabs.onUpdated` change payload the extension actually reads. Chrome and Firefox both
+ * fire `status` and `url` on the same event; the field is optional because either engine may
+ * fire updates for other fields without them.
+ */
+export interface TabChangeInfo {
+  readonly status?: "loading" | "complete";
+  readonly url?: string;
+}
+
+/** Listener signature for `tabs.onUpdated`. */
+export type TabUpdatedListener = (
+  tabId: number,
+  changeInfo: TabChangeInfo,
+  tab: TabInfo,
+) => void;
+
 /** Sender metadata delivered alongside a runtime message. */
 export interface MessageSender {
   readonly tab?: TabInfo;
@@ -162,6 +179,12 @@ export interface BrowserShim {
     create(properties: TabCreateProperties): Promise<TabInfo>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
+    /**
+     * Fires on tab state changes — most importantly, when a tab navigation completes. The
+     * background listens to re-mount the capture overlay on the running (non-paused) session's
+     * tab so notes survive page navigations.
+     */
+    readonly onUpdated: { addListener(listener: TabUpdatedListener): void };
   };
   readonly runtime: {
     /**
@@ -232,6 +255,7 @@ export interface ChromeGlobalShape {
       message: unknown,
       callback: (response: unknown) => void,
     ): void;
+    readonly onUpdated: { addListener(listener: TabUpdatedListener): void };
   };
   readonly runtime: {
     getManifest(): ExtensionManifest;
@@ -289,6 +313,7 @@ export interface FirefoxGlobalShape {
     create(properties: TabCreateProperties): Promise<TabInfo>;
     query(queryInfo: TabQueryInfo): Promise<TabInfo[]>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
+    readonly onUpdated: { addListener(listener: TabUpdatedListener): void };
   };
   readonly runtime: {
     /** Firefox-only engine identity method, used to distinguish namespace aliases safely. */
@@ -389,6 +414,9 @@ function createChromeShim(chromeGlobal: ChromeGlobalShape): BrowserShim {
           (cb) => chromeGlobal.tabs.sendMessage(tabId, message, cb),
         );
       },
+      get onUpdated() {
+        return chromeGlobal.tabs.onUpdated;
+      },
     },
     runtime: {
       getManifest() {
@@ -488,6 +516,9 @@ function createFirefoxShim(firefoxGlobal: FirefoxGlobalShape): BrowserShim {
       },
       sendMessage(tabId, message) {
         return firefoxGlobal.tabs.sendMessage(tabId, message);
+      },
+      get onUpdated() {
+        return firefoxGlobal.tabs.onUpdated;
       },
     },
     runtime: {

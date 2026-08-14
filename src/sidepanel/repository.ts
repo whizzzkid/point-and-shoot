@@ -27,6 +27,13 @@ async function publishRevision(storage: BrowserShim["storage"]["local"]): Promis
 export interface NotesRepository {
   load(): Promise<Session | null>;
   save(session: Session): Promise<void>;
+  /**
+   * Ends the given session — stamps `endedAt`, clears the `activeSessionId` pointer, retains the
+   * session as the panel's displayed session. Invoked by the Compile-Plan action so the toolbar
+   * click gesture is no longer the way a session terminates. Returns the ended record so the
+   * panel keeps rendering the same session in its plan view.
+   */
+  complete(session: Session): Promise<Session>;
   watch(onChange: () => void): () => void;
 }
 
@@ -70,6 +77,26 @@ export function createNotesRepository(
         database.close();
       }
       await publishRevision(storage);
+    },
+    async complete(session) {
+      if (session.endedAt !== null) return session;
+      const ended: Session = {
+        ...session,
+        endedAt: new Date().toISOString(),
+        pausedAt: null,
+      };
+      const database = await openStore();
+      try {
+        await putSession(database, ended);
+      } finally {
+        database.close();
+      }
+      // Clear the active pointer so the next toolbar click starts a fresh session, but keep
+      // `displaySessionId` pointing at the completed one so the panel stays on the plan view.
+      await storage.remove(ACTIVE_SESSION_ID_STORAGE_KEY);
+      await storage.set({ [DISPLAY_SESSION_ID_STORAGE_KEY]: ended.id });
+      await publishRevision(storage);
+      return ended;
     },
     watch(onChange) {
       if (onChanged === undefined) return () => undefined;

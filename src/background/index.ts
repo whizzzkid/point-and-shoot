@@ -12,6 +12,7 @@ import {
   registerSessionStateHandlers,
 } from "./session-action.ts";
 import { createSessionService } from "./session.ts";
+import { registerTabLifecycleHandler } from "./tab-lifecycle.ts";
 
 /**
  * Boot marker. `scripts/boot-firefox.ts` greps this out of Firefox's own stdout: with no static
@@ -35,3 +36,4 @@ registerCaptureHandler(browser);
 registerFrameworkProbeHandler(browser);
 registerNoteHandler(browser, sessions);
 registerNotePreviewHandler(browser);
+registerTabLifecycleHandler(browser, sessions, () => sessionAction.synchronize());

@@ -201,16 +201,22 @@ function useToolbarPlacement(
     const resizeObserver = new ResizeObserver(schedule);
     resizeObserver.observe(toolbarElement);
     ownerWindow.addEventListener("resize", schedule, { passive: true });
-    ownerWindow.addEventListener("scroll", schedule, { capture: true, passive: true });
     ownerWindow.visualViewport?.addEventListener("resize", schedule, { passive: true });
     ownerDocument.addEventListener("fullscreenchange", schedule);
+    // A `scroll` listener here re-ran `placeToolbar` every frame the user scrolled, which made
+    // the toolbar chase the viewport and look like it was fleeing the pointer — users reported
+    // it as "moves around, can't click." The toolbar is positioned in viewport coordinates via
+    // `position: fixed`; scrolling does not change its visible location, and rerunning
+    // placement on scroll only reshuffles it when the set of visible obstacles happens to
+    // change. Placement still re-runs on selection/composer changes (via the deps below),
+    // viewport resize, and fullscreen transitions — the events that actually move the geometry
+    // the placement engine cares about.
     update();
 
     return () => {
       if (animationFrame !== undefined) ownerWindow.cancelAnimationFrame(animationFrame);
       resizeObserver.disconnect();
       ownerWindow.removeEventListener("resize", schedule);
-      ownerWindow.removeEventListener("scroll", schedule, true);
       ownerWindow.visualViewport?.removeEventListener("resize", schedule);
       ownerDocument.removeEventListener("fullscreenchange", schedule);
     };

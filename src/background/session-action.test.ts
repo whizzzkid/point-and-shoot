@@ -93,6 +93,18 @@ function createFakes(initial: Session | null = null): {
       active = { ...active, endedAt: "2026-07-30T12:30:00.000Z" };
       return Promise.resolve(active);
     },
+    pause() {
+      calls.push("session.pause");
+      if (active === null) return Promise.resolve(null);
+      active = { ...active, pausedAt: "2026-07-30T12:15:00.000Z" };
+      return Promise.resolve(active);
+    },
+    resume() {
+      calls.push("session.resume");
+      if (active === null) return Promise.resolve(null);
+      active = { ...active, pausedAt: null };
+      return Promise.resolve(active);
+    },
     loadActive() {
       calls.push("session.load");
       return Promise.resolve(active);
@@ -133,7 +145,7 @@ Deno.test("session action toolbar click opens the panel and toggles the session"
   assertEquals(fake.calls.includes("activation.mount:7"), true);
   assertEquals(fake.calls.includes("session.start:Checkout"), true);
   assertEquals(fake.calls.at(-2), "action.badge:0");
-  assertEquals(fake.calls.at(-1), "action.title:Point and Shoot — End session (0 notes)");
+  assertEquals(fake.calls.at(-1), "action.title:Point and Shoot — Pause session (0 notes)");
 });
 
 Deno.test("session action forwards the clicked tab URL to session start", async () => {
@@ -164,27 +176,52 @@ Deno.test("session action starts capture and renders a zero-note badge and toolt
     "activation.mount:7",
     "session.start:Checkout",
     "action.badge:0",
-    "action.title:Point and Shoot — End session (0 notes)",
+    "action.title:Point and Shoot — Pause session (0 notes)",
   ]);
 });
 
-Deno.test("session action ends capture and clears the badge while retaining session data", async () => {
-  const fake = createFakes(session(3));
-  const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
+Deno.test(
+  "session action pauses capture without clearing the badge or ending the session",
+  async () => {
+    const fake = createFakes(session(3));
+    const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
 
-  assertEquals(await controller.toggle(7), {
-    noteCount: 3,
-    sessionId: "session-1",
-    state: "ended",
-  });
-  assertEquals(fake.calls, [
-    "session.load",
-    "activation.unmount:7",
-    "session.end",
-    "action.badge:",
-    "action.title:Point and Shoot — Start session",
-  ]);
-});
+    assertEquals(await controller.toggle(7), {
+      noteCount: 3,
+      sessionId: "session-1",
+      state: "paused",
+    });
+    assertEquals(fake.calls, [
+      "session.load",
+      "activation.unmount:7",
+      "session.pause",
+      "action.badge:3",
+      "action.title:Point and Shoot — Resume session (3 notes)",
+    ]);
+  },
+);
+
+Deno.test(
+  "session action resumes a paused session by mounting the overlay and clearing pausedAt",
+  async () => {
+    const paused = { ...session(2), pausedAt: "2026-07-30T12:20:00.000Z" };
+    const fake = createFakes(paused);
+    const controller = createSessionActionController(fake.browser, fake.activation, fake.service);
+
+    assertEquals(await controller.toggle(7), {
+      noteCount: 2,
+      sessionId: "session-1",
+      state: "resumed",
+    });
+    assertEquals(fake.calls, [
+      "session.load",
+      "activation.mount:7",
+      "session.resume",
+      "action.badge:2",
+      "action.title:Point and Shoot — Pause session (2 notes)",
+    ]);
+  },
+);
 
 Deno.test("session action does not create a session when the page is restricted", async () => {
   const fake = createFakes();
@@ -209,7 +246,7 @@ Deno.test("session action caps the badge while keeping the tooltip count exact",
   assertEquals(fake.calls, [
     "session.load",
     "action.badge:99+",
-    "action.title:Point and Shoot — End session (120 notes)",
+    "action.title:Point and Shoot — Pause session (120 notes)",
   ]);
 });
 
@@ -315,11 +352,11 @@ Deno.test("session action rolls back the overlay and reports a start failure", a
   ]);
 });
 
-Deno.test("session action restores the overlay and reports an end failure", async () => {
+Deno.test("session action restores the overlay and reports a pause failure", async () => {
   const fake = createFakes(session(3));
   const controller = createSessionActionController(fake.browser, fake.activation, {
     ...fake.service,
-    end: () => Promise.reject(new Error("IndexedDB unavailable.")),
+    pause: () => Promise.reject(new Error("IndexedDB unavailable.")),
   });
 
   await assertRejects(() => controller.toggle(7), Error, "IndexedDB unavailable.");
@@ -329,6 +366,6 @@ Deno.test("session action restores the overlay and reports an end failure", asyn
     "activation.unmount:7",
     "activation.mount:7",
     "action.badge:!",
-    "action.title:Point and Shoot — session could not end",
+    "action.title:Point and Shoot — session could not pause",
   ]);
 });

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
-  "sourceDigest": "b27b342c44d5bf6e8248c0ac5ee06bdc1d573d170486a368097f48f534e14725",
+  "sourceDigest": "9bdc73faa1dccbbc9e3142f0cb9a2956f7d9372485e3d00751f04745574eef82",
   "sourcePaths": [
     "build/build.ts",
     "build/icons.ts",
@@ -26,6 +26,8 @@
     "src/background/session-action.ts",
     "src/background/session.test.ts",
     "src/background/session.ts",
+    "src/background/tab-lifecycle.test.ts",
+    "src/background/tab-lifecycle.ts",
     "src/content/CaptureOverlay.tsx",
     "src/content/capture.browser.test.ts",
     "src/content/capture.ts",

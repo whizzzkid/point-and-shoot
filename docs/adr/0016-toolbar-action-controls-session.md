@@ -1,6 +1,8 @@
 # ADR-0016 — Let the toolbar action control the session
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0022](0022-pause-resume-and-compile-plan-completion.md) — toolbar
+  now pauses/resumes; Compile Plan completes; a `tabs.onUpdated` listener re-mounts the overlay
+  across navigations.
 - **Date:** 2026-07-30
 
 ## Context
