@@ -216,6 +216,7 @@ export function NotesPanel(
         setDomainSessions(list);
       })
       .catch(() => {
+        setCurrentDomain(null);
         setDomainSessions([]);
       });
   };
@@ -389,9 +390,12 @@ export function NotesPanel(
           </div>
           <details className="ps-domain-sessions">
             <summary className="ps-eyebrow">
-              {currentDomain === null || currentDomain === undefined
-                ? "Sessions on this page"
-                : `Sessions on ${currentDomain}`}
+              {currentDomain === null || currentDomain === undefined ? "Sessions on this page" : (
+                <>
+                  {"Sessions on "}
+                  <span className="ps-domain-sessions-hostname">{currentDomain}</span>
+                </>
+              )}
               <Badge>{domainSessions?.length ?? 0}</Badge>
             </summary>
             {domainSessions === undefined
