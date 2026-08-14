@@ -1,0 +1,78 @@
+---
+import SiteIcon from "./SiteIcon.astro";
+
+/**
+ * Theme override control. Requires `ThemeScript` in the same document — that script both wires the
+ * click handler and sets `html.js`, which is what makes this button visible.
+ *
+ * The button shows the theme it switches *to*, and its accessible name is rewritten by the script on
+ * load so it stays truthful when the OS preference, rather than a stored override, is in effect.
+ */
+---
+
+<button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme">
+  <span class="theme-toggle-icon" data-icon="sun"><SiteIcon name="sun" /></span>
+  <span class="theme-toggle-icon" data-icon="moon"><SiteIcon name="moon" /></span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: none;
+    padding: var(--space-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+
+  :global(html.js) .theme-toggle {
+    display: inline-flex;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--border-default);
+    color: var(--text-primary);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  .theme-toggle-icon {
+    display: none;
+  }
+
+  /* Dark is the token default, so offer the switch to light until something says otherwise. */
+  .theme-toggle-icon[data-icon="sun"] {
+    display: inline-flex;
+  }
+
+  :global(html[data-theme="light"]) .theme-toggle-icon[data-icon="sun"] {
+    display: none;
+  }
+
+  :global(html[data-theme="light"]) .theme-toggle-icon[data-icon="moon"] {
+    display: inline-flex;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :global(html:not([data-theme])) .theme-toggle-icon[data-icon="sun"] {
+      display: none;
+    }
+
+    :global(html:not([data-theme])) .theme-toggle-icon[data-icon="moon"] {
+      display: inline-flex;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-toggle {
+      transition-duration: calc(var(--duration-fast) * 0);
+    }
+  }
+</style>

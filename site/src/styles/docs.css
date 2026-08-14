@@ -61,9 +61,19 @@ a:focus-visible {
 }
 
 .docs-brand,
+.docs-header-actions,
 .docs-header nav {
   display: flex;
   align-items: center;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .docs-brand {
@@ -79,9 +89,60 @@ a:focus-visible {
   height: var(--space-6);
 }
 
+.docs-header-actions {
+  gap: var(--space-3);
+}
+
 .docs-header nav {
-  gap: var(--space-6);
+  gap: var(--space-1);
+}
+
+/* The nav borrows the brand's display family a step down, so it reads as the same voice without
+   competing with the wordmark. Accent stays reserved for the current page. */
+.docs-header nav a {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
   font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.docs-header nav a:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.docs-header nav a[aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.docs-star-count {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--bg-inset);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-normal);
+}
+
+.docs-header nav a:hover .docs-star-count {
+  color: var(--text-secondary);
 }
 
 .docs-shell {
@@ -335,7 +396,12 @@ article img,
 
 @media (max-width: 760px) {
   .docs-header {
+    gap: var(--space-3);
     padding-inline: var(--space-4);
+  }
+
+  .docs-brand span {
+    display: none;
   }
 
   .docs-shell {
@@ -374,11 +440,30 @@ article img,
   }
 }
 
+/* Below this width the labelled nav, badge, and toggle stop fitting on one row. Collapse the labels
+   to icons using the visually-hidden recipe rather than `display: none` so each link keeps its
+   accessible name. */
+@media (max-width: 480px) {
+  .docs-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .docs-header nav a {
+    padding-inline: var(--space-2);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
+  .docs-header nav a,
   .skip-link {
     transition-duration: calc(var(--duration-fast) * 0);
   }

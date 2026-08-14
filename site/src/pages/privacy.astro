@@ -1,4 +1,5 @@
 ---
+import ThemeScript from "../components/ThemeScript.astro";
 import storeListing from "../../.generated/store-listing.json";
 import "../styles/global.css";
 import "../styles/privacy.css";
@@ -39,6 +40,7 @@ const effectiveDate = new Date(`${privacy.effectiveDate}T00:00:00Z`).toLocaleDat
     <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
     <link rel="canonical" href={Astro.url.href} />
     <title>Privacy policy — Point & Shoot</title>
+    <ThemeScript />
   </head>
   <body>
     <a class="privacy-skip-link" href="#privacy-content">Skip to privacy policy</a>

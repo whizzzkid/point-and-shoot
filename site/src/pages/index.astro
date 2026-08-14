@@ -1,6 +1,7 @@
 ---
 import Icon from "../components/Icon.astro";
 import InstallActions from "../components/InstallActions.astro";
+import ThemeScript from "../components/ThemeScript.astro";
 import storeListing from "../../.generated/store-listing.json";
 import "../styles/global.css";
 
@@ -20,6 +21,7 @@ const { support } = storeListing;
     <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
     <link rel="canonical" href={Astro.url.href} />
     <title>Point & Shoot — UI bug reports built for coding agents</title>
+    <ThemeScript />
   </head>
   <body>
     <header class="site-header">
