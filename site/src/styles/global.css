@@ -239,8 +239,7 @@ h3 {
 
 .store-badge-link {
   display: inline-block;
-  border-radius: var(--radius-md);
-  transition: opacity 150ms ease;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .store-badge-link:hover {
@@ -251,6 +250,7 @@ h3 {
   display: block;
   height: 48px;
   width: auto;
+  border-radius: var(--radius-md);
 }
 
 .install-status,
