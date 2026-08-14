@@ -8,7 +8,7 @@ import {
   nextSessionRevision,
   SESSION_REVISION_STORAGE_KEY,
 } from "../shared/session.ts";
-import { getSession, openStore, putSession } from "../shared/store.ts";
+import { deleteSession, getSession, listSessions, openStore, putSession } from "../shared/store.ts";
 
 async function publishRevision(storage: BrowserShim["storage"]["local"]): Promise<void> {
   try {
@@ -34,6 +34,28 @@ export interface NotesRepository {
    * panel keeps rendering the same session in its plan view.
    */
   complete(session: Session): Promise<Session>;
+  /**
+   * Returns every stored session whose `domain` matches the argument, ordered by `createdAt`
+   * descending. A `null` argument returns sessions with `domain === null` — useful when the
+   * caller's own domain resolution failed (e.g. `chrome://newtab/`).
+   */
+  listForDomain(domain: string | null): Promise<readonly Session[]>;
+  /**
+   * Repoints the panel at the given session id by setting `displaySessionId` and bumping
+   * `sessionRevision`. Does not touch `activeSessionId` — an in-progress session keeps running
+   * even while the user reviews a previous one.
+   */
+  loadIntoPanel(id: string): Promise<void>;
+  /**
+   * Deletes one stored session and clears `activeSessionId`/`displaySessionId` if they pointed
+   * at the removed id. The panel reloads via `sessionRevision` bump.
+   */
+  deleteFromPanel(id: string): Promise<void>;
+  /**
+   * Resolves the domain the active tab is currently on. Returns `null` when the panel host has
+   * no `tabs.query` capability or the active tab's URL is unparseable (`chrome://newtab/`).
+   */
+  currentDomain(): Promise<string | null>;
   watch(onChange: () => void): () => void;
 }
 
@@ -47,6 +69,7 @@ export interface NotesRepository {
 export function createNotesRepository(
   storage: BrowserShim["storage"]["local"],
   onChanged?: BrowserShim["storage"]["onChanged"],
+  tabs?: Pick<BrowserShim["tabs"], "query">,
 ): NotesRepository {
   return {
     async load() {
@@ -97,6 +120,53 @@ export function createNotesRepository(
       await storage.set({ [DISPLAY_SESSION_ID_STORAGE_KEY]: ended.id });
       await publishRevision(storage);
       return ended;
+    },
+    async listForDomain(domain) {
+      const database = await openStore();
+      try {
+        const sessions = await listSessions(database);
+        return sessions
+          .filter((session) => session.domain === domain)
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+      } finally {
+        database.close();
+      }
+    },
+    async loadIntoPanel(id) {
+      await storage.set({ [DISPLAY_SESSION_ID_STORAGE_KEY]: id });
+      await publishRevision(storage);
+    },
+    async currentDomain() {
+      if (tabs === undefined) return null;
+      try {
+        const [active] = await tabs.query({ active: true, currentWindow: true });
+        const url = active?.url;
+        if (typeof url !== "string" || url === "") return null;
+        return new URL(url).hostname || null;
+      } catch {
+        return null;
+      }
+    },
+    async deleteFromPanel(id) {
+      const database = await openStore();
+      try {
+        await deleteSession(database, id);
+      } finally {
+        database.close();
+      }
+      const pointers = await storage.get([
+        ACTIVE_SESSION_ID_STORAGE_KEY,
+        DISPLAY_SESSION_ID_STORAGE_KEY,
+      ]);
+      const removals: string[] = [];
+      if (pointers[ACTIVE_SESSION_ID_STORAGE_KEY] === id) {
+        removals.push(ACTIVE_SESSION_ID_STORAGE_KEY);
+      }
+      if (pointers[DISPLAY_SESSION_ID_STORAGE_KEY] === id) {
+        removals.push(DISPLAY_SESSION_ID_STORAGE_KEY);
+      }
+      if (removals.length > 0) await storage.remove(removals);
+      await publishRevision(storage);
     },
     watch(onChange) {
       if (onChanged === undefined) return () => undefined;

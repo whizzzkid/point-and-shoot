@@ -25,7 +25,11 @@ render(
     }}
     iconSpriteUrl="/src/shared/design/icons.svg"
     notePreview={browserNotePreviewController(browser)}
-    repository={createNotesRepository(browser.storage.local, browser.storage.onChanged)}
+    repository={createNotesRepository(
+      browser.storage.local,
+      browser.storage.onChanged,
+      browser.tabs,
+    )}
     version={displayVersion(browser.runtime.getManifest())}
   />,
   root,

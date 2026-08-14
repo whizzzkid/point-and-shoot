@@ -113,6 +113,10 @@ const harness = {
       load: () => Promise.reject(new Error(message)),
       save: () => Promise.resolve(),
       complete: (session) => Promise.resolve(session),
+      listForDomain: () => Promise.resolve([]),
+      loadIntoPanel: () => Promise.resolve(),
+      deleteFromPanel: () => Promise.resolve(),
+      currentDomain: () => Promise.resolve(null),
       watch: () => () => undefined,
     });
   },
@@ -121,6 +125,10 @@ const harness = {
       load: () => repository.load(),
       save: () => Promise.reject(new Error(message)),
       complete: (session) => Promise.resolve(session),
+      listForDomain: () => Promise.resolve([]),
+      loadIntoPanel: () => Promise.resolve(),
+      deleteFromPanel: () => Promise.resolve(),
+      currentDomain: () => Promise.resolve(null),
       watch: () => () => undefined,
     });
   },
