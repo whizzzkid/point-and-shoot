@@ -3,8 +3,16 @@
 const sourceInstallUrl = "https://github.com/whizzzkid/point-and-shoot#build-from-source";
 
 const storeDetails = {
-  chrome: { name: "Chrome Web Store", target: "chromium" },
-  firefox: { name: "Firefox Add-ons", target: "gecko" },
+  chrome: {
+    badgePath: "/docs/assets/store/chrome-web-store-badge.png",
+    name: "Chrome Web Store",
+    target: "chromium",
+  },
+  firefox: {
+    badgePath: "/docs/assets/store/firefox-add-ons-badge.png",
+    name: "Firefox Add-ons",
+    target: "gecko",
+  },
 };
 
 /**
@@ -15,7 +23,7 @@ const storeDetails = {
  *   stores: Record<"chrome" | "firefox", {listingUrl: string | null; state: string}>;
  * }} listing - Generated store contract data available to the Astro build.
  * @returns {{
- *   actions: Array<{name: string; target: StoreTarget; url: string}>;
+ *   actions: Array<{badgePath: string; name: string; target: StoreTarget; url: string}>;
  *   sourceInstallUrl: string;
  *   sourceIsPrimary: boolean;
  *   statuses: string[];

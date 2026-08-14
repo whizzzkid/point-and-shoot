@@ -237,6 +237,22 @@ h3 {
   max-width: 38ch;
 }
 
+.store-badge-link {
+  display: inline-block;
+  border-radius: var(--radius-md);
+  transition: opacity 150ms ease;
+}
+
+.store-badge-link:hover {
+  opacity: 0.85;
+}
+
+.store-badge {
+  display: block;
+  height: 48px;
+  width: auto;
+}
+
 .install-status,
 .install-recommendation,
 .install-no-script {

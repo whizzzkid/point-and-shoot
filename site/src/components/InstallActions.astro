@@ -20,12 +20,18 @@ const install = createInstallActionsModel(storeListing);
             Open the browser-extension listing to install Point & Shoot. {install.singlePurpose}
           </p>
           <a
-            class="button button-secondary"
+            class="store-badge-link"
             data-install-target={action.target}
             data-store-action={action.target}
             href={action.url}
           >
-            Install from {action.name}
+            <img
+              class="store-badge"
+              src={action.badgePath}
+              alt={`Install Point & Shoot from ${action.name}`}
+              height="60"
+              loading="lazy"
+            />
           </a>
         </div>
       ))
