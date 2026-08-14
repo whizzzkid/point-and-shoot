@@ -34,6 +34,7 @@ have one behind them.
 | [0020](0020-site-theme-override-on-top-of-system-preference.md) | Site theme override layers on top of the system preference                 | Accepted 2026-08-13 |
 | [0021](0021-session-domain-field.md)                            | Capture the session domain at start and migrate stored records             | Accepted 2026-08-14 |
 | [0022](0022-pause-resume-and-compile-plan-completion.md)        | Toolbar pauses/resumes; Compile Plan completes; overlay follows navigation | Accepted 2026-08-14 |
+| [0023](0023-sidepanel-current-domain-sessions.md)               | Side-panel current-domain session dropdown                                 | Accepted 2026-08-14 |
 
 Six of these are load-bearing constraints rather than preferences, and reversing one by accident is
 easy: **0001** (no `chrome.offscreen`), **0002** (no broad host permissions), **0005** (no
