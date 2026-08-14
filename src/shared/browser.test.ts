@@ -42,6 +42,11 @@ function createFakeChrome(): FakeChrome {
         calls.push(`tabs.sendMessage:${tabId}`);
         queueMicrotask(() => callback({ echo: message }));
       },
+      onUpdated: {
+        addListener() {
+          calls.push("tabs.onUpdated.addListener");
+        },
+      },
     },
     runtime: {
       getManifest() {
@@ -192,6 +197,11 @@ function createFakeFirefox(): FakeFirefox {
       sendMessage(tabId, message) {
         calls.push(`tabs.sendMessage:${tabId}`);
         return Promise.resolve({ echo: message });
+      },
+      onUpdated: {
+        addListener() {
+          calls.push("tabs.onUpdated.addListener");
+        },
       },
     },
     runtime: {

@@ -193,6 +193,43 @@ Deno.test("session service leaves domain null when the tab URL is unparseable", 
   await resetDatabase();
 });
 
+Deno.test("session service pauses without ending and resume clears pausedAt", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "pause-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const started = await service.start("Page");
+  assertEquals(started.pausedAt ?? null, null);
+  assertEquals(started.endedAt, null);
+
+  const paused = await service.pause();
+  assertEquals(typeof paused?.pausedAt, "string");
+  assertEquals(paused?.endedAt, null);
+  assertEquals(storage.values.get(ACTIVE_SESSION_ID_STORAGE_KEY), started.id);
+
+  const resumed = await service.resume();
+  assertEquals(resumed?.pausedAt, null);
+  assertEquals(resumed?.endedAt, null);
+  assertEquals(storage.values.get(ACTIVE_SESSION_ID_STORAGE_KEY), started.id);
+  await resetDatabase();
+});
+
+Deno.test("session service pause and resume are no-ops when no session is active", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "unused",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+  assertEquals(await service.pause(), null);
+  assertEquals(await service.resume(), null);
+});
+
 Deno.test("session service serializes concurrent start requests", async () => {
   await resetDatabase();
   const storage = createStorage();

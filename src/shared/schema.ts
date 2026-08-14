@@ -76,6 +76,13 @@ export interface Session {
    * to backfill from during migration.
    */
   readonly domain: string | null;
+  /**
+   * ISO-8601 timestamp of the user's last pause, or `null` when the session is running or has
+   * never been paused; absent on records written before the pause/resume model landed.
+   * Distinct from {@link endedAt}: paused sessions remain the `activeSessionId` and can be
+   * resumed from the toolbar without a new session id.
+   */
+  readonly pausedAt?: string | null;
   readonly notes: readonly Note[];
 }
 
@@ -126,6 +133,21 @@ export function validateSession(candidate: unknown): SessionValidationResult {
     return {
       valid: false,
       error: { reason: "invalid-field", field: "domain", detail: "must be string or null" },
+    };
+  }
+
+  if (
+    record.pausedAt !== undefined &&
+    record.pausedAt !== null &&
+    typeof record.pausedAt !== "string"
+  ) {
+    return {
+      valid: false,
+      error: {
+        reason: "invalid-field",
+        field: "pausedAt",
+        detail: "must be string, null, or absent",
+      },
     };
   }
 

@@ -73,7 +73,7 @@ async function startSession(
   const tabId = await tabIdForPage(context, page);
   await waitForActionState(serviceWorker, tabId, {
     badgeText: "0",
-    title: "Point and Shoot — End session (0 notes)",
+    title: "Point and Shoot — Pause session (0 notes)",
   });
   const pointers = await readSessionPointers(serviceWorker);
   if (pointers.activeId === undefined) throw new Error("toolbar action did not start a session");
@@ -82,20 +82,62 @@ async function startSession(
 }
 
 async function endSession(
-  context: BrowserContext,
-  page: Page,
-  extensionId: string,
+  _context: BrowserContext,
+  _page: Page,
+  _extensionId: string,
   serviceWorker: Worker,
   sessionId: string,
   expectedNoteCount: number,
 ): Promise<Session> {
-  await triggerExtensionAction(context, page, extensionId);
-  await waitForHostCount(page, 0);
-  const tabId = await tabIdForPage(context, page);
-  await waitForActionState(serviceWorker, tabId, {
-    badgeText: "",
-    title: "Point and Shoot — Start session",
-  });
+  // Toolbar click no longer ends a session — it pauses (see ADR-0022). Simulate the
+  // Compile-Plan click directly from the service worker: stamp `endedAt`, clear `pausedAt`,
+  // and drop the active pointer while keeping `displaySessionId` on the completed record.
+  await serviceWorker.evaluate(async (id: string) => {
+    const global = globalThis as unknown as {
+      readonly chrome: {
+        readonly storage: {
+          readonly local: {
+            get(keys: readonly string[]): Promise<Record<string, unknown>>;
+            set(items: Record<string, unknown>): Promise<void>;
+            remove(keys: readonly string[]): Promise<void>;
+          };
+        };
+      };
+    };
+
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("point-and-shoot", 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const record = await new Promise<Record<string, unknown> | undefined>((resolve, reject) => {
+        const tx = database.transaction("sessions", "readwrite");
+        const store = tx.objectStore("sessions");
+        const get = store.get(id);
+        get.onsuccess = () => resolve(get.result as Record<string, unknown> | undefined);
+        get.onerror = () => reject(get.error);
+      });
+      if (record === undefined) throw new Error(`session ${id} not found`);
+      const ended = { ...record, endedAt: new Date().toISOString(), pausedAt: null };
+      await new Promise<void>((resolve, reject) => {
+        const tx = database.transaction("sessions", "readwrite");
+        tx.objectStore("sessions").put(ended);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally {
+      database.close();
+    }
+    await global.chrome.storage.local.remove(["activeSessionId"]);
+    const current = await global.chrome.storage.local.get(["sessionRevision"]);
+    const next = typeof current.sessionRevision === "number" ? current.sessionRevision + 1 : 1;
+    await global.chrome.storage.local.set({
+      displaySessionId: id,
+      sessionRevision: next,
+    });
+  }, sessionId);
+
   const pointers = await readSessionPointers(serviceWorker);
   assertEquals(pointers.activeId, undefined);
   assertEquals(pointers.displayId, sessionId);
@@ -372,11 +414,11 @@ Deno.test("session survives a real Chromium restart before end and fresh start",
         assertEquals(
           await waitForActionState(firstLaunch.serviceWorker, tabId, {
             badgeText: "1",
-            title: "Point and Shoot — End session (1 note)",
+            title: "Point and Shoot — Pause session (1 note)",
           }),
           {
             badgeText: "1",
-            title: "Point and Shoot — End session (1 note)",
+            title: "Point and Shoot — Pause session (1 note)",
           },
         );
         const resumedPointers = await readSessionPointers(firstLaunch.serviceWorker);

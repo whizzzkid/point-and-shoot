@@ -318,9 +318,11 @@ export function NotesPanel(
             <p className="ps-eyebrow">
               {session === null
                 ? "Session"
-                : session.endedAt === null
-                ? "Current session"
-                : "Completed session"}
+                : session.endedAt !== null
+                ? "Completed session"
+                : session.pausedAt != null
+                ? "Paused session"
+                : "Current session"}
             </p>
             {editingSessionName && session !== null
               ? (
@@ -408,7 +410,26 @@ export function NotesPanel(
                   <Button
                     disabled={busy}
                     icon={<Icon name="list-checks" />}
-                    onClick={() => setView("plan")}
+                    onClick={() => {
+                      if (session === null || session === undefined) {
+                        setView("plan");
+                        return;
+                      }
+                      setBusy(true);
+                      repository.complete(session)
+                        .then((ended) => {
+                          setSession(ended);
+                          setView("plan");
+                        })
+                        .catch((cause: unknown) => {
+                          setError(
+                            cause instanceof Error
+                              ? cause.message
+                              : "The session could not be completed.",
+                          );
+                        })
+                        .finally(() => setBusy(false));
+                    }}
                   >
                     Compile plan
                   </Button>

@@ -36,6 +36,14 @@ export interface SessionService {
   start(pageTitle?: string, pageUrl?: string): Promise<Session>;
   /** Ends the active session while retaining it as the side panel's displayed session. */
   end(): Promise<Session | null>;
+  /**
+   * Marks the active session as paused without ending it. Notes stop flowing until
+   * {@link SessionService.resume} is called; the session pointer is retained so a later toolbar
+   * click resumes the same session rather than starting a new one. No-op when nothing is active.
+   */
+  pause(): Promise<Session | null>;
+  /** Clears the paused marker on the active session. No-op when nothing is active. */
+  resume(): Promise<Session | null>;
   /** Appends one capture to the active session, creating a session defensively when absent. */
   append(request: AddNoteRequest): Promise<CapturedNoteResult>;
 }
@@ -182,6 +190,52 @@ async function endSession(
   }
 }
 
+async function pauseSession(
+  storage: BrowserShim["storage"]["local"],
+  dependencies: SessionServiceDependencies,
+): Promise<Session | null> {
+  const database = await dependencies.openDatabase();
+  try {
+    const active = await loadActiveFrom(storage, database);
+    if (active === null) return null;
+    if (active.pausedAt != null) return active;
+    const paused: Session = { ...active, pausedAt: dependencies.now().toISOString() };
+    await putSession(database, paused);
+    const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
+    await storage.set({
+      [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+        stored[SESSION_REVISION_STORAGE_KEY],
+      ),
+    });
+    return paused;
+  } finally {
+    database.close();
+  }
+}
+
+async function resumeSession(
+  storage: BrowserShim["storage"]["local"],
+  dependencies: SessionServiceDependencies,
+): Promise<Session | null> {
+  const database = await dependencies.openDatabase();
+  try {
+    const active = await loadActiveFrom(storage, database);
+    if (active === null) return null;
+    if (active.pausedAt == null) return active;
+    const resumed: Session = { ...active, pausedAt: null };
+    await putSession(database, resumed);
+    const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
+    await storage.set({
+      [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+        stored[SESSION_REVISION_STORAGE_KEY],
+      ),
+    });
+    return resumed;
+  } finally {
+    database.close();
+  }
+}
+
 async function appendCapturedNote(
   storage: BrowserShim["storage"]["local"],
   dependencies: SessionServiceDependencies,
@@ -258,6 +312,8 @@ export function createSessionService(
     start: (pageTitle, pageUrl) =>
       enqueue(() => startSession(storage, dependencies, pageTitle, pageUrl)),
     end: () => enqueue(() => endSession(storage, dependencies)),
+    pause: () => enqueue(() => pauseSession(storage, dependencies)),
+    resume: () => enqueue(() => resumeSession(storage, dependencies)),
     append: (request) => enqueue(() => appendCapturedNote(storage, dependencies, request)),
   };
 }
