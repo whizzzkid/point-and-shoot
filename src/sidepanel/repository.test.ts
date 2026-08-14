@@ -159,6 +159,88 @@ Deno.test("notes repository keeps loading the displayed session after it ends", 
   await resetDatabase();
 });
 
+Deno.test("notes repository lists sessions filtered by domain, newest first", async () => {
+  await resetDatabase();
+  const database = await openStore();
+  try {
+    await putSession(database, {
+      ...SESSION,
+      id: "example-older",
+      domain: "example.com",
+      createdAt: "2026-08-01T00:00:00.000Z",
+    });
+    await putSession(database, {
+      ...SESSION,
+      id: "example-newer",
+      domain: "example.com",
+      createdAt: "2026-08-14T00:00:00.000Z",
+    });
+    await putSession(database, {
+      ...SESSION,
+      id: "other-domain",
+      domain: "docs.example.com",
+      createdAt: "2026-08-10T00:00:00.000Z",
+    });
+  } finally {
+    database.close();
+  }
+
+  const repository = createNotesRepository(createStorage());
+  const listed = await repository.listForDomain("example.com");
+  assertEquals(listed.map((session) => session.id), ["example-newer", "example-older"]);
+  await resetDatabase();
+});
+
+Deno.test("notes repository loadIntoPanel repoints displaySessionId and bumps revision", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  await createNotesRepository(storage).loadIntoPanel("session-x");
+  const stored = await storage.get([DISPLAY_SESSION_ID_STORAGE_KEY, SESSION_REVISION_STORAGE_KEY]);
+  assertEquals(stored[DISPLAY_SESSION_ID_STORAGE_KEY], "session-x");
+  assertEquals(stored[SESSION_REVISION_STORAGE_KEY], 1);
+});
+
+Deno.test(
+  "notes repository deleteFromPanel removes stored record and clears matching pointers",
+  async () => {
+    await resetDatabase();
+    const storage = createStorage("session-1", "session-1");
+    const database = await openStore();
+    try {
+      await putSession(database, SESSION);
+    } finally {
+      database.close();
+    }
+
+    await createNotesRepository(storage).deleteFromPanel("session-1");
+
+    const stored = await storage.get([
+      ACTIVE_SESSION_ID_STORAGE_KEY,
+      DISPLAY_SESSION_ID_STORAGE_KEY,
+    ]);
+    assertEquals(stored[ACTIVE_SESSION_ID_STORAGE_KEY], undefined);
+    assertEquals(stored[DISPLAY_SESSION_ID_STORAGE_KEY], undefined);
+    assertEquals(await createNotesRepository(storage).load(), null);
+    await resetDatabase();
+  },
+);
+
+Deno.test("notes repository currentDomain reads the active tab hostname", async () => {
+  const tabs: Pick<BrowserShim["tabs"], "query"> = {
+    query: () => Promise.resolve([{ id: 1, url: "https://docs.example.com/a?b=1" }]),
+  };
+  const repository = createNotesRepository(createStorage(), undefined, tabs);
+  assertEquals(await repository.currentDomain(), "docs.example.com");
+});
+
+Deno.test("notes repository currentDomain returns null when tab URL is unparseable", async () => {
+  const tabs: Pick<BrowserShim["tabs"], "query"> = {
+    query: () => Promise.resolve([{ id: 1, url: "" }]),
+  };
+  const repository = createNotesRepository(createStorage(), undefined, tabs);
+  assertEquals(await repository.currentDomain(), null);
+});
+
 Deno.test("notes repository watches session pointer and revision changes", () => {
   let listener: StorageChangedListener | undefined;
   let removed: StorageChangedListener | undefined;

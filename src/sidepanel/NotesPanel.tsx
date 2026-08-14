@@ -204,6 +204,21 @@ export function NotesPanel(
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [view, setView] = useState<"notes" | "plan">("notes");
+  const [domainSessions, setDomainSessions] = useState<readonly Session[]>();
+  const [currentDomain, setCurrentDomain] = useState<string | null>();
+  const [confirmDelete, setConfirmDelete] = useState<Session>();
+
+  const reloadDomainSessions = (): void => {
+    void repository.currentDomain()
+      .then(async (domain) => {
+        setCurrentDomain(domain);
+        const list = await repository.listForDomain(domain);
+        setDomainSessions(list);
+      })
+      .catch(() => {
+        setDomainSessions([]);
+      });
+  };
 
   useEffect(() => {
     let active = true;
@@ -226,8 +241,12 @@ export function NotesPanel(
           }
         });
     };
-    const stopWatching = repository.watch(reload);
+    const stopWatching = repository.watch(() => {
+      reload();
+      reloadDomainSessions();
+    });
     reload();
+    reloadDomainSessions();
     return () => {
       active = false;
       stopWatching();
@@ -368,6 +387,74 @@ export function NotesPanel(
                 </div>
               )}
           </div>
+          <details className="ps-domain-sessions">
+            <summary className="ps-eyebrow">
+              {currentDomain === null || currentDomain === undefined
+                ? "Sessions on this page"
+                : `Sessions on ${currentDomain}`}
+              <Badge>{domainSessions?.length ?? 0}</Badge>
+            </summary>
+            {domainSessions === undefined
+              ? <p>Loading…</p>
+              : domainSessions.length === 0
+              ? (
+                <p className="ps-domain-sessions-empty">
+                  {currentDomain === null || currentDomain === undefined
+                    ? "This page has no captured sessions yet."
+                    : `No captured sessions on ${currentDomain} yet.`}
+                </p>
+              )
+              : (
+                <ul className="ps-domain-session-list">
+                  {domainSessions.map((entry) => {
+                    const isLoaded = session?.id === entry.id;
+                    return (
+                      <li
+                        key={entry.id}
+                        className={isLoaded
+                          ? "ps-domain-session ps-domain-session-loaded"
+                          : "ps-domain-session"}
+                      >
+                        <button
+                          className="ps-domain-session-load"
+                          disabled={busy}
+                          onClick={() => {
+                            setError(undefined);
+                            void repository.loadIntoPanel(entry.id).catch(
+                              (cause: unknown) => {
+                                setError(
+                                  cause instanceof Error
+                                    ? cause.message
+                                    : "The session could not be loaded.",
+                                );
+                              },
+                            );
+                          }}
+                          type="button"
+                          title={entry.name}
+                        >
+                          <span className="ps-domain-session-name">{entry.name}</span>
+                          <span className="ps-domain-session-meta">
+                            {entry.notes.length} {entry.notes.length === 1 ? "note" : "notes"}
+                            {entry.endedAt !== null
+                              ? " · Completed"
+                              : entry.pausedAt != null
+                              ? " · Paused"
+                              : " · Running"}
+                          </span>
+                        </button>
+                        <IconButton
+                          icon={<Icon name="trash-2" />}
+                          label={`Delete ${entry.name}`}
+                          onClick={() => setConfirmDelete(entry)}
+                          size={16}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+          </details>
           <nav aria-label="Captured pages" className="ps-page-list">
             <p className="ps-eyebrow">Pages</p>
             {groups.map((group) => (
@@ -520,6 +607,42 @@ export function NotesPanel(
           title="Delete note?"
         >
           Deleting this note permanently removes its screenshot. This cannot be undone.
+        </Dialog>
+
+        <Dialog
+          footer={
+            <>
+              <Button onClick={() => setConfirmDelete(undefined)} variant="secondary">
+                Cancel
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  const target = confirmDelete;
+                  if (target === undefined) return;
+                  setConfirmDelete(undefined);
+                  setError(undefined);
+                  void repository.deleteFromPanel(target.id).catch((cause: unknown) => {
+                    setError(
+                      cause instanceof Error ? cause.message : "The session could not be deleted.",
+                    );
+                  });
+                }}
+                variant="danger"
+              >
+                Delete session
+              </Button>
+            </>
+          }
+          onClose={() => setConfirmDelete(undefined)}
+          open={confirmDelete !== undefined}
+          title="Delete this session?"
+        >
+          {confirmDelete
+            ? `"${confirmDelete.name}" and its ${confirmDelete.notes.length} note${
+              confirmDelete.notes.length === 1 ? "" : "s"
+            } will be removed. This cannot be undone.`
+            : ""}
         </Dialog>
         <VersionLabel version={version} />
       </main>
