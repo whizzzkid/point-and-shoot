@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,34 +48,6 @@ async function closeBuiltSite(server) {
     server.close((error) => (error === undefined ? resolveClosed() : reject(error)));
     server.closeAllConnections();
   });
-}
-
-async function storeFixture({ chrome = false, firefox = false, firefoxStatus = "unpublished" }) {
-  const root = await mkdtemp(resolve(tmpdir(), "point-and-shoot-install-fixture-"));
-  const distRoot = resolve(root, "dist");
-  const indexPath = resolve(distRoot, "index.html");
-  try {
-    await cp(resolve(siteRoot, "dist"), distRoot, { recursive: true });
-    const storeActions = [
-      chrome
-        ? '<div class="install-store"><a data-store-action="chromium" href="https://chromewebstore.google.com/detail/point-and-shoot/abcdefghijklmnop">Install from Chrome Web Store</a></div>'
-        : "",
-      firefox
-        ? '<div class="install-store"><a data-store-action="gecko" href="https://addons.mozilla.org/firefox/addon/point-and-shoot/">Install from Firefox Add-ons</a></div>'
-        : "",
-    ].join("");
-    const html = (await readFile(indexPath, "utf8"))
-      .replaceAll('<div class="install-source">', `${storeActions}<div class="install-source">`)
-      .replaceAll(
-        "Firefox Add-ons listing is unpublished.",
-        `Firefox Add-ons listing is ${firefoxStatus}.`,
-      );
-    await writeFile(indexPath, html);
-    return { distRoot, root };
-  } catch (error) {
-    await rm(root, { force: true, recursive: true });
-    throw error;
-  }
 }
 
 Deno.test("models unpublished, partial, and published store actions from canonical listing data", () => {
