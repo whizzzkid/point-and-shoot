@@ -36,4 +36,4 @@ registerCaptureHandler(browser);
 registerFrameworkProbeHandler(browser);
 registerNoteHandler(browser, sessions);
 registerNotePreviewHandler(browser);
-registerTabLifecycleHandler(browser, sessions, activation, () => sessionAction.synchronize());
+registerTabLifecycleHandler(browser, sessions, () => sessionAction.synchronize());
