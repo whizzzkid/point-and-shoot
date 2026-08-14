@@ -30,18 +30,18 @@ contracts and links to the ADRs that explain their architectural constraints.
 Keeping these distinct is what makes the set navigable. A document in the wrong category is a
 document nobody finds.
 
-- **ADR** ([`adr/NNNN-slug.md`](adr/README.md)) — _why_ a decision was made, the alternatives
-  rejected, and the consequences accepted. Written once, at decision time. Superseded rather than
-  edited: a wrong ADR gets a successor that references it, because the record of having believed
-  something is itself the value.
-- **Plan** ([`plans/<initiative>/`](plans/README.md)) — how active proposed work is sequenced and
-  verified. Temporary: retire it when delivery is complete, after current guarantees move to specs
-  and lasting rationale moves to ADRs.
-- **Spec** ([`specs/*.md`](specs/README.md)) — _what_ the software guarantees. Schemas, formats,
+- **ADR** ([`adr/`](adr/README.md)) — _why_ a decision was made, the alternatives rejected, and the
+  consequences accepted. Written once, at decision time. Superseded rather than edited: a wrong ADR
+  gets a successor that references it, because the record of having believed something is itself the
+  value. Each file follows the `adr/NNNN-slug.md` naming convention.
+- **Plan** ([`plans/`](plans/README.md)) — how active proposed work is sequenced and verified.
+  Temporary: retire it when delivery is complete, after current guarantees move to specs and lasting
+  rationale moves to ADRs.
+- **Spec** ([`specs/`](specs/README.md)) — _what_ the software guarantees. Schemas, formats,
   invariants, error behavior. Normative: an implementation that disagrees with a spec is a bug in
   one of the two, and the PR must say which.
-- **Tutorial** ([`tutorials/*.md`](tutorials/README.md)) — how a _person_ accomplishes a task, start
-  to finish, with real commands. Every command in a tutorial has been run.
+- **Tutorial** ([`tutorials/`](tutorials/README.md)) — how a _person_ accomplishes a task, start to
+  finish, with real commands. Every command in a tutorial has been run.
 - **Design** ([`design.md`](design.md)) — the visual and interaction language, and the rules that
   keep the shipped UI faithful to the exported bundle.
 
