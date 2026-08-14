@@ -291,13 +291,22 @@ export async function checkSite({
     const urlsToCheck = [];
     for (const url of externalUrls) {
       const match = blobMainPattern.exec(url);
-      if (match?.groups?.path) {
-        const localPath = resolve(repositoryRoot, match.groups.path);
-        try {
-          await stat(localPath);
-          continue;
-        } catch {
-          // Not present locally — fall through and hit the network.
+      const capturedPath = match?.groups?.path;
+      if (typeof capturedPath === "string" && capturedPath.length > 0) {
+        // Reject any traversal segment before touching the filesystem — the regex accepts any
+        // path characters, and `..` could reach outside the repo root.
+        const decoded = decodeURIComponent(capturedPath);
+        const containsTraversal = decoded.split("/").some((segment) => segment === "..");
+        if (!containsTraversal) {
+          const localPath = resolve(repositoryRoot, decoded);
+          if (localPath.startsWith(`${repositoryRoot}/`) || localPath === repositoryRoot) {
+            try {
+              await stat(localPath);
+              continue;
+            } catch {
+              // Not present locally — fall through and hit the network.
+            }
+          }
         }
       }
       urlsToCheck.push(url);

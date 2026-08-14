@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "currentVersionSummary": "Capture annotated UI evidence and export a local fix prompt from Chrome or Firefox.",
-  "sourceDigest": "e22424159f4777ef3bdcc8b5064608e5845ca77e6347d0b68245ebde7c616ff7",
+  "sourceDigest": "b27b342c44d5bf6e8248c0ac5ee06bdc1d573d170486a368097f48f534e14725",
   "sourcePaths": [
     "build/build.ts",
     "build/icons.ts",
@@ -172,19 +172,19 @@
     },
     {
       "fileName": "02-notes-review.png",
-      "sha256": "5ca665b443ec79f84e4f16e7a6cde33b79f3c113d43623ac85749b26f0d98ef9"
+      "sha256": "e23026f3da86b84b8a46c2e8ff2df8fd2e0edfe1be06c0c6969461e9b861fc35"
     },
     {
       "fileName": "03-note-hover-highlight.png",
-      "sha256": "4a6cf1738027230a1d48d94483e1189306519d6a14dda9205c4f960bbc30c4d1"
+      "sha256": "3479aaf57bff9722e36c4a8bb08c7d954eb489118fb3e42e327ec561a834cb35"
     },
     {
       "fileName": "04-compiled-plan.png",
-      "sha256": "155db08b6c1af60d35474473784e9670ec49281bdbbeb3b43967a067e152a6a1"
+      "sha256": "f942961bf8a20420d5acd36d0ffc9c658503a5d6a5a8ef0671163f6809874697"
     },
     {
       "fileName": "05-privacy-settings.png",
-      "sha256": "909288b18627b8c9dae62b0141580aa6ba3c9b60eac71c4b18494474613f9583"
+      "sha256": "a59426e68537c0f50f7dc5619bf56692331b47a3153bf3740f2b5045f1392f79"
     },
     {
       "fileName": "small-promo.png",

@@ -67,15 +67,22 @@ const MIGRATIONS: readonly ((db: IDBDatabase, tx: IDBTransaction) => void)[] = [
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (!cursor) return;
-      const record = cursor.value as Record<string, unknown>;
-      const notes = Array.isArray(record.notes) ? record.notes : [];
-      const firstNote = notes[0] as { pageUrl?: unknown } | undefined;
-      const migrated = {
-        ...record,
-        schemaVersion: 2,
-        domain: backfillDomain(firstNote?.pageUrl),
-      };
-      cursor.update(migrated);
+      const raw = cursor.value;
+      // Guard against structured-clone corruption: a non-object row cannot be spread, and
+      // `cursor.update` on garbage would just re-persist garbage. Skip and continue so one bad
+      // row cannot brick the upgrade for the rest of the user's sessions — validation on read
+      // handles the corrupt record later.
+      if (typeof raw === "object" && raw !== null) {
+        const record = raw as Record<string, unknown>;
+        const notes = Array.isArray(record.notes) ? record.notes : [];
+        const firstNote = notes[0] as { pageUrl?: unknown } | undefined;
+        const migrated = {
+          ...record,
+          schemaVersion: 2,
+          domain: backfillDomain(firstNote?.pageUrl),
+        };
+        cursor.update(migrated);
+      }
       cursor.continue();
     };
   },
