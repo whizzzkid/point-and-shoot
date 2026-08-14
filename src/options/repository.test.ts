@@ -125,6 +125,7 @@ Deno.test("options repository clears sessions and the active pointer without del
   const database = await openStore();
   await putSession(database, {
     createdAt: "2026-07-28T20:00:00.000Z",
+    domain: null,
     endedAt: null,
     id: "session-options",
     name: "Options test",

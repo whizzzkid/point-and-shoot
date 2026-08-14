@@ -15,6 +15,7 @@ import { createNotesRepository } from "./repository.ts";
 
 const SESSION: Session = {
   createdAt: "2026-07-28T12:00:00.000Z",
+  domain: null,
   endedAt: null,
   id: "session-1",
   name: "Checkout review",

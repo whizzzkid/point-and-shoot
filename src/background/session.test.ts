@@ -138,6 +138,7 @@ Deno.test("session service replaces a stale or already-ended active pointer", as
   const storage = createStorage({ [ACTIVE_SESSION_ID_STORAGE_KEY]: "ended-session" });
   const endedSession: Session = {
     createdAt: "2026-07-30T11:00:00.000Z",
+    domain: null,
     endedAt: "2026-07-30T11:30:00.000Z",
     id: "ended-session",
     name: "Completed review",
@@ -161,6 +162,34 @@ Deno.test("session service replaces a stale or already-ended active pointer", as
   assertEquals(storage.values.get(ACTIVE_SESSION_ID_STORAGE_KEY), "fresh-session");
   assertEquals(storage.values.get(DISPLAY_SESSION_ID_STORAGE_KEY), "fresh-session");
 
+  await resetDatabase();
+});
+
+Deno.test("session service captures the tab hostname as the session domain", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const started = await service.start("Docs", "https://docs.example.com/guide?ref=x");
+  assertEquals(started.domain, "docs.example.com");
+  await resetDatabase();
+});
+
+Deno.test("session service leaves domain null when the tab URL is unparseable", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "no-domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const started = await service.start("New tab", "");
+  assertEquals(started.domain, null);
   await resetDatabase();
 });
 

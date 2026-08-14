@@ -36,9 +36,11 @@ export interface SessionActionController {
    *
    * @param tabId Browser tab whose overlay should mount or unmount.
    * @param pageTitle Current tab title used when a fresh session is created.
+   * @param pageUrl Current tab URL used to capture the session's domain when a fresh session is
+   *   created. Unparseable URLs (e.g. `chrome://newtab/`) leave `domain` `null`.
    * @returns The resulting lifecycle state.
    */
-  toggle(tabId: number, pageTitle?: string): Promise<SessionActionResult>;
+  toggle(tabId: number, pageTitle?: string, pageUrl?: string): Promise<SessionActionResult>;
   /** Rehydrates the global badge and tooltip from durable active-session state. */
   synchronize(): Promise<void>;
   /** Reads the canonical active session state for injected UI. */
@@ -137,7 +139,7 @@ export function createSessionActionController(
         }
         await showActive(browser, active.notes.length);
       }),
-    toggle: (tabId, pageTitle) =>
+    toggle: (tabId, pageTitle, pageUrl) =>
       enqueue(async () => {
         const active = await sessions.loadActive();
         if (active !== null) {
@@ -163,7 +165,7 @@ export function createSessionActionController(
           return { state: "unavailable" };
         }
         try {
-          const started = await sessions.start(pageTitle);
+          const started = await sessions.start(pageTitle, pageUrl);
           await showActive(browser, started.notes.length);
           return {
             noteCount: started.notes.length,
@@ -224,7 +226,7 @@ export function registerSessionActionHandler(
   browser.action.onClicked.addListener((tab) => {
     if (tab.id === undefined) return;
     void browser.openPanel(tab.id).catch(reportError);
-    void controller.toggle(tab.id, tab.title).catch(reportError);
+    void controller.toggle(tab.id, tab.title, tab.url).catch(reportError);
   });
   void controller.synchronize().catch(reportError);
 }

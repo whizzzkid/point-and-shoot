@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import type { Note, Session } from "../shared/schema.ts";
+import { type Note, SCHEMA_VERSION, type Session } from "../shared/schema.ts";
 import {
   deleteNote,
   effectiveStripQuery,
@@ -29,6 +29,7 @@ function makeNote(id: string, pageUrl: string, text: string): Note {
 
 const SESSION: Session = {
   createdAt: "2026-07-28T12:00:00.000Z",
+  domain: "example.com",
   endedAt: null,
   id: "session-1",
   name: "Checkout review",
@@ -37,7 +38,7 @@ const SESSION: Session = {
     makeNote("note-2", "https://example.com/pricing", "Pricing"),
     makeNote("note-3", "https://example.com/checkout?access_token=two", "Second"),
   ],
-  schemaVersion: 1,
+  schemaVersion: SCHEMA_VERSION,
 };
 
 Deno.test("groupNotesByPage groups query variants by origin and path in first-seen order", () => {

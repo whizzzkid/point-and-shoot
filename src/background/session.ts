@@ -29,9 +29,11 @@ export interface SessionService {
    * Resumes the active session or creates and displays a fresh session named for the page.
    *
    * @param pageTitle Current page title used only when creating a session.
+   * @param pageUrl Current page URL, used to capture the session's hostname when creating a new
+   *   session. `undefined` or unparseable inputs leave `domain` `null`.
    * @returns The resumed or newly created session.
    */
-  start(pageTitle?: string): Promise<Session>;
+  start(pageTitle?: string, pageUrl?: string): Promise<Session>;
   /** Ends the active session while retaining it as the side panel's displayed session. */
   end(): Promise<Session | null>;
   /** Appends one capture to the active session, creating a session defensively when absent. */
@@ -69,9 +71,29 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
   return `${title}-${timestamp}`;
 }
 
-function createSession(id: string, createdAt: Date, pageTitle?: string): Session {
+/**
+ * Extracts the hostname of a URL for {@link Session.domain}. Returns `null` for `undefined`, empty,
+ * or unparseable inputs (`chrome://newtab/`, `about:blank`, `""`); the ADR-0002 activeTab model
+ * gives the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ */
+function domainFromUrl(pageUrl: string | undefined): string | null {
+  if (pageUrl === undefined || pageUrl === "") return null;
+  try {
+    return new URL(pageUrl).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
+function createSession(
+  id: string,
+  createdAt: Date,
+  pageTitle?: string,
+  pageUrl?: string,
+): Session {
   return {
     createdAt: createdAt.toISOString(),
+    domain: domainFromUrl(pageUrl),
     endedAt: null,
     id,
     name: defaultSessionName(pageTitle, createdAt),
@@ -109,13 +131,19 @@ async function startSession(
   storage: BrowserShim["storage"]["local"],
   dependencies: SessionServiceDependencies,
   pageTitle?: string,
+  pageUrl?: string,
 ): Promise<Session> {
   const database = await dependencies.openDatabase();
   try {
     const active = await loadActiveFrom(storage, database);
     if (active !== null) return active;
 
-    const session = createSession(dependencies.createId(), dependencies.now(), pageTitle);
+    const session = createSession(
+      dependencies.createId(),
+      dependencies.now(),
+      pageTitle,
+      pageUrl,
+    );
     await putSession(database, session);
     await pointAtSession(storage, session.id);
     return session;
@@ -167,7 +195,8 @@ async function appendCapturedNote(
   try {
     const createdAt = dependencies.now();
     const active = await loadActiveFrom(storage, database);
-    const session = active ?? createSession(dependencies.createId(), createdAt, request.pageTitle);
+    const session = active ??
+      createSession(dependencies.createId(), createdAt, request.pageTitle, request.pageUrl);
     const noteId = dependencies.createId();
     const next: Session = {
       ...session,
@@ -226,7 +255,8 @@ export function createSessionService(
           database.close();
         }
       }),
-    start: (pageTitle) => enqueue(() => startSession(storage, dependencies, pageTitle)),
+    start: (pageTitle, pageUrl) =>
+      enqueue(() => startSession(storage, dependencies, pageTitle, pageUrl)),
     end: () => enqueue(() => endSession(storage, dependencies)),
     append: (request) => enqueue(() => appendCapturedNote(storage, dependencies, request)),
   };

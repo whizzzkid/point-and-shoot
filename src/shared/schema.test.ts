@@ -8,6 +8,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     name: "Checkout flow",
     createdAt: "2026-07-27T00:00:00.000Z",
     endedAt: null,
+    domain: "example.com",
     notes: [
       {
         id: "note-1",
