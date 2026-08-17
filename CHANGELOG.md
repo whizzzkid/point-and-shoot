@@ -1,5 +1,46 @@
 # Changelog
 
+## [2026.817.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.813.1...v2026.817.0) (2026-08-17)
+
+
+### Features
+
+* add Session.domain (schema v2) + IDB migration + tab-URL capture ([b2d6754](https://github.com/whizzzkid/point-and-shoot/commit/b2d675496a719953d0f526b8227539450ce090fa))
+* options page all-sessions manager with group-by-domain ([d38ff67](https://github.com/whizzzkid/point-and-shoot/commit/d38ff67aac736893f94d3055c14d48bedd24d050))
+* **options:** Sessions tab with per-session Load/Delete and group-by-domain ([c42b46e](https://github.com/whizzzkid/point-and-shoot/commit/c42b46edffe9164bf12bc9b34f0e65532f9a2baa))
+* **schema:** add Session.domain with v2 IDB migration and capture from tab URL ([fc72490](https://github.com/whizzzkid/point-and-shoot/commit/fc724901cd33b8c6f55db1d33d7960d04fbf796a))
+* **session:** pause/resume via toolbar + follow navigation + Compile Plan ends ([beb2769](https://github.com/whizzzkid/point-and-shoot/commit/beb276912b1b917a7ae92ad6d3a31b92d83c6aa3))
+* side-panel current-domain session dropdown ([7f044a4](https://github.com/whizzzkid/point-and-shoot/commit/7f044a43404478d8b0f0324bf3312f247a81a67c))
+* **sidepanel:** current-domain session dropdown with load and delete ([8c44b42](https://github.com/whizzzkid/point-and-shoot/commit/8c44b4278072ca661004334214eb0ecfecdcc7fd))
+* **site:** 🏷️ render store badge images on the website install section ([0be8114](https://github.com/whizzzkid/point-and-shoot/commit/0be8114b1bc799caacf09ff03a0f0f2ba991fac3))
+* **site:** 🏷️ render store badge images on the website install section ([0c196f8](https://github.com/whizzzkid/point-and-shoot/commit/0c196f8b19686aa44938c66031f4c9538f23c4f9))
+* **site:** add nav icons, privacy link, star count, and theme toggle ([c172593](https://github.com/whizzzkid/point-and-shoot/commit/c172593265a388afc01a11ebeedf9c1e61ff1a54))
+* **site:** enhance docs header with nav icons, privacy link, star count, and theme toggle ([21b52b1](https://github.com/whizzzkid/point-and-shoot/commit/21b52b116d30570ffb5eab47e469a914b831907b))
+* toolbar pause/resume, follow navigation, Compile Plan completes ([9014e3a](https://github.com/whizzzkid/point-and-shoot/commit/9014e3a98cd4c179ca6b7d8633d00d3298e994fb))
+
+
+### Bug Fixes
+
+* **ci:** unblock link-check + a11y + visual for schema v2 rollout ([1dbe1b1](https://github.com/whizzzkid/point-and-shoot/commit/1dbe1b11b42e210e9813811b5732447c8f9d8547))
+* **docs:** align link text with destination for doc-category references ([fe0b570](https://github.com/whizzzkid/point-and-shoot/commit/fe0b5709158c022f337d2688d8f49cade6f0e9d0))
+* **docs:** link bare doc-path references in docs index ([8d559c5](https://github.com/whizzzkid/point-and-shoot/commit/8d559c5bf08d14ff024430de514582b61a2a9bb9))
+* **docs:** link bare doc-path references in docs index ([5bad2c1](https://github.com/whizzzkid/point-and-shoot/commit/5bad2c142d7a5fe9cf888121ff67a58c444b60c3))
+* **options:** address Copilot review on PR [#100](https://github.com/whizzzkid/point-and-shoot/issues/100) ([896094f](https://github.com/whizzzkid/point-and-shoot/commit/896094f643872d4a48db9e017e16afc072d113c3))
+* **session:** tab-lifecycle syncs the badge without re-injecting overlay ([ca93d7a](https://github.com/whizzzkid/point-and-shoot/commit/ca93d7a89af22eac897cd3ade9e48865f5906090))
+* **sidepanel:** address Copilot review on PR [#101](https://github.com/whizzzkid/point-and-shoot/issues/101) ([a54e0f3](https://github.com/whizzzkid/point-and-shoot/commit/a54e0f3ef23584012838e79efb64a5ae2d3c8f52))
+* **site:** 🎨 use shared motion tokens and fix badge height/loading ([4391102](https://github.com/whizzzkid/point-and-shoot/commit/43911022131f53f7b6d825f69cc66a87957ae515))
+* **site:** constrain docs sidebar overflow and improve font sizing ([3b7ac69](https://github.com/whizzzkid/point-and-shoot/commit/3b7ac697d60ee1ab3f724226cfd73447da706786))
+* **site:** constrain sidebar grid tracks to prevent overflow and improve font consistency ([b9aacc3](https://github.com/whizzzkid/point-and-shoot/commit/b9aacc3163d22f2a124d7109b0414d7a98d81791))
+* **site:** correct store badge sizing in closing section ([f00e8fd](https://github.com/whizzzkid/point-and-shoot/commit/f00e8fdec5507f0628fb19ef31ec8e32c0ccf9ea))
+* **site:** defer html.js until toggle handlers are wired, guard SiteIcon lookup ([c29876c](https://github.com/whizzzkid/point-and-shoot/commit/c29876ceeb4004949acc5464224f6d25705286cd))
+* **site:** remove max-width constraint from docs footer ([9dda02b](https://github.com/whizzzkid/point-and-shoot/commit/9dda02b447700bc058b9177811c90aba5532fdc1))
+* **site:** remove max-width constraint from docs footer ([7d3f467](https://github.com/whizzzkid/point-and-shoot/commit/7d3f467a7db1352c3fd9b95a434e602c97ae7e95))
+* **site:** scope closing-section icon sizing to direct child ([124013d](https://github.com/whizzzkid/point-and-shoot/commit/124013d08762c12fabffbab71a5907331544499c))
+* **store:** guard v1→v2 migration against corrupt non-object rows ([d95ea29](https://github.com/whizzzkid/point-and-shoot/commit/d95ea2964d2dd40227130a87537255a86761093c))
+* **test:** 🧹 remove unused storeFixture and dead imports ([49203fc](https://github.com/whizzzkid/point-and-shoot/commit/49203fc8989b1b10fc2352315963c8517bceae4f))
+* **toolbar:** stop repositioning the floating toolbar on scroll ([6c3bd1e](https://github.com/whizzzkid/point-and-shoot/commit/6c3bd1eae5bca48720c64048e528de831493d943))
+* **visual:** re-seed the popup between Compile Plan and popup capture ([0d4ef18](https://github.com/whizzzkid/point-and-shoot/commit/0d4ef18d3b9d01ac790ec98391419024b28ee175))
+
 ## [2026.813.1](https://github.com/whizzzkid/point-and-shoot/compare/v2026.813.0...v2026.813.1) (2026-08-13)
 
 
