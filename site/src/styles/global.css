@@ -461,7 +461,7 @@ h3 {
   text-align: center;
 }
 
-.closing img {
+.closing > img {
   width: var(--space-12);
   height: var(--space-12);
   margin-bottom: var(--space-6);
