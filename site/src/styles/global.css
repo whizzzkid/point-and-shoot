@@ -202,6 +202,18 @@ h3 {
   background: var(--accent-hover);
 }
 
+.button-github {
+  gap: var(--space-2);
+  border-color: var(--border-strong);
+  background: var(--bg-inset);
+  color: var(--text-primary);
+}
+
+.button-github:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+}
+
 .install-actions {
   display: grid;
   gap: var(--space-4);
