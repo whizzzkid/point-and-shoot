@@ -14,8 +14,8 @@ interface Props {
   currentId: string;
   entries: CollectionEntry<"docs">[];
   title: string;
-  prevEntry?: CollectionEntry<"docs">;
-  nextEntry?: CollectionEntry<"docs">;
+  prevEntry?: CollectionEntry<"docs"> | undefined;
+  nextEntry?: CollectionEntry<"docs"> | undefined;
 }
 
 const { currentId, entries, title, prevEntry, nextEntry } = Astro.props;
