@@ -108,6 +108,12 @@ treatment marks the current page only. The repository link carries the public st
 build time; nothing about it is fetched from the visitor's browser, and a build that cannot reach
 the GitHub API renders the link with no badge rather than failing or showing a placeholder.
 
+Every documentation page ends with a route back to the index: the footer links the documentation
+index and the published Markdown source on GitHub. A page with a neighbour in the published order
+also carries pagination links above that footer, and the rule dividing them sits above the
+pagination, so it separates the article body from the navigation rather than doubling the footer's
+own rule.
+
 Mermaid blocks render at build time to static SVG. The shipped documentation includes no Mermaid
 runtime and no client-side diagram fallback. Both themes derive from product tokens and honor
 `prefers-color-scheme` by default. A visitor may pin either theme from the header control; that
