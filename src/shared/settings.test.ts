@@ -38,7 +38,6 @@ Deno.test("settings load the settled defaults when extension storage is empty", 
   const storage = createStorage();
 
   assertEquals(await loadSettings(storage), {
-    exportSizeBudgetBytes: 2_000_000,
     frameworkHints: false,
     schemaVersion: 1,
     screenshotMaxDimension: 1_024,
@@ -52,7 +51,6 @@ Deno.test("settings load the settled defaults when extension storage is empty", 
 Deno.test("settings round-trip every supported value through one typed record", async () => {
   const storage = createStorage();
   const settings = {
-    exportSizeBudgetBytes: 8_000_000,
     frameworkHints: true,
     schemaVersion: 1 as const,
     screenshotMaxDimension: 2_048,
@@ -80,9 +78,20 @@ Deno.test("settings reject invalid writes and recover corrupt stored records wit
     () =>
       saveSettings(storage, {
         ...DEFAULT_SETTINGS,
-        exportSizeBudgetBytes: 3_000_000,
+        screenshotQuality: 3,
       } as unknown as ExtensionSettings),
     TypeError,
     "Invalid extension settings",
   );
+});
+
+Deno.test("settings load strips legacy exportSizeBudgetBytes from stored v1 records", async () => {
+  const storage = createStorage({
+    [SETTINGS_STORAGE_KEY]: {
+      ...DEFAULT_SETTINGS,
+      exportSizeBudgetBytes: 2_000_000,
+    },
+  });
+
+  assertEquals(await loadSettings(storage), DEFAULT_SETTINGS);
 });

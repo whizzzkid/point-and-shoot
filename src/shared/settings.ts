@@ -1,26 +1,14 @@
 import type { BrowserShim } from "./browser.ts";
-import { DEFAULT_EXPORT_SIZE_BUDGET_BYTES } from "./session.ts";
 import type { ThemeOverride } from "./theme.ts";
 
 /** Extension-storage key containing the complete versioned settings record. */
 export const SETTINGS_STORAGE_KEY = "settings";
-
-/** Export budgets presented by the options page, in decimal bytes. */
-export const EXPORT_SIZE_BUDGET_OPTIONS = [
-  1_000_000,
-  DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
-  4_000_000,
-  8_000_000,
-] as const;
 
 /** WebP quality values presented by the options page. */
 export const SCREENSHOT_QUALITY_OPTIONS = [0.5, 0.7, 0.85, 1] as const;
 
 /** Longest-edge limits presented by the options page, in pixels. */
 export const SCREENSHOT_MAX_DIMENSION_OPTIONS = [512, 1_024, 2_048] as const;
-
-/** Supported export-budget values. */
-export type ExportSizeBudget = typeof EXPORT_SIZE_BUDGET_OPTIONS[number];
 
 /** Supported WebP encoder quality values. */
 export type ScreenshotQuality = typeof SCREENSHOT_QUALITY_OPTIONS[number];
@@ -30,7 +18,6 @@ export type ScreenshotMaxDimension = typeof SCREENSHOT_MAX_DIMENSION_OPTIONS[num
 
 /** Versioned settings shared by every extension surface and background consumer. */
 export interface ExtensionSettings {
-  readonly exportSizeBudgetBytes: ExportSizeBudget;
   readonly frameworkHints: boolean;
   readonly schemaVersion: 1;
   readonly screenshotMaxDimension: ScreenshotMaxDimension;
@@ -41,7 +28,6 @@ export interface ExtensionSettings {
 
 /** Settled defaults used when settings have not been saved or cannot be validated. */
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  exportSizeBudgetBytes: DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
   frameworkHints: false,
   schemaVersion: 1,
   screenshotMaxDimension: 1_024,
@@ -49,6 +35,9 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   stripSensitiveQueries: true,
   themeOverride: "auto",
 };
+
+/** Keys removed in later schema revisions, stripped during migration. */
+const LEGACY_KEYS = ["exportSizeBudgetBytes"] as const;
 
 type SettingsStorage = Pick<BrowserShim["storage"]["local"], "get" | "set">;
 
@@ -77,7 +66,6 @@ function isAllowedNumber<const Values extends readonly number[]>(
 export function isExtensionSettings(candidate: unknown): candidate is ExtensionSettings {
   return isRecord(candidate) &&
     hasExactKeys(candidate, [
-      "exportSizeBudgetBytes",
       "frameworkHints",
       "schemaVersion",
       "screenshotMaxDimension",
@@ -86,7 +74,6 @@ export function isExtensionSettings(candidate: unknown): candidate is ExtensionS
       "themeOverride",
     ]) &&
     candidate.schemaVersion === 1 &&
-    isAllowedNumber(candidate.exportSizeBudgetBytes, EXPORT_SIZE_BUDGET_OPTIONS) &&
     typeof candidate.frameworkHints === "boolean" &&
     isAllowedNumber(candidate.screenshotMaxDimension, SCREENSHOT_MAX_DIMENSION_OPTIONS) &&
     isAllowedNumber(candidate.screenshotQuality, SCREENSHOT_QUALITY_OPTIONS) &&
@@ -103,6 +90,9 @@ export function isExtensionSettings(candidate: unknown): candidate is ExtensionS
 export async function loadSettings(storage: SettingsStorage): Promise<ExtensionSettings> {
   const stored = await storage.get(SETTINGS_STORAGE_KEY);
   const candidate = stored[SETTINGS_STORAGE_KEY];
+  if (isRecord(candidate)) {
+    for (const key of LEGACY_KEYS) delete (candidate as Record<string, unknown>)[key];
+  }
   return isExtensionSettings(candidate) ? { ...candidate } : { ...DEFAULT_SETTINGS };
 }
 

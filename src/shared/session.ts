@@ -1,8 +1,5 @@
 import type { Session } from "./schema.ts";
 
-/** Historical export-size measurement retained by the version-one settings schema. */
-export const DEFAULT_EXPORT_SIZE_BUDGET_BYTES = 2_000_000;
-
 /** `storage.local` key pointing extension surfaces at the current IndexedDB session. */
 export const ACTIVE_SESSION_ID_STORAGE_KEY = "activeSessionId";
 

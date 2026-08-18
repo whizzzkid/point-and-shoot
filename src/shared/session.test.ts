@@ -1,7 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { SCHEMA_VERSION, type Session } from "./schema.ts";
 import {
-  DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
   nextSessionRevision,
   pageUrlForExport,
   projectedSessionSize,
@@ -48,8 +47,7 @@ Deno.test("pageUrlForExport removes only the query when a note opts in", () => {
   assertEquals(pageUrlForExport("not a URL", true), "not a URL");
 });
 
-Deno.test("projectedSessionSize measures canonical UTF-8 JSON against the settled budget", () => {
+Deno.test("projectedSessionSize measures canonical UTF-8 JSON byte length", () => {
   const expected = new TextEncoder().encode(JSON.stringify(SESSION)).byteLength;
   assertEquals(projectedSessionSize(SESSION), expected);
-  assertEquals(DEFAULT_EXPORT_SIZE_BUDGET_BYTES, 2_000_000);
 });
