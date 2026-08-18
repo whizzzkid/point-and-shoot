@@ -1,6 +1,7 @@
 ---
 import Icon from "../components/Icon.astro";
 import InstallActions from "../components/InstallActions.astro";
+import SiteIcon from "../components/SiteIcon.astro";
 import ThemeScript from "../components/ThemeScript.astro";
 import storeListing from "../../.generated/store-listing.json";
 import "../styles/global.css";
@@ -30,9 +31,18 @@ const { support } = storeListing;
         <span>Point & Shoot</span>
       </a>
       <nav aria-label="Primary navigation">
-        <a href="#workflow">How it works</a>
-        <a href="/docs/">Docs</a>
-        <a href={repositoryUrl}>GitHub</a>
+        <a href="#workflow">
+          <Icon name="arrow-down" />
+          <span>How it works</span>
+        </a>
+        <a href="/docs/">
+          <SiteIcon name="book-open" />
+          <span>Docs</span>
+        </a>
+        <a href={repositoryUrl}>
+          <SiteIcon name="github" />
+          <span>GitHub</span>
+        </a>
       </nav>
     </header>
 
@@ -151,8 +161,9 @@ const { support } = storeListing;
         <a href="/docs/">Docs</a>
         <a href="/privacy/">Privacy</a>
         <a href={`mailto:${support.email}`}>Support</a>
-        <a href={repositoryUrl}>Source</a>
+        <a href={repositoryUrl}>GitHub</a>
       </div>
+      <p class="footer-copyright">&copy; <a href="https://whizzzkid.dev">Whizzzkid Inc.</a></p>
     </footer>
   </body>
 </html>

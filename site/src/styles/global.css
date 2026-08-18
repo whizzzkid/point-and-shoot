@@ -80,6 +80,22 @@ footer a {
   transition: color var(--duration-fast) var(--ease-out);
 }
 
+/* Mirrors the docs header's icon-plus-label pairing without borrowing its pill chrome, so the two
+   headers read as one system while the marketing nav stays minimal. */
+nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The workflow anchor reuses the vendored sprite; the rest are inlined site chrome. Both are pinned
+   to one size here so a mixed row does not step. */
+nav .icon,
+nav .site-icon {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
 nav a:hover,
 footer a:hover {
   color: var(--text-primary);
@@ -517,7 +533,7 @@ h3 {
 
 footer {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   align-items: center;
   gap: var(--space-8);
   min-height: var(--space-24);
@@ -527,6 +543,13 @@ footer {
 
 footer p {
   margin: var(--space-0);
+}
+
+/* The only inline link on the marketing pages, so it takes privacy.css's underline affordance rather
+   than the colour-only hover the standalone footer links use. */
+.footer-copyright a {
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
 }
 
 @media (max-width: 860px) {
@@ -546,6 +569,14 @@ footer p {
 
   .workflow-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Four footer columns stop fitting once the viewport narrows, so they wrap to two rows before the
+     single-column collapse below. */
+  footer {
+    grid-template-columns: 1fr auto;
+    row-gap: var(--space-4);
+    padding-block: var(--space-6);
   }
 }
 
