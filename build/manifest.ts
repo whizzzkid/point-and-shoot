@@ -93,7 +93,7 @@ interface ManifestBase {
 export const manifestBase: ManifestBase = {
   manifest_version: 3,
   name: "Point & Shoot",
-  version: "2026.817.0", // x-release-please-version
+  version: "2026.818.0", // x-release-please-version
   description: "Point at or drag a box around a broken element, add a note, export a fix prompt.",
   icons: EXTENSION_ICONS,
   permissions: PERMISSIONS,
