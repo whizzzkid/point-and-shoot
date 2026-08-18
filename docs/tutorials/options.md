@@ -8,12 +8,14 @@ below assume you know what a session, a note, and a compiled plan are.
 
 ## Open the settings page
 
-Pick whichever route is closest to hand:
+The settings page opens in its own tab, from the browser's extension management UI:
 
-- Select the Point and Shoot toolbar icon to open the popup, then select **Open options**.
 - In Chrome, open `chrome://extensions`, find Point and Shoot, and select **Details**, then
   **Extension options**.
 - In Firefox, open `about:addons`, select Point and Shoot, and open its **Preferences** tab.
+
+The toolbar icon does not open settings. It is the session control — a click starts, pauses, or
+resumes a capture session, so it is not a route to this page.
 
 The page opens on **General**. A tab strip across the top moves between the seven sections. The
 current extension version is printed in the bottom corner; quote it when filing a bug.
@@ -193,9 +195,18 @@ sending a bundle to a hosted service.
 Shows the keyboard shortcut for **Toggle capture**, which shows or hides the overlay on the active
 tab. The extension asks for `Command+Shift+P` on macOS and `Ctrl+Shift+P` elsewhere at install time.
 
-The shortcut only toggles the overlay. It never starts or ends a session — that stays with the
-toolbar icon — so you can move to a new page, press it, capture a note, and stay inside the same
-session.
+Read "toggle capture" literally: the shortcut is the _same gesture as the toolbar icon_, not a
+lighter-weight version of it. It fires the browser action, so it follows the identical session path
+— starting a session on an eligible page when none is active, pausing a running one, and resuming a
+paused one. The overlay appearing and disappearing is the visible half of that; the durable session
+pausing underneath is the half the label does not mention.
+
+So do not reach for it to get the overlay back after navigating. A running session already remounts
+the overlay on each page you load, and pressing the shortcut at that point pauses the session rather
+than refreshing the overlay. Press it again to resume.
+
+Ending a session is a separate gesture again: only **Compile plan** in the side panel completes one.
+Neither the shortcut nor the toolbar icon ends a session — they pause and resume it.
 
 The browser owns shortcut assignment, so this section reports what the browser has actually bound
 rather than what the extension asked for. If another extension already holds the combination, or you
