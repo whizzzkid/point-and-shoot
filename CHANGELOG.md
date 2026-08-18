@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.818.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.817.0...v2026.818.0) (2026-08-18)
+
+
+### Bug Fixes
+
+* **docs:** 🔒 tighten GCP WIF to store-publish workflow via job_workflow_ref ([27bfdf6](https://github.com/whizzzkid/point-and-shoot/commit/27bfdf661c7b422f489692bc75d33f80de8f4886))
+* **release:** 🔑 pass secrets to reusable store-publish workflow ([6e56b63](https://github.com/whizzzkid/point-and-shoot/commit/6e56b6395a70bfab6db914ebed4c95a6796a8541))
+* **release:** 🔑 pass secrets to reusable store-publish workflow ([98adffa](https://github.com/whizzzkid/point-and-shoot/commit/98adffa2b701c1233dc0e0d484547d7e42d4ac8a))
+
 ## [2026.817.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.813.1...v2026.817.0) (2026-08-17)
 
 
