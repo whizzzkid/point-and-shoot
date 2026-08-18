@@ -125,7 +125,7 @@ use the project ID; the Workload Identity Provider resource name uses the projec
 3. Create a Workload Identity Pool:
    `gcloud iam workload-identity-pools create github-actions --location=global --display-name="GitHub Actions" --project=PROJECT_ID`
 4. Create an OIDC Provider restricted to this repository:
-   `gcloud iam workload-identity-pools providers create-oidc github --location=global --workload-identity-pool=github-actions --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" --attribute-condition="assertion.repository=='whizzzkid/point-and-shoot'" --project=PROJECT_ID`
+   `gcloud iam workload-identity-pools providers create-oidc github --location=global --workload-identity-pool=github-actions --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.job_workflow_ref=assertion.job_workflow_ref" --attribute-condition="assertion.repository=='whizzzkid/point-and-shoot' && assertion.job_workflow_ref=='whizzzkid/point-and-shoot/.github/workflows/store-publish.yml@refs/heads/main'" --project=PROJECT_ID`
 5. Grant the pool permission to impersonate the service account:
    `gcloud iam service-accounts add-iam-policy-binding cws-publish@PROJECT_ID.iam.gserviceaccount.com --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/attribute.repository/whizzzkid/point-and-shoot" --project=PROJECT_ID`
 6. In the Chrome Web Store developer dashboard under **Settings > API Access**, add the service
