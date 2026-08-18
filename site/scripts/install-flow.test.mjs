@@ -143,11 +143,15 @@ Deno.test("the built fully published site provides accessible fallback, focus, m
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /mailto:support@pointandshoot\.app/);
   assert.match(styles, /a:focus-visible/);
+  assert.match(
+    styles,
+    /\.install-options\.has-recommendation \.install-store\.is-other \{\s*display: none;/,
+  );
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.install-options/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
-Deno.test("browser enhancement preserves unavailable-store status and keeps store choices operable", async () => {
+Deno.test("browser enhancement preserves unavailable-store status and narrows store choices to the detected browser", async () => {
   await buildSite();
   const browser = await chromium.launch();
   try {
@@ -193,7 +197,11 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           /listing is unpublished/,
         );
         assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
-        assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+        assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), false);
+        assert.equal(
+          await page.locator('[data-store-action="chromium"]').first().isVisible(),
+          true,
+        );
         assert.equal(
           await page.locator('[data-store-action="gecko"]').first().getAttribute("href"),
           "https://addons.mozilla.org/firefox/addon/point-and-shoot/",
@@ -248,7 +256,17 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
             await page.locator('[data-store-action="chromium"]').first().isVisible(),
             true,
           );
-          assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+          assert.equal(
+            await page.locator('[data-store-action="chromium"]').last().isVisible(),
+            true,
+          );
+          assert.equal(
+            await page.locator('[data-store-action="gecko"]').first().isVisible(),
+            false,
+          );
+          assert.equal(await page.locator('[data-store-action="gecko"]').last().isVisible(), false);
+          assert.equal(await page.locator("[data-source-install]").first().isVisible(), true);
+          assert.equal(await page.locator("[data-source-install]").last().isVisible(), true);
           assert.equal(
             await page.locator('[data-store-action="chromium"][data-recommended]').count(),
             1,
@@ -274,7 +292,7 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
               focusedStoreTargets.add(target);
             }
           }
-          assert.deepEqual(focusedStoreTargets, new Set(["chromium", "gecko"]));
+          assert.deepEqual(focusedStoreTargets, new Set(["chromium"]));
         } finally {
           await desktop.close();
         }
@@ -293,6 +311,16 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           assert.equal(
             await page.locator('[data-store-action="chromium"][data-recommended]').count(),
             0,
+          );
+          assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+          assert.equal(await page.locator('[data-store-action="gecko"]').last().isVisible(), true);
+          assert.equal(
+            await page.locator('[data-store-action="chromium"]').first().isVisible(),
+            false,
+          );
+          assert.equal(
+            await page.locator('[data-store-action="chromium"]').last().isVisible(),
+            false,
           );
         } finally {
           await gecko.close();
@@ -328,6 +356,11 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           );
           assert.equal(await page.locator("[data-recommended]").count(), 0);
           assert.equal(
+            await page.locator('[data-store-action="chromium"]').first().isVisible(),
+            true,
+          );
+          assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+          assert.equal(
             await page.evaluate(() =>
               document.documentElement.scrollWidth <= globalThis.innerWidth
             ),
@@ -344,6 +377,14 @@ Deno.test("browser enhancement preserves unavailable-store status and keeps stor
           assert.equal(await page.locator("[data-no-script]").count(), 2);
           assert.equal(await page.locator('[data-store-action="chromium"]').count(), 2);
           assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
+          for (const target of ["chromium", "gecko"]) {
+            for (const index of [0, 1]) {
+              assert.equal(
+                await page.locator(`[data-store-action="${target}"]`).nth(index).isVisible(),
+                true,
+              );
+            }
+          }
         } finally {
           await withoutJavaScript.close();
         }

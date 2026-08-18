@@ -54,8 +54,8 @@ Gecko-engine browsers while preserving visible choices, accessible fallback, and
   classification.
 - `site/src/components/InstallActions.astro` — store actions, recommendation, source fallback, and
   no-script behavior.
-- `site/src/lib/install-recommendation.ts` — progressive enhancement without navigation or hidden
-  choices.
+- `site/src/lib/install-recommendation.ts` — progressive enhancement without navigation: it accents
+  the matching store and collapses the store choices the detected browser cannot use.
 - `site/scripts/install-target.test.mjs` — browser-family, mobile, spoofed, and unknown fixtures.
 - `site/scripts/install-flow.test.mjs` — built-page semantics, publication states, and no-script
   fallback.
