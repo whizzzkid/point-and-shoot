@@ -420,6 +420,7 @@ article img,
 
 .docs-nav-next {
   flex-direction: row-reverse;
+  margin-left: auto;
 }
 
 .docs-nav-label {
