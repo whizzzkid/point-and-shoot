@@ -101,7 +101,8 @@ The ZIP contains:
 - `shots/note-NN.webp`, one screenshot per selected note.
 
 An export with no included notes is disabled. A size warning is advisory; you may export as-is,
-exclude notes, or lower screenshot quality or maximum dimensions in the options page.
+exclude notes, or lower screenshot quality or maximum dimensions in the
+[options page](options.md#capture).
 
 ## Hand the bundle to a local agent
 
