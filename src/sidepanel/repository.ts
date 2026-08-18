@@ -9,6 +9,7 @@ import {
   SESSION_REVISION_STORAGE_KEY,
 } from "../shared/session.ts";
 import { deleteSession, getSession, listSessions, openStore, putSession } from "../shared/store.ts";
+import { SETTINGS_STORAGE_KEY } from "../shared/settings.ts";
 
 async function publishRevision(storage: BrowserShim["storage"]["local"]): Promise<void> {
   try {
@@ -177,6 +178,7 @@ export function createNotesRepository(
             ACTIVE_SESSION_ID_STORAGE_KEY,
             DISPLAY_SESSION_ID_STORAGE_KEY,
             SESSION_REVISION_STORAGE_KEY,
+            SETTINGS_STORAGE_KEY,
           ].some((key) => key in changes)
         ) {
           onChange();
