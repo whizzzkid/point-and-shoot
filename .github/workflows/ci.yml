@@ -144,15 +144,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.head_ref }}
+          # The Visual job regenerates baselines and commits them back to the PR branch, so it
+          # checks out the PR head rather than the merge ref. Only pull requests have a head_ref;
+          # on push/workflow_dispatch the default checkout (the pushed ref) is correct.
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || '' }}
       - uses: jdx/mise-action@v4
 
       - name: deno task visual
         id: compare
         run: deno task visual
 
+      # Baseline regeneration pushes to the branch, which only makes sense for same-repo pull
+      # requests. Fork PRs cannot push, and push/workflow_dispatch runs have no branch to update.
       - name: Regenerate drifted baselines and commit them back
-        if: failure()
+        if: failure() && github.event_name == 'pull_request' && github.repository == 'whizzzkid/point-and-shoot'
         run: |
           deno task visual:update
           git config --global --add safe.directory /__w/point-and-shoot/point-and-shoot
