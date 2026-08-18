@@ -4,6 +4,9 @@ These guides walk through Point and Shoot tasks from source build to agent hando
 
 - [Get started](getting-started.md) — install the extension, capture a multi-page session, and
   export it.
+- [Manage a Point and Shoot session](sessions.md) — the full session lifecycle: start, capture
+  across pages, pause and resume, rename, manage notes, browse past sessions, end, and clear
+  storage.
 - [Use Point and Shoot with Playwright](playwright-companion.md) — load the unpacked Chrome build in
   a headed persistent Chromium context beside a local app.
 - [Troubleshoot and understand known limits](troubleshooting.md) — restricted pages, closed shadow
