@@ -39,13 +39,14 @@ than a described problem does.
 Each element's evidence block is JSON: the selector bundle first, then the framework hint when
 component hints are enabled, then a condensed computed-style digest. The digest is deliberately
 terse — CSS shorthands collapse to their shortest equivalent form and uniform border colors collapse
-to one value — so the plan stays readable at the size a real session reaches.
+to one value — so the plan stays readable at the size a real session reaches. When a computed-style
+digest could not be captured, the evidence block says so with a plain sentence instead of JSON.
 
 ## Include and exclude notes
 
 Every note starts included. The left column lists them with a minimap of the captured region, the
-note text, and the page URL, each with an **Include** checkbox. **Include all** and **Exclude all**
-set the whole selection at once.
+note text, and the page URL, each with an **Include** checkbox labelled with the page title.
+**Include all** and **Exclude all** set the whole selection at once.
 
 Exclusion is per-export and non-destructive. It changes only this plan; the note stays in the
 session and comes back included the next time you compile.
@@ -55,22 +56,23 @@ The selection drives everything downstream. Excluded notes are absent from the M
 the included notes, so excluding the second of three notes yields `note-01` and `note-02`, not
 `note-01` and `note-03`.
 
-Excluding every note disables all three export actions. There is no empty plan.
+Excluding every note disables all three export actions. The preview still renders, showing a plan
+with zero notes, but there is nothing to copy or download.
 
 ## Read the preview
 
-The middle column renders the plan as Markdown text, exactly as the export will contain it, with the
-filename of the standalone prompt shown beside the heading. Every change to the selection or to the
-prompt boxes re-renders it immediately.
+The middle column renders the plan as Markdown text, exactly as the standalone prompt will contain
+it, with the filename shown beside the heading. Every change to the selection or to the prompt boxes
+re-renders it immediately.
 
 The preview is read-only. It is the generated projection, not an editor — to change what it says,
 change the notes or the surrounding prompts. The two editable boxes above and below it are the only
 part of the plan you type into directly.
 
 The preview omits screenshot links, because it mirrors the image-free projection used by **Copy
-prompt** and **Download prompt**. The bundle's `plan.md` is otherwise identical and adds one
-`- Screenshot:` line per note. If the preview cannot be built, an error replaces it and the prompt
-actions are disabled.
+prompt** and **Download prompt**. The bundle's `plan.md` differs in exactly two ways: its preamble
+line names `session.json` as the canonical record, and each note section gains a `- Screenshot:`
+line. If the preview cannot be built, an error replaces it and the prompt actions are disabled.
 
 ## Wrap the plan in your own prompts
 
@@ -80,7 +82,9 @@ bundle's `plan.md` alike. Leave either empty and it contributes nothing — no s
 
 Set the defaults in **Options** under **Plan prompt** so every future plan starts with them. The
 boxes on the compile-plan step are seeded from those defaults and are editable per export: what you
-type there changes this export only and never writes back to settings.
+type there changes this export only and never writes back to settings. Going back to the notes list
+discards both the selection and anything you typed in the boxes; they re-seed from the defaults next
+time.
 
 The split exists because the two kinds of instruction have different lifetimes. Durable, repeated
 instruction belongs in the defaults:
@@ -171,7 +175,7 @@ whatever you are sending it to. Two levers reduce it:
   captured after the change, not notes already stored.
 
 Neither setting changes which region is captured or the geometry recorded for it — only how the WebP
-is encoded. The defaults are 0.7 quality and a 1024-pixel longest edge, which is a deliberate middle
+is encoded. The defaults are 70% quality and a 1024 px longest edge, which is a deliberate middle
 ground rather than a maximum.
 
 ## Review what leaves the device
