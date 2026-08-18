@@ -64,9 +64,6 @@ function mountOptions(autoTheme: "dark" | "light"): void {
 
 const harness = {
   actionLog,
-  exportSizeBudgetBytes() {
-    return persisted.exportSizeBudgetBytes;
-  },
   failNextSaves(count = 1) {
     failedSavesRemaining = count;
   },
@@ -76,9 +73,6 @@ const harness = {
     failedSavesRemaining = 0;
     actionLog.clears = 0;
     actionLog.shortcutSettings = 0;
-  },
-  setExportSizeBudgetBytes(value: ExtensionSettings["exportSizeBudgetBytes"]) {
-    persisted = { ...persisted, exportSizeBudgetBytes: value };
   },
   unmount() {
     render(null, mount);

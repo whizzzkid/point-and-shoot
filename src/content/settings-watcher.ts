@@ -6,7 +6,6 @@ function settingsEqual(
   second: ExtensionSettings,
 ): boolean {
   return first !== undefined &&
-    first.exportSizeBudgetBytes === second.exportSizeBudgetBytes &&
     first.frameworkHints === second.frameworkHints &&
     first.schemaVersion === second.schemaVersion &&
     first.screenshotMaxDimension === second.screenshotMaxDimension &&

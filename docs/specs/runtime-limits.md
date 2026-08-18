@@ -45,11 +45,9 @@ no UI displays a size meter or blocks an export because of it.
 | Framework hint text             | `1,024` code units | `MAX_COMPONENT_HINT_TEXT_LENGTH` in `src/shared/schema.ts`            | Longer names or source paths fail validation.                               |
 | Default screenshot longest edge |     `1,024` pixels | `DEFAULT_SETTINGS.screenshotMaxDimension` in `src/shared/settings.ts` | Larger captures are downscaled and marked `truncated`.                      |
 | Default screenshot WebP quality |              `0.7` | `DEFAULT_SETTINGS.screenshotQuality` in `src/shared/settings.ts`      | The background applies the value to every capture request.                  |
-| Legacy export-size measurement  |  `2,000,000` bytes | `DEFAULT_EXPORT_SIZE_BUDGET_BYTES` in `src/shared/session.ts`         | Retained in storage only; export remains available at every size.           |
 
 The allowed screenshot dimensions are `512`, `1,024`, and `2,048` pixels. Allowed WebP quality
-values are `0.5`, `0.7`, `0.85`, and `1`. The legacy export-size field accepts `1,000,000`,
-`2,000,000`, `4,000,000`, or `8,000,000` bytes when reading an existing version-one record.
+values are `0.5`, `0.7`, `0.85`, and `1`.
 
 ## Data flow
 
