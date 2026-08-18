@@ -423,10 +423,11 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                       clipboard copy. Edit these again on the compile-plan step.
                     </p>
                   </div>
-                  <SettingRow
-                    help="Leading text prepended to every generated plan."
-                    label="Header prompt"
-                  >
+                  <div className="ps-options-prompt">
+                    <span className="ps-options-prompt__label">
+                      <strong>Header prompt</strong>
+                      <small>Leading text prepended to every generated plan.</small>
+                    </span>
                     <Input
                       accessibleName="Header prompt"
                       multiline
@@ -435,11 +436,12 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                       rows={4}
                       value={settings.defaultHeaderPrompt}
                     />
-                  </SettingRow>
-                  <SettingRow
-                    help="Trailing text appended to every generated plan."
-                    label="Footer prompt"
-                  >
+                  </div>
+                  <div className="ps-options-prompt">
+                    <span className="ps-options-prompt__label">
+                      <strong>Footer prompt</strong>
+                      <small>Trailing text appended to every generated plan.</small>
+                    </span>
                     <Input
                       accessibleName="Footer prompt"
                       multiline
@@ -448,7 +450,7 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                       rows={4}
                       value={settings.defaultFooterPrompt}
                     />
-                  </SettingRow>
+                  </div>
                 </>
               )
               : null}
