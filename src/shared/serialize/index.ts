@@ -248,7 +248,8 @@ export function toMarkdown(session: Session, options: SerializeOptions = {}): st
   if (headerPrompt === "" && footerPrompt === "") return body;
   const headerBlock = headerPrompt === "" ? "" : `${headerPrompt}\n\n`;
   // `body` already ends with a trailing newline, so a single `\n` before the footer yields
-  // exactly one blank line separating the plan from the footer.
-  const footerBlock = footerPrompt === "" ? "" : `\n${footerPrompt}`;
+  // exactly one blank line separating the plan from the footer; a trailing `\n` after it
+  // preserves the file's usual terminal newline.
+  const footerBlock = footerPrompt === "" ? "" : `\n${footerPrompt}\n`;
   return `${headerBlock}${body}${footerBlock}`;
 }

@@ -124,9 +124,27 @@ Deno.test("toMarkdown wraps the generated plan with header and footer prompt par
   const titleIndex = actual.indexOf("# ");
   assert(actual.indexOf(header) < titleIndex);
   assert(titleIndex < actual.indexOf(footer));
-  // The body already ends with a newline, so the footer is separated by exactly one blank line.
+  // The body already ends with a newline, so the footer is separated by exactly one blank line,
+  // and the output still ends with a trailing newline like every other export.
   assertEquals(actual.includes("\n\n\n"), false);
-  assert(actual.endsWith(`\n\n${footer}`));
+  assert(actual.endsWith(`\n\n${footer}\n`));
+});
+
+Deno.test("toMarkdown wraps the generated plan with a header-only prompt part", () => {
+  const header = "// Use my custom skills to plan and execute on this.";
+  const without = toMarkdown(EXPORT_FIXTURE_SESSION);
+  const actual = toMarkdown(EXPORT_FIXTURE_SESSION, { headerPrompt: header });
+
+  assert(actual.startsWith(`${header}\n\n`));
+  assertEquals(actual, `${header}\n\n${without}`);
+});
+
+Deno.test("toMarkdown wraps the generated plan with a footer-only prompt part", () => {
+  const footer = "// Work hard, don't make mistakes.";
+  const without = toMarkdown(EXPORT_FIXTURE_SESSION);
+  const actual = toMarkdown(EXPORT_FIXTURE_SESSION, { footerPrompt: footer });
+
+  assertEquals(actual, `${without}\n${footer}\n`);
 });
 
 Deno.test("toMarkdown trims and ignores blank header and footer prompt parts", () => {
