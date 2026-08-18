@@ -120,7 +120,9 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     await page.getByRole("tab", { name: "Plan prompt" }).click();
     assertEquals(await page.getByLabel("Header prompt").inputValue(), "");
     assertEquals(await page.getByLabel("Footer prompt").inputValue(), "");
-    await page.getByLabel("Header prompt").fill("// Use my custom skills to plan and execute on this.");
+    await page.getByLabel("Header prompt").fill(
+      "// Use my custom skills to plan and execute on this.",
+    );
     await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
     await page.getByLabel("Footer prompt").press("Tab");
     await page.getByText("Saved.").waitFor();

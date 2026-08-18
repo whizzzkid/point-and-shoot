@@ -92,7 +92,9 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
 
     await page.getByRole("checkbox", { name: "Include Order summary" }).uncheck();
     assertEquals((await preview.textContent())?.includes("total wraps"), false);
-    await page.getByLabel("Header prompt").fill("// Use my custom skills to plan and execute on this.");
+    await page.getByLabel("Header prompt").fill(
+      "// Use my custom skills to plan and execute on this.",
+    );
     await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
     assertEquals(
       (await page.locator("[data-markdown-preview]").textContent())?.includes(

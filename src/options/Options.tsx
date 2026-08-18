@@ -419,8 +419,8 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                     <h2>Plan prompt</h2>
                     <p>
                       Wrap every generated plan with your own instructions. The header leads the
-                      captured notes and the footer trails them in the exported plan.md and in
-                      every clipboard copy. Edit these again on the compile-plan step.
+                      captured notes and the footer trails them in the exported plan.md and in every
+                      clipboard copy. Edit these again on the compile-plan step.
                     </p>
                   </div>
                   <SettingRow
