@@ -39,6 +39,12 @@ compile-plan step the same boxes appear again, seeded from these settings and ed
 editing them there changes only that export and never writes back to settings. The generated plan
 body between them stays read-only.
 
+The side panel re-reads settings whenever the `settings` record changes in `storage.local`, so a
+long-lived panel picks up header/footer edits made on the options page without a reload. The boxes
+on the compile-plan step are re-seeded from the updated defaults whenever those defaults change; a
+per-export edit is only overwritten if the underlying default changes while the plan view is open,
+which in practice requires editing the options page in another tab mid-export.
+
 ## Theme behavior
 
 `auto` samples the page backdrop according to
