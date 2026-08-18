@@ -18,6 +18,11 @@ The stored object contains exactly these fields:
 | `screenshotQuality`      | `0.5`, `0.7`, `0.85`, `1`                  | `0.7`     |
 | `screenshotMaxDimension` | `512`, `1024`, `2048`                      | `1024`    |
 
+> **Note:** `exportSizeBudgetBytes` is a legacy field retained for v1 schema compatibility. It is
+> validated on read/write but is not exposed as a user-facing setting in the options page. No
+> product surface displays a context-usage meter or exposes this threshold, and export never blocks
+> on it.
+
 The options page writes the complete record after every change. Writes are serialized so a later
 selection cannot be overwritten by an earlier, slower storage operation.
 
