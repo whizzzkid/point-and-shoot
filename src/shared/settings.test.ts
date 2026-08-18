@@ -1,6 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import type { BrowserShim, StorageItems } from "./browser.ts";
-import { DEFAULT_EXPORT_SIZE_BUDGET_BYTES } from "./session.ts";
 import {
   DEFAULT_SETTINGS,
   type ExtensionSettings,
@@ -41,7 +40,6 @@ Deno.test("settings load the settled defaults when extension storage is empty", 
   assertEquals(await loadSettings(storage), {
     defaultHeaderPrompt: "",
     defaultFooterPrompt: "",
-    exportSizeBudgetBytes: DEFAULT_EXPORT_SIZE_BUDGET_BYTES,
     frameworkHints: false,
     schemaVersion: 1,
     screenshotMaxDimension: 1_024,
@@ -56,7 +54,6 @@ Deno.test("settings round-trip every supported value through one typed record", 
   const settings = {
     defaultHeaderPrompt: "Fix the heading contrast",
     defaultFooterPrompt: "Also check the footer link target.",
-    exportSizeBudgetBytes: 8_000_000,
     frameworkHints: true,
     schemaVersion: 1 as const,
     screenshotMaxDimension: 2_048,
@@ -100,9 +97,20 @@ Deno.test("settings reject invalid writes and recover corrupt stored records wit
     () =>
       saveSettings(storage, {
         ...DEFAULT_SETTINGS,
-        exportSizeBudgetBytes: 3_000_000,
+        screenshotQuality: 3,
       } as unknown as ExtensionSettings),
     TypeError,
     "Invalid extension settings",
   );
+});
+
+Deno.test("settings load strips legacy exportSizeBudgetBytes from stored v1 records", async () => {
+  const storage = createStorage({
+    [SETTINGS_STORAGE_KEY]: {
+      ...DEFAULT_SETTINGS,
+      exportSizeBudgetBytes: 2_000_000,
+    },
+  });
+
+  assertEquals(await loadSettings(storage), DEFAULT_SETTINGS);
 });

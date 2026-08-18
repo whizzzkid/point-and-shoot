@@ -8,17 +8,16 @@ session records.
 
 The stored object contains exactly these fields:
 
-| Field                    | Allowed values                             | Default   |
-| ------------------------ | ------------------------------------------ | --------- |
-| `schemaVersion`          | `1`                                        | `1`       |
-| `themeOverride`          | `auto`, `dark`, `light`                    | `auto`    |
-| `frameworkHints`         | Boolean                                    | `false`   |
-| `exportSizeBudgetBytes`  | `1000000`, `2000000`, `4000000`, `8000000` | `2000000` |
-| `stripSensitiveQueries`  | Boolean                                    | `true`    |
-| `screenshotQuality`      | `0.5`, `0.7`, `0.85`, `1`                  | `0.7`     |
-| `screenshotMaxDimension` | `512`, `1024`, `2048`                      | `1024`    |
-| `defaultHeaderPrompt`    | Free text                                  | empty     |
-| `defaultFooterPrompt`    | Free text                                  | empty     |
+| Field                    | Allowed values            | Default |
+| ------------------------ | ------------------------- | ------- |
+| `schemaVersion`          | `1`                       | `1`     |
+| `themeOverride`          | `auto`, `dark`, `light`   | `auto`  |
+| `frameworkHints`         | Boolean                   | `false` |
+| `stripSensitiveQueries`  | Boolean                   | `true`  |
+| `screenshotQuality`      | `0.5`, `0.7`, `0.85`, `1` | `0.7`   |
+| `screenshotMaxDimension` | `512`, `1024`, `2048`     | `1024`  |
+| `defaultHeaderPrompt`    | Free text                 | empty   |
+| `defaultFooterPrompt`    | Free text                 | empty   |
 
 The options page writes the complete record after every change. Writes are serialized so a later
 selection cannot be overwritten by an earlier, slower storage operation.
@@ -64,10 +63,6 @@ content realm lives:
 The background reads screenshot settings for every capture request. The selected quality is passed
 to WebP encoding, and the selected maximum dimension caps the output's longest edge. Downscaling to
 that edge marks the capture `truncated`, just as the default `1024` pixel cap does.
-
-The persisted `exportSizeBudgetBytes` field remains in the version-one record for compatibility with
-existing installations. No product surface displays a context-usage meter or exposes the legacy
-threshold as a setting, and export never blocks on it.
 
 When `stripSensitiveQueries` is on, a new note defaults `stripQuery` to true only if a query
 parameter name contains `token`, `key`, `secret`, `auth`, or `session`, case-insensitively. Turning
