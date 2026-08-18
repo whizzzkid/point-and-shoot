@@ -123,7 +123,10 @@ export function isExtensionSettings(candidate: unknown): candidate is ExtensionS
 export async function loadSettings(storage: SettingsStorage): Promise<ExtensionSettings> {
   const stored = await storage.get(SETTINGS_STORAGE_KEY);
   const candidate = stored[SETTINGS_STORAGE_KEY];
-  return isExtensionSettings(candidate) ? { ...candidate } : { ...DEFAULT_SETTINGS };
+  if (isExtensionSettings(candidate)) return { ...candidate };
+  if (!isRecord(candidate)) return { ...DEFAULT_SETTINGS };
+  const migrated = { ...DEFAULT_SETTINGS, ...candidate };
+  return isExtensionSettings(migrated) ? migrated : { ...DEFAULT_SETTINGS };
 }
 
 /**
