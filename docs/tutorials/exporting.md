@@ -21,17 +21,20 @@ selection includes.
 The plan is assembled from the session record in note order:
 
 1. The session name becomes the document title, followed by a note count.
-2. A line notes that `session.json` is the canonical record and the Markdown is a convenience
-   projection.
+2. A preamble line. In the bundle's `plan.md` (which includes screenshot links) it reads
+   `` `session.json` is the canonical record. This Markdown file is a convenience projection. `` In
+   the image-free prompt used by **Copy prompt** and **Download prompt** it instead reads
+   `This image-free prompt is a convenience projection. Download the bundle for the canonical`
+   `` `session.json` record and screenshots. ``
 3. Each included note becomes a `## Note N/M` section, titled with the page title.
 4. Inside each note section, **Problem** carries your note text, **Location** carries the page URL,
    capture time, region geometry, viewport, and whether the capture was clipped, and **Evidence**
    carries one block per captured element.
 
-A note saved with no text renders as `_No text was provided._` rather than an empty section. A note
-whose region captured no element metadata says so instead of an empty **Evidence** block. Neither
-case blocks the export, but both leave the agent with less to work from than a described problem
-does.
+A note saved with no text renders as `_No note text was provided._` rather than an empty section. A
+note whose region captured no element metadata renders a fallback message instead of an empty
+**Evidence** block. Neither case blocks the export, but both leave the agent with less to work from
+than a described problem does.
 
 Each element's evidence block is JSON: the selector bundle first, then the framework hint when
 component hints are enabled, then a condensed computed-style digest. The digest is deliberately
@@ -179,9 +182,10 @@ Shoot never uploads any of it — but sending a bundle to a hosted agent does se
 machine.
 
 Query strings whose names look like credentials are stripped by default, and each note carries its
-own setting you can change from the notes list. Stripping is a narrow safeguard: it removes tokens
-from URLs and nothing else. An authenticated page can hold private account data in its DOM text and
-in the screenshot itself, and no setting can detect that.
+own setting you can change from the notes list. Stripping is a coarse safeguard: when any query
+parameter name matches a sensitive pattern the entire query string is removed, including benign
+parameters alongside the sensitive ones. An authenticated page can hold private account data in its
+DOM text and in the screenshot itself, and no setting can detect that.
 
 So before sending a bundle to anything hosted, look at the screenshots you selected. The minimaps in
 the left column are there to make that possible without leaving the step, and excluding one note is
