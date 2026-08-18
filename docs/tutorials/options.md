@@ -22,12 +22,18 @@ current extension version is printed in the bottom corner; quote it when filing 
 
 ## How saving works
 
-There is no **Save** button. Every control writes as soon as you change it, and a short status
-message appears in the page footer: **Saving…**, then **Saved.**
+There is no **Save** button. The settings on **General**, **Capture**, **Plan prompt**, and **Export
+& privacy** write as soon as you change them, and a short status message appears in the page footer:
+**Saving…**, then **Saved.**
 
-If a write fails, the footer shows an error and the control snaps back to the last value that was
-stored successfully. Nothing is left half-applied. Retry the change, and if it keeps failing see
-[troubleshooting](troubleshooting.md).
+If one of those writes fails, the footer shows an error and the control snaps back to the last value
+that was stored successfully. Nothing is left half-applied. Retry the change, and if it keeps
+failing see [troubleshooting](troubleshooting.md).
+
+Two controls sit outside that guarantee. **Group by domain** on the Sessions tab is stored
+separately and written best-effort: it reports neither **Saved.** nor an error, so on the rare
+failure the toggle looks applied but will be back where it started next time you open the page. The
+**Shortcuts** tab writes nothing at all — the browser owns that value.
 
 Settings are stored in extension-local storage, so they are per browser profile. They are not synced
 between machines, and they are never uploaded.
@@ -226,7 +232,8 @@ zone, its note count, and its status: **Running**, **Paused**, or **Completed**.
 ### Group by domain
 
 A toggle, **off** by default. It is remembered separately from the settings above, and is a view
-preference only — it never changes stored data.
+preference only — it never changes stored data. It is also the one control on this page that saves
+without telling you whether it worked, as [how saving works](#how-saving-works) describes.
 
 Off, sessions are listed flat, newest work alongside oldest, each row labelled with its domain. On,
 they are collected into collapsible groups by the hostname captured when the session started, sorted
