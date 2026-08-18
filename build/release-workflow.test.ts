@@ -166,5 +166,5 @@ Deno.test("store publishing workflow is disabled by default and protects vendor 
 
   const releaseWorkflow = await Deno.readTextFile(new URL(".github/workflows/release.yml", ROOT));
   const reusableCall = releaseWorkflow.slice(releaseWorkflow.indexOf("  store_publish:"));
-  assertEquals(reusableCall.includes("secrets:"), false);
+  assertStringIncludes(reusableCall, "secrets: inherit");
 });

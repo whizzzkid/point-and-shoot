@@ -282,3 +282,4 @@ jobs:
       operation: submit
       release_sha: ${{ needs.release_please.outputs.release_sha }}
       tag_name: ${{ needs.release_please.outputs.tag_name }}
+    secrets: inherit
