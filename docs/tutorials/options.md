@@ -62,13 +62,17 @@ Choose between **Follow backdrop**, **Dark**, and **Light**. The default is **Fo
 
 **Follow backdrop** samples the page you are inspecting and picks the variant that contrasts with
 it, so the overlay stays readable on a dark documentation site and on a white admin console without
-you touching anything. Because it follows the page and not your operating system, the overlay can
-legitimately change appearance as you move between tabs in one session.
+you touching anything. Because it follows the page rather than your operating system, the overlay
+can legitimately change appearance as you move between tabs in one session.
+
+Extension pages have no inspected page to sample, so on this settings page **Follow backdrop** falls
+back to your operating system's light or dark preference instead.
 
 Force **Dark** or **Light** when that automatic choice fights you: a page with a mid-gray backdrop
 that flips the overlay back and forth, a page whose backdrop is an image, or a screen recording
-where you want every frame to look the same. The forced value applies to the overlay, the notes side
-panel, and this settings page.
+where you want every frame to look the same. The forced value applies to the overlay and to this
+settings page. The notes side panel is not themed by this setting today — it renders in its own
+fixed palette whichever value you pick.
 
 This setting is presentation only. It does not change what is captured or exported.
 
@@ -198,14 +202,15 @@ sending a bundle to a hosted service.
 
 ## Shortcuts
 
-Shows the keyboard shortcut for **Toggle capture**, which shows or hides the overlay on the active
-tab. The extension asks for `Command+Shift+P` on macOS and `Ctrl+Shift+P` elsewhere at install time.
+The **Toggle capture** row shows the keyboard shortcut the browser has bound. The extension asks for
+`Command+Shift+P` on macOS and `Ctrl+Shift+P` elsewhere at install time.
 
-Read "toggle capture" literally: the shortcut is the _same gesture as the toolbar icon_, not a
-lighter-weight version of it. It fires the browser action, so it follows the identical session path
-— starting a session on an eligible page when none is active, pausing a running one, and resuming a
-paused one. The overlay appearing and disappearing is the visible half of that; the durable session
-pausing underneath is the half the label does not mention.
+The row's own help text reads "show or hide the overlay on the active tab", and that understates
+what the shortcut does. It is the _same gesture as the toolbar icon_, not a lighter-weight version
+of it: it fires the browser action, so it follows the identical session path — starting a session on
+an eligible page when none is active, pausing a running one, and resuming a paused one. The overlay
+appearing and disappearing is the visible half of that; the durable session pausing underneath is
+the half the label does not mention.
 
 So do not reach for it to get the overlay back after navigating. A running session already remounts
 the overlay on each page you load, and pressing the shortcut at that point pauses the session rather
@@ -226,8 +231,10 @@ page that can: `chrome://extensions/shortcuts` on Chrome, or `about:addons` on F
 
 Lists every session stored in this browser profile, and lets you get back into one or remove it.
 
-Each entry shows the session name, the domain it started on, its creation time in your local time
-zone, its note count, and its status: **Running**, **Paused**, or **Completed**.
+Each entry shows the session name, its creation time in your local time zone, its note count, and
+its status: **Running**, **Paused**, or **Completed**. The flat list also labels each row with the
+domain the session started on; grouped mode drops that label, because the group heading already
+carries it.
 
 ### Group by domain
 
@@ -235,10 +242,13 @@ A toggle, **off** by default. It is remembered separately from the settings abov
 preference only — it never changes stored data. It is also the one control on this page that saves
 without telling you whether it worked, as [how saving works](#how-saving-works) describes.
 
-Off, sessions are listed flat, newest work alongside oldest, each row labelled with its domain. On,
-they are collected into collapsible groups by the hostname captured when the session started, sorted
+Off, sessions are listed flat, newest first, each row labeled with its domain. On, they are
+collected into collapsible groups by the hostname captured when the session started, sorted
 alphabetically, with a count on each group. Turn it on once you have accumulated sessions across
 several projects and want only the one application in front of you.
+
+Sessions with no recoverable hostname — captured on a page whose URL cannot be parsed, such as a
+browser-internal tab — collect under a group named **No domain** alongside the real hostnames.
 
 The grouping uses the hostname from the _start_ of the session. A session that began on a staging
 host and continued onto production stays filed under the host it started on.
@@ -259,8 +269,9 @@ session and its note count. It cannot be undone, so export anything you still wa
 
 ## Data
 
-Covers everything the extension has stored on this device. Captured screenshots and notes live in
-extension-owned local storage; they are never uploaded.
+The tab is labeled **Data**; the panel heading inside it reads **Stored data**. It covers everything
+the extension has stored on this device. Captured screenshots and notes live in extension-owned
+local storage; they are never uploaded.
 
 ### Clear all sessions
 
