@@ -20,9 +20,14 @@ export async function getStaticPaths() {
 const { entries, entry } = Astro.props;
 const { Content } = await render(entry);
 const title = docsTitle(entry.body, entry.id);
+
+const sortedEntries = sortDocs(entries);
+const currentIndex = sortedEntries.findIndex((e) => e.id === entry.id);
+const prevEntry = currentIndex > 0 ? sortedEntries[currentIndex - 1] : undefined;
+const nextEntry = currentIndex < sortedEntries.length - 1 ? sortedEntries[currentIndex + 1] : undefined;
 ---
 
-<DocsLayout currentId={entry.id} entries={entries} title={title}>
+<DocsLayout currentId={entry.id} entries={entries} title={title} prevEntry={prevEntry} nextEntry={nextEntry}>
   <article>
     <Content />
   </article>
