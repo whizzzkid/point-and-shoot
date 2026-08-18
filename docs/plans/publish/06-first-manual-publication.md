@@ -83,13 +83,13 @@ stable identities, and configure vendor automation without placing credentials i
 
 - [ ] Create the least-privilege Chrome Web Store service account and authorization described in the
       release tutorial.
-- [ ] Configure GitHub OIDC, repository variables, and the `browser-stores` environment for Chrome.
-- [ ] Create AMO JWT API credentials and store them as `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET`
+- [x] Configure GitHub OIDC, repository variables, and the `browser-stores` environment for Chrome.
+- [x] Create AMO JWT API credentials and store them as `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET`
       environment secrets.
 - [ ] Configure required reviewers on the protected GitHub environment if desired.
 - [ ] Run the reusable workflow in reconcile mode against the already-public release.
 - [ ] Confirm reconciliation reads both public versions correctly without uploading new bytes.
-- [ ] Leave `STORE_PUBLISH_ENABLED=false`; PR 6 owns enablement after repository identities land.
+- [x] Set `STORE_PUBLISH_ENABLED=true` after both listings published and identities landed.
 
 ## Acceptance evidence
 

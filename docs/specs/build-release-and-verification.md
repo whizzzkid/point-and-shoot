@@ -128,10 +128,10 @@ artifacts. When that pull request merges, the workflow rebuilds from the tagged 
 tag and artifact identity, and attaches the same names to the GitHub release.
 
 After the four final assets exist, the release workflow calls the reusable browser-store workflow
-with the exact tag and tagged commit SHA. `STORE_PUBLISH_ENABLED` is a fail-closed gate. Any value
-other than `true` records a visible disabled result without entering the protected environment or
-resolving a vendor credential. This is the launch state until the first listings are published
-manually.
+with the exact tag and tagged commit SHA. `STORE_PUBLISH_ENABLED` is a fail-closed gate (repository
+variable, not a secret). Any value other than `true` records a visible disabled result without
+entering the protected environment or resolving a vendor credential. Both listings are now published
+and automation is enabled.
 
 When enabled, the workflow re-downloads exactly the four release assets, verifies the tag, checkout,
 manifest version, reviewer metadata, and asset set, then operates the stores independently:
