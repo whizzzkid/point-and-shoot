@@ -153,15 +153,17 @@ async function startSession(
         endedAt: dependencies.now().toISOString(),
       };
       await putSession(database, ended);
-      await storage.remove(ACTIVE_SESSION_ID_STORAGE_KEY);
-      const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
-      await storage.set({
-        [DISPLAY_SESSION_ID_STORAGE_KEY]: ended.id,
-        [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
-          stored[SESSION_REVISION_STORAGE_KEY],
-        ),
-      });
-      // Fall through to create new session
+      // Defer pointer/revision updates until new session is created to avoid
+      // double revision bump and transient state.
+      const session = createSession(
+        dependencies.createId(),
+        dependencies.now(),
+        pageTitle,
+        pageUrl,
+      );
+      await putSession(database, session);
+      await pointAtSession(storage, session.id);
+      return session;
     } else if (active !== null) {
       // Same domain or no domain - resume existing session
       return active;
