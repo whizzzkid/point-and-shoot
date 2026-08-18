@@ -256,9 +256,9 @@ Deno.test("session service ends previous session and creates fresh one on domain
   const storage = createStorage();
   const ids = ["session-1", "session-2"];
   const times = [
-    new Date("2026-07-30T12:00:00.000Z"),  // first session createdAt
-    new Date("2026-07-30T12:05:00.000Z"),  // ended session endedAt
-    new Date("2026-07-30T12:10:00.000Z"),  // new session createdAt
+    new Date("2026-07-30T12:00:00.000Z"), // first session createdAt
+    new Date("2026-07-30T12:05:00.000Z"), // ended session endedAt
+    new Date("2026-07-30T12:10:00.000Z"), // new session createdAt
   ];
   const service = createSessionService(storage.local, {
     createId() {
