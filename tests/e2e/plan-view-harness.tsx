@@ -30,15 +30,6 @@ const actionLog: {
   backs: 0,
 };
 
-function capturePrompt(): { footer: string; header: string } {
-  const field = (label: string): string => {
-    const textarea = document.querySelector(
-      'textarea[aria-label="' + label + '"]',
-    ) as HTMLTextAreaElement | null;
-    return textarea?.value ?? "";
-  };
-  return { footer: field("Footer prompt"), header: field("Header prompt") };
-}
 let pendingResolvers: (() => void)[] = [];
 
 function fixtureScreenshot(index: number): string {
@@ -74,16 +65,28 @@ function result(fail: boolean, pending: boolean, message: string): Promise<void>
 
 function actions(fail: boolean, pending: boolean): PlanViewActions {
   return {
-    copy(includedNoteIds, _prompts) {
-      actionLog.copies.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
+    copy(includedNoteIds, prompts) {
+      actionLog.copies.push({
+        footer: prompts.footerPrompt,
+        header: prompts.headerPrompt,
+        noteIds: [...includedNoteIds],
+      });
       return result(fail, pending, "Clipboard access was denied.");
     },
-    downloadBundle(includedNoteIds, _prompts) {
-      actionLog.bundleDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
+    downloadBundle(includedNoteIds, prompts) {
+      actionLog.bundleDownloads.push({
+        footer: prompts.footerPrompt,
+        header: prompts.headerPrompt,
+        noteIds: [...includedNoteIds],
+      });
       return result(fail, pending, "The bundle could not download.");
     },
-    downloadPrompt(includedNoteIds, _prompts) {
-      actionLog.promptDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
+    downloadPrompt(includedNoteIds, prompts) {
+      actionLog.promptDownloads.push({
+        footer: prompts.footerPrompt,
+        header: prompts.headerPrompt,
+        noteIds: [...includedNoteIds],
+      });
       return result(fail, pending, "The prompt could not download.");
     },
   };

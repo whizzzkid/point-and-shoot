@@ -96,11 +96,10 @@ export function PlanView(
   }, [footerPrompt, headerPrompt, includedNoteIds, session]);
   const archiveProjection = useMemo(() => {
     try {
-      createExportArchive(session, {
-        footerPrompt,
-        headerPrompt,
-        includedNoteIds,
-      });
+      // Header/footer prompt text cannot affect archive validity (createExportArchive only
+      // fails on bad screenshot data), so they're intentionally excluded from the deps below —
+      // including them would re-encode every screenshot on each keystroke in the prompt boxes.
+      createExportArchive(session, { includedNoteIds });
       return {
         status: "ready" as const,
       };
@@ -110,7 +109,7 @@ export function PlanView(
         message: cause instanceof Error ? cause.message : "The export bundle could not be built.",
       };
     }
-  }, [footerPrompt, headerPrompt, includedNoteIds, session]);
+  }, [includedNoteIds, session]);
   const selectedCount = includedNoteIds.size;
   const isBusy = actionState.status === "busy";
   const promptIsBlocked = selectedCount === 0 || markdownProjection.status === "error" || isBusy;
