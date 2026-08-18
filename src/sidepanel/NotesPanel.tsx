@@ -3,7 +3,6 @@
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { ExtensionSettings } from "../shared/settings.ts";
-import { loadSettings as loadExtensionSettings } from "../shared/settings.ts";
 import type { Note, Session } from "../shared/schema.ts";
 import {
   Badge,
