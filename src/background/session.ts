@@ -80,11 +80,14 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
 }
 
 /**
- * Extracts the hostname of a URL for {@link Session.domain}. Returns `null` for `undefined`, empty,
- * or unparseable inputs (`chrome://newtab/`, `about:blank`, `""`); the ADR-0002 activeTab model
- * gives the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ * Extracts the hostname of a URL for {@link Session.domain}. The ADR-0002 activeTab model gives
+ * the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ *
+ * @param pageUrl The tab URL to extract a hostname from.
+ * @returns The hostname, or `null` for `undefined`, empty, or unparseable inputs (`chrome://newtab/`,
+ *   `about:blank`, `""`).
  */
-function domainFromUrl(pageUrl: string | undefined): string | null {
+export function domainFromUrl(pageUrl: string | undefined): string | null {
   if (pageUrl === undefined || pageUrl === "") return null;
   try {
     return new URL(pageUrl).hostname || null;
@@ -144,7 +147,31 @@ async function startSession(
   const database = await dependencies.openDatabase();
   try {
     const active = await loadActiveFrom(storage, database);
-    if (active !== null) return active;
+    const newDomain = domainFromUrl(pageUrl);
+
+    // If there's an active session but for a different domain, end it and start fresh
+    // Note: null domain (unparseable URL) is treated as "no domain" and does not trigger a reset
+    if (active !== null && newDomain !== null && active.domain !== newDomain) {
+      const ended: Session = {
+        ...active,
+        endedAt: dependencies.now().toISOString(),
+      };
+      await putSession(database, ended);
+      // Defer pointer/revision updates until new session is created to avoid
+      // double revision bump and transient state.
+      const session = createSession(
+        dependencies.createId(),
+        dependencies.now(),
+        pageTitle,
+        pageUrl,
+      );
+      await putSession(database, session);
+      await pointAtSession(storage, session.id);
+      return session;
+    } else if (active !== null) {
+      // Same domain or no domain - resume existing session
+      return active;
+    }
 
     const session = createSession(
       dependencies.createId(),
