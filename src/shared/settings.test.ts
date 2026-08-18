@@ -37,21 +37,17 @@ function createStorage(
 Deno.test("settings load the settled defaults when extension storage is empty", async () => {
   const storage = createStorage();
 
-  assertEquals(await loadSettings(storage), {
-    exportSizeBudgetBytes: 2_000_000,
-    frameworkHints: false,
-    schemaVersion: 1,
-    screenshotMaxDimension: 1_024,
-    screenshotQuality: 0.7,
-    stripSensitiveQueries: true,
-    themeOverride: "auto",
-  });
+  assertEquals(await loadSettings(storage), DEFAULT_SETTINGS);
   assertEquals(DEFAULT_SETTINGS, await loadSettings(storage));
+  assertEquals(DEFAULT_SETTINGS.defaultHeaderPrompt, "");
+  assertEquals(DEFAULT_SETTINGS.defaultFooterPrompt, "");
 });
 
 Deno.test("settings round-trip every supported value through one typed record", async () => {
   const storage = createStorage();
   const settings = {
+    defaultHeaderPrompt: "Fix the heading contrast",
+    defaultFooterPrompt: "Also check the footer link target.",
     exportSizeBudgetBytes: 8_000_000,
     frameworkHints: true,
     schemaVersion: 1 as const,

@@ -17,6 +17,8 @@ The stored object contains exactly these fields:
 | `stripSensitiveQueries`  | Boolean                                    | `true`    |
 | `screenshotQuality`      | `0.5`, `0.7`, `0.85`, `1`                  | `0.7`     |
 | `screenshotMaxDimension` | `512`, `1024`, `2048`                      | `1024`    |
+| `defaultHeaderPrompt`    | Free text                                  | empty     |
+| `defaultFooterPrompt`    | Free text                                  | empty     |
 
 The options page writes the complete record after every change. Writes are serialized so a later
 selection cannot be overwritten by an earlier, slower storage operation.
@@ -24,6 +26,18 @@ selection cannot be overwritten by an earlier, slower storage operation.
 Every read validates the full record and its exact keys. A missing or invalid record resolves to a
 fresh copy of the defaults; runtime consumers never cast unknown storage data to the settings type.
 An invalid write fails instead of persisting a partial record.
+
+## Plan prompt wrapping
+
+`defaultHeaderPrompt` and `defaultFooterPrompt` are free-text fields that wrap the generated plan in
+the exported `plan.md` and in every clipboard copy. Each part is trimmed and emitted only when
+non-empty, separated from the generated plan by a blank line. Both default to an empty string, so an
+unset installation produces byte-identical output to today.
+
+The options page exposes both as editable text boxes in a dedicated Plan prompt section. On the
+compile-plan step the same boxes appear again, seeded from these settings and editable per-export;
+editing them there changes only that export and never writes back to settings. The generated plan
+body between them stays read-only.
 
 ## Theme behavior
 
