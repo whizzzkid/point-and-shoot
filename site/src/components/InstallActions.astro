@@ -1,7 +1,7 @@
 ---
 import storeListing from "../../.generated/store-listing.json";
 import { createInstallActionsModel } from "../lib/install-actions.mjs";
-import SiteIcon from "../components/SiteIcon.astro";
+import SiteIcon from "./SiteIcon.astro";
 
 interface Props {
   enhance?: boolean;
@@ -39,7 +39,7 @@ const install = createInstallActionsModel(storeListing);
     <div class="install-source">
       <p class="install-source-copy">Build Point & Shoot locally from the repository source.</p>
       <a
-        class="button-github"
+        class="button button-github"
         data-source-install
         href={install.sourceInstallUrl}
       >

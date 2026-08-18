@@ -148,7 +148,7 @@ a:focus-visible {
 .docs-shell {
   display: grid;
   grid-template-columns: calc(var(--space-24) * 3.5) minmax(0, 1fr);
-  max-width: var(--container-max);
+  max-width: 90vw;
   min-height: calc(100vh - var(--space-16));
   margin-inline: auto;
 }
@@ -198,7 +198,7 @@ a:focus-visible {
   font-size: var(--text-base);
   text-decoration: none;
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .docs-sidebar a:hover {
