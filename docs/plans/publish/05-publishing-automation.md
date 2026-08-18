@@ -99,18 +99,19 @@ returned add-on/version review state.
 
 ## Repository configuration
 
-Use a protected `browser-stores` GitHub environment. The activation packet fills these names after
-manual publication:
+A protected `browser-stores` GitHub environment gates credential access. Repository variables are
+set under **Settings > Secrets and variables > Actions > Variables** (none are secrets). Environment
+secrets are set under **Settings > Environments > browser-stores**.
 
-| Kind                | Name                             | Initial state |
-| ------------------- | -------------------------------- | ------------- |
-| Repository variable | `STORE_PUBLISH_ENABLED`          | `false`       |
-| Repository variable | `CHROME_EXTENSION_ID`            | absent        |
-| Repository variable | `CHROME_PUBLISHER_ID`            | absent        |
-| Repository variable | `GCP_WORKLOAD_IDENTITY_PROVIDER` | absent        |
-| Repository variable | `GCP_SERVICE_ACCOUNT`            | absent        |
-| Environment secret  | `WEB_EXT_API_KEY`                | absent        |
-| Environment secret  | `WEB_EXT_API_SECRET`             | absent        |
+| Kind                | Name                             | Configured                             |
+| ------------------- | -------------------------------- | -------------------------------------- |
+| Repository variable | `STORE_PUBLISH_ENABLED`          | `true`                                 |
+| Repository variable | `CHROME_EXTENSION_ID`            | `efiaamiohjjhhcgeaihgmbajnamhbahb`     |
+| Repository variable | `CHROME_PUBLISHER_ID`            | `d40d655e-e8ab-491b-9fc7-f5220fdca1c7` |
+| Repository variable | `GCP_WORKLOAD_IDENTITY_PROVIDER` | set                                    |
+| Repository variable | `GCP_SERVICE_ACCOUNT`            | set                                    |
+| Environment secret  | `WEB_EXT_API_KEY`                | set (AMO JWT issuer)                   |
+| Environment secret  | `WEB_EXT_API_SECRET`             | set (AMO JWT secret)                   |
 
 The workflow validates variables against `store-listing.json`. Secret values must be masked before
 any subprocess starts, and caught errors must never serialize request headers or full responses.

@@ -119,43 +119,65 @@ released.
 
 ## Configure browser-store automation
 
-Keep the repository variable `STORE_PUBLISH_ENABLED` set to `false` until both first listings are
-public and their identities have landed in `store-listing.json`. Create a protected GitHub
-environment named `browser-stores`; require the repository's normal deployment reviewers if the team
-wants an approval between release creation and vendor submission.
+Both listings are published. The repository is configured so that merging a release PR automatically
+submits the new version to both stores. The `publish` job in `.github/workflows/store-publish.yml`
+runs in the protected `browser-stores` GitHub environment, which gates credential access.
 
-Configure these repository variables after the first manual publication:
+### Repository variables
 
-| Variable                         | Value                                                                |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `CHROME_EXTENSION_ID`            | Vendor-assigned Chrome extension ID; must equal `store-listing.json` |
-| `CHROME_PUBLISHER_ID`            | Publisher resource ID used by Chrome Web Store API v2                |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full Google Workload Identity Provider resource name                 |
-| `GCP_SERVICE_ACCOUNT`            | Service account linked in the Chrome Web Store developer dashboard   |
+Set under **Settings > Secrets and variables > Actions > Variables tab** (not Secrets — none of
+these are secret):
 
-Configure `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET` as secrets on the `browser-stores` environment.
-They are the AMO JWT issuer and secret from the Firefox Add-ons developer account. The Firefox
-stable ID remains `pointandshoot@whizzzkid.dev`; the workflow verifies it rather than accepting a
-configurable replacement.
+| Variable                         | Value                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------- |
+| `STORE_PUBLISH_ENABLED`          | `true` (fail-closed gate; any other value runs the `disabled` job instead of `publish`) |
+| `CHROME_EXTENSION_ID`            | `efiaamiohjjhhcgeaihgmbajnamhbahb`                                                      |
+| `CHROME_PUBLISHER_ID`            | `d40d655e-e8ab-491b-9fc7-f5220fdca1c7`                                                  |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full Workload Identity Provider resource name (see Chrome OIDC below)                   |
+| `GCP_SERVICE_ACCOUNT`            | Service account email linked in the Chrome Web Store developer dashboard                |
 
-For Chrome, create a Google Workload Identity Provider restricted to this repository and release
-workflow, allow it to impersonate the service account linked in the Chrome Web Store dashboard, and
-grant only the token-minting roles required by that impersonation. The workflow requests the
-`chromewebstore` OAuth scope through `google-github-actions/auth@v3`; do not create or store a
-long-lived service-account JSON key. Follow the official
+### Protected environment secrets
+
+Create a GitHub environment named `browser-stores` under **Settings > Environments**. Add two
+**secrets** (these are the only actual secrets in the store-publish pipeline):
+
+| Secret               | Value                                                          |
+| -------------------- | -------------------------------------------------------------- |
+| `WEB_EXT_API_KEY`    | AMO JWT issuer from the Firefox Add-ons developer hub API Keys |
+| `WEB_EXT_API_SECRET` | AMO JWT secret from the same page                              |
+
+The Firefox stable ID `pointandshoot@whizzzkid.dev` is hardcoded in the workflow; it is verified,
+not configurable.
+
+### Chrome OIDC setup (GCP Workload Identity Federation)
+
+The Chrome publishing step authenticates via OIDC — no long-lived API key is stored. GCP setup
+requires a **project ID** (human-readable string, e.g. `my-cws-project`) and a **project number**
+(numeric, e.g. `123456789012`); both are shown at https://console.cloud.google.com/welcome. `gcloud`
+commands use the project ID; the Workload Identity Provider resource name uses the project number.
+
+1. Enable the Chrome Web Store API:
+   `gcloud services enable chromewebstore.googleapis.com --project=PROJECT_ID`
+2. Create a service account:
+   `gcloud iam service-accounts create cws-publish --display-name="Chrome Web Store Publisher" --project=PROJECT_ID`
+3. Create a Workload Identity Pool:
+   `gcloud iam workload-identity-pools create github-actions --location=global --display-name="GitHub Actions" --project=PROJECT_ID`
+4. Create an OIDC Provider restricted to this repository:
+   `gcloud iam workload-identity-pools providers create-oidc github --location=global --workload-identity-pool=github-actions --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.job_workflow_ref=assertion.job_workflow_ref" --attribute-condition="assertion.repository=='whizzzkid/point-and-shoot' && assertion.job_workflow_ref=='whizzzkid/point-and-shoot/.github/workflows/store-publish.yml@refs/heads/main'" --project=PROJECT_ID`
+5. Grant the pool permission to impersonate the service account:
+   `gcloud iam service-accounts add-iam-policy-binding cws-publish@PROJECT_ID.iam.gserviceaccount.com --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/attribute.repository/whizzzkid/point-and-shoot" --project=PROJECT_ID`
+6. In the Chrome Web Store developer dashboard under **Settings > API Access**, add the service
+   account email (`cws-publish@PROJECT_ID.iam.gserviceaccount.com`) directly.
+7. Set repository variables:
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER` =
+     `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/providers/github`
+   - `GCP_SERVICE_ACCOUNT` = `cws-publish@PROJECT_ID.iam.gserviceaccount.com`
+
+The workflow requests the `chromewebstore` OAuth scope through `google-github-actions/auth@v3`. Do
+not create or store a long-lived service-account JSON key. See the official
 [Chrome Web Store service-account setup](https://developer.chrome.com/docs/webstore/service-accounts)
 and
 [GitHub-to-Google OIDC guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-google-cloud-platform).
-
-Before setting `STORE_PUBLISH_ENABLED` to `true`:
-
-1. Publish both first listings manually and verify their public install URLs in a signed-out
-   browser.
-2. Update the canonical store IDs, slugs, URLs, and `published` states in `store-listing.json`.
-3. Run `mise exec -- deno task store:sync`, `mise exec -- deno task store:check`, and the site
-   checks.
-4. Confirm the GitHub variables and protected-environment secrets above.
-5. Merge the activation pull request, then change `STORE_PUBLISH_ENABLED` to `true`.
 
 New releases then upload the exact attached Chrome ZIP and a Firefox package deterministically
 created from the attached Firefox ZIP. They never rebuild store inputs from a moving branch. Chrome
