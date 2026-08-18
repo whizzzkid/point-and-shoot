@@ -12,9 +12,9 @@ const PLAN_VIEW_HARNESS = new URL("tests/e2e/plan-view-harness.tsx", ROOT);
 
 interface PlanViewHarness {
   readonly actionLog: {
-    copies: string[][];
-    bundleDownloads: string[][];
-    promptDownloads: string[][];
+    copies: { footer: string; header: string; noteIds: string[] }[];
+    bundleDownloads: { footer: string; header: string; noteIds: string[] }[];
+    promptDownloads: { footer: string; header: string; noteIds: string[] }[];
     backs: number;
   };
   mount(
@@ -92,6 +92,20 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
 
     await page.getByRole("checkbox", { name: "Include Order summary" }).uncheck();
     assertEquals((await preview.textContent())?.includes("total wraps"), false);
+    await page.getByLabel("Header prompt").fill("// Use my custom skills to plan and execute on this.");
+    await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
+    assertEquals(
+      (await page.locator("[data-markdown-preview]").textContent())?.includes(
+        "// Use my custom skills to plan and execute on this.",
+      ),
+      true,
+    );
+    assertEquals(
+      (await page.locator("[data-markdown-preview]").textContent())?.includes(
+        "// Work Hard, Make not mistakes!",
+      ),
+      true,
+    );
     await page.getByRole("button", { name: "Copy prompt" }).click();
     await page.getByText("Prompt copied.").waitFor();
     await page.getByRole("button", { name: "Download prompt" }).click();
@@ -110,9 +124,21 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
         };
       }),
       {
-        copies: [["note-button"]],
-        bundleDownloads: [["note-button"]],
-        promptDownloads: [["note-button"]],
+        copies: [{
+          footer: "// Work Hard, Make not mistakes!",
+          header: "// Use my custom skills to plan and execute on this.",
+          noteIds: ["note-button"],
+        }],
+        bundleDownloads: [{
+          footer: "// Work Hard, Make not mistakes!",
+          header: "// Use my custom skills to plan and execute on this.",
+          noteIds: ["note-button"],
+        }],
+        promptDownloads: [{
+          footer: "// Work Hard, Make not mistakes!",
+          header: "// Use my custom skills to plan and execute on this.",
+          noteIds: ["note-button"],
+        }],
       },
     );
 

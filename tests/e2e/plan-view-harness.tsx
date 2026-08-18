@@ -19,9 +19,9 @@ mount.id = "app";
 document.body.append(mount);
 
 const actionLog: {
-  copies: string[][];
-  bundleDownloads: string[][];
-  promptDownloads: string[][];
+  copies: { footer: string; header: string; noteIds: string[] }[];
+  bundleDownloads: { footer: string; header: string; noteIds: string[] }[];
+  promptDownloads: { footer: string; header: string; noteIds: string[] }[];
   backs: number;
 } = {
   copies: [],
@@ -29,6 +29,16 @@ const actionLog: {
   promptDownloads: [],
   backs: 0,
 };
+
+function capturePrompt(): { footer: string; header: string } {
+  const field = (label: string): string => {
+    const textarea = document.querySelector(
+      'textarea[aria-label="' + label + '"]',
+    ) as HTMLTextAreaElement | null;
+    return textarea?.value ?? "";
+  };
+  return { footer: field("Footer prompt"), header: field("Header prompt") };
+}
 let pendingResolvers: (() => void)[] = [];
 
 function fixtureScreenshot(index: number): string {
@@ -65,15 +75,15 @@ function result(fail: boolean, pending: boolean, message: string): Promise<void>
 function actions(fail: boolean, pending: boolean): PlanViewActions {
   return {
     copy(includedNoteIds) {
-      actionLog.copies.push([...includedNoteIds]);
+      actionLog.copies.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "Clipboard access was denied.");
     },
     downloadBundle(includedNoteIds) {
-      actionLog.bundleDownloads.push([...includedNoteIds]);
+      actionLog.bundleDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "The bundle could not download.");
     },
     downloadPrompt(includedNoteIds) {
-      actionLog.promptDownloads.push([...includedNoteIds]);
+      actionLog.promptDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "The prompt could not download.");
     },
   };
@@ -90,6 +100,8 @@ function mountPlan(
     <IconSpriteProvider url="">
       <PlanView
         actions={actions(fail, pending)}
+        defaultFooterPrompt=""
+        defaultHeaderPrompt=""
         onBack={() => {
           actionLog.backs++;
         }}

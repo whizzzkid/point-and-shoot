@@ -2,6 +2,9 @@
 
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
+import { browser } from "../shared/browser.ts";
+import type { ExtensionSettings } from "../shared/settings.ts";
+import { loadSettings } from "../shared/settings.ts";
 import type { Note, Session } from "../shared/schema.ts";
 import {
   Badge,
@@ -38,6 +41,7 @@ import type { NotePreviewController } from "./note-preview.ts";
 export interface NotesPanelProps {
   readonly exportDelivery: ExportDeliveryDependencies;
   readonly iconSpriteUrl: string;
+  readonly loadSettings: () => Promise<ExtensionSettings>;
   readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
   readonly version: string;
@@ -207,6 +211,7 @@ export function NotesPanel(
   const [domainSessions, setDomainSessions] = useState<readonly Session[]>();
   const [currentDomain, setCurrentDomain] = useState<string | null>();
   const [confirmDelete, setConfirmDelete] = useState<Session>();
+  const [settings, setSettings] = useState<ExtensionSettings>();
 
   const reloadDomainSessions = (): void => {
     void repository.currentDomain()
@@ -246,6 +251,9 @@ export function NotesPanel(
       reload();
       reloadDomainSessions();
     });
+    void loadSettings(browser.storage.local).then((loaded) => {
+      if (active) setSettings(loaded);
+    }).catch(() => undefined);
     reload();
     reloadDomainSessions();
     return () => {
@@ -310,6 +318,8 @@ export function NotesPanel(
     return (
       <IconSpriteProvider url={iconSpriteUrl}>
         <PlanView
+          defaultFooterPrompt={settings?.defaultFooterPrompt ?? ""}
+          defaultHeaderPrompt={settings?.defaultHeaderPrompt ?? ""}
           actions={{
             copy: (includedNoteIds) =>
               copySessionPrompt(session, { includedNoteIds }, exportDelivery),
