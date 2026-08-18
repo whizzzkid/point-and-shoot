@@ -2,9 +2,8 @@
 
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { browser } from "../shared/browser.ts";
 import type { ExtensionSettings } from "../shared/settings.ts";
-import { loadSettings } from "../shared/settings.ts";
+import { loadSettings as loadExtensionSettings } from "../shared/settings.ts";
 import type { Note, Session } from "../shared/schema.ts";
 import {
   Badge,
@@ -193,6 +192,7 @@ export function NotesPanel(
   {
     exportDelivery,
     iconSpriteUrl,
+    loadSettings,
     notePreview,
     repository,
     version,
@@ -251,7 +251,7 @@ export function NotesPanel(
       reload();
       reloadDomainSessions();
     });
-    void loadSettings(browser.storage.local).then((loaded) => {
+    void loadSettings().then((loaded) => {
       if (active) setSettings(loaded);
     }).catch(() => undefined);
     reload();
