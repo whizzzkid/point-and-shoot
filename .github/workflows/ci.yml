@@ -140,14 +140,15 @@ jobs:
       PNS_VISUAL_UPDATE_PLATFORM: ubuntu-24.04-playwright-1.62.0
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
           # The Visual job regenerates baselines and commits them back to the PR branch, so it
-          # checks out the PR head rather than the merge ref. Only pull requests have a head_ref;
-          # on push/workflow_dispatch the default checkout (the pushed ref) is correct.
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || '' }}
+          # checks out the PR head rather than the merge ref. Only same-repo pull requests can be
+          # pushed back to (a fork branch doesn't exist in this repo to check out by name); on
+          # fork PRs, push/workflow_dispatch runs the default checkout (the merge or pushed ref)
+          # is correct.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
       - uses: jdx/mise-action@v4
 
       - name: deno task visual
@@ -156,8 +157,10 @@ jobs:
 
       # Baseline regeneration pushes to the branch, which only makes sense for same-repo pull
       # requests. Fork PRs cannot push, and push/workflow_dispatch runs have no branch to update.
+      # github.repository is always this repo's own slug, so it must be compared against the
+      # PR's head repo (not hardcoded) to actually detect same-repo vs. fork.
       - name: Regenerate drifted baselines and commit them back
-        if: failure() && github.event_name == 'pull_request' && github.repository == 'whizzzkid/point-and-shoot'
+        if: failure() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           deno task visual:update
           git config --global --add safe.directory /__w/point-and-shoot/point-and-shoot
