@@ -74,15 +74,15 @@ function result(fail: boolean, pending: boolean, message: string): Promise<void>
 
 function actions(fail: boolean, pending: boolean): PlanViewActions {
   return {
-    copy(includedNoteIds) {
+    copy(includedNoteIds, _prompts) {
       actionLog.copies.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "Clipboard access was denied.");
     },
-    downloadBundle(includedNoteIds) {
+    downloadBundle(includedNoteIds, _prompts) {
       actionLog.bundleDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "The bundle could not download.");
     },
-    downloadPrompt(includedNoteIds) {
+    downloadPrompt(includedNoteIds, _prompts) {
       actionLog.promptDownloads.push({ ...capturePrompt(), noteIds: [...includedNoteIds] });
       return result(fail, pending, "The prompt could not download.");
     },

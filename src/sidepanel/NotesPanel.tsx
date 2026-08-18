@@ -324,14 +324,14 @@ export function NotesPanel(
           defaultFooterPrompt={settings?.defaultFooterPrompt ?? ""}
           defaultHeaderPrompt={settings?.defaultHeaderPrompt ?? ""}
           actions={{
-            copy: (includedNoteIds) =>
-              copySessionPrompt(session, { includedNoteIds }, exportDelivery),
-            downloadBundle: (includedNoteIds) =>
-              downloadSessionArchive(session, { includedNoteIds }, exportDelivery).then(
+            copy: (includedNoteIds, prompts) =>
+              copySessionPrompt(session, { ...prompts, includedNoteIds }, exportDelivery),
+            downloadBundle: (includedNoteIds, prompts) =>
+              downloadSessionArchive(session, { ...prompts, includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
-            downloadPrompt: (includedNoteIds) =>
-              downloadSessionPrompt(session, { includedNoteIds }, exportDelivery).then(
+            downloadPrompt: (includedNoteIds, prompts) =>
+              downloadSessionPrompt(session, { ...prompts, includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
           }}

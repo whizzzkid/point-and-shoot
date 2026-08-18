@@ -8,11 +8,23 @@ import { createExportArchive } from "../../shared/serialize/zip.ts";
 import { Badge, Button, CaptureMinimap, Checkbox, Icon, Input } from "../../ui/components/index.ts";
 import { promptFilename } from "./delivery.ts";
 
+/** Per-export header and footer prompt parts captured from the editable boxes. */
+export interface PromptParts {
+  readonly footerPrompt: string;
+  readonly headerPrompt: string;
+}
+
 /** Export actions invoked by the plan view after it validates the current selection. */
 export interface PlanViewActions {
-  readonly copy: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
-  readonly downloadBundle: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
-  readonly downloadPrompt: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
+  readonly copy: (includedNoteIds: ReadonlySet<string>, prompts: PromptParts) => Promise<void>;
+  readonly downloadBundle: (
+    includedNoteIds: ReadonlySet<string>,
+    prompts: PromptParts,
+  ) => Promise<void>;
+  readonly downloadPrompt: (
+    includedNoteIds: ReadonlySet<string>,
+    prompts: PromptParts,
+  ) => Promise<void>;
 }
 
 /** Props accepted by {@link PlanView}. */
@@ -225,7 +237,11 @@ export function PlanView(
           <div className="ps-plan-preview__actions">
             <Button
               disabled={promptIsBlocked}
-              onClick={() => runAction("copy", () => actions.copy(includedNoteIds))}
+              onClick={() =>
+                runAction(
+                  "copy",
+                  () => actions.copy(includedNoteIds, { footerPrompt, headerPrompt }),
+                )}
               variant="secondary"
             >
               {actionState.status === "busy" && actionState.action === "copy"
@@ -237,7 +253,7 @@ export function PlanView(
               onClick={() =>
                 runAction(
                   "download-prompt",
-                  () => actions.downloadPrompt(includedNoteIds),
+                  () => actions.downloadPrompt(includedNoteIds, { footerPrompt, headerPrompt }),
                 )}
               variant="secondary"
             >
@@ -251,7 +267,7 @@ export function PlanView(
               onClick={() =>
                 runAction(
                   "download-bundle",
-                  () => actions.downloadBundle(includedNoteIds),
+                  () => actions.downloadBundle(includedNoteIds, { footerPrompt, headerPrompt }),
                 )}
             >
               {actionState.status === "busy" && actionState.action === "download-bundle"
