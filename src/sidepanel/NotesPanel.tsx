@@ -246,13 +246,17 @@ export function NotesPanel(
           }
         });
     };
+    const reloadSettings = (): void => {
+      void loadSettings().then((loaded) => {
+        if (active) setSettings(loaded);
+      }).catch(() => undefined);
+    };
     const stopWatching = repository.watch(() => {
       reload();
       reloadDomainSessions();
+      reloadSettings();
     });
-    void loadSettings().then((loaded) => {
-      if (active) setSettings(loaded);
-    }).catch(() => undefined);
+    reloadSettings();
     reload();
     reloadDomainSessions();
     return () => {

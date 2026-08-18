@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import type { JSX } from "preact";
-import { useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Session } from "../../shared/schema.ts";
 import { toMarkdown } from "../../shared/serialize/index.ts";
 import { createExportArchive } from "../../shared/serialize/zip.ts";
@@ -56,6 +56,13 @@ export function PlanView(
   const [headerPrompt, setHeaderPrompt] = useState(defaultHeaderPrompt);
   const [footerPrompt, setFooterPrompt] = useState(defaultFooterPrompt);
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
+
+  // Defaults arrive async via the settings load; re-seed the per-export boxes when they land so a
+  // plan view opened before settings resolve still reflects the configured prompts.
+  useEffect(() => {
+    setHeaderPrompt(defaultHeaderPrompt);
+    setFooterPrompt(defaultFooterPrompt);
+  }, [defaultFooterPrompt, defaultHeaderPrompt]);
   const includedNoteIds = useMemo(() => selectionFor(session, selected), [session, selected]);
   const markdownProjection = useMemo(() => {
     try {

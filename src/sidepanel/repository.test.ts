@@ -10,6 +10,7 @@ import {
   DISPLAY_SESSION_ID_STORAGE_KEY,
   SESSION_REVISION_STORAGE_KEY,
 } from "../shared/session.ts";
+import { SETTINGS_STORAGE_KEY } from "../shared/settings.ts";
 import { DB_NAME, openStore, putSession } from "../shared/store.ts";
 import { createNotesRepository } from "./repository.ts";
 
@@ -260,9 +261,10 @@ Deno.test("notes repository watches session pointer and revision changes", () =>
   listener?.({ unrelated: { newValue: true } }, "local");
   listener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 1 } }, "sync");
   listener?.({ [DISPLAY_SESSION_ID_STORAGE_KEY]: { newValue: "session-1" } }, "local");
+  listener?.({ [SETTINGS_STORAGE_KEY]: { newValue: {} } }, "local");
   listener?.({ [SESSION_REVISION_STORAGE_KEY]: { newValue: 2 } }, "local");
   stop();
 
-  assertEquals(changes, 2);
+  assertEquals(changes, 3);
   assertEquals(removed, listener);
 });
