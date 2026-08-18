@@ -250,3 +250,44 @@ Deno.test("session service serializes concurrent start requests", async () => {
   assertEquals(identifiersCreated, 1);
   await resetDatabase();
 });
+
+Deno.test("session service resumes existing session when domain is the same", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "same-domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const first = await service.start("Page 1", "https://example.com/page1");
+  assertEquals(first.id, "same-domain-session");
+
+  // Start again with same domain
+  const second = await service.start("Page 2", "https://example.com/page2");
+  assertEquals(second.id, "same-domain-session");
+  assertEquals(second, first);
+
+  await resetDatabase();
+});
+
+Deno.test("session service resumes existing session when new domain is null", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "null-domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const first = await service.start("Page 1", "https://example.com/page1");
+  assertEquals(first.domain, "example.com");
+
+  // Start again with null domain (unparseable URL) - should resume existing session
+  const second = await service.start("Page 2", "");
+  assertEquals(second.id, "null-domain-session");
+  assertEquals(second, first);
+  assertEquals(second.domain, "example.com");
+
+  await resetDatabase();
+});
