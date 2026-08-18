@@ -414,13 +414,9 @@ article img,
   background: var(--accent-subtle);
 }
 
-.docs-nav-prev {
-  flex-direction: row;
-}
-
 .docs-nav-next {
-  flex-direction: row-reverse;
   margin-left: auto;
+  text-align: right;
 }
 
 .docs-nav-label {
@@ -430,7 +426,7 @@ article img,
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .docs-nav-title {
