@@ -250,3 +250,100 @@ Deno.test("session service serializes concurrent start requests", async () => {
   assertEquals(identifiersCreated, 1);
   await resetDatabase();
 });
+
+Deno.test("session service ends previous session and creates fresh one on domain change", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const ids = ["session-1", "session-2"];
+  const times = [
+    new Date("2026-07-30T12:00:00.000Z"), // first session createdAt
+    new Date("2026-07-30T12:05:00.000Z"), // ended session endedAt
+    new Date("2026-07-30T12:10:00.000Z"), // new session createdAt
+  ];
+  const service = createSessionService(storage.local, {
+    createId() {
+      const id = ids.shift();
+      if (id === undefined) throw new Error("deterministic id sequence exhausted");
+      return id;
+    },
+    now() {
+      const time = times.shift();
+      if (time === undefined) throw new Error("deterministic clock exhausted");
+      return time;
+    },
+    openDatabase: openStore,
+  });
+
+  // Start first session on example.com
+  const first = await service.start("Page 1", "https://example.com/page1");
+  assertEquals(first.domain, "example.com");
+  assertEquals(first.id, "session-1");
+
+  // Start second session on different domain (other.com)
+  const second = await service.start("Page 2", "https://other.com/page2");
+  assertEquals(second.domain, "other.com");
+  assertEquals(second.id, "session-2");
+
+  // First session should be ended
+  const database = await openStore();
+  try {
+    const ended = await getSession(database, "session-1");
+    assertEquals(ended?.endedAt, "2026-07-30T12:05:00.000Z");
+    assertEquals(ended?.domain, "example.com");
+
+    const fresh = await getSession(database, "session-2");
+    assertEquals(fresh?.endedAt, null);
+    assertEquals(fresh?.domain, "other.com");
+  } finally {
+    database.close();
+  }
+
+  // Active pointer should point to new session
+  assertEquals(storage.values.get(ACTIVE_SESSION_ID_STORAGE_KEY), "session-2");
+  assertEquals(storage.values.get(DISPLAY_SESSION_ID_STORAGE_KEY), "session-2");
+  // Two revision bumps: one for first session, one for new session
+  assertEquals(storage.values.get(SESSION_REVISION_STORAGE_KEY), 2);
+
+  await resetDatabase();
+});
+
+Deno.test("session service resumes existing session when domain is the same", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "same-domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const first = await service.start("Page 1", "https://example.com/page1");
+  assertEquals(first.id, "same-domain-session");
+
+  // Start again with same domain
+  const second = await service.start("Page 2", "https://example.com/page2");
+  assertEquals(second.id, "same-domain-session");
+  assertEquals(second, first);
+
+  await resetDatabase();
+});
+
+Deno.test("session service resumes existing session when new domain is null", async () => {
+  await resetDatabase();
+  const storage = createStorage();
+  const service = createSessionService(storage.local, {
+    createId: () => "null-domain-session",
+    now: () => new Date("2026-07-30T12:00:00.000Z"),
+    openDatabase: openStore,
+  });
+
+  const first = await service.start("Page 1", "https://example.com/page1");
+  assertEquals(first.domain, "example.com");
+
+  // Start again with null domain (unparseable URL) - should resume existing session
+  const second = await service.start("Page 2", "");
+  assertEquals(second.id, "null-domain-session");
+  assertEquals(second, first);
+  assertEquals(second.domain, "example.com");
+
+  await resetDatabase();
+});

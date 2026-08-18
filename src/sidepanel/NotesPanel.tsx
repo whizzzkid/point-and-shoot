@@ -2,6 +2,7 @@
 
 import type { JSX } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
+import type { ExtensionSettings } from "../shared/settings.ts";
 import type { Note, Session } from "../shared/schema.ts";
 import {
   Badge,
@@ -38,6 +39,7 @@ import type { NotePreviewController } from "./note-preview.ts";
 export interface NotesPanelProps {
   readonly exportDelivery: ExportDeliveryDependencies;
   readonly iconSpriteUrl: string;
+  readonly loadSettings: () => Promise<ExtensionSettings>;
   readonly notePreview: NotePreviewController;
   readonly repository: NotesRepository;
   readonly version: string;
@@ -189,6 +191,7 @@ export function NotesPanel(
   {
     exportDelivery,
     iconSpriteUrl,
+    loadSettings,
     notePreview,
     repository,
     version,
@@ -207,6 +210,7 @@ export function NotesPanel(
   const [domainSessions, setDomainSessions] = useState<readonly Session[]>();
   const [currentDomain, setCurrentDomain] = useState<string | null>();
   const [confirmDelete, setConfirmDelete] = useState<Session>();
+  const [settings, setSettings] = useState<ExtensionSettings>();
 
   const reloadDomainSessions = (): void => {
     void repository.currentDomain()
@@ -242,10 +246,17 @@ export function NotesPanel(
           }
         });
     };
+    const reloadSettings = (): void => {
+      void loadSettings().then((loaded) => {
+        if (active) setSettings(loaded);
+      }).catch(() => undefined);
+    };
     const stopWatching = repository.watch(() => {
       reload();
       reloadDomainSessions();
+      reloadSettings();
     });
+    reloadSettings();
     reload();
     reloadDomainSessions();
     return () => {
@@ -310,15 +321,17 @@ export function NotesPanel(
     return (
       <IconSpriteProvider url={iconSpriteUrl}>
         <PlanView
+          defaultFooterPrompt={settings?.defaultFooterPrompt ?? ""}
+          defaultHeaderPrompt={settings?.defaultHeaderPrompt ?? ""}
           actions={{
-            copy: (includedNoteIds) =>
-              copySessionPrompt(session, { includedNoteIds }, exportDelivery),
-            downloadBundle: (includedNoteIds) =>
-              downloadSessionArchive(session, { includedNoteIds }, exportDelivery).then(
+            copy: (includedNoteIds, prompts) =>
+              copySessionPrompt(session, { ...prompts, includedNoteIds }, exportDelivery),
+            downloadBundle: (includedNoteIds, prompts) =>
+              downloadSessionArchive(session, { ...prompts, includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
-            downloadPrompt: (includedNoteIds) =>
-              downloadSessionPrompt(session, { includedNoteIds }, exportDelivery).then(
+            downloadPrompt: (includedNoteIds, prompts) =>
+              downloadSessionPrompt(session, { ...prompts, includedNoteIds }, exportDelivery).then(
                 () => undefined,
               ),
           }}

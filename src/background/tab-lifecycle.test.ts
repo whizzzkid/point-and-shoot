@@ -31,10 +31,14 @@ function makeFakes(active: Session | null): {
       },
     },
   };
-  const sessions: Pick<SessionService, "loadActive"> = {
+  const sessions: Pick<SessionService, "loadActive" | "end"> = {
     loadActive() {
       calls.push("session.load");
       return Promise.resolve(active);
+    },
+    end() {
+      calls.push("session.end");
+      return Promise.resolve(null);
     },
   };
   const synchronize = () => {
@@ -78,4 +82,38 @@ Deno.test("tab lifecycle does not sync when there is no active session", async (
   const fake = makeFakes(null);
   await fake.fire(42, { status: "complete" });
   assertEquals(fake.calls, ["session.load"]);
+});
+
+Deno.test("tab lifecycle ends the running session on cross-domain navigation", async () => {
+  const calls: string[] = [];
+  let listenerFn: (id: number, change: TabChangeInfo, tab: TabInfo) => void;
+  const browser = {
+    tabs: {
+      onUpdated: {
+        addListener(next: (id: number, change: TabChangeInfo, tab: TabInfo) => void) {
+          listenerFn = next;
+        },
+      },
+    },
+  };
+  const sessions: Pick<SessionService, "loadActive" | "end"> = {
+    loadActive() {
+      calls.push("session.load");
+      return Promise.resolve(BASE_SESSION);
+    },
+    end() {
+      calls.push("session.end");
+      return Promise.resolve(null);
+    },
+  };
+  const synchronize = () => {
+    calls.push("synchronize");
+    return Promise.resolve();
+  };
+  registerTabLifecycleHandler(browser, sessions, synchronize);
+
+  // Fire with different domain
+  await listenerFn!(42, { status: "complete" }, { id: 42, url: "https://other.com/page" });
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  assertEquals(calls, ["session.load", "session.end", "synchronize"]);
 });

@@ -1,23 +1,37 @@
 /// <reference lib="dom" />
 
 import type { JSX } from "preact";
-import { useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Session } from "../../shared/schema.ts";
 import { toMarkdown } from "../../shared/serialize/index.ts";
 import { createExportArchive } from "../../shared/serialize/zip.ts";
-import { Badge, Button, CaptureMinimap, Checkbox, Icon } from "../../ui/components/index.ts";
+import { Badge, Button, CaptureMinimap, Checkbox, Icon, Input } from "../../ui/components/index.ts";
 import { promptFilename } from "./delivery.ts";
+
+/** Per-export header and footer prompt parts captured from the editable boxes. */
+export interface PromptParts {
+  readonly footerPrompt: string;
+  readonly headerPrompt: string;
+}
 
 /** Export actions invoked by the plan view after it validates the current selection. */
 export interface PlanViewActions {
-  readonly copy: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
-  readonly downloadBundle: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
-  readonly downloadPrompt: (includedNoteIds: ReadonlySet<string>) => Promise<void>;
+  readonly copy: (includedNoteIds: ReadonlySet<string>, prompts: PromptParts) => Promise<void>;
+  readonly downloadBundle: (
+    includedNoteIds: ReadonlySet<string>,
+    prompts: PromptParts,
+  ) => Promise<void>;
+  readonly downloadPrompt: (
+    includedNoteIds: ReadonlySet<string>,
+    prompts: PromptParts,
+  ) => Promise<void>;
 }
 
 /** Props accepted by {@link PlanView}. */
 export interface PlanViewProps {
   readonly actions: PlanViewActions;
+  readonly defaultFooterPrompt: string;
+  readonly defaultHeaderPrompt: string;
   readonly onBack: () => void;
   readonly session: Session;
 }
@@ -38,23 +52,40 @@ function selectionFor(session: Session, selected: ReadonlySet<string>): Readonly
 /**
  * Renders the generated plan preview, note selection, privacy disclosure, and export actions.
  *
- * @param props Session, delivery actions, and back navigation.
+ * The header and footer prompt boxes are editable per-export; their contents change only this
+ * export and never write back to settings. The generated plan between them stays read-only.
+ *
+ * @param props Session, delivery actions, default prompt parts, and back navigation.
  * @returns The complete plan workspace.
  */
 export function PlanView(
-  { actions, onBack, session }: PlanViewProps,
+  { actions, defaultFooterPrompt, defaultHeaderPrompt, onBack, session }: PlanViewProps,
 ): JSX.Element {
   const viewRef = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(session.notes.map((note) => note.id)),
   );
+  const [headerPrompt, setHeaderPrompt] = useState(defaultHeaderPrompt);
+  const [footerPrompt, setFooterPrompt] = useState(defaultFooterPrompt);
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
+
+  // Defaults arrive async via the settings load; re-seed the per-export boxes when they land so a
+  // plan view opened before settings resolve still reflects the configured prompts.
+  useEffect(() => {
+    setHeaderPrompt(defaultHeaderPrompt);
+    setFooterPrompt(defaultFooterPrompt);
+  }, [defaultFooterPrompt, defaultHeaderPrompt]);
   const includedNoteIds = useMemo(() => selectionFor(session, selected), [session, selected]);
   const markdownProjection = useMemo(() => {
     try {
       return {
         status: "ready" as const,
-        markdown: toMarkdown(session, { includedNoteIds, includeImageReferences: false }),
+        markdown: toMarkdown(session, {
+          footerPrompt,
+          headerPrompt,
+          includedNoteIds,
+          includeImageReferences: false,
+        }),
       };
     } catch (cause) {
       return {
@@ -62,9 +93,12 @@ export function PlanView(
         message: cause instanceof Error ? cause.message : "The prompt could not be built.",
       };
     }
-  }, [includedNoteIds, session]);
+  }, [footerPrompt, headerPrompt, includedNoteIds, session]);
   const archiveProjection = useMemo(() => {
     try {
+      // Header/footer prompt text cannot affect archive validity (createExportArchive only
+      // fails on bad screenshot data), so they're intentionally excluded from the deps below —
+      // including them would re-encode every screenshot on each keystroke in the prompt boxes.
       createExportArchive(session, { includedNoteIds });
       return {
         status: "ready" as const,
@@ -202,7 +236,11 @@ export function PlanView(
           <div className="ps-plan-preview__actions">
             <Button
               disabled={promptIsBlocked}
-              onClick={() => runAction("copy", () => actions.copy(includedNoteIds))}
+              onClick={() =>
+                runAction(
+                  "copy",
+                  () => actions.copy(includedNoteIds, { footerPrompt, headerPrompt }),
+                )}
               variant="secondary"
             >
               {actionState.status === "busy" && actionState.action === "copy"
@@ -214,7 +252,7 @@ export function PlanView(
               onClick={() =>
                 runAction(
                   "download-prompt",
-                  () => actions.downloadPrompt(includedNoteIds),
+                  () => actions.downloadPrompt(includedNoteIds, { footerPrompt, headerPrompt }),
                 )}
               variant="secondary"
             >
@@ -228,7 +266,7 @@ export function PlanView(
               onClick={() =>
                 runAction(
                   "download-bundle",
-                  () => actions.downloadBundle(includedNoteIds),
+                  () => actions.downloadBundle(includedNoteIds, { footerPrompt, headerPrompt }),
                 )}
             >
               {actionState.status === "busy" && actionState.action === "download-bundle"
@@ -236,6 +274,14 @@ export function PlanView(
                 : "Download bundle"}
             </Button>
           </div>
+          <Input
+            accessibleName="Header prompt"
+            multiline
+            onChange={setHeaderPrompt}
+            placeholder="// Use my custom skills to plan and execute on this."
+            rows={4}
+            value={headerPrompt}
+          />
           {markdownProjection.status === "ready"
             ? (
               <pre aria-label="Generated Markdown preview" data-markdown-preview tabIndex={0}>
@@ -243,6 +289,14 @@ export function PlanView(
               </pre>
             )
             : <p className="ps-panel-error" role="alert">{markdownProjection.message}</p>}
+          <Input
+            accessibleName="Footer prompt"
+            multiline
+            onChange={setFooterPrompt}
+            placeholder="// Work hard, don't make mistakes."
+            rows={4}
+            value={footerPrompt}
+          />
           {actionState.status === "success"
             ? <p className="ps-plan-status" role="status">{actionState.message}</p>
             : null}

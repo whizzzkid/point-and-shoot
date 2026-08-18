@@ -7,6 +7,7 @@ import type { StorageChangedListener, StorageItems } from "../../src/shared/brow
 import type { Session } from "../../src/shared/schema.ts";
 import iconSprite from "../../src/shared/design/icons.svg" with { type: "text" };
 import { ACTIVE_SESSION_ID_STORAGE_KEY } from "../../src/shared/session.ts";
+import { DEFAULT_SETTINGS } from "../../src/shared/settings.ts";
 import { openStore, putSession } from "../../src/shared/store.ts";
 import componentStyles from "../../src/ui/components/components.css" with { type: "text" };
 import tokenStyles from "../../src/shared/design/tokens.css" with { type: "text" };
@@ -96,6 +97,7 @@ function renderPanel(
         revokeObjectURL: () => undefined,
       }}
       iconSpriteUrl=""
+      loadSettings={() => Promise.resolve({ ...DEFAULT_SETTINGS })}
       notePreview={notePreview}
       repository={selectedRepository}
       version="0.1.0"
