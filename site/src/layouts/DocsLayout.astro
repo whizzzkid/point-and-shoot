@@ -7,12 +7,15 @@ import ThemeScript from "../components/ThemeScript.astro";
 import ThemeToggle from "../components/ThemeToggle.astro";
 import repository from "../../.generated/repository.json";
 import { formatStarCount } from "../lib/star-count.mjs";
+import { docsTitle, docsUrl } from "../lib/docs.ts";
 import "../styles/docs.css";
 
 interface Props {
   currentId: string;
   entries: CollectionEntry<"docs">[];
   title: string;
+  prevEntry?: CollectionEntry<"docs">;
+  nextEntry?: CollectionEntry<"docs">;
 }
 
 const { currentId, entries, title } = Astro.props;
@@ -77,10 +80,32 @@ const starLabel = formatStarCount(repository.stars);
       <main class="docs-content" id="docs-content">
         <slot />
         <footer>
-          <p>Point & Shoot product documentation.</p>
-          <a href="https://github.com/whizzzkid/point-and-shoot/tree/main/docs">
-            Read the source on GitHub
-          </a>
+          <nav class="docs-nav" aria-label="Documentation pagination">
+            {prevEntry && (
+              <a class="docs-nav-link docs-nav-prev" href={docsUrl(prevEntry.id)}>
+                <SiteIcon name="chevron-left" />
+                <span>
+                  <span class="docs-nav-label">Previous</span>
+                  <span class="docs-nav-title">{docsTitle(prevEntry.body, prevEntry.id)}</span>
+                </span>
+              </a>
+            )}
+            {nextEntry && (
+              <a class="docs-nav-link docs-nav-next" href={docsUrl(nextEntry.id)}>
+                <span>
+                  <span class="docs-nav-label">Next</span>
+                  <span class="docs-nav-title">{docsTitle(nextEntry.body, nextEntry.id)}</span>
+                </span>
+                <SiteIcon name="chevron-right" />
+              </a>
+            )}
+          </nav>
+          <div class="docs-footer">
+            <p>Point & Shoot product documentation.</p>
+            <a href="https://github.com/whizzzkid/point-and-shoot/tree/main/docs">
+              Read the source on GitHub
+            </a>
+          </div>
         </footer>
       </main>
     </div>
