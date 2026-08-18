@@ -9,6 +9,8 @@ import type {
 
 /** Controls which notes and image references an export projection includes. */
 export interface SerializeOptions {
+  readonly footerPrompt?: string;
+  readonly headerPrompt?: string;
   readonly includedNoteIds?: ReadonlySet<string>;
   readonly includeImageReferences?: boolean;
 }
@@ -87,7 +89,12 @@ function terseBox(box: BoxModelDigest): Record<string, number | string> {
       box.paddingBottom,
       box.paddingLeft,
     ),
-    margin: cssShorthand(box.marginTop, box.marginRight, box.marginBottom, box.marginLeft),
+    margin: cssShorthand(
+      box.marginTop,
+      box.marginRight,
+      box.marginBottom,
+      box.marginLeft,
+    ),
     borderWidth: cssShorthand(
       box.borderTopWidth,
       box.borderRightWidth,
@@ -137,6 +144,16 @@ function terseStyleDigest(digest: StyleDigestBundle): Record<string, unknown> {
 function singleLine(value: string, fallback: string): string {
   const collapsed = value.replace(/\s+/g, " ").trim();
   return collapsed || fallback;
+}
+
+/**
+ * Trims a user-authored prompt part and returns it only when it has content.
+ *
+ * @param part Raw header or footer prompt from settings or a per-export override.
+ * @returns The trimmed prompt, or an empty string when it is blank.
+ */
+export function trimPromptPart(part: string | undefined): string {
+  return (part ?? "").trim();
 }
 
 function noteMarkdown(
@@ -205,7 +222,7 @@ function noteMarkdown(
  * Projects a session into an agent-readable Markdown plan.
  *
  * @param session Validated session record.
- * @param options Note selection and whether screenshot references should be present.
+ * @param options Note selection, screenshot references, and optional header/footer prompt parts.
  * @returns Markdown that leads with each problem, then its location and structured evidence.
  */
 export function toMarkdown(session: Session, options: SerializeOptions = {}): string {
@@ -225,5 +242,11 @@ export function toMarkdown(session: Session, options: SerializeOptions = {}): st
   const notes = projected.notes.map((note, index) =>
     noteMarkdown(note, index, noteCount, includeImageReferences)
   );
-  return `${[header.join("\n"), ...notes].join("\n\n")}\n`;
+  const body = `${[header.join("\n"), ...notes].join("\n\n")}\n`;
+  const headerPrompt = trimPromptPart(options.headerPrompt);
+  const footerPrompt = trimPromptPart(options.footerPrompt);
+  if (headerPrompt === "" && footerPrompt === "") return body;
+  return `${headerPrompt === "" ? "" : `${headerPrompt}\n\n`}${body}${
+    footerPrompt === "" ? "" : `\n\n${footerPrompt}`
+  }`;
 }

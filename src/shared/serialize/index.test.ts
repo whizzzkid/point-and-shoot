@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import type { Session } from "../schema.ts";
 import type { StyleDigestBundle } from "../style-digest.ts";
 import { EXPORT_FIXTURE_SESSION } from "./fixture.ts";
@@ -109,6 +109,30 @@ Deno.test("serializers handle an empty inclusion set without leaking excluded no
 
   assertEquals(JSON.parse(toJson(EXPORT_FIXTURE_SESSION, { includedNoteIds })).notes, []);
   assertEquals(toMarkdown(EXPORT_FIXTURE_SESSION, { includedNoteIds }).includes("secret"), false);
+});
+
+Deno.test("toMarkdown wraps the generated plan with header and footer prompt parts", () => {
+  const header = "// Use my custom skills to plan and execute on this.";
+  const footer = "// Work Hard, Make not mistakes!";
+  const actual = toMarkdown(EXPORT_FIXTURE_SESSION, { headerPrompt: header, footerPrompt: footer });
+
+  assertStringIncludes(actual, header);
+  assertStringIncludes(actual, footer);
+  assertEquals(actual.indexOf(header), 0);
+  assertEquals(actual.trimEnd().endsWith(footer), true);
+  // The header leads the generated plan, and the footer trails it.
+  const titleIndex = actual.indexOf("# ");
+  assert(actual.indexOf(header) < titleIndex);
+  assert(titleIndex < actual.indexOf(footer));
+});
+
+Deno.test("toMarkdown trims and ignores blank header and footer prompt parts", () => {
+  const without = toMarkdown(EXPORT_FIXTURE_SESSION);
+  const withBlank = toMarkdown(EXPORT_FIXTURE_SESSION, {
+    headerPrompt: "   \n",
+    footerPrompt: "\t",
+  });
+  assertEquals(withBlank, without);
 });
 
 Deno.test("shotPath keeps lexical order when a session reaches three digits", () => {
