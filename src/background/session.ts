@@ -80,9 +80,12 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
 }
 
 /**
- * Extracts the hostname of a URL for {@link Session.domain}. Returns `null` for `undefined`, empty,
- * or unparseable inputs (`chrome://newtab/`, `about:blank`, `""`); the ADR-0002 activeTab model
- * gives the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ * Extracts the hostname of a URL for {@link Session.domain}. The ADR-0002 activeTab model gives
+ * the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ *
+ * @param pageUrl The tab URL to extract a hostname from.
+ * @returns The hostname, or `null` for `undefined`, empty, or unparseable inputs (`chrome://newtab/`,
+ *   `about:blank`, `""`).
  */
 export function domainFromUrl(pageUrl: string | undefined): string | null {
   if (pageUrl === undefined || pageUrl === "") return null;
