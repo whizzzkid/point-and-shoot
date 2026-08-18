@@ -47,7 +47,7 @@ store identities.
 - Chrome and Firefox/Gecko are first-class. Safari is explicitly deferred.
 - Chrome means Chromium-engine browsers whose extension store path is compatible with the Chrome Web
   Store. Firefox means Gecko-engine browsers compatible with Firefox Browser Add-ons.
-- Browser detection narrows the rendered stores to the detected browser; it never redirects. Without
+- Browser detection narrows the visible stores to the detected browser; it never redirects. Without
   scripting, and whenever no store matches the browser, every store choice stays visible.
 - Building from source stays visible in every state, so no browser is left without an install path.
 - A website install action links to an official store listing. Chromium inline installation from a

@@ -13,10 +13,10 @@ const install = createInstallActionsModel(storeListing);
 ---
 
 <section class:list={["install-actions", `install-actions--${variant}`]} data-install-actions>
-  <div class="install-options">
+  <div class="install-options" data-install-options>
     {
       install.actions.map((action) => (
-        <div class="install-store">
+        <div class="install-store" data-install-store>
           <p class="install-store-copy">
             Open the browser-extension listing to install Point & Shoot. {install.singlePurpose}
           </p>

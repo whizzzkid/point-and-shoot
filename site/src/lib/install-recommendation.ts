@@ -45,7 +45,9 @@ export function getInstallRecommendation(
   if (target === "chromium") {
     return {
       actionTarget: "chromium",
-      announcement: "Chrome Web Store is recommended for this desktop browser.",
+      announcement:
+        "Chrome Web Store is the compatible listing for this browser, so other stores are hidden. " +
+        "Building from source stays available.",
       label: "Recommended: install from Chrome Web Store",
     };
   }
@@ -53,7 +55,9 @@ export function getInstallRecommendation(
   if (target === "gecko") {
     return {
       actionTarget: "gecko",
-      announcement: "Firefox Add-ons is recommended for this desktop browser.",
+      announcement:
+        "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden. " +
+        "Building from source stays available.",
       label: "Recommended: install from Firefox Add-ons",
     };
   }
@@ -85,16 +89,18 @@ export function getInstallRecommendation(
  * @returns Nothing; the function only adds the marker classes the stylesheet keys off.
  */
 function markOtherStoreChoices(documentRoot: Document, actionTarget: StoreTarget): void {
-  for (const container of documentRoot.querySelectorAll<HTMLElement>(".install-options")) {
-    const stores = [...container.querySelectorAll<HTMLElement>(".install-store")];
-    const recommendedStores = stores.filter(
-      (store) => store.querySelector(`[data-store-action="${actionTarget}"]`) !== null,
-    );
-    // Without this guard a container that lacks the recommended store would lose every choice.
-    if (recommendedStores.length === 0) continue;
+  const holdsRecommendedStore = (store: HTMLElement): boolean =>
+    store.querySelector(`[data-store-action="${actionTarget}"]`) !== null;
+
+  for (const container of documentRoot.querySelectorAll<HTMLElement>("[data-install-options]")) {
+    const stores = [...container.querySelectorAll<HTMLElement>("[data-install-store]")];
+    // Invariant, not a live failure path: every container renders the same store set today, so the
+    // recommended store is present in all of them. Enforced here so a future per-container store
+    // set can never leave one container with no store choice at all.
+    if (!stores.some(holdsRecommendedStore)) continue;
     container.classList.add("has-recommendation");
     for (const store of stores) {
-      if (!recommendedStores.includes(store)) {
+      if (!holdsRecommendedStore(store)) {
         store.classList.add("is-other");
       }
     }

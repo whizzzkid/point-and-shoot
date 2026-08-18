@@ -86,12 +86,16 @@ Deno.test("models unpublished, partial, and published store actions from canonic
 Deno.test("recommendations only change labels, attributes, and the single accent target", () => {
   assert.deepEqual(getInstallRecommendation("chromium"), {
     actionTarget: "chromium",
-    announcement: "Chrome Web Store is recommended for this desktop browser.",
+    announcement:
+      "Chrome Web Store is the compatible listing for this browser, so other stores are hidden. " +
+      "Building from source stays available.",
     label: "Recommended: install from Chrome Web Store",
   });
   assert.deepEqual(getInstallRecommendation("gecko"), {
     actionTarget: "gecko",
-    announcement: "Firefox Add-ons is recommended for this desktop browser.",
+    announcement:
+      "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden. " +
+      "Building from source stays available.",
     label: "Recommended: install from Firefox Add-ons",
   });
   assert.deepEqual(getInstallRecommendation("mobile-unsupported"), {
@@ -143,10 +147,6 @@ Deno.test("the built fully published site provides accessible fallback, focus, m
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /mailto:support@pointandshoot\.app/);
   assert.match(styles, /a:focus-visible/);
-  assert.match(
-    styles,
-    /\.install-options\.has-recommendation \.install-store\.is-other \{\s*display: none;/,
-  );
   assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.install-options/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
@@ -176,7 +176,7 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
         assert.equal(await page.locator("[data-recommended]").count(), 1);
         assert.match(
           await page.locator("[data-install-recommendation]").textContent(),
-          /Chrome Web Store is recommended/,
+          /Chrome Web Store is the compatible listing/,
         );
         assert.equal(await page.evaluate(() => globalThis.__pointAndShootFocusCalls), 0);
       } finally {
@@ -214,7 +214,7 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
         assert.equal(await page.locator("[data-recommended]").count(), 1);
         assert.match(
           await page.locator("[data-install-recommendation]").textContent(),
-          /Chrome Web Store is recommended/,
+          /Chrome Web Store is the compatible listing/,
         );
       } finally {
         await context.close();
@@ -233,7 +233,7 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
         assert.equal(await page.locator("[data-install-recommendation]").count(), 1);
         assert.match(
           await page.locator("[data-install-recommendation]").textContent(),
-          /Firefox Add-ons is recommended/,
+          /Firefox Add-ons is the compatible listing/,
         );
         assert.equal(await page.locator('[role="status"]').count(), 1);
       } finally {
@@ -355,11 +355,14 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
             /Desktop browser extension installation is unavailable on mobile/,
           );
           assert.equal(await page.locator("[data-recommended]").count(), 0);
-          assert.equal(
-            await page.locator('[data-store-action="chromium"]').first().isVisible(),
-            true,
-          );
-          assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), true);
+          for (const target of ["chromium", "gecko"]) {
+            for (const index of [0, 1]) {
+              assert.equal(
+                await page.locator(`[data-store-action="${target}"]`).nth(index).isVisible(),
+                true,
+              );
+            }
+          }
           assert.equal(
             await page.evaluate(() =>
               document.documentElement.scrollWidth <= globalThis.innerWidth
@@ -368,6 +371,36 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
           );
         } finally {
           await mobile.close();
+        }
+
+        const safari = await browser.newContext({
+          userAgent:
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+          viewport: { height: 900, width: 1440 },
+        });
+        try {
+          const page = await safari.newPage();
+          // A user-agent override alone still leaks Chromium UA-CH brands, which the classifier
+          // trusts ahead of user-agent text, so WebKit evidence only reaches it once brands are gone.
+          await page.addInitScript(() => {
+            Object.defineProperty(navigator, "userAgentData", { value: undefined });
+          });
+          await page.goto(`${both.origin}/`, { waitUntil: "networkidle" });
+          assert.match(
+            await page.locator("[data-install-recommendation]").textContent(),
+            /Safari support is deferred/,
+          );
+          assert.equal(await page.locator("[data-recommended]").count(), 0);
+          for (const target of ["chromium", "gecko"]) {
+            for (const index of [0, 1]) {
+              assert.equal(
+                await page.locator(`[data-store-action="${target}"]`).nth(index).isVisible(),
+                true,
+              );
+            }
+          }
+        } finally {
+          await safari.close();
         }
 
         const withoutJavaScript = await browser.newContext({ javaScriptEnabled: false });

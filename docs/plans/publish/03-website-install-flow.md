@@ -91,8 +91,9 @@ wrappers, Safari, and an empty user agent.
   source install is the only action.
 - When only one store is published, render that store and source install; identify the other store's
   publication state as text without an inert badge-like control.
-- In published state, the compatible store is visually recommended and receives the only accent
-  treatment; the other store remains visible and operable.
+- In published state, the compatible store is visually recommended, receives the only accent
+  treatment, and is the only store shown; an incompatible store is hidden whenever the same install
+  container still offers the compatible one.
 - Unknown, Safari/WebKit, and iOS states recommend neither store and explain that Safari support is
   deferred or that mobile extension installation is unavailable.
 - JavaScript never redirects, invokes a store protocol, or attempts Chromium inline installation.
@@ -127,7 +128,8 @@ wrappers, Safari, and an empty user agent.
 - Every representative desktop Gecko fixture recommends Firefox Add-ons.
 - Every representative desktop Chromium fixture recommends the Chrome Web Store.
 - Android and iOS wrappers recommend neither desktop store.
-- Both store choices remain visible in every desktop browser state.
+- Only the compatible store is visible on a desktop browser whose family is identified; every store
+  choice stays visible without scripting and in every state that identifies no store.
 - Unknown and Safari/WebKit states do not receive an incorrect recommendation.
 - The built page contains no public dummy link and makes no external request except user-activated
   navigation to a published store.
