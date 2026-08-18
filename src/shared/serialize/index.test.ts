@@ -124,6 +124,9 @@ Deno.test("toMarkdown wraps the generated plan with header and footer prompt par
   const titleIndex = actual.indexOf("# ");
   assert(actual.indexOf(header) < titleIndex);
   assert(titleIndex < actual.indexOf(footer));
+  // The body already ends with a newline, so the footer is separated by exactly one blank line.
+  assertEquals(actual.includes("\n\n\n"), false);
+  assert(actual.endsWith(`\n\n${footer}`));
 });
 
 Deno.test("toMarkdown trims and ignores blank header and footer prompt parts", () => {
