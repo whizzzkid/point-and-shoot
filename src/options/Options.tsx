@@ -444,7 +444,7 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                       accessibleName="Footer prompt"
                       multiline
                       onChange={(value) => update({ ...settings, defaultFooterPrompt: value })}
-                      placeholder="// Work Hard, Make not mistakes!"
+                      placeholder="// Work hard, don't make mistakes."
                       rows={4}
                       value={settings.defaultFooterPrompt}
                     />

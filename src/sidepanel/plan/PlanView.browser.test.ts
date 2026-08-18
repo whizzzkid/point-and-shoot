@@ -95,7 +95,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
     await page.getByLabel("Header prompt").fill(
       "// Use my custom skills to plan and execute on this.",
     );
-    await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
+    await page.getByLabel("Footer prompt").fill("// Work hard, don't make mistakes.");
     assertEquals(
       (await page.locator("[data-markdown-preview]").textContent())?.includes(
         "// Use my custom skills to plan and execute on this.",
@@ -104,7 +104,7 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
     );
     assertEquals(
       (await page.locator("[data-markdown-preview]").textContent())?.includes(
-        "// Work Hard, Make not mistakes!",
+        "// Work hard, don't make mistakes.",
       ),
       true,
     );
@@ -127,17 +127,17 @@ Deno.test("plan view previews, filters, and delivers an export in both themes", 
       }),
       {
         copies: [{
-          footer: "// Work Hard, Make not mistakes!",
+          footer: "// Work hard, don't make mistakes.",
           header: "// Use my custom skills to plan and execute on this.",
           noteIds: ["note-button"],
         }],
         bundleDownloads: [{
-          footer: "// Work Hard, Make not mistakes!",
+          footer: "// Work hard, don't make mistakes.",
           header: "// Use my custom skills to plan and execute on this.",
           noteIds: ["note-button"],
         }],
         promptDownloads: [{
-          footer: "// Work Hard, Make not mistakes!",
+          footer: "// Work hard, don't make mistakes.",
           header: "// Use my custom skills to plan and execute on this.",
           noteIds: ["note-button"],
         }],

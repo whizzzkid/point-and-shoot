@@ -123,7 +123,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     await page.getByLabel("Header prompt").fill(
       "// Use my custom skills to plan and execute on this.",
     );
-    await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
+    await page.getByLabel("Footer prompt").fill("// Work hard, don't make mistakes.");
     await page.getByLabel("Footer prompt").press("Tab");
     await page.getByText("Saved.").waitFor();
     assertEquals(
@@ -132,7 +132,7 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
     );
     assertEquals(
       await page.getByLabel("Footer prompt").inputValue(),
-      "// Work Hard, Make not mistakes!",
+      "// Work hard, don't make mistakes.",
     );
 
     await page.getByRole("tab", { name: "Shortcuts" }).click();

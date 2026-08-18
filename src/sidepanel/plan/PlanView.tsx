@@ -294,7 +294,7 @@ export function PlanView(
             accessibleName="Footer prompt"
             multiline
             onChange={setFooterPrompt}
-            placeholder="// Work Hard, Make not mistakes!"
+            placeholder="// Work hard, don't make mistakes."
             rows={4}
             value={footerPrompt}
           />

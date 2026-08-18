@@ -113,7 +113,7 @@ Deno.test("serializers handle an empty inclusion set without leaking excluded no
 
 Deno.test("toMarkdown wraps the generated plan with header and footer prompt parts", () => {
   const header = "// Use my custom skills to plan and execute on this.";
-  const footer = "// Work Hard, Make not mistakes!";
+  const footer = "// Work hard, don't make mistakes.";
   const actual = toMarkdown(EXPORT_FIXTURE_SESSION, { headerPrompt: header, footerPrompt: footer });
 
   assertStringIncludes(actual, header);
