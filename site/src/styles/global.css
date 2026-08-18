@@ -88,14 +88,6 @@ nav a {
   gap: var(--space-2);
 }
 
-/* The workflow anchor reuses the vendored sprite; the rest are inlined site chrome. Both are pinned
-   to one size here so a mixed row does not step. */
-nav .icon,
-nav .site-icon {
-  width: var(--space-4);
-  height: var(--space-4);
-}
-
 nav a:hover,
 footer a:hover {
   color: var(--text-primary);

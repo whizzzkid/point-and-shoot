@@ -6,12 +6,20 @@
  * reference, and it ships inside both browser packages. Header chrome is site-only, so adding these
  * names there would grow the shipped extension payload for markup no extension surface renders.
  * Geometry sits on the same 24px grid and 1.5 stroke as the vendored sprite so the two sets read as
- * one system: `book-open`, `chevron-left`, `chevron-right`, `house`, `moon`, `shield-check`, `star`,
- * and `sun` are Lucide (ISC); `github` is the GitHub mark, which Lucide does not ship.
+ * one system: `arrow-down`, `book-open`, `chevron-left`, `chevron-right`, `house`, `moon`,
+ * `shield-check`, `star`, and `sun` are Lucide (ISC); `github` is the GitHub mark, which Lucide does
+ * not ship.
+ *
+ * `arrow-down` is also in the extension sprite, so it is the one name here that is a deliberate
+ * second copy: every icon in a nav row must come from one component, because this component's
+ * `--space-4` and the sprite wrapper's `--space-5` cannot be reconciled from a page stylesheet —
+ * Astro scopes a component rule to `.icon[data-astro-cid-…]`, which outranks any `nav .icon`
+ * descendant selector.
  *
  * Nothing here is remote and nothing is fetched at runtime, so ADR-0009 still holds.
  */
 type IconName =
+  | "arrow-down"
   | "book-open"
   | "chevron-left"
   | "chevron-right"
@@ -31,6 +39,10 @@ interface Props {
  * stroke attributes. Bodies are the inner markup only — the wrapper supplies the rest.
  */
 const ICONS: Record<IconName, { body: string; paint: "fill" | "stroke" }> = {
+  "arrow-down": {
+    body: '<path d="M12 5v14" /><path d="m19 12-7 7-7-7" />',
+    paint: "stroke",
+  },
   "book-open": {
     body:
       '<path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />',
