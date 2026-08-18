@@ -117,6 +117,22 @@ Deno.test("options round-trip every setting and confirm destructive clearing", a
       "false",
     );
 
+    await page.getByRole("tab", { name: "Plan prompt" }).click();
+    assertEquals(await page.getByLabel("Header prompt").inputValue(), "");
+    assertEquals(await page.getByLabel("Footer prompt").inputValue(), "");
+    await page.getByLabel("Header prompt").fill("// Use my custom skills to plan and execute on this.");
+    await page.getByLabel("Footer prompt").fill("// Work Hard, Make not mistakes!");
+    await page.getByLabel("Footer prompt").press("Tab");
+    await page.getByText("Saved.").waitFor();
+    assertEquals(
+      await page.getByLabel("Header prompt").inputValue(),
+      "// Use my custom skills to plan and execute on this.",
+    );
+    assertEquals(
+      await page.getByLabel("Footer prompt").inputValue(),
+      "// Work Hard, Make not mistakes!",
+    );
+
     await page.getByRole("tab", { name: "Shortcuts" }).click();
     await page.getByText("Command+Shift+P").waitFor();
     await page.getByRole("button", { name: "Manage browser shortcuts" }).click();
