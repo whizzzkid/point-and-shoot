@@ -152,7 +152,7 @@ jobs:
         run: deno task visual
 
       - name: Regenerate drifted baselines and commit them back
-        if: steps.compare.outcome == 'failure'
+        if: failure()
         run: |
           deno task visual:update
           git add tests/visual/baselines/
