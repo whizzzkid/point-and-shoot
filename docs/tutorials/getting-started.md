@@ -45,7 +45,7 @@ One gesture does all of the following:
 - starts a session named from the active tab title and local creation time, such as
   `Checkout-2026-08-04-09-05-06`;
 - injects the capture overlay into the current tab; and
-- changes the action tooltip to **End session**, with a `0` badge.
+- changes the action tooltip to **Point and Shoot — Pause session (0 notes)**, with a `0` badge.
 
 If the badge shows `!`, the current page is restricted and no session was created. Move to an
 ordinary web page and try again.
@@ -74,8 +74,9 @@ Navigate to another page while the session remains active. Use the default short
 `Command+Shift+P` on macOS or `Ctrl+Shift+P` elsewhere, to toggle the overlay on that page. Capture
 and edit another note.
 
-The shortcut controls only the overlay. It does not end the session. The browser toolbar icon owns
-the session lifecycle and ends the current session when selected again.
+The shortcut is bound to the same browser action as the toolbar icon, so it pauses a running session
+and resumes a paused one. Neither ends the session. See
+[manage a Point and Shoot session](sessions.md) for the full lifecycle.
 
 The side panel groups notes by page. You can edit, delete, reorder, and choose whether each note's
 query string is included in an export.
@@ -117,9 +118,13 @@ dangling. The standalone prompt download contains no screenshot links.
 
 ## End the session
 
-Select the Point and Shoot toolbar icon. The overlay closes, the session receives an end time, and
-the action badge clears. The side panel stays on the completed session so it can still be edited or
-exported. The next toolbar click starts a fresh session.
+Selecting **Compile plan** already ended it: the session received an end time and the action badge
+cleared. The side panel stays on the completed session so it can still be renamed, edited, or
+exported again. The next toolbar click starts a fresh session.
+
+Selecting the toolbar icon pauses a running session rather than ending it, so the overlay can be
+dismissed without giving up the session. See [manage a Point and Shoot session](sessions.md) for
+pause, resume, and the rest of the lifecycle.
 
 ## Understand what leaves the device
 
