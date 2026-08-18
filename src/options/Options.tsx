@@ -16,6 +16,7 @@ import {
   Button,
   Dialog,
   Icon,
+  Input,
   Select,
   Switch,
   Tabs,
@@ -27,6 +28,7 @@ import type { Session } from "../shared/schema.ts";
 const SECTIONS = [
   "General",
   "Capture",
+  "Plan prompt",
   "Export & privacy",
   "Shortcuts",
   "Sessions",
@@ -406,6 +408,49 @@ export function Options({ autoTheme, repository, version }: OptionsProps): JSX.E
                       value={String(settings.screenshotMaxDimension)}
                     />
                   </SettingRow>
+                </>
+              )
+              : null}
+
+            {section === "Plan prompt"
+              ? (
+                <>
+                  <div className="ps-options-section-heading">
+                    <h2>Plan prompt</h2>
+                    <p>
+                      Wrap every generated plan with your own instructions. The header leads the
+                      captured notes and the footer trails them in the exported plan.md and in every
+                      clipboard copy. Edit these again on the compile-plan step.
+                    </p>
+                  </div>
+                  <div className="ps-options-prompt">
+                    <span className="ps-options-prompt__label">
+                      <strong>Header prompt</strong>
+                      <small>Leading text prepended to every generated plan.</small>
+                    </span>
+                    <Input
+                      accessibleName="Header prompt"
+                      multiline
+                      onChange={(value) => update({ ...settings, defaultHeaderPrompt: value })}
+                      placeholder="// Use my custom skills to plan and execute on this."
+                      rows={4}
+                      value={settings.defaultHeaderPrompt}
+                    />
+                  </div>
+                  <div className="ps-options-prompt">
+                    <span className="ps-options-prompt__label">
+                      <strong>Footer prompt</strong>
+                      <small>Trailing text appended to every generated plan.</small>
+                    </span>
+                    <Input
+                      accessibleName="Footer prompt"
+                      multiline
+                      onChange={(value) => update({ ...settings, defaultFooterPrompt: value })}
+                      placeholder="// Work hard, don't make mistakes."
+                      rows={4}
+                      value={settings.defaultFooterPrompt}
+                    />
+                  </div>
                 </>
               )
               : null}

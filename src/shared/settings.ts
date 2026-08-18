@@ -16,8 +16,22 @@ export type ScreenshotQuality = typeof SCREENSHOT_QUALITY_OPTIONS[number];
 /** Supported screenshot longest-edge values. */
 export type ScreenshotMaxDimension = typeof SCREENSHOT_MAX_DIMENSION_OPTIONS[number];
 
+/**
+ * User-authored prompt text prepended to every generated plan, before the captured notes.
+ * Empty by default; when present it leads the exported `plan.md`.
+ */
+export type DefaultHeaderPrompt = string;
+
+/**
+ * User-authored prompt text appended to every generated plan, after the captured notes.
+ * Empty by default; when present it trails the exported `plan.md`.
+ */
+export type DefaultFooterPrompt = string;
+
 /** Versioned settings shared by every extension surface and background consumer. */
 export interface ExtensionSettings {
+  readonly defaultHeaderPrompt: DefaultHeaderPrompt;
+  readonly defaultFooterPrompt: DefaultFooterPrompt;
   readonly frameworkHints: boolean;
   readonly schemaVersion: 1;
   readonly screenshotMaxDimension: ScreenshotMaxDimension;
@@ -28,6 +42,8 @@ export interface ExtensionSettings {
 
 /** Settled defaults used when settings have not been saved or cannot be validated. */
 export const DEFAULT_SETTINGS: ExtensionSettings = {
+  defaultHeaderPrompt: "",
+  defaultFooterPrompt: "",
   frameworkHints: false,
   schemaVersion: 1,
   screenshotMaxDimension: 1_024,
@@ -66,6 +82,8 @@ function isAllowedNumber<const Values extends readonly number[]>(
 export function isExtensionSettings(candidate: unknown): candidate is ExtensionSettings {
   return isRecord(candidate) &&
     hasExactKeys(candidate, [
+      "defaultHeaderPrompt",
+      "defaultFooterPrompt",
       "frameworkHints",
       "schemaVersion",
       "screenshotMaxDimension",
@@ -74,6 +92,8 @@ export function isExtensionSettings(candidate: unknown): candidate is ExtensionS
       "themeOverride",
     ]) &&
     candidate.schemaVersion === 1 &&
+    typeof candidate.defaultHeaderPrompt === "string" &&
+    typeof candidate.defaultFooterPrompt === "string" &&
     typeof candidate.frameworkHints === "boolean" &&
     isAllowedNumber(candidate.screenshotMaxDimension, SCREENSHOT_MAX_DIMENSION_OPTIONS) &&
     isAllowedNumber(candidate.screenshotQuality, SCREENSHOT_QUALITY_OPTIONS) &&
@@ -90,10 +110,11 @@ export function isExtensionSettings(candidate: unknown): candidate is ExtensionS
 export async function loadSettings(storage: SettingsStorage): Promise<ExtensionSettings> {
   const stored = await storage.get(SETTINGS_STORAGE_KEY);
   const candidate = stored[SETTINGS_STORAGE_KEY];
-  if (isRecord(candidate)) {
-    for (const key of LEGACY_KEYS) delete (candidate as Record<string, unknown>)[key];
-  }
-  return isExtensionSettings(candidate) ? { ...candidate } : { ...DEFAULT_SETTINGS };
+  if (!isRecord(candidate)) return { ...DEFAULT_SETTINGS };
+  for (const key of LEGACY_KEYS) delete (candidate as Record<string, unknown>)[key];
+  if (isExtensionSettings(candidate)) return { ...candidate };
+  const migrated = { ...DEFAULT_SETTINGS, ...candidate };
+  return isExtensionSettings(migrated) ? migrated : { ...DEFAULT_SETTINGS };
 }
 
 /**
