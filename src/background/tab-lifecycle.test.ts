@@ -79,3 +79,33 @@ Deno.test("tab lifecycle does not sync when there is no active session", async (
   await fake.fire(42, { status: "complete" });
   assertEquals(fake.calls, ["session.load"]);
 });
+
+Deno.test("tab lifecycle detects cross-domain navigation and synchronizes badge", async () => {
+  const calls: string[] = [];
+  let listenerFn: (id: number, change: TabChangeInfo, tab: TabInfo) => void;
+  const browser = {
+    tabs: {
+      onUpdated: {
+        addListener(next: (id: number, change: TabChangeInfo, tab: TabInfo) => void) {
+          listenerFn = next;
+        },
+      },
+    },
+  };
+  const sessions: Pick<SessionService, "loadActive"> = {
+    loadActive() {
+      calls.push("session.load");
+      return Promise.resolve(BASE_SESSION);
+    },
+  };
+  const synchronize = () => {
+    calls.push("synchronize");
+    return Promise.resolve();
+  };
+  registerTabLifecycleHandler(browser, sessions, synchronize);
+
+  // Fire with different domain
+  await listenerFn!(42, { status: "complete" }, { id: 42, url: "https://other.com/page" });
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  assertEquals(calls, ["session.load", "synchronize"]);
+});

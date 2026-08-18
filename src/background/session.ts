@@ -147,7 +147,8 @@ async function startSession(
     const newDomain = domainFromUrl(pageUrl);
 
     // If there's an active session but for a different domain, end it and start fresh
-    if (active !== null && active.domain !== newDomain) {
+    // Note: null domain (unparseable URL) is treated as "no domain" and does not trigger a reset
+    if (active !== null && newDomain !== null && active.domain !== newDomain) {
       const ended: Session = {
         ...active,
         endedAt: dependencies.now().toISOString(),
