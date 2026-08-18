@@ -18,7 +18,7 @@ interface Props {
   nextEntry?: CollectionEntry<"docs">;
 }
 
-const { currentId, entries, title } = Astro.props;
+const { currentId, entries, title, prevEntry, nextEntry } = Astro.props;
 const canonicalPath = Astro.url.pathname;
 const docsIndexPath = "/docs/";
 const privacyPath = "/privacy/";

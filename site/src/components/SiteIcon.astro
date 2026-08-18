@@ -11,7 +11,15 @@
  *
  * Nothing here is remote and nothing is fetched at runtime, so ADR-0009 still holds.
  */
-type IconName = "book-open" | "github" | "moon" | "shield-check" | "star" | "sun";
+type IconName =
+  | "book-open"
+  | "chevron-left"
+  | "chevron-right"
+  | "github"
+  | "moon"
+  | "shield-check"
+  | "star"
+  | "sun";
 
 interface Props {
   name: IconName;
@@ -25,6 +33,14 @@ const ICONS: Record<IconName, { body: string; paint: "fill" | "stroke" }> = {
   "book-open": {
     body:
       '<path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />',
+    paint: "stroke",
+  },
+  "chevron-left": {
+    body: '<path d="m15 18-6-6 6-6" />',
+    paint: "stroke",
+  },
+  "chevron-right": {
+    body: '<path d="m9 18 6-6-6-6" />',
     paint: "stroke",
   },
   github: {
