@@ -2,6 +2,7 @@
 /** Side-panel entry point for the active session review workspace. */
 
 import { render } from "preact";
+import { loadSettings } from "../shared/settings.ts";
 import { browser, displayVersion } from "../shared/browser.ts";
 import componentStyles from "../ui/components/components.css" with { type: "text" };
 import { NotesPanel } from "./NotesPanel.tsx";
@@ -24,6 +25,7 @@ render(
       revokeObjectURL: (url) => URL.revokeObjectURL(url),
     }}
     iconSpriteUrl="/src/shared/design/icons.svg"
+    loadSettings={() => loadSettings(browser.storage.local)}
     notePreview={browserNotePreviewController(browser)}
     repository={createNotesRepository(
       browser.storage.local,
