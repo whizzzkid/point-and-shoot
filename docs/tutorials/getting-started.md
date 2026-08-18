@@ -70,9 +70,10 @@ exits the picker from its current state without ending the durable session.
 
 ## Capture across pages
 
-Navigate to another page while the session remains active. Use the default shortcut,
-`Command+Shift+P` on macOS or `Ctrl+Shift+P` elsewhere, to toggle the overlay on that page. Capture
-and edit another note.
+Navigate to another page while the session remains active. The session keeps running across the
+navigation, but the overlay does not, so press the default shortcut — `Command+Shift+P` on macOS or
+`Ctrl+Shift+P` elsewhere — **twice** on the new page: once to pause the session, once to resume it
+and re-inject the overlay. Then capture and edit another note.
 
 The shortcut is bound to the same browser action as the toolbar icon, so it pauses a running session
 and resumes a paused one. Neither ends the session. See

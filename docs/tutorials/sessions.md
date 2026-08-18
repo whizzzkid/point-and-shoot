@@ -75,16 +75,20 @@ cannot be captured.
 
 ## Capture notes across pages
 
-While a session runs, navigate wherever you like within the same site. The badge follows you and
+While a session runs, navigate freely within the hostname it started on. The badge follows you and
 keeps showing the running note count, so you can see at a glance that the session is still yours to
-add to.
+add to. Leaving that hostname is what ends it, as described
+[below](#crossing-to-a-different-domain-ends-the-session).
 
 The overlay does not survive navigation. `activeTab` is granted per user gesture and the browser
 revokes it the moment the page changes, so Point and Shoot has no standing permission to re-inject
 itself — by design, and the reason it can promise it never reads a page you did not point it at.
-Click the toolbar icon (or press the shortcut) once on the new page to bring the overlay back. That
-click resumes the existing session rather than starting a new one, because the session was only
-paused, never ended.
+
+Bringing the overlay back takes **two** clicks of the toolbar icon, not one. Navigation leaves the
+session running rather than pausing it, so the first click pauses it and the second resumes it and
+re-injects the overlay. Both clicks keep the same session and every note in it. The tooltip tells
+you which click you are on: **Pause session** before the first, **Resume session** before the
+second.
 
 The side panel groups notes by page. Select a page under **Pages** to see its notes under **Notes on
 this page**.
@@ -97,6 +101,12 @@ click then starts a fresh session for the new domain rather than mixing two site
 
 Nothing is discarded — the ended session keeps all its notes and remains fully exportable. Plan for
 it: if a bug report spans two domains, capture and export one session per domain.
+
+Two details make this fire more often than you might expect. The comparison is on the full hostname,
+so moving between subdomains — `www.example.com` to `app.example.com` — ends the session. And it is
+not scoped to the tab hosting the session: a navigation completing in _any_ tab on a different
+hostname ends the running session, including a link you opened in a background tab. Pause the
+session first when you need to browse away.
 
 ## Pause and resume a session
 
@@ -145,9 +155,13 @@ Each note card in the side panel carries four icon buttons:
   undone.
 
 Each card also has a **Strip query when exporting** switch. It controls one note at a time and
-affects only the exported projection — the full URL stays in the stored record either way. New notes
-inherit their default from the **Strip sensitive query strings** setting in the options page, which
-pre-strips parameters whose names look like credentials.
+affects only the exported projection — the full URL stays in the stored record either way.
+
+Stripping is all or nothing: the whole query is dropped from the export, not just the parameters
+that looked risky. A note's switch starts on when the **Strip sensitive query strings** setting is
+enabled _and_ the captured URL has at least one parameter whose name resembles a credential —
+`token`, `key`, `secret`, `auth`, or `session`. One such parameter therefore drops every other
+parameter alongside it, so turn the switch off for a note whose query you need in the export.
 
 A note may hold up to 25 annotated elements. A capture that would exceed that is rejected with an
 explicit error rather than silently truncated.
@@ -189,6 +203,9 @@ Select **Compile plan** in the side panel. That both moves you to the plan view 
 session: it stamps the end time, clears any pause, and releases the active-session pointer, so the
 badge clears and the next toolbar click starts a fresh session.
 
+**Compile plan** appears only once the session holds at least one note — an empty session has
+nothing to compile. Delete an empty session from either session list instead.
+
 Ending is not a loss of access. The side panel stays on the completed session and labels it
 **Completed session**, and you can still rename it, edit and delete its notes, and export it as many
 times as you like. Ending only means the session no longer accepts new captures and no longer owns
@@ -197,8 +214,9 @@ the toolbar icon.
 A session also ends without a gesture when a navigation crosses to a different domain, as described
 [above](#crossing-to-a-different-domain-ends-the-session).
 
-Note that ending a session does not remove the overlay from the page. Press the shortcut, or
-navigate away, to dismiss it.
+Note that ending a session does not remove the overlay from the page. Press `Escape`, or navigate
+away, to dismiss it. Do not reach for the toolbar icon or its shortcut here — with no active
+session, that starts a fresh one instead of closing the overlay.
 
 ## Where sessions are stored
 
