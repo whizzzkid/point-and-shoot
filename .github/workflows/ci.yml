@@ -155,6 +155,7 @@ jobs:
         if: failure()
         run: |
           deno task visual:update
+          git config --global --add safe.directory /__w/point-and-shoot/point-and-shoot
           git add tests/visual/baselines/
           if git diff --cached --quiet; then
             echo "no baseline files changed; nothing to commit"
