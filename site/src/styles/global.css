@@ -227,7 +227,6 @@ h3 {
 }
 
 .button-github:focus-visible {
-  border-radius: var(--radius-sm);
   outline: none;
   box-shadow: var(--shadow-focus);
 }
