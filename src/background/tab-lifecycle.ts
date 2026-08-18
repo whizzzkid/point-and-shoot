@@ -14,6 +14,7 @@
 
 import type { BrowserShim } from "../shared/browser.ts";
 import type { SessionService } from "./session.ts";
+import { domainFromUrl } from "./session.ts";
 
 /** Browser capabilities required to observe tab navigation completion. */
 export interface TabLifecycleBrowser {
@@ -35,11 +36,21 @@ export function registerTabLifecycleHandler(
   sessions: Pick<SessionService, "loadActive">,
   synchronize: () => Promise<void> = () => Promise.resolve(),
 ): void {
-  browser.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+  browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
     if (changeInfo.status !== "complete") return;
     void (async () => {
       const active = await sessions.loadActive();
       if (active === null || active.pausedAt != null) return;
+
+      // Check if the tab's URL domain differs from the session's domain
+      const tabDomain = tab.url ? domainFromUrl(tab.url) : null;
+      if (tabDomain !== null && active.domain !== tabDomain) {
+        // Domain changed - the next toolbar click will start a fresh session
+        // via startSession's domain check. Just synchronize the badge.
+        await synchronize();
+        return;
+      }
+
       await synchronize();
     })().catch(() => {
       // Storage races and worker restarts reach this point; the next toolbar click restores

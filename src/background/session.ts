@@ -84,7 +84,7 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
  * or unparseable inputs (`chrome://newtab/`, `about:blank`, `""`); the ADR-0002 activeTab model
  * gives the background a URL only for eligible http(s) pages, so anything else is a non-domain.
  */
-function domainFromUrl(pageUrl: string | undefined): string | null {
+export function domainFromUrl(pageUrl: string | undefined): string | null {
   if (pageUrl === undefined || pageUrl === "") return null;
   try {
     return new URL(pageUrl).hostname || null;
@@ -144,7 +144,28 @@ async function startSession(
   const database = await dependencies.openDatabase();
   try {
     const active = await loadActiveFrom(storage, database);
-    if (active !== null) return active;
+    const newDomain = domainFromUrl(pageUrl);
+
+    // If there's an active session but for a different domain, end it and start fresh
+    if (active !== null && active.domain !== newDomain) {
+      const ended: Session = {
+        ...active,
+        endedAt: dependencies.now().toISOString(),
+      };
+      await putSession(database, ended);
+      await storage.remove(ACTIVE_SESSION_ID_STORAGE_KEY);
+      const stored = await storage.get(SESSION_REVISION_STORAGE_KEY);
+      await storage.set({
+        [DISPLAY_SESSION_ID_STORAGE_KEY]: ended.id,
+        [SESSION_REVISION_STORAGE_KEY]: nextSessionRevision(
+          stored[SESSION_REVISION_STORAGE_KEY],
+        ),
+      });
+      // Fall through to create new session
+    } else if (active !== null) {
+      // Same domain or no domain - resume existing session
+      return active;
+    }
 
     const session = createSession(
       dependencies.createId(),
