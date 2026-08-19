@@ -114,7 +114,7 @@
     "e2e:full": "deno task build && deno test -A tests/e2e/full-flow.spec.ts",
     "visual": "deno task build && deno run -A tests/visual/run.ts",
     "visual:update": "deno task build && deno run -A tests/visual/run.ts --update",
-    "visual:commit": "deno run --allow-run=git --allow-read --allow-env --allow-net=api.github.com scripts/ci-commit-verified.ts tests/visual/baselines",
+    "visual:commit": "deno run --allow-run=git --allow-read=tests/visual/baselines --allow-env=GITHUB_TOKEN,GITHUB_REPOSITORY,GITHUB_HEAD_REF --allow-net=api.github.com scripts/ci-commit-verified.ts tests/visual/baselines",
     "boot:firefox": "deno run -A scripts/boot-firefox.ts",
     "smoke:firefox": "deno task build && deno run -A tests/firefox/smoke.ts",
     "a11y": "deno task build && deno test -A tests/a11y/*.test.ts tests/a11y/*.spec.ts",
