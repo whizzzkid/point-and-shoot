@@ -241,6 +241,11 @@ h3 {
   gap: var(--space-3);
 }
 
+/* Scripting narrows the stores to the detected browser; without it every store stays rendered. */
+.install-options.has-recommendation .install-store.is-other {
+  display: none;
+}
+
 .install-store-copy,
 .install-source-copy,
 .install-status,
