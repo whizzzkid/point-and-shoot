@@ -32,6 +32,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The Playwright container is minimal — it ships Chromium and its deps but not
+      # general-purpose utilities. The build test suite shells out to `zip` for release
+      # archive validation, so install it before anything else.
+      - name: Install container extras
+        run: apt-get update -qq && apt-get install -y -qq zip > /dev/null
+
       # mise installs exactly what mise.toml pins, so CI and every local machine resolve
       # identical versions from one file. A denoland/setup-deno step would be a second
       # place to bump Deno, and the two would drift.
