@@ -19,9 +19,6 @@ const install = createInstallActionsModel(storeListing);
     {
       install.actions.map((action) => (
         <div class="install-store" data-install-store>
-          <p class="install-store-copy">
-            Open the browser-extension listing to install Point & Shoot. {install.singlePurpose}
-          </p>
           <a
             class="store-badge-link"
             data-install-target={action.target}
@@ -35,11 +32,13 @@ const install = createInstallActionsModel(storeListing);
               height="48"
             />
           </a>
+          <p class="install-store-copy">
+            Open the browser-extension listing to install Point & Shoot. {install.singlePurpose}
+          </p>
         </div>
       ))
     }
     <div class="install-source">
-      <p class="install-source-copy">Build Point & Shoot locally from the repository source.</p>
       <a
         class="button button-github"
         data-source-install
@@ -48,6 +47,7 @@ const install = createInstallActionsModel(storeListing);
         <SiteIcon name="github" />
         Build from source
       </a>
+      <p class="install-source-copy">Build Point & Shoot locally from the repository source.</p>
     </div>
   </div>
   <p class="install-status" data-install-status>
