@@ -69,6 +69,11 @@ Deno.test("the flat prev/next order equals the section-grouped sidebar order", (
     "specs/readme",
     "specs/store-publication",
     "specs/build-release-and-verification",
+    // Documents outside DOCS_ORDER (a future spec and a future tutorial) both take the fallback
+    // rank. The alphabetical tiebreak keeps every "specs/" id ahead of every "tutorials/" id, so an
+    // unlisted tutorial still lands in the tutorial band rather than interleaving with the specs.
+    "specs/unlisted-later",
+    "tutorials/unlisted-later",
     "tutorials/releasing",
     "tutorials/getting-started",
     "tutorials/readme",
