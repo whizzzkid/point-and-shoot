@@ -141,24 +141,22 @@ jobs:
         id: compare
         run: deno task visual
 
-      # Baseline regeneration pushes to the branch, which only makes sense for same-repo pull
+      # Baseline regeneration commits back to the branch, which only makes sense for same-repo pull
       # requests. Fork PRs cannot push, and push/workflow_dispatch runs have no branch to update.
       # github.repository is always this repo's own slug, so it must be compared against the
       # PR's head repo (not hardcoded) to actually detect same-repo vs. fork.
+      #
+      # The commit goes through GitHub's createCommitOnBranch GraphQL mutation rather than
+      # `git commit` + `git push`: commits authored via the API are signed by GitHub and land
+      # verified, so a "require signed commits" ruleset does not reject the regenerated baselines.
       - name: Regenerate drifted baselines and commit them back
         if: failure() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           deno task visual:update
           git config --global --add safe.directory /__w/point-and-shoot/point-and-shoot
-          git add tests/visual/baselines/
-          if git diff --cached --quiet; then
-            echo "no baseline files changed; nothing to commit"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore(visual): refresh baselines for ${GITHUB_HEAD_REF}"
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-          fi
+          deno task visual:commit "chore(visual): refresh baselines for ${GITHUB_HEAD_REF}"
 
       - name: Upload visual diffs
         if: failure()
