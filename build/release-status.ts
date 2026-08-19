@@ -1,6 +1,11 @@
 const STATUS_START = "<!-- point-and-shoot-store-status:start -->";
 const STATUS_END = "<!-- point-and-shoot-store-status:end -->";
 
+const BADGE_BASE =
+  "https://raw.githubusercontent.com/whizzzkid/point-and-shoot/main/docs/assets/store";
+const CHROME_BADGE_URL = `${BADGE_BASE}/chrome-web-store-badge.png`;
+const FIREFOX_BADGE_URL = `${BADGE_BASE}/firefox-add-ons-badge.png`;
+
 /** Store-side lifecycle states projected into a GitHub release body. */
 export type StoreReleaseState =
   | "unpublished"
@@ -46,6 +51,26 @@ function publicStatus(label: string, status: StoreReleaseStatus): string {
   const version = `\`${status.publicVersion}\``;
   if (status.state !== "published" || status.listingUrl === undefined) return version;
   return `${version} · [Install from ${label}](${status.listingUrl})`;
+}
+
+function installBadges(status: ReleaseStatus): string[] {
+  const lines: string[] = [];
+  if (isCurrentAndPublished(status.chrome) && status.chrome.listingUrl !== undefined) {
+    lines.push(
+      `  <a href="${status.chrome.listingUrl}">`,
+      `    <img src="${CHROME_BADGE_URL}" height="60" alt="Install Point & Shoot from the Chrome Web Store">`,
+      "  </a>",
+    );
+  }
+  if (isCurrentAndPublished(status.firefox) && status.firefox.listingUrl !== undefined) {
+    lines.push(
+      `  <a href="${status.firefox.listingUrl}">`,
+      `    <img src="${FIREFOX_BADGE_URL}" height="60" alt="Install Point & Shoot from Firefox Add-ons">`,
+      "  </a>",
+    );
+  }
+  if (lines.length === 0) return [];
+  return ["", "### Install", "", '<p align="center">', ...lines, "</p>"];
 }
 
 function statusRow(label: string, status: StoreReleaseStatus): string {
@@ -130,6 +155,7 @@ export function renderReleaseStatus(status: ReleaseStatus): string {
     statusRow("Chrome", status.chrome),
     statusRow("Firefox", status.firefox),
     ...(findings.length === 0 ? [] : ["", "### Follow-up", "", ...findings]),
+    ...installBadges(status),
     "",
     "The attached ZIPs are store-submission and reviewer artifacts, not consumer install links.",
     STATUS_END,
