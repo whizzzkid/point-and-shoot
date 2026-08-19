@@ -449,11 +449,13 @@ article img,
   font-weight: var(--weight-medium);
 }
 
+/* Shares the pagination nav's own rhythm so the two rules below the article read as one block.
+   A larger gap here stranded the footer far under the pagination links on short pages. */
 .docs-footer {
   display: flex;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-top: var(--space-16);
+  margin-top: var(--space-8);
   padding-top: var(--space-6);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
