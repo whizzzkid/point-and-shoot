@@ -70,13 +70,15 @@ exits the picker from its current state without ending the durable session.
 
 ## Capture across pages
 
-Navigate to another page while the session remains active. A running session remounts the overlay on
-each page you load, so you can capture and edit another note without any further gesture.
+Navigate to another page while the session remains active. The session keeps running across the
+navigation, but the overlay does not, so press the default shortcut — `Command+Shift+P` on macOS or
+`Ctrl+Shift+P` elsewhere — **twice** on the new page: once to pause the session, once to resume it
+and re-inject the overlay. Then capture and edit another note.
 
-The default shortcut, `Command+Shift+P` on macOS or `Ctrl+Shift+P` elsewhere, fires the same browser
-action as the toolbar icon and follows the same session path: it pauses a running session and
-resumes a paused one. Neither gesture ends a session — see
-[the Shortcuts section](options.md#shortcuts) for the full behavior.
+The shortcut is bound to the same browser action as the toolbar icon, so it pauses a running session
+and resumes a paused one. Neither ends the session. See
+[manage a Point and Shoot session](sessions.md) for the full lifecycle, or
+[the Shortcuts section](options.md#shortcuts) for how to change the binding.
 
 The side panel groups notes by page. You can edit, delete, reorder, and choose whether each note's
 query string is included in an export.
@@ -130,6 +132,8 @@ resumes it on the current tab.
 **Compile plan** in the side panel is what **ends** a session. It stamps the end time and clears the
 action badge, and the side panel stays on the completed session so it can still be edited or
 exported. The next toolbar click after that starts a fresh session.
+
+See [manage a Point and Shoot session](sessions.md) for the full lifecycle.
 
 ## Understand what leaves the device
 
