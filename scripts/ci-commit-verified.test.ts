@@ -24,6 +24,14 @@ Deno.test("parseChangedFiles treats a rename as delete-source plus add-target", 
   });
 });
 
+Deno.test("parseChangedFiles treats a copy as add-target only, leaving the source", () => {
+  const status = "C  a/copy.png\0a/orig.png\0";
+  assertEquals(parseChangedFiles(status), {
+    additions: ["a/copy.png"],
+    deletions: [],
+  });
+});
+
 Deno.test("parseChangedFiles returns empty change sets for empty output", () => {
   assertEquals(parseChangedFiles(""), { additions: [], deletions: [] });
 });

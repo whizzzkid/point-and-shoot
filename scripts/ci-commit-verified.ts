@@ -72,11 +72,15 @@ export function parseChangedFiles(porcelainZ: string): ChangedFiles {
     const staged = entry[0];
     const unstaged = entry[1];
     const path = entry.slice(3);
-    if (staged === "R" || staged === "C" || unstaged === "R" || unstaged === "C") {
+    const renamed = staged === "R" || unstaged === "R";
+    const copied = staged === "C" || unstaged === "C";
+    if (renamed || copied) {
       // With -z a rename/copy is followed by its source path as the next token.
+      // A rename removes the source; a copy leaves it in place, so only a rename
+      // contributes a deletion.
       const source = tokens[index + 1];
       index += 1;
-      if (source !== undefined) {
+      if (renamed && source !== undefined) {
         deletions.push(source);
       }
       additions.push(path);
