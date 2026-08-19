@@ -1,40 +1,25 @@
 # Get started with Point and Shoot
 
-This walkthrough builds Point and Shoot from source, loads it in Chrome or Firefox, captures notes
-across multiple pages, and hands the export to a local coding agent.
+This walkthrough installs Point and Shoot from your browser's extension store, captures notes across
+multiple pages, and hands the export to a local coding agent.
 
-## Build the extension
+## Install the extension
 
-Install [Git](https://git-scm.com/) and [mise](https://mise.jdx.dev/), then run:
+Install the published listing for your browser:
 
-```bash
-git clone https://github.com/whizzzkid/point-and-shoot.git
-cd point-and-shoot
-mise install
-mise exec -- deno task build
-```
+- Chrome and other Chromium-based browsers:
+  [Point & Shoot on the Chrome Web Store](https://chromewebstore.google.com/detail/point-shoot/efiaamiohjjhhcgeaihgmbajnamhbahb).
+- Firefox and other Gecko-based browsers:
+  [Point & Shoot on Firefox Add-ons](https://addons.mozilla.org/firefox/addon/point-and-shoot/).
 
-The command writes unpacked builds to `dist/chrome/` and `dist/firefox/`.
+Chrome 116 or newer and Firefox 109 or newer are supported. Safari support is planned separately, so
+Safari has no store listing yet.
 
-## Load the unpacked build
+After installing, pin Point and Shoot if you want its action and note-count badge to remain visible.
+The store handles updates for you.
 
-### Chrome
-
-1. Open `chrome://extensions`.
-2. Turn on **Developer mode**.
-3. Select **Load unpacked** and choose `dist/chrome/`.
-4. Pin Point and Shoot if you want its action and note-count badge to remain visible.
-
-When source changes, rerun the build and select **Reload** on the extension card.
-
-### Firefox
-
-1. Open `about:debugging#/runtime/this-firefox`.
-2. Select **Load Temporary Add-on**.
-3. Choose `dist/firefox/manifest.json`.
-
-The add-on is temporary and disappears when Firefox exits. Repeat these steps after restarting the
-browser.
+Prefer to build from source? See [build Point and Shoot from source](building-from-source.md) for
+the Git and mise walkthrough, including loading an unpacked build in Chrome or Firefox.
 
 ## Start a session
 

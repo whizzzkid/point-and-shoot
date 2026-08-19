@@ -4,7 +4,9 @@ This guide distinguishes expected browser boundaries from failures that need inv
 
 ## The extension does not load
 
-Rebuild both targets:
+This section covers unpacked builds; see
+[build Point and Shoot from source](building-from-source.md) for the build and load steps. Rebuild
+both targets:
 
 ```bash
 mise exec -- deno task build
