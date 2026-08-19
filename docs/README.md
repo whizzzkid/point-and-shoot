@@ -13,14 +13,14 @@ repo.
 
 ## Map
 
-| Path                                | What lives there                                                                 | Published?      |
-| ----------------------------------- | -------------------------------------------------------------------------------- | --------------- |
-| [`design.md`](design.md)            | The design system, MV3 substitutions, and application rules                      | Yes             |
-| [`plans/`](plans/README.md)         | Active implementation plans, including the browser-store rollout                 | Repository only |
-| [`specs/`](specs/README.md)         | Current contracts for the extension, release pipeline, and website               | Yes             |
-| [`adr/`](adr/README.md)             | Architecture decision records, numbered and immutable once accepted              | Repository only |
-| [`tutorials/`](tutorials/README.md) | Task walkthroughs for install, capture, Playwright, troubleshooting, and release | Yes             |
-| `assets/`                           | Committed images referenced by documentation and pull request bodies             | When referenced |
+| Path                                | What lives there                                                                          | Published?      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- | --------------- |
+| [`design.md`](design.md)            | The design system, MV3 substitutions, and application rules                               | Yes             |
+| [`plans/`](plans/README.md)         | Active implementation plans, including the browser-store rollout                          | Repository only |
+| [`specs/`](specs/README.md)         | Current contracts for the extension, release pipeline, and website                        | Yes             |
+| [`adr/`](adr/README.md)             | Architecture decision records, numbered and immutable once accepted                       | Repository only |
+| [`tutorials/`](tutorials/README.md) | Task walkthroughs for install, capture, options, Playwright, troubleshooting, and release | Yes             |
+| `assets/`                           | Committed images referenced by documentation and pull request bodies                      | When referenced |
 
 Start with [`specs/README.md`](specs/README.md) when changing behavior. It maps the current
 contracts and links to the ADRs that explain their architectural constraints.

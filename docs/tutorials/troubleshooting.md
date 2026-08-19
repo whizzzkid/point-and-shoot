@@ -57,10 +57,17 @@ state.
 Scroll-and-stitch capture is not implemented. Capture multiple viewport-sized notes or zoom out
 before selecting the region.
 
-## The shortcut does not end the session
+## The shortcut paused the session instead of hiding the overlay
 
-This is intentional. The default `Command+Shift+P` on macOS or `Ctrl+Shift+P` elsewhere toggles the
-capture overlay on the active tab. The browser toolbar icon starts and ends the durable session.
+This is expected. The default `Command+Shift+P` on macOS or `Ctrl+Shift+P` elsewhere fires the same
+browser action as the toolbar icon, so it follows the same session path: it starts a session when
+none is active, pauses a running one, and resumes a paused one. Press it again to resume.
+
+You do not need it to regain the overlay after navigating — a running session remounts the overlay
+on each page you load.
+
+Neither the shortcut nor the toolbar icon ends a session. Only **Compile plan** in the side panel
+completes one. See [configure options](options.md#shortcuts) for the full behavior.
 
 Open the options page to see the browser's current assignment. **Manage browser shortcuts** opens
 `chrome://extensions/shortcuts` in Chrome or `about:addons` in Firefox.
