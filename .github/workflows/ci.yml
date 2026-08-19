@@ -38,7 +38,13 @@ jobs:
       # is owned by the runner user, not the container's root, so git needs safe.directory.
       - name: Container extras
         run: |
-          apt-get install -y -qq zip 2>/dev/null || (apt-get update -qq && apt-get install -y -qq zip) > /dev/null
+          # The Playwright image points apt at azure.archive.ubuntu.com, which times out
+          # intermittently and leaves `zip` uninstallable. Repoint to the official mirror
+          # first. Noble keeps sources in DEB822 (/etc/apt/sources.list.d/ubuntu.sources);
+          # older layouts use /etc/apt/sources.list — rewrite whichever exists.
+          sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g; s|azure.ports.ubuntu.com|ports.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          apt-get update -qq && apt-get install -y -qq zip > /dev/null
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # mise installs exactly what mise.toml pins, so CI and every local machine resolve
