@@ -32,16 +32,18 @@ export function docsUrl(id: string): string {
 /**
  * Ranks documents that carry a deliberate reading order.
  *
- * Index and overview pages lead. Tutorials follow the user story — install, configure, capture,
- * export — before the advanced and maintainer guides, so the sidebar and the prev/next pagination
- * both read as a sequence rather than an alphabetical list. Unlisted documents keep the shared
- * fallback rank and stay alphabetical among themselves.
+ * Each section occupies a contiguous rank band so the flat prev/next pagination reads in the same
+ * order as the section-grouped sidebar: the top-level indexes lead (0-2), then every unlisted
+ * document — the specifications — takes the shared fallback rank (10) and stays alphabetical among
+ * its peers, then the tutorials index (19) opens the tutorial band, which follows the user story
+ * (install, configure, capture, export) rather than filename order. Keeping the tutorials index
+ * above 10 is what stops it from sorting up among the specifications and splitting the two views.
  */
 const DOCS_ORDER = new Map([
   ["readme", 0],
   ["design", 1],
   ["specs/readme", 2],
-  ["tutorials/readme", 3],
+  ["tutorials/readme", 19],
   ["tutorials/getting-started", 20],
   ["tutorials/options", 21],
   ["tutorials/sessions", 22],

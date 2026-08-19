@@ -51,11 +51,41 @@ Deno.test("index documents lead and specifications keep their alphabetical fallb
     "readme",
     "design",
     "specs/readme",
-    "tutorials/readme",
     "specs/design-system",
     "specs/store-publication",
+    "tutorials/readme",
     "tutorials/getting-started",
   ]);
+});
+
+Deno.test("the flat prev/next order equals the section-grouped sidebar order", () => {
+  // Mirrors the fixed section split in DocsSidebar.astro: Overview, then Specifications, then
+  // Tutorials. The prev/next pagination walks the flat sortDocs order, so the two views agree only
+  // when each section occupies a contiguous rank band. This pins the spec's guarantee that the
+  // sidebar and the pagination cannot disagree.
+  const all = [
+    "readme",
+    "design",
+    "specs/readme",
+    "specs/store-publication",
+    "specs/build-release-and-verification",
+    "tutorials/releasing",
+    "tutorials/getting-started",
+    "tutorials/readme",
+    "tutorials/options",
+  ].map(entry);
+
+  const flat = sortDocs(all).map((item) => item.id);
+
+  const inOrder = (predicate) =>
+    sortDocs(all.filter((item) => predicate(item.id))).map((item) => item.id);
+  const grouped = [
+    ...inOrder((id) => id === "readme" || id === "design"),
+    ...inOrder((id) => id.startsWith("specs/")),
+    ...inOrder((id) => id.startsWith("tutorials/")),
+  ];
+
+  assertEquals(flat, grouped);
 });
 
 Deno.test("the Markdown extension and letter case do not change a document's rank", () => {
