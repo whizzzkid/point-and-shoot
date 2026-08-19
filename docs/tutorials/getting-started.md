@@ -100,8 +100,11 @@ The ZIP contains:
 - `plan.md`, the selected notes and relative screenshot links; and
 - `shots/note-NN.webp`, one screenshot per selected note.
 
-An export with no included notes is disabled. A size warning is advisory; you may export as-is,
-exclude notes, or lower screenshot quality or maximum dimensions in the options page.
+An export with no included notes is disabled. Excluding notes reduces the current bundle
+immediately. Lowering screenshot quality or maximum dimensions in the options page only affects
+future captures; existing screenshots keep their original size until you recapture them. See
+[compile a plan and export it](exporting.md) for the full treatment of the compile-plan step, the
+header and footer prompts, and the bundle format.
 
 ## Hand the bundle to a local agent
 
