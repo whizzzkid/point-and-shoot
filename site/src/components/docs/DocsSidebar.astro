@@ -49,23 +49,18 @@ const groups = [
   </nav>
 </aside>
 
-<script is:inline>
-  (() => {
-    if (window.__docsSidebarSwapWired) return;
-    window.__docsSidebarSwapWired = true;
-    document.addEventListener("astro:after-swap", () => {
-      const sidebar = document.querySelector(".docs-sidebar");
-      if (!sidebar) return;
-      const path = location.pathname.replace(/\/$/, "") || "/";
-      const links = sidebar.querySelectorAll("a[href]");
-      for (let i = 0; i < links.length; i++) {
-        const href = (links[i].getAttribute("href") || "").replace(/\/$/, "") || "/";
-        if (href === path) {
-          links[i].setAttribute("aria-current", "page");
-        } else {
-          links[i].removeAttribute("aria-current");
-        }
+<script>
+  document.addEventListener("astro:after-swap", () => {
+    const sidebar = document.querySelector(".docs-sidebar");
+    if (!sidebar) return;
+    const path = location.pathname.replace(/\/$/, "") || "/";
+    for (const link of sidebar.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      const href = link.getAttribute("href")!.replace(/\/$/, "") || "/";
+      if (href === path) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
       }
-    });
-  })();
+    }
+  });
 </script>
