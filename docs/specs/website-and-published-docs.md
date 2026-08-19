@@ -111,6 +111,12 @@ treatment marks the current page only. The repository link carries the public st
 build time; nothing about it is fetched from the visitor's browser, and a build that cannot reach
 the GitHub API renders the link with no badge rather than failing or showing a placeholder.
 
+The marketing header pairs every navigation link with the same icon set, so both headers read as one
+system; it takes none of the documentation header's pill chrome or star badge. The marketing footer
+labels the repository link `GitHub`, matching the headers rather than naming the same destination
+twice, and closes with the maintainer's copyright. That copyright carries no year: a static build
+would bake in its own build date and then disagree with the calendar until the next deploy.
+
 Every documentation page ends with a route back to the index: the footer links the documentation
 index and the published Markdown source on GitHub. A page with a neighbour in the published order
 also carries pagination links above that footer, and the rule dividing them sits above the
