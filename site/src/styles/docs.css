@@ -167,11 +167,19 @@ a:focus-visible {
 
 /* The nav scrolls within the viewport instead of pushing the whole page, so every item stays
    reachable on a tall list. The hidden scrollbar keeps the rail visually quiet; `overscroll-behavior`
-   stops the page from scrolling once the nav reaches its end. */
+   stops the page from scrolling once the nav reaches its end. `--sidebar-inset` is the single source
+   for the sticky offset so `top` and `max-height` cannot drift apart: max-height is the viewport
+   minus that offset minus a matching gap of breathing room at the bottom. */
 .docs-sidebar nav {
+  --sidebar-inset: calc(var(--space-16) + var(--space-8));
   position: sticky;
-  top: calc(var(--space-16) + var(--space-8));
-  max-height: calc(100vh - var(--space-16) - var(--space-8) * 2);
+  top: var(--sidebar-inset);
+  max-height: calc(100vh - var(--sidebar-inset) - var(--space-8));
+  /* `overflow-y: auto` forces `overflow-x` to compute to `auto`, which would clip the links'
+     focus ring (a 3px box-shadow) where they sit flush with the scroll port. The padding gives the
+     ring room; the matching negative margin keeps the links visually aligned with the sidebar. */
+  padding: var(--space-1);
+  margin: calc(var(--space-1) * -1);
   overflow-y: auto;
   gap: var(--space-8);
   overscroll-behavior: contain;
