@@ -1,6 +1,8 @@
 ---
 import type { CollectionEntry } from "astro:content";
 
+import { ClientRouter } from "astro:transitions";
+
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
 import SiteIcon from "../components/SiteIcon.astro";
 import ThemeScript from "../components/ThemeScript.astro";
@@ -37,6 +39,7 @@ const starLabel = formatStarCount(repository.stars);
     <link rel="canonical" href={Astro.url.href} />
     <title>{title} — Point & Shoot docs</title>
     <ThemeScript />
+    <ClientRouter />
   </head>
   <body>
     <a class="skip-link" href="#docs-content">Skip to content</a>
