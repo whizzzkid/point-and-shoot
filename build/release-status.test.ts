@@ -66,10 +66,16 @@ Deno.test("release status renders unpublished, submitted, reviewed, and publishe
     assertStringIncludes(rendered, EXPECTED_VERSION);
     assertStringIncludes(rendered, RECONCILED_AT);
   }
+  const publishedOneStore = renderReleaseStatus(
+    releaseStatus(states[3]!, storeStatus("unpublished")),
+  );
   assertStringIncludes(
-    renderReleaseStatus(releaseStatus(states[3]!, storeStatus("unpublished"))),
+    publishedOneStore,
     "[Install from Chrome](https://example.com/store/point-and-shoot)",
   );
+  assertStringIncludes(publishedOneStore, "### Install");
+  assertStringIncludes(publishedOneStore, "chrome-web-store-badge.png");
+  assertEquals(publishedOneStore.includes("firefox-add-ons-badge.png"), false);
 });
 
 Deno.test("release status exposes partial publication and actionable failures", () => {
@@ -88,6 +94,8 @@ Deno.test("release status exposes partial publication and actionable failures", 
   assertStringIncludes(rendered, "Firefox | `2026.805.0` | **rejected**");
   assertStringIncludes(rendered, "Correct the data-use disclosure and resubmit.");
   assertStringIncludes(rendered, "Store publication is incomplete");
+  assertStringIncludes(rendered, "chrome-web-store-badge.png");
+  assertEquals(rendered.includes("firefox-add-ons-badge.png"), false);
 });
 
 Deno.test("release status reports public version mismatches and Chrome listing actions", () => {
@@ -107,6 +115,8 @@ Deno.test("release status reports public version mismatches and Chrome listing a
   assertStringIncludes(rendered, "Manual Chrome Web Store action required");
   assertStringIncludes(rendered, "update the listing summary in the Chrome Web Store dashboard");
   assertStringIncludes(rendered, "Store publication is incomplete");
+  assertEquals(rendered.includes("chrome-web-store-badge.png"), false);
+  assertStringIncludes(rendered, "firefox-add-ons-badge.png");
 });
 
 Deno.test("published versions without live listing URLs remain incomplete", () => {
@@ -116,6 +126,7 @@ Deno.test("published versions without live listing URLs remain incomplete", () =
   ));
 
   assertStringIncludes(rendered, "Store publication is incomplete");
+  assertEquals(rendered.includes("### Install"), false);
 });
 
 Deno.test("status projection preserves release notes and is idempotent", () => {
