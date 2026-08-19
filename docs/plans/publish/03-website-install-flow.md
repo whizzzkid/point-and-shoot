@@ -91,9 +91,10 @@ wrappers, Safari, and an empty user agent.
   source install is the only action.
 - When only one store is published, render that store and source install; identify the other store's
   publication state as text without an inert badge-like control.
-- In published state, the compatible store is visually recommended, receives the only accent
-  treatment, and is the only store shown; an incompatible store is hidden whenever the same install
-  container still offers the compatible one.
+- In published state, the compatible store is visually recommended and receives the only accent
+  treatment. The hero call to action collapses to that single store: the incompatible store and the
+  build-from-source option are hidden. The closing section does not collapse — it lists every
+  published store and keeps build-from-source so another browser's listing stays reachable.
 - Unknown, Safari/WebKit, and iOS states recommend neither store and explain that Safari support is
   deferred or that mobile extension installation is unavailable.
 - JavaScript never redirects, invokes a store protocol, or attempts Chromium inline installation.

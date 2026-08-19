@@ -231,6 +231,9 @@ h3 {
 .install-options {
   display: flex;
   flex-wrap: wrap;
+  /* Keep each choice at its natural height: without this the flex row stretches the shorter
+     column so the build-from-source button grows far taller than the store badges beside it. */
+  align-items: start;
   gap: var(--space-3);
 }
 
@@ -241,9 +244,16 @@ h3 {
   gap: var(--space-3);
 }
 
-/* Scripting narrows the stores to the detected browser; without it every store stays rendered. */
-.install-options.has-recommendation .install-store.is-other {
-  display: none;
+/* The hero build-from-source button keeps its natural width instead of stretching to fill the
+   column; the closing section still centres it through the justify-items rule below. */
+.install-actions--hero .install-source .button {
+  justify-self: start;
+}
+
+/* Scripting collapses the hero to the detected browser by setting the `hidden` attribute; this
+   reset lets that win over the display rules above, and without scripting every choice stays. */
+[hidden] {
+  display: none !important;
 }
 
 .install-store-copy,
@@ -562,6 +572,23 @@ footer p {
   .hero {
     gap: var(--space-12);
     padding-block: var(--space-16);
+  }
+
+  /* The layered product mock is tuned for the wide two-column hero; once the hero stacks, its
+     absolute decorations overlap the screenshot, so show the screenshot on its own and contain it
+     proportionally to the now full-width frame. */
+  .product-stage {
+    place-items: center;
+    padding: var(--space-8);
+  }
+
+  .product-stage::before,
+  .capture-outline {
+    display: none;
+  }
+
+  .product-stage img {
+    width: min(100%, calc(var(--space-24) * 6));
   }
 
   .workflow-grid {

@@ -13,6 +13,8 @@ const install = createInstallActionsModel(storeListing);
 ---
 
 <section class:list={["install-actions", `install-actions--${variant}`]} data-install-actions>
+  <!-- The hero call to action collapses client-side to the one determined store; the closing
+       section keeps every published store, and the no-JS fallback renders the full set. -->
   <div class="install-options" data-install-options>
     {
       install.actions.map((action) => (

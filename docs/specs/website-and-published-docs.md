@@ -60,13 +60,15 @@ classifies mobile iOS, iPadOS, and Android first; then Gecko capability and Fire
 then Chromium UA-CH brands and Chromium-family UA evidence. Safari, WebKit-only strings, bots, and
 legacy EdgeHTML remain unknown. Unrecognized evidence also remains unknown. The script leaves
 canonical publication status unchanged and writes transient browser guidance to one dedicated polite
-live region. It sets recommendation labels, attributes, and the one accent treatment, and it
-collapses the store choices that do not apply to the detected browser so a visitor sees only the
-store they can install from. It hides a store choice only when the same install container still
-offers the recommended store, so no container is ever left without a store; building from source
-stays visible in every state. It never redirects, opens a store protocol, or attempts inline
-installation. Unknown and Safari states recommend neither store and explain that Safari is deferred;
-mobile states explain that desktop extension installation is unavailable.
+live region. It sets recommendation labels, attributes, and the one accent treatment. In the hero
+the call to action collapses to a single link: the script keeps only the determined store and hides
+the other store choices along with the build-from-source option, so a visitor sees exactly the store
+they can install from. The closing section never collapses — it lists every published store and
+keeps building from source visible so a visitor can still reach another browser's listing or build
+locally. When the browser is unknown or unsupported the script recommends no store and the hero
+keeps the full set. It never redirects, opens a store protocol, or attempts inline installation.
+Unknown and Safari states recommend neither store and explain that Safari is deferred; mobile states
+explain that desktop extension installation is unavailable.
 
 From the website, **installable** means a user activates a link to a published official
 browser-store listing. It does not mean the website can install the extension inline. The
