@@ -4,6 +4,8 @@ These guides walk through Point and Shoot tasks from source build to agent hando
 
 - [Get started](getting-started.md) — install the extension, capture a multi-page session, and
   export it.
+- [Configure Point and Shoot options](options.md) — every settings section, what each control
+  changes, and the value it ships with.
 - [Compile a plan and export it](exporting.md) — select notes, wrap the plan in your own prompts,
   and choose between the standalone prompt and the full bundle.
 - [Use Point and Shoot with Playwright](playwright-companion.md) — load the unpacked Chrome build in
