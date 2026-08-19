@@ -165,10 +165,21 @@ a:focus-visible {
   gap: var(--space-4);
 }
 
+/* The nav scrolls within the viewport instead of pushing the whole page, so every item stays
+   reachable on a tall list. The hidden scrollbar keeps the rail visually quiet; `overscroll-behavior`
+   stops the page from scrolling once the nav reaches its end. */
 .docs-sidebar nav {
   position: sticky;
   top: calc(var(--space-16) + var(--space-8));
+  max-height: calc(100vh - var(--space-16) - var(--space-8) * 2);
+  overflow-y: auto;
   gap: var(--space-8);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.docs-sidebar nav::-webkit-scrollbar {
+  display: none;
 }
 
 .docs-sidebar h2 {
@@ -469,8 +480,12 @@ article img,
     border-bottom: 1px solid var(--border-subtle);
   }
 
+  /* Stacked above the content, the nav flows with the page, so the sticky viewport clamp would
+     crop the list. Reset it back to natural height. */
   .docs-sidebar nav {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .docs-sidebar section {
