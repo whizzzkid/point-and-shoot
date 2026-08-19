@@ -318,20 +318,8 @@ h3 {
 .browser-bar span {
   width: var(--space-2);
   height: var(--space-2);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-full);
-}
-
-/* macOS window traffic lights: close, minimize, zoom. Decorative window chrome. */
-.browser-bar span:nth-child(1) {
-  background: #ff5f57;
-}
-
-.browser-bar span:nth-child(2) {
-  background: #febc2e;
-}
-
-.browser-bar span:nth-child(3) {
-  background: #28c840;
 }
 
 .browser-bar code {
