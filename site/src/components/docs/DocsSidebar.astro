@@ -25,7 +25,7 @@ const groups = [
 ];
 ---
 
-<aside class="docs-sidebar">
+<aside class="docs-sidebar" transition:persist>
   <nav aria-label="Documentation navigation">
     {
       groups.map((group) => (
@@ -48,3 +48,19 @@ const groups = [
     }
   </nav>
 </aside>
+
+<script>
+  document.addEventListener("astro:after-swap", () => {
+    const sidebar = document.querySelector(".docs-sidebar");
+    if (!sidebar) return;
+    const path = location.pathname.replace(/\/$/, "") || "/";
+    for (const link of sidebar.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      const href = link.getAttribute("href")!.replace(/\/$/, "") || "/";
+      if (href === path) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    }
+  });
+</script>
