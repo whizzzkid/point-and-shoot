@@ -114,6 +114,12 @@ labels the repository link `GitHub`, matching the headers rather than naming the
 twice, and closes with the maintainer's copyright. That copyright carries no year: a static build
 would bake in its own build date and then disagree with the calendar until the next deploy.
 
+Every documentation page ends with a route back to the index: the footer links the documentation
+index and the published Markdown source on GitHub. A page with a neighbour in the published order
+also carries pagination links above that footer, and the rule dividing them sits above the
+pagination, so it separates the article body from the navigation rather than doubling the footer's
+own rule.
+
 Mermaid blocks render at build time to static SVG. The shipped documentation includes no Mermaid
 runtime and no client-side diagram fallback. Both themes derive from product tokens and honor
 `prefers-color-scheme` by default. A visitor may pin either theme from the header control; that
