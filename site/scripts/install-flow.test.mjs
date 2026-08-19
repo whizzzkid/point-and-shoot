@@ -87,15 +87,17 @@ Deno.test("recommendations only change labels, attributes, and the single accent
   assert.deepEqual(getInstallRecommendation("chromium"), {
     actionTarget: "chromium",
     announcement:
-      "Chrome Web Store is the compatible listing for this browser, so other stores are hidden. " +
-      "Building from source stays available.",
+      "Chrome Web Store is the compatible listing for this browser, so other stores are hidden " +
+      "here. Every published store stays listed at the end of the page, and building from " +
+      "source stays available.",
     label: "Recommended: install from Chrome Web Store",
   });
   assert.deepEqual(getInstallRecommendation("gecko"), {
     actionTarget: "gecko",
     announcement:
-      "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden. " +
-      "Building from source stays available.",
+      "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden " +
+      "here. Every published store stays listed at the end of the page, and building from " +
+      "source stays available.",
     label: "Recommended: install from Firefox Add-ons",
   });
   assert.deepEqual(getInstallRecommendation("mobile-unsupported"), {
@@ -198,6 +200,13 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
         );
         assert.equal(await page.locator('[data-store-action="gecko"]').count(), 2);
         assert.equal(await page.locator('[data-store-action="gecko"]').first().isVisible(), false);
+        // Only the hero call to action collapses to the determined store: it hides the other store
+        // choices and the build-from-source option. The closing section keeps every published store
+        // and build-from-source visible whatever browser reads the page.
+        assert.equal(await page.locator("[data-install-options]").count(), 2);
+        assert.equal(await page.locator("[data-source-install]").first().isVisible(), false);
+        assert.equal(await page.locator("[data-source-install]").last().isVisible(), true);
+        assert.equal(await page.locator('[data-store-action="gecko"]').last().isVisible(), true);
         assert.equal(
           await page.locator('[data-store-action="chromium"]').first().isVisible(),
           true,
@@ -264,8 +273,10 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
             await page.locator('[data-store-action="gecko"]').first().isVisible(),
             false,
           );
-          assert.equal(await page.locator('[data-store-action="gecko"]').last().isVisible(), false);
-          assert.equal(await page.locator("[data-source-install]").first().isVisible(), true);
+          assert.equal(await page.locator('[data-store-action="gecko"]').last().isVisible(), true);
+          // The hero hides build-from-source so its call to action is the single determined store;
+          // the closing section keeps build-from-source visible.
+          assert.equal(await page.locator("[data-source-install]").first().isVisible(), false);
           assert.equal(await page.locator("[data-source-install]").last().isVisible(), true);
           assert.equal(
             await page.locator('[data-store-action="chromium"][data-recommended]').count(),
@@ -282,17 +293,29 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
             true,
           );
 
-          const focusedStoreTargets = new Set();
-          for (let index = 0; index < 12; index += 1) {
+          // A collapsed store leaves the keyboard order too, so the hero reaches only the
+          // recommended store while the closing list still reaches every published store.
+          const focusedStoreChoices = new Set();
+          for (let index = 0; index < 16; index += 1) {
             await page.keyboard.press("Tab");
-            const target = await page.evaluate(
-              () => document.activeElement?.getAttribute("data-store-action") ?? null,
-            );
-            if (target !== null) {
-              focusedStoreTargets.add(target);
+            const choice = await page.evaluate(() => {
+              const active = document.activeElement;
+              const target = active?.getAttribute("data-store-action") ?? null;
+              if (target === null) return null;
+              const container = active.closest("[data-install-actions]");
+              const variant = container?.classList.contains("install-actions--hero") === true
+                ? "hero"
+                : "closing";
+              return `${variant}:${target}`;
+            });
+            if (choice !== null) {
+              focusedStoreChoices.add(choice);
             }
           }
-          assert.deepEqual(focusedStoreTargets, new Set(["chromium"]));
+          assert.deepEqual(
+            focusedStoreChoices,
+            new Set(["hero:chromium", "closing:chromium", "closing:gecko"]),
+          );
         } finally {
           await desktop.close();
         }
@@ -320,7 +343,7 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
           );
           assert.equal(
             await page.locator('[data-store-action="chromium"]').last().isVisible(),
-            false,
+            true,
           );
         } finally {
           await gecko.close();
@@ -399,6 +422,10 @@ Deno.test("browser enhancement preserves unavailable-store status and narrows st
               );
             }
           }
+          // An unsupported browser recommends no store, so the hero keeps the full set: both store
+          // choices and build-from-source stay visible in the hero and the closing section.
+          assert.equal(await page.locator("[data-source-install]").first().isVisible(), true);
+          assert.equal(await page.locator("[data-source-install]").last().isVisible(), true);
         } finally {
           await safari.close();
         }

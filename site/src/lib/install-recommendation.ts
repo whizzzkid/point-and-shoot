@@ -46,8 +46,9 @@ export function getInstallRecommendation(
     return {
       actionTarget: "chromium",
       announcement:
-        "Chrome Web Store is the compatible listing for this browser, so other stores are hidden. " +
-        "Building from source stays available.",
+        "Chrome Web Store is the compatible listing for this browser, so other stores are hidden " +
+        "here. Every published store stays listed at the end of the page, and building from " +
+        "source stays available.",
       label: "Recommended: install from Chrome Web Store",
     };
   }
@@ -56,8 +57,9 @@ export function getInstallRecommendation(
     return {
       actionTarget: "gecko",
       announcement:
-        "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden. " +
-        "Building from source stays available.",
+        "Firefox Add-ons is the compatible listing for this browser, so other stores are hidden " +
+        "here. Every published store stays listed at the end of the page, and building from " +
+        "source stays available.",
       label: "Recommended: install from Firefox Add-ons",
     };
   }
@@ -76,35 +78,6 @@ export function getInstallRecommendation(
       "Safari support is deferred. Choose a supported desktop browser or build from source.",
     label: null,
   };
-}
-
-/**
- * Marks the store choices that do not apply to the detected browser so styling can collapse them.
- *
- * Every install container is marked independently because only the hero container carries the
- * recommendation accent, while hero and closing containers render the same store choices.
- *
- * @param documentRoot - The document containing rendered install components.
- * @param actionTarget - The store family the classifier recommends for this browser.
- * @returns Nothing; the function only adds the marker classes the stylesheet keys off.
- */
-function markOtherStoreChoices(documentRoot: Document, actionTarget: StoreTarget): void {
-  const holdsRecommendedStore = (store: HTMLElement): boolean =>
-    store.querySelector(`[data-store-action="${actionTarget}"]`) !== null;
-
-  for (const container of documentRoot.querySelectorAll<HTMLElement>("[data-install-options]")) {
-    const stores = [...container.querySelectorAll<HTMLElement>("[data-install-store]")];
-    // Invariant, not a live failure path: every container renders the same store set today, so the
-    // recommended store is present in all of them. Enforced here so a future per-container store
-    // set can never leave one container with no store choice at all.
-    if (!stores.some(holdsRecommendedStore)) continue;
-    container.classList.add("has-recommendation");
-    for (const store of stores) {
-      if (!holdsRecommendedStore(store)) {
-        store.classList.add("is-other");
-      }
-    }
-  }
 }
 
 /**
@@ -154,8 +127,6 @@ export function enhanceInstallActions(documentRoot: Document): void {
     return;
   }
 
-  markOtherStoreChoices(documentRoot, recommendation.actionTarget);
-
   const recommendedAction = documentRoot.querySelector<HTMLAnchorElement>(
     `[data-store-action="${recommendation.actionTarget}"]`,
   );
@@ -166,4 +137,18 @@ export function enhanceInstallActions(documentRoot: Document): void {
     recommendation.label ?? recommendedAction.textContent ?? "",
   );
   recommendedAction.setAttribute("data-recommended", "true");
+
+  // In the hero the top CTA is a single link: keep only the determined store and
+  // hide the other store choices plus the build-from-source option. The closing
+  // section keeps every choice, and the no-JS fallback still renders the full set.
+  for (const hero of documentRoot.querySelectorAll<HTMLElement>(".install-actions--hero")) {
+    for (const store of hero.querySelectorAll<HTMLElement>("[data-install-store]")) {
+      const storeLink = store.querySelector<HTMLElement>("[data-store-action]");
+      store.hidden = storeLink?.dataset.storeAction !== recommendation.actionTarget;
+    }
+    const source = hero.querySelector<HTMLElement>(".install-source");
+    if (source !== null) {
+      source.hidden = true;
+    }
+  }
 }
