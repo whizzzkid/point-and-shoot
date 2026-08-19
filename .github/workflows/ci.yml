@@ -34,9 +34,12 @@ jobs:
 
       # The Playwright container is minimal — it ships Chromium and its deps but not
       # general-purpose utilities. The build test suite shells out to `zip` for release
-      # archive validation, so install it before anything else.
+      # archive validation, and `git ls-files` for reviewer-source tests. The workspace
+      # is owned by the runner user, not the container's root, so git needs safe.directory.
       - name: Install container extras
-        run: apt-get update -qq && apt-get install -y -qq zip > /dev/null
+        run: |
+          apt-get update -qq && apt-get install -y -qq zip > /dev/null
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # mise installs exactly what mise.toml pins, so CI and every local machine resolve
       # identical versions from one file. A denoland/setup-deno step would be a second
