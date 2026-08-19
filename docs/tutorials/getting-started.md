@@ -77,7 +77,8 @@ and re-inject the overlay. Then capture and edit another note.
 
 The shortcut is bound to the same browser action as the toolbar icon, so it pauses a running session
 and resumes a paused one. Neither ends the session. See
-[manage a Point and Shoot session](sessions.md) for the full lifecycle.
+[manage a Point and Shoot session](sessions.md) for the full lifecycle, or
+[the Shortcuts section](options.md#shortcuts) for how to change the binding.
 
 The side panel groups notes by page. You can edit, delete, reorder, and choose whether each note's
 query string is included in an export.
@@ -102,8 +103,11 @@ The ZIP contains:
 - `plan.md`, the selected notes and relative screenshot links; and
 - `shots/note-NN.webp`, one screenshot per selected note.
 
-An export with no included notes is disabled. A size warning is advisory; you may export as-is,
-exclude notes, or lower screenshot quality or maximum dimensions in the options page.
+An export with no included notes is disabled. Excluding notes reduces the current bundle
+immediately. Lowering screenshot quality or maximum dimensions in the
+[options page](options.md#capture) only affects future captures; existing screenshots keep their
+original size until you recapture them. See [compile a plan and export it](exporting.md) for the
+full treatment of the compile-plan step, the header and footer prompts, and the bundle format.
 
 ## Hand the bundle to a local agent
 
@@ -117,15 +121,19 @@ repository that owns the page you captured, then give it this instruction:
 Keep the extracted ZIP directory intact; moving only its `plan.md` leaves its screenshot links
 dangling. The standalone prompt download contains no screenshot links.
 
-## End the session
+## Pause or end the session
 
-Selecting **Compile plan** already ended it: the session received an end time and the action badge
-cleared. The side panel stays on the completed session so it can still be renamed, edited, or
-exported again. The next toolbar click starts a fresh session.
+Two different gestures, and it is worth keeping them apart.
 
-Selecting the toolbar icon pauses a running session rather than ending it, so the overlay can be
-dismissed without giving up the session. See [manage a Point and Shoot session](sessions.md) for
-pause, resume, and the rest of the lifecycle.
+Select the Point and Shoot toolbar icon to **pause**. The overlay closes and the tooltip becomes
+**Resume session**, but the session stays active and keeps its notes — selecting the icon again
+resumes it on the current tab.
+
+**Compile plan** in the side panel is what **ends** a session. It stamps the end time and clears the
+action badge, and the side panel stays on the completed session so it can still be edited or
+exported. The next toolbar click after that starts a fresh session.
+
+See [manage a Point and Shoot session](sessions.md) for the full lifecycle.
 
 ## Understand what leaves the device
 
