@@ -38,7 +38,13 @@ jobs:
       # is owned by the runner user, not the container's root, so git needs safe.directory.
       - name: Container extras
         run: |
-          apt-get install -y -qq zip 2>/dev/null || (apt-get update -qq && apt-get install -y -qq zip) > /dev/null
+          # The Playwright image points apt at azure.archive.ubuntu.com, which times out
+          # intermittently and leaves `zip` uninstallable. Repoint to the official mirror
+          # first. Noble keeps sources in DEB822 (/etc/apt/sources.list.d/ubuntu.sources);
+          # older layouts use /etc/apt/sources.list — rewrite whichever exists.
+          sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g; s|azure.ports.ubuntu.com|ports.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          apt-get update -qq && apt-get install -y -qq zip > /dev/null
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # mise installs exactly what mise.toml pins, so CI and every local machine resolve
@@ -141,24 +147,22 @@ jobs:
         id: compare
         run: deno task visual
 
-      # Baseline regeneration pushes to the branch, which only makes sense for same-repo pull
+      # Baseline regeneration commits back to the branch, which only makes sense for same-repo pull
       # requests. Fork PRs cannot push, and push/workflow_dispatch runs have no branch to update.
       # github.repository is always this repo's own slug, so it must be compared against the
       # PR's head repo (not hardcoded) to actually detect same-repo vs. fork.
+      #
+      # The commit goes through GitHub's createCommitOnBranch GraphQL mutation rather than
+      # `git commit` + `git push`: commits authored via the API are signed by GitHub and land
+      # verified, so a "require signed commits" ruleset does not reject the regenerated baselines.
       - name: Regenerate drifted baselines and commit them back
         if: failure() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           deno task visual:update
           git config --global --add safe.directory /__w/point-and-shoot/point-and-shoot
-          git add tests/visual/baselines/
-          if git diff --cached --quiet; then
-            echo "no baseline files changed; nothing to commit"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore(visual): refresh baselines for ${GITHUB_HEAD_REF}"
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-          fi
+          deno task visual:commit "chore(visual): refresh baselines for ${GITHUB_HEAD_REF}"
 
       - name: Upload visual diffs
         if: failure()
