@@ -620,6 +620,7 @@ footer p {
 
   .install-options {
     display: grid;
+    gap: var(--space-3);
   }
 
   .product-stage {
