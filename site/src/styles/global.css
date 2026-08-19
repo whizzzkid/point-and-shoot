@@ -234,7 +234,7 @@ h3 {
   /* Keep each choice at its natural height: without this the flex row stretches the shorter
      column so the build-from-source button grows far taller than the store badges beside it. */
   align-items: start;
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .install-store,
@@ -242,6 +242,7 @@ h3 {
   display: grid;
   min-width: min-content;
   gap: var(--space-3);
+  align-content: start;
 }
 
 /* The hero build-from-source button keeps its natural width instead of stretching to fill the
@@ -619,6 +620,7 @@ footer p {
 
   .install-options {
     display: grid;
+    gap: var(--space-3);
   }
 
   .product-stage {
