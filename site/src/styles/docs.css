@@ -387,9 +387,9 @@ article img,
   display: flex;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-8);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--border-subtle);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .docs-nav-link {
@@ -447,10 +447,6 @@ article img,
   border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: var(--text-xs);
-}
-
-.docs-footer p {
-  margin: var(--space-0);
 }
 
 @media (max-width: 760px) {
