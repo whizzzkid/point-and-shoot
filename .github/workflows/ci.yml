@@ -23,8 +23,23 @@ jobs:
     # Pinned image, not `ubuntu-latest`: exact versions everywhere is a repository rule, and a
     # floating runner label silently changes the OS under a green build.
     runs-on: ubuntu-24.04
+    # Chromium is baked into the Playwright container — no install step, no cache dance, no
+    # apt-get for system deps. Same image the `visual` job already uses.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
+
+      # The Playwright container is minimal — it ships Chromium and its deps but not
+      # general-purpose utilities. The build test suite shells out to `zip` for release
+      # archive validation, and `git ls-files` for reviewer-source tests. The workspace
+      # is owned by the runner user, not the container's root, so git needs safe.directory.
+      - name: Container extras
+        run: |
+          apt-get install -y -qq zip 2>/dev/null || (apt-get update -qq && apt-get install -y -qq zip) > /dev/null
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # mise installs exactly what mise.toml pins, so CI and every local machine resolve
       # identical versions from one file. A denoland/setup-deno step would be a second
@@ -36,21 +51,6 @@ jobs:
           deno --version
           lefthook version
 
-      # `deno task ci` is not browser-free. Two unit suites — `src/shared/selectors.test.ts` and
-      # `src/shared/style-digest.test.ts` — call `chromium.launch()`, because a selector that
-      # round-trips and a bounded computed-style digest can only be verified against a real engine.
-      # Locally that browser is already installed, which is why the gap survived until this job first
-      # ran. Same cache key and install command as `e2e-smoke`, so the two share one download.
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-1.62.0
-
-      - name: Install Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno task playwright:install --with-deps chromium
-
       - name: deno task ci
         run: deno task ci
 
@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: deno task build
+      - name: Build extension
         run: deno task build
       - uses: actions/upload-artifact@v7
         with:
@@ -76,21 +76,13 @@ jobs:
 
   e2e-smoke:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-
-      # Keyed on the pinned Playwright version in deno.json's imports, not a floating tag —
-      # bumping that pin invalidates the cache instead of silently running a stale browser.
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-1.62.0
-
-      - name: Install Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno task playwright:install --with-deps chromium
 
       - name: deno task e2e:smoke
         run: deno task e2e:smoke
@@ -104,19 +96,13 @@ jobs:
 
   e2e-full:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-1.62.0
-
-      - name: Install Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno task playwright:install --with-deps chromium
 
       - name: deno task e2e:full
         run: deno task e2e:full
@@ -184,19 +170,13 @@ jobs:
 
   a11y:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-1.62.0
-
-      - name: Install Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: deno task playwright:install --with-deps chromium
 
       - name: deno task a11y
         run: deno task a11y
