@@ -9,6 +9,8 @@ This guide is verified with Playwright 1.62.0 and follows Playwright's
 
 ## Build Point and Shoot
 
+Playwright side-loads an unpacked directory, so this guide needs a local build rather than a store
+install. See [build Point and Shoot from source](building-from-source.md) for the full walkthrough.
 From the Point and Shoot checkout, run:
 
 ```bash

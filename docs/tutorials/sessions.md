@@ -246,6 +246,8 @@ says as much.
 
 ## Next steps
 
-- [Get started](getting-started.md) for the build, load, and first-capture walkthrough.
+- [Get started](getting-started.md) for the install and first-capture walkthrough.
+- [Build Point and Shoot from source](building-from-source.md) when you need an unpacked build
+  instead of a store install.
 - [Troubleshoot and understand known limits](troubleshooting.md) when a page or target will not
   capture.

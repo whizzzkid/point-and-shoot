@@ -102,10 +102,18 @@ canonical URL, and an unexpected remote resource in HTML or CSS.
 
 ### Rendering and navigation
 
-The documentation sidebar derives from the published collection rather than a hand-maintained list.
-Every heading receives a stable anchor. Repository-relative Markdown links are rewritten to
-published routes when the target is published and to GitHub when the target is source code, an ADR,
-or another repository-only artifact.
+The documentation sidebar derives its membership from the published collection rather than a
+hand-maintained list. Order is not membership: the indexes lead, and the tutorials follow the user
+story — install, configure, capture a session, compile and export, run beside Playwright, build from
+source, troubleshoot, release — rather than filename order, because an alphabetical sidebar opens on
+the export step. A document outside that declared sequence keeps a shared rank and stays
+alphabetical among its peers, so adding one never reorders the rest. The sidebar groups those
+documents under Overview, Specifications, and Tutorials, and each group holds a contiguous band of
+that shared order, so the flat prev and next pagination walks the documents in the same grouped
+sequence the sidebar shows — the two navigation views cannot disagree. Every heading receives a
+stable anchor. Repository-relative Markdown links are rewritten to published routes when the target
+is published and to GitHub when the target is source code, an ADR, or another repository-only
+artifact.
 
 The documentation header links the documentation index, the privacy policy, and the repository. Each
 link carries an icon and the display family one step below the wordmark, and the single accent
