@@ -165,10 +165,29 @@ a:focus-visible {
   gap: var(--space-4);
 }
 
+/* The nav scrolls within the viewport instead of pushing the whole page, so every item stays
+   reachable on a tall list. The hidden scrollbar keeps the rail visually quiet; `overscroll-behavior`
+   stops the page from scrolling once the nav reaches its end. `--sidebar-inset` is the single source
+   for the sticky offset so `top` and `max-height` cannot drift apart: max-height is the viewport
+   minus that offset minus a matching gap of breathing room at the bottom. */
 .docs-sidebar nav {
+  --sidebar-inset: calc(var(--space-16) + var(--space-8));
   position: sticky;
-  top: calc(var(--space-16) + var(--space-8));
+  top: var(--sidebar-inset);
+  max-height: calc(100vh - var(--sidebar-inset) - var(--space-8));
+  /* `overflow-y: auto` forces `overflow-x` to compute to `auto`, which would clip the links'
+     focus ring (a 3px box-shadow) where they sit flush with the scroll port. The padding gives the
+     ring room; the matching negative margin keeps the links visually aligned with the sidebar. */
+  padding: var(--space-1);
+  margin: calc(var(--space-1) * -1);
+  overflow-y: auto;
   gap: var(--space-8);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.docs-sidebar nav::-webkit-scrollbar {
+  display: none;
 }
 
 .docs-sidebar h2 {
@@ -438,11 +457,13 @@ article img,
   font-weight: var(--weight-medium);
 }
 
+/* Shares the pagination nav's own rhythm so the two rules below the article read as one block.
+   A larger gap here stranded the footer far under the pagination links on short pages. */
 .docs-footer {
   display: flex;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-top: var(--space-16);
+  margin-top: var(--space-8);
   padding-top: var(--space-6);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
@@ -469,8 +490,12 @@ article img,
     border-bottom: 1px solid var(--border-subtle);
   }
 
+  /* Stacked above the content, the nav flows with the page, so the sticky viewport clamp would
+     crop the list. Reset it back to natural height. */
   .docs-sidebar nav {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .docs-sidebar section {
