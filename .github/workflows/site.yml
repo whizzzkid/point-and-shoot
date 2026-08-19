@@ -51,9 +51,14 @@ jobs:
     permissions:
       contents: read
       pages: read
+    runs-on: ubuntu-24.04
+    # site:test launches Chromium (install-flow.test.mjs). The Playwright container
+    # has it baked in — no install step needed.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
-    runs-on: ubuntu-24.04
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
@@ -85,19 +90,28 @@ jobs:
         run: deno task site:links
 
   # Accessibility (axe) and Lighthouse both need Chromium and a built site. Running them in one
-  # job avoids a redundant site build and a second Chromium provisioning step. The Playwright
-  # container has Chromium baked in, so there is no install step at all.
+  # job avoids a redundant site build and a second Chromium provisioning step. Lighthouse uses
+  # chrome-launcher which needs the host-installed Chromium binary, so this job runs on the bare
+  # runner with a cached Playwright install rather than the container image.
   quality:
     needs: pages
     runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.62.0-noble
     env:
       SITE_URL: ${{ needs.pages.outputs.site_url }}
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-1.62.0
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: deno task playwright:install --with-deps chromium
+
       - name: Build site
         run: deno task site:build
       - name: Run axe
