@@ -143,7 +143,21 @@ export function createNotesRepository(
         const [active] = await tabs.query({ active: true, currentWindow: true });
         const url = active?.url;
         if (typeof url !== "string" || url === "") return null;
-        return new URL(url).hostname || null;
+        const parsed = new URL(url);
+        const SESSION_PROTOS = new Set([
+          "file:",
+          "chrome-extension:",
+          "moz-extension:",
+          "http:",
+          "https:",
+        ]);
+        if (!SESSION_PROTOS.has(parsed.protocol)) return null;
+        if (parsed.protocol === "file:") {
+          const lastSlash = parsed.pathname.lastIndexOf("/");
+          const directory = lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+          return parsed.host ? `//${parsed.host}${directory}` : directory;
+        }
+        return parsed.hostname || null;
       } catch {
         return null;
       }

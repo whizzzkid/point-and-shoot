@@ -79,18 +79,38 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
   return `${title}-${timestamp}`;
 }
 
+/** Schemes that support sessions beyond standard http(s). */
+const SESSION_SCHEMES = new Set([
+  "file:",
+  "chrome-extension:",
+  "moz-extension:",
+  "http:",
+  "https:",
+]);
+
 /**
- * Extracts the hostname of a URL for {@link Session.domain}. The ADR-0002 activeTab model gives
- * the background a URL only for eligible http(s) pages, so anything else is a non-domain.
+ * Extracts a domain identifier from a URL for {@link Session.domain}.
  *
- * @param pageUrl The tab URL to extract a hostname from.
- * @returns The hostname, or `null` for `undefined`, empty, or unparseable inputs (`chrome://newtab/`,
- *   `about:blank`, `""`).
+ * - `http(s)://` — returns the hostname (`"example.com"`).
+ * - `file://` — returns the host (if any) plus directory (`"//server/share/"` for UNC,
+ *   `"/Users/x/docs/"` for local paths).
+ * - `chrome-extension://` / `moz-extension://` — returns the extension ID or UUID.
+ * - Everything else (`chrome://`, `about:`, `""`) — returns `null`.
+ *
+ * @param pageUrl The tab URL to extract a domain from.
+ * @returns A domain string, or `null` for unsupported, empty, or unparseable inputs.
  */
 export function domainFromUrl(pageUrl: string | undefined): string | null {
   if (pageUrl === undefined || pageUrl === "") return null;
   try {
-    return new URL(pageUrl).hostname || null;
+    const parsed = new URL(pageUrl);
+    if (!SESSION_SCHEMES.has(parsed.protocol)) return null;
+    if (parsed.protocol === "file:") {
+      const lastSlash = parsed.pathname.lastIndexOf("/");
+      const directory = lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+      return parsed.host ? `//${parsed.host}${directory}` : directory;
+    }
+    return parsed.hostname || null;
   } catch {
     return null;
   }

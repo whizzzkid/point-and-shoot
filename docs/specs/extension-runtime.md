@@ -48,6 +48,11 @@ also grants `sidePanel`, which is required to call `chrome.sidePanel.open()`. Th
 after a toolbar click, keyboard command, or popup action supplies an eligible active tab. A
 restricted page returns an unavailable state and does not create a session.
 
+In addition to standard `http(s)` pages, sessions can be created on `file://` pages and the
+extension's own pages (`chrome-extension://` / `moz-extension://`). For `file://` URLs, Chrome
+requires the user to enable "Allow access to file URLs" on the extension card. The `domainFromUrl`
+function extracts the directory path for `file://` URLs and the extension ID for extension URLs.
+
 Chrome uses a module service worker and `side_panel`; Firefox uses an event-page script and
 `sidebar_action`. Application code accesses both through the promise-based shim in
 `src/shared/browser.ts`. The shim normalizes capture, messaging, storage, downloads, script
@@ -109,11 +114,11 @@ distinct typed errors.
 - A `RegionCapture` has a WebP data URL, viewport, crop box, and truncation flag.
 - A `NoteElement` has a selector bundle, a nullable style digest, and an optional framework hint.
 
-`Session.domain` is the hostname of the tab the session began on, captured once at start and never
-updated later, so a session that outlives a mid-session navigation to another host stays
-attributable to where the user set out to capture. Unparseable start URLs (`chrome://newtab/`,
-`about:blank`, empty strings) leave the field `null`. See
-[ADR-0021](../adr/0021-session-domain-field.md).
+`Session.domain` is a location identifier for the tab the session began on, captured once at start
+and never updated later. For `http(s)` URLs, domain is the hostname. For `file://` URLs, domain is
+the directory path (e.g., `/Users/x/docs/`). For `chrome-extension://` and `moz-extension://` URLs,
+domain is the extension ID. Browser-internal URLs (`chrome://`, `about:`) and empty strings leave
+the field `null`. See [ADR-0021](../adr/0021-session-domain-field.md).
 
 IndexedDB database `point-and-shoot`, version `2`, stores sessions by ID. Every read validates the
 unknown stored value with `validateSession`. A single-record read rejects corrupt data; a list read

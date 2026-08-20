@@ -11,7 +11,7 @@ import {
   SESSION_REVISION_STORAGE_KEY,
 } from "../shared/session.ts";
 import { DB_NAME, getSession, openStore, putSession } from "../shared/store.ts";
-import { createSessionService } from "./session.ts";
+import { createSessionService, domainFromUrl } from "./session.ts";
 
 function createStorage(initial: StorageItems = {}): {
   readonly local: BrowserShim["storage"]["local"];
@@ -346,4 +346,36 @@ Deno.test("session service resumes existing session when new domain is null", as
   assertEquals(second.domain, "example.com");
 
   await resetDatabase();
+});
+
+Deno.test("domainFromUrl extracts hostname from http URLs", () => {
+  assertEquals(domainFromUrl("https://example.com/path"), "example.com");
+  assertEquals(domainFromUrl("http://localhost:3000/page"), "localhost");
+});
+
+Deno.test("domainFromUrl extracts directory from file URLs", () => {
+  assertEquals(domainFromUrl("file:///Users/nishant/docs/report.html"), "/Users/nishant/docs/");
+  assertEquals(domainFromUrl("file:///Users/nishant/docs/"), "/Users/nishant/docs/");
+  assertEquals(domainFromUrl("file:///single-file.html"), "/");
+  assertEquals(domainFromUrl("file://server/share/doc.html"), "//server/share/");
+  assertEquals(domainFromUrl("file://nas1/share/x"), "//nas1/share/");
+});
+
+Deno.test("domainFromUrl extracts extension ID from chrome-extension URLs", () => {
+  assertEquals(
+    domainFromUrl("chrome-extension://abcdefghijklmnop/options.html"),
+    "abcdefghijklmnop",
+  );
+  assertEquals(
+    domainFromUrl("moz-extension://a1b2c3d4-e5f6-7890-abcd-ef1234567890/sidebar.html"),
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  );
+});
+
+Deno.test("domainFromUrl returns null for unsupported schemes and empty inputs", () => {
+  assertEquals(domainFromUrl(undefined), null);
+  assertEquals(domainFromUrl(""), null);
+  assertEquals(domainFromUrl("chrome://extensions/"), null);
+  assertEquals(domainFromUrl("about:blank"), null);
+  assertEquals(domainFromUrl("not-a-url"), null);
 });

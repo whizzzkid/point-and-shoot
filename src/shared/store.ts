@@ -33,6 +33,10 @@ export class RecordValidationError extends Error {
 /**
  * Extracts the hostname of a stored note's `pageUrl` for the v1→v2 domain backfill. Duplicated
  * from `session.ts` `domainFromUrl` to keep this module free of a background-only dependency.
+ *
+ * This function is frozen to hostname-only extraction because the v1→v2 migration already shipped
+ * in 2026.819.0. Changing its semantics would leave already-migrated installs permanently divergent.
+ * New domain extraction rules apply only to sessions created after this change.
  */
 function backfillDomain(pageUrl: unknown): string | null {
   if (typeof pageUrl !== "string" || pageUrl === "") return null;
