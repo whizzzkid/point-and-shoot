@@ -15,7 +15,12 @@ export type NoteMoveDirection = "up" | "down";
 function pageGroupKey(pageUrl: string): string {
   try {
     const parsed = new URL(pageUrl);
-    if (parsed.protocol === "file:") return `file://${parsed.pathname}`;
+    if (parsed.protocol === "file:") {
+      return `file://${parsed.host}${parsed.pathname}`;
+    }
+    if (parsed.protocol === "chrome-extension:" || parsed.protocol === "moz-extension:") {
+      return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+    }
     return `${parsed.origin}${parsed.pathname}`;
   } catch {
     return pageUrl;

@@ -48,7 +48,7 @@ export function registerTabLifecycleHandler(
       if (active === null || active.pausedAt != null) return;
 
       const tabDomain = tab.url ? domainFromUrl(tab.url) : null;
-      if (tab.url !== undefined && tabDomain !== active.domain) {
+      if (tabDomain !== null && active.domain !== tabDomain) {
         await sessions.end();
         await synchronize();
         return;

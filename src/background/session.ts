@@ -79,14 +79,21 @@ function defaultSessionName(pageTitle: string | undefined, createdAt: Date): str
   return `${title}-${timestamp}`;
 }
 
-/** Schemes where the extension can create sessions beyond standard http(s). */
-const LOCAL_SCHEMES = new Set(["file:", "chrome-extension:", "moz-extension:"]);
+/** Schemes that support sessions beyond standard http(s). */
+const SESSION_SCHEMES = new Set([
+  "file:",
+  "chrome-extension:",
+  "moz-extension:",
+  "http:",
+  "https:",
+]);
 
 /**
  * Extracts a domain identifier from a URL for {@link Session.domain}.
  *
  * - `http(s)://` — returns the hostname (`"example.com"`).
- * - `file://` — returns the directory portion of the path (`"/Users/x/docs/"`).
+ * - `file://` — returns the host (if any) plus directory (`"//server/share/"` for UNC,
+ *   `"/Users/x/docs/"` for local paths).
  * - `chrome-extension://` / `moz-extension://` — returns the extension ID or UUID.
  * - Everything else (`chrome://`, `about:`, `""`) — returns `null`.
  *
@@ -97,13 +104,13 @@ export function domainFromUrl(pageUrl: string | undefined): string | null {
   if (pageUrl === undefined || pageUrl === "") return null;
   try {
     const parsed = new URL(pageUrl);
+    if (!SESSION_SCHEMES.has(parsed.protocol)) return null;
     if (parsed.protocol === "file:") {
       const lastSlash = parsed.pathname.lastIndexOf("/");
-      return lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+      const directory = lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+      return parsed.host ? `//${parsed.host}${directory}` : directory;
     }
-    if (LOCAL_SCHEMES.has(parsed.protocol)) return parsed.hostname || null;
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.hostname || null;
-    return null;
+    return parsed.hostname || null;
   } catch {
     return null;
   }

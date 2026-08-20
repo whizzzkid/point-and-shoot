@@ -30,25 +30,18 @@ export class RecordValidationError extends Error {
   }
 }
 
-/** Schemes where the extension can create sessions beyond standard http(s). */
-const LOCAL_SCHEMES = new Set(["file:", "chrome-extension:", "moz-extension:"]);
-
 /**
- * Extracts a domain identifier from a stored note's `pageUrl` for the v1→v2 domain backfill.
- * Duplicated from `session.ts` `domainFromUrl` to keep this module free of a background-only
- * dependency — the two implementations must stay in sync.
+ * Extracts the hostname of a stored note's `pageUrl` for the v1→v2 domain backfill. Duplicated
+ * from `session.ts` `domainFromUrl` to keep this module free of a background-only dependency.
+ *
+ * This function is frozen to hostname-only extraction because the v1→v2 migration already shipped
+ * in 2026.819.0. Changing its semantics would leave already-migrated installs permanently divergent.
+ * New domain extraction rules apply only to sessions created after this change.
  */
 function backfillDomain(pageUrl: unknown): string | null {
   if (typeof pageUrl !== "string" || pageUrl === "") return null;
   try {
-    const parsed = new URL(pageUrl);
-    if (parsed.protocol === "file:") {
-      const lastSlash = parsed.pathname.lastIndexOf("/");
-      return lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
-    }
-    if (LOCAL_SCHEMES.has(parsed.protocol)) return parsed.hostname || null;
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.hostname || null;
-    return null;
+    return new URL(pageUrl).hostname || null;
   } catch {
     return null;
   }

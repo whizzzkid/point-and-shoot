@@ -144,17 +144,20 @@ export function createNotesRepository(
         const url = active?.url;
         if (typeof url !== "string" || url === "") return null;
         const parsed = new URL(url);
+        const SESSION_PROTOS = new Set([
+          "file:",
+          "chrome-extension:",
+          "moz-extension:",
+          "http:",
+          "https:",
+        ]);
+        if (!SESSION_PROTOS.has(parsed.protocol)) return null;
         if (parsed.protocol === "file:") {
           const lastSlash = parsed.pathname.lastIndexOf("/");
-          return lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+          const directory = lastSlash > 0 ? parsed.pathname.slice(0, lastSlash + 1) : "/";
+          return parsed.host ? `//${parsed.host}${directory}` : directory;
         }
-        if (parsed.protocol === "chrome-extension:" || parsed.protocol === "moz-extension:") {
-          return parsed.hostname || null;
-        }
-        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-          return parsed.hostname || null;
-        }
-        return null;
+        return parsed.hostname || null;
       } catch {
         return null;
       }

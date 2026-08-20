@@ -357,6 +357,8 @@ Deno.test("domainFromUrl extracts directory from file URLs", () => {
   assertEquals(domainFromUrl("file:///Users/nishant/docs/report.html"), "/Users/nishant/docs/");
   assertEquals(domainFromUrl("file:///Users/nishant/docs/"), "/Users/nishant/docs/");
   assertEquals(domainFromUrl("file:///single-file.html"), "/");
+  assertEquals(domainFromUrl("file://server/share/doc.html"), "//server/share/");
+  assertEquals(domainFromUrl("file://nas1/share/x"), "//nas1/share/");
 });
 
 Deno.test("domainFromUrl extracts extension ID from chrome-extension URLs", () => {
