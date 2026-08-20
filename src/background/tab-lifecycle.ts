@@ -47,11 +47,8 @@ export function registerTabLifecycleHandler(
       const active = await sessions.loadActive();
       if (active === null || active.pausedAt != null) return;
 
-      // Check if the tab's URL domain differs from the session's domain
       const tabDomain = tab.url ? domainFromUrl(tab.url) : null;
-      if (tabDomain !== null && active.domain !== tabDomain) {
-        // Domain changed - end the running session so the next toolbar click starts a fresh
-        // one instead of resuming/pausing this domain's session.
+      if (tab.url !== undefined && tabDomain !== active.domain) {
         await sessions.end();
         await synchronize();
         return;

@@ -117,3 +117,42 @@ Deno.test("tab lifecycle ends the running session on cross-domain navigation", a
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
   assertEquals(calls, ["session.load", "session.end", "synchronize"]);
 });
+
+Deno.test("tab lifecycle ends a running session when navigating to a file URL", async () => {
+  const calls: string[] = [];
+  let listenerFn: (id: number, change: TabChangeInfo, tab: TabInfo) => void;
+  const browser = {
+    tabs: {
+      onUpdated: {
+        addListener(next: (id: number, change: TabChangeInfo, tab: TabInfo) => void) {
+          listenerFn = next;
+        },
+      },
+    },
+  };
+  const sessions: Pick<SessionService, "loadActive" | "end"> = {
+    loadActive() {
+      calls.push("session.load");
+      return Promise.resolve(BASE_SESSION);
+    },
+    end() {
+      calls.push("session.end");
+      return Promise.resolve(null);
+    },
+  };
+  const synchronize = () => {
+    calls.push("synchronize");
+    return Promise.resolve();
+  };
+  registerTabLifecycleHandler(browser, sessions, synchronize);
+
+  await listenerFn!(42, { status: "complete" }, { id: 42, url: "file:///Users/nishant/doc.html" });
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  assertEquals(calls, ["session.load", "session.end", "synchronize"]);
+});
+
+Deno.test("tab lifecycle skips domain check when tab URL is absent", async () => {
+  const fake = makeFakes(BASE_SESSION);
+  await fake.fire(42, { status: "complete" });
+  assertEquals(fake.calls, ["session.load", "synchronize"]);
+});
