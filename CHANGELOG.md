@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026.820.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.819.0...v2026.820.0) (2026-08-20)
+
+
+### Features
+
+* ✨ support file:// and extension URL schemes for sessions ([6ff547d](https://github.com/whizzzkid/point-and-shoot/commit/6ff547de9fa97f5bfbe70fea89daa4f314ea3040))
+* ✨ support file:// and extension URL schemes for sessions ([2f9bf55](https://github.com/whizzzkid/point-and-shoot/commit/2f9bf5558111bf3707ae228f78118f5631cf999a))
+
+
+### Bug Fixes
+
+* 🐛 address adversarial review blockers ([0b1992f](https://github.com/whizzzkid/point-and-shoot/commit/0b1992ffb05a143ec23c65ce51e22d3329124f42))
+
 ## [2026.819.0](https://github.com/whizzzkid/point-and-shoot/compare/v2026.818.0...v2026.819.0) (2026-08-19)
 
 
