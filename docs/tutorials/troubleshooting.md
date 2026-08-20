@@ -22,12 +22,16 @@ Temporary add-ons disappear when Firefox exits.
 ## The toolbar badge shows an exclamation mark
 
 The page cannot grant `activeTab`. Browser-owned pages such as `chrome://` and `about:` documents,
-extension stores, PDF viewers owned by the browser, and some policy-managed pages reject content
-injection.
+other extensions' pages, extension stores, PDF viewers owned by the browser, and some policy-managed
+pages reject content injection.
 
 Point and Shoot does not create a session on a restricted page. Move to a normal `http://` or
 `https://` page and select the toolbar action again. An earlier completed session may remain visible
 in the side panel.
+
+Point and Shoot supports `file://` pages and its own extension pages (`chrome-extension://` /
+`moz-extension://`). For `file://` URLs in Chrome, enable **Allow access to file URLs** on the
+extension card at `chrome://extensions`.
 
 ## A closed shadow-root control cannot be selected
 
