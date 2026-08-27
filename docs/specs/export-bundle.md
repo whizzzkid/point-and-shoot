@@ -40,13 +40,20 @@ read, browser call, or mutation of the input record.
 
 ## Markdown plan
 
-`plan.md` starts with the session name and selected-note count. Each note section presents:
+`plan.md` starts with the session name, the selected-note count, and the projection preamble. When
+at least one note is selected it then carries a planning-guidance paragraph, and closes with a
+validation paragraph that reminds the agent to confirm every ask is addressed and to revisit the
+plan after implementation. Both paragraphs are omitted from the zero-note preview state, since they
+reference the notes. Each note section presents:
 
-1. The problem text.
-2. The sanitized page URL, capture time, screenshot path, region, viewport, and clipped state.
-3. Each element's selector bundle.
-4. Its component hint, only when present.
-5. Its computed-style evidence, or an explicit unavailable state.
+1. The goal text (the note text) under a `Goal` heading.
+2. The sanitized page URL, capture time, screenshot path, region, viewport, and clipped state under
+   a `Location on Live page` heading.
+3. The evidence under an `Evidence N` heading (numbered by note), one block per element, with each
+   element headed `Element N.a`, `Element N.b`, … (note number, then a bijective base-26 letter):
+   1. Each element's selector bundle.
+   2. Its component hint, only when present.
+   3. Its computed-style evidence, or an explicit unavailable state.
 
 Computed-style evidence is terse only in Markdown. Four-sided padding, margin, and border widths use
 CSS shorthand strings, and equal border colors become one `borderColor`. Differing border colors

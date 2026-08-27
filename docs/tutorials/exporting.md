@@ -40,8 +40,8 @@ number, so evidence stays traceable back to its note.
 
 A note saved with no text renders as `_No note text was provided._` rather than an empty section. A
 note whose region captured no element metadata renders a fallback message instead of an empty
-**Evidence** block. Neither case blocks the export, but both leave the agent with less to work from
-than a described goal does.
+**Evidence N** block. Neither case blocks the export, but both leave the agent with less to work
+from than a described goal does.
 
 Each element's evidence block is JSON: the selector bundle first, then the framework hint when
 component hints are enabled, then a condensed computed-style digest. The digest is deliberately

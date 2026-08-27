@@ -199,6 +199,15 @@ Deno.test("toMarkdown leads with Goal/Location headings and default planning gui
   assertEquals(actual.includes("### Problem"), false);
 });
 
+Deno.test("toMarkdown omits planning guidance when no notes are selected", () => {
+  const actual = toMarkdown(EXPORT_FIXTURE_SESSION, { includedNoteIds: new Set() });
+
+  assertStringIncludes(actual, "0 notes captured.");
+  assertEquals(actual.includes("These are raw notes captured"), false);
+  assertEquals(actual.includes("After planning, confirm"), false);
+  assertEquals(actual.includes("\n\n\n"), false);
+});
+
 Deno.test("shotPath keeps lexical order when a session reaches three digits", () => {
   assertEquals(shotPath(0, 100), "shots/note-001.webp");
   assertEquals(shotPath(98, 100), "shots/note-099.webp");

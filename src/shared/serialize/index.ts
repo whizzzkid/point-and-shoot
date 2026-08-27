@@ -248,19 +248,28 @@ export function toMarkdown(session: Session, options: SerializeOptions = {}): st
       ? "`session.json` is the canonical record. This Markdown file is a convenience projection."
       : "This image-free prompt is a convenience projection. Download the bundle for the " +
         "canonical `session.json` record and screenshots.",
-    "",
-    "These are raw notes captured from live changes that need improvement or are new ideas. " +
-    "Use the issues and ideas in each note below to plan and implement the changes in the " +
-    "best possible order.",
   ];
-  const planFooter =
-    "After planning, confirm every ask and report in the notes above is addressed. After " +
-    "implementation, revisit this planning doc and validate that all notes and asks were " +
-    "implemented.";
+  // Bracket the notes with planning guidance, but only when there is at least one note — both
+  // paragraphs reference "each note below" / "the notes above", which read as dangling on the
+  // zero-note preview state.
+  if (noteCount > 0) {
+    header.push(
+      "",
+      "These are raw notes captured from live changes that need improvement or are new ideas. " +
+        "Use the issues and ideas in each note below to plan and implement the changes in the " +
+        "best possible order.",
+    );
+  }
+  const planFooter = noteCount > 0
+    ? "After planning, confirm every ask and report in the notes above is addressed. After " +
+      "implementation, revisit this planning doc and validate that all notes and asks were " +
+      "implemented."
+    : undefined;
   const notes = projected.notes.map((note, index) =>
     noteMarkdown(note, index, noteCount, includeImageReferences)
   );
-  const body = `${[header.join("\n"), ...notes, planFooter].join("\n\n")}\n`;
+  const sections = [header.join("\n"), ...notes, ...(planFooter ? [planFooter] : [])];
+  const body = `${sections.join("\n\n")}\n`;
   const headerPrompt = trimPromptPart(options.headerPrompt);
   const footerPrompt = trimPromptPart(options.footerPrompt);
   if (headerPrompt === "" && footerPrompt === "") return body;
