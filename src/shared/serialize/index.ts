@@ -156,6 +156,16 @@ export function trimPromptPart(part: string | undefined): string {
   return (part ?? "").trim();
 }
 
+function elementLetter(index: number): string {
+  let remaining = index;
+  let label = "";
+  do {
+    label = String.fromCharCode(97 + (remaining % 26)) + label;
+    remaining = Math.floor(remaining / 26) - 1;
+  } while (remaining >= 0);
+  return label;
+}
+
 function noteMarkdown(
   note: Note,
   index: number,
@@ -165,11 +175,11 @@ function noteMarkdown(
   const lines = [
     `## Note ${index + 1}/${noteCount} — ${singleLine(note.pageTitle, "Untitled page")}`,
     "",
-    "### Problem",
+    "### Goal",
     "",
     note.text.trim() || "_No note text was provided._",
     "",
-    "### Location",
+    "### Location on Live page",
     "",
     `- Page: \`${note.pageUrl}\``,
     `- Captured: \`${note.createdAt}\``,
@@ -186,7 +196,7 @@ function noteMarkdown(
     `- Viewport: \`${note.region.viewport.width} × ${note.region.viewport.height}\``,
     `- Capture clipped: ${note.region.truncated ? "yes" : "no"}`,
     "",
-    "### Evidence",
+    `### Evidence ${index + 1}`,
     "",
   );
 
@@ -198,7 +208,7 @@ function noteMarkdown(
   note.elements.forEach((element, elementIndex) => {
     if (elementIndex > 0) lines.push("");
     lines.push(
-      `#### Element ${elementIndex + 1}`,
+      `#### Element ${index + 1}.${elementLetter(elementIndex)}`,
       "",
       "Selector bundle:",
       "",
@@ -239,10 +249,27 @@ export function toMarkdown(session: Session, options: SerializeOptions = {}): st
       : "This image-free prompt is a convenience projection. Download the bundle for the " +
         "canonical `session.json` record and screenshots.",
   ];
+  // Bracket the notes with planning guidance, but only when there is at least one note — both
+  // paragraphs reference "each note below" / "the notes above", which read as dangling on the
+  // zero-note preview state.
+  if (noteCount > 0) {
+    header.push(
+      "",
+      "These are raw notes captured from live changes that need improvement or are new ideas. " +
+        "Use the issues and ideas in each note below to plan and implement the changes in the " +
+        "best possible order.",
+    );
+  }
+  const planFooter = noteCount > 0
+    ? "After planning, confirm every ask and report in the notes above is addressed. After " +
+      "implementation, revisit this planning doc and validate that all notes and asks were " +
+      "implemented."
+    : undefined;
   const notes = projected.notes.map((note, index) =>
     noteMarkdown(note, index, noteCount, includeImageReferences)
   );
-  const body = `${[header.join("\n"), ...notes].join("\n\n")}\n`;
+  const sections = [header.join("\n"), ...notes, ...(planFooter ? [planFooter] : [])];
+  const body = `${sections.join("\n\n")}\n`;
   const headerPrompt = trimPromptPart(options.headerPrompt);
   const footerPrompt = trimPromptPart(options.footerPrompt);
   if (headerPrompt === "" && footerPrompt === "") return body;
