@@ -4,13 +4,15 @@
 
 `session.json` is the canonical record. This Markdown file is a convenience projection.
 
+These are raw notes captured from live changes that need improvement or are new ideas. Use the issues and ideas in each note below to plan and implement the changes in the best possible order.
+
 ## Note 1/2 — Checkout
 
-### Problem
+### Goal
 
 The primary action is pushed against the card edge.
 
-### Location
+### Location on Live page
 
 - Page: `https://example.com/checkout`
 - Captured: `2026-07-28T12:01:00.000Z`
@@ -19,9 +21,9 @@ The primary action is pushed against the card edge.
 - Viewport: `1280 × 720`
 - Capture clipped: no
 
-### Evidence
+### Evidence 1
 
-#### Element 1
+#### Element 1.a
 
 Selector bundle:
 
@@ -92,11 +94,11 @@ Computed style evidence:
 
 ## Note 2/2 — Order summary
 
-### Problem
+### Goal
 
 The total wraps onto a second line at desktop width.
 
-### Location
+### Location on Live page
 
 - Page: `https://example.com/checkout/summary`
 - Captured: `2026-07-28T12:02:00.000Z`
@@ -105,9 +107,9 @@ The total wraps onto a second line at desktop width.
 - Viewport: `1280 × 720`
 - Capture clipped: yes
 
-### Evidence
+### Evidence 2
 
-#### Element 1
+#### Element 2.a
 
 Selector bundle:
 
@@ -122,3 +124,5 @@ Selector bundle:
 ```
 
 Computed style evidence was unavailable.
+
+After planning, confirm every ask and report in the notes above is addressed. After implementation, revisit this planning doc and validate that all notes and asks were implemented.

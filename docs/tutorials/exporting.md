@@ -26,15 +26,22 @@ The plan is assembled from the session record in note order:
    the image-free prompt used by **Copy prompt** and **Download prompt** it instead reads
    `This image-free prompt is a convenience projection. Download the bundle for the canonical`
    `` `session.json` record and screenshots. ``
-3. Each included note becomes a `## Note N/M` section, titled with the page title.
-4. Inside each note section, **Problem** carries your note text, **Location** carries the page URL,
-   capture time, region geometry, viewport, and whether the capture was clipped, and **Evidence**
-   carries one block per captured element.
+3. A short guidance paragraph explaining that the notes are raw captures to plan and implement in
+   the best possible order.
+4. Each included note becomes a `## Note N/M` section, titled with the page title.
+5. Inside each note section, **Goal** carries your note text, **Location on Live page** carries the
+   page URL, capture time, region geometry, viewport, and whether the capture was clipped, and
+   **Evidence N** (numbered by note) carries one block per captured element.
+6. A closing paragraph reminding the agent to confirm every note and ask is addressed after
+   planning, then to revisit the doc and validate them after implementation.
+
+Element headings within a note are numbered `Element N.a`, `Element N.b`, … where `N` is the note
+number, so evidence stays traceable back to its note.
 
 A note saved with no text renders as `_No note text was provided._` rather than an empty section. A
 note whose region captured no element metadata renders a fallback message instead of an empty
 **Evidence** block. Neither case blocks the export, but both leave the agent with less to work from
-than a described problem does.
+than a described goal does.
 
 Each element's evidence block is JSON: the selector bundle first, then the framework hint when
 component hints are enabled, then a condensed computed-style digest. The digest is deliberately

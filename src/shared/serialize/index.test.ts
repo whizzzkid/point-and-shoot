@@ -156,6 +156,49 @@ Deno.test("toMarkdown trims and ignores blank header and footer prompt parts", (
   assertEquals(withBlank, without);
 });
 
+Deno.test("toMarkdown numbers evidence by note and elements as note-number.letter", () => {
+  const firstNote = EXPORT_FIXTURE_SESSION.notes[0]!;
+  const session: Session = {
+    ...EXPORT_FIXTURE_SESSION,
+    notes: [
+      { ...firstNote, elements: [firstNote.elements[0]!, firstNote.elements[0]!] },
+      EXPORT_FIXTURE_SESSION.notes[1]!,
+    ],
+  };
+
+  const actual = toMarkdown(session);
+
+  assertStringIncludes(actual, "### Evidence 1");
+  assertStringIncludes(actual, "#### Element 1.a");
+  assertStringIncludes(actual, "#### Element 1.b");
+  assertStringIncludes(actual, "### Evidence 2");
+  assertStringIncludes(actual, "#### Element 2.a");
+});
+
+Deno.test("toMarkdown labels a 27th element with a spreadsheet-style aa suffix", () => {
+  const firstNote = EXPORT_FIXTURE_SESSION.notes[0]!;
+  const element = firstNote.elements[0]!;
+  const session: Session = {
+    ...EXPORT_FIXTURE_SESSION,
+    notes: [{ ...firstNote, elements: Array.from({ length: 27 }, () => element) }],
+  };
+
+  const actual = toMarkdown(session);
+
+  assertStringIncludes(actual, "#### Element 1.z");
+  assertStringIncludes(actual, "#### Element 1.aa");
+});
+
+Deno.test("toMarkdown leads with Goal/Location headings and default planning guidance", () => {
+  const actual = toMarkdown(EXPORT_FIXTURE_SESSION);
+
+  assertStringIncludes(actual, "### Goal");
+  assertStringIncludes(actual, "### Location on Live page");
+  assertStringIncludes(actual, "These are raw notes captured from live changes");
+  assertStringIncludes(actual, "After planning, confirm every ask");
+  assertEquals(actual.includes("### Problem"), false);
+});
+
 Deno.test("shotPath keeps lexical order when a session reaches three digits", () => {
   assertEquals(shotPath(0, 100), "shots/note-001.webp");
   assertEquals(shotPath(98, 100), "shots/note-099.webp");
